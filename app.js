@@ -1092,6 +1092,44 @@ function setMode(mode) {
 
 function isAdmin() { return cfg.role === 'admin'; }
 
+function normalizeItem(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const articleNumber = String(raw.articleNumber || '').trim().toUpperCase();
+  if (!articleNumber) return null;
+  return { ...raw, articleNumber };
+}
+
+function normalizeMovement(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String(raw.id || '').trim();
+  if (!id) return null;
+  const articleNumber = String(raw.articleNumber || '').trim().toUpperCase();
+  return { ...raw, id, articleNumber };
+}
+
+function normalizeCoRecord(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String(raw.id || '').trim();
+  if (!id) return null;
+  return { ...raw, id };
+}
+
+function sanitizeSyncPayload(payload = {}) {
+  const items = (Array.isArray(payload.items) ? payload.items : []).map(normalizeItem).filter(Boolean);
+  const movements = (Array.isArray(payload.movements) ? payload.movements : []).map(normalizeMovement).filter(Boolean);
+  const coRecords = (Array.isArray(payload.coRecords) ? payload.coRecords : []).map(normalizeCoRecord).filter(Boolean);
+  return {
+    items,
+    movements,
+    coRecords,
+    dropped: {
+      items: (Array.isArray(payload.items) ? payload.items.length : 0) - items.length,
+      movements: (Array.isArray(payload.movements) ? payload.movements.length : 0) - movements.length,
+      coRecords: (Array.isArray(payload.coRecords) ? payload.coRecords.length : 0) - coRecords.length,
+    }
+  };
+}
+
 async function cloudPull() {
   const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
   const j = await res.json().catch(() => ({}));
@@ -1100,19 +1138,25 @@ async function cloudPull() {
 }
 
 async function cloudPush() {
+  const clean = sanitizeSyncPayload({
+    items: S.items,
+    movements: S.movements,
+    coRecords: S.coRecords,
+  });
+
   const res = await fetch('/.netlify/functions/sync', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     cache: 'no-store',
     body: JSON.stringify({
-      items: S.items,
-      movements: S.movements,
-      coRecords: S.coRecords
+      items: clean.items,
+      movements: clean.movements,
+      coRecords: clean.coRecords
     })
   });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud push failed');
-  return j;
+  return { ...j, dropped: clean.dropped };
 }
 
 function applyRoleUI() {
@@ -1225,30 +1269,35 @@ async function init() {
       // 1) načti lokál (IndexedDB -> S.*)
       await loadAll();
 
-      // 2) rychlá validace: items musí mít articleNumber
-      const bad = (S.items || []).find(it => !it?.articleNumber);
-      if (bad) {
-        showToast('Některým položkám chybí číslo artiklu (articleNumber).', 'error');
-        return;
+      // 2) validace a sanitizace dat před odesláním
+      const localClean = sanitizeSyncPayload({
+        items: S.items,
+        movements: S.movements,
+        coRecords: S.coRecords,
+      });
+      const droppedLocal = Object.values(localClean.dropped).reduce((sum, n) => sum + n, 0);
+      if (droppedLocal > 0) {
+        showToast(`Sync: přeskočeno nevalidních záznamů (${droppedLocal}).`, 'error');
       }
 
       // 3) push lokál -> cloud
       const pushRes = await cloudPush();
 
       // 4) pull cloud -> lokál (cloud je truth pro MVP)
-      const remote = await cloudPull();
+      const remote = sanitizeSyncPayload(await cloudPull());
 
       // 5) přepiš lokální DB cloudem
       await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
-      for (const it of (remote.items || []))      await idbPut(ST_ITEMS, it);
-      for (const m  of (remote.movements || []))  await idbPut(ST_MOVES, m);
-      for (const r  of (remote.coRecords || []))  await idbPut(ST_CORECS, r);
+      for (const it of remote.items)      await idbPut(ST_ITEMS, it);
+      for (const m  of remote.movements)  await idbPut(ST_MOVES, m);
+      for (const r  of remote.coRecords)  await idbPut(ST_CORECS, r);
 
       // 6) reload + UI
       await loadAll();
 
       showToast(
-        `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}`,
+        `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}` +
+        ((Object.values(pushRes?.dropped || {}).reduce((s, n) => s + n, 0) + Object.values(remote.dropped).reduce((s, n) => s + n, 0)) > 0 ? ' · část nevalidních dat přeskočena' : ''),
         'success'
       );
     } catch (e) {
