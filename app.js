@@ -1063,11 +1063,10 @@ function navigate(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   el('screen-' + screenId)?.classList.add('active');
 
-// vždycky přepni active podle data-screen (napříč oběma navy)
-
-document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(b =>
-  b.classList.toggle('active', b.dataset.screen === screenId)
-);
+  // vždycky přepni active podle data-screen (napříč oběma navy)
+  document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(b =>
+    b.classList.toggle('active', b.dataset.screen === screenId)
+  );
 
   if (screenId === 'stock-alerts')  renderAlerts();
   if (screenId === 'stock-items')   renderItemsMgmt();
@@ -1166,6 +1165,8 @@ function ds() { return new Date().toISOString().slice(0, 10); }
 let toastTimer;
 function showToast(msg, type = '') {
   const t = el('toast');
+  if (!t) return;
+  t.classList.remove('hidden');
   t.textContent = msg;
   t.className   = 'toast' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
@@ -1205,11 +1206,57 @@ async function init() {
 
   // Topbar
   el('nav-settings').addEventListener('click', () => navigate('settings'));
+
+  // ✅ SYNC (cloud push + pull + overwrite local)
   el('sync-btn').addEventListener('click', async () => {
-    el('sync-btn').classList.add('syncing');
-    await loadAll();
-    applyRoleUI();
-    setTimeout(() => el('sync-btn').classList.remove('syncing'), 500);
+    const btn = el('sync-btn');
+    if (!btn) return;
+
+    btn.classList.add('syncing');
+
+    try {
+      if (!navigator.onLine) {
+        showToast('Jsi offline — sync nejde.', 'error');
+        return;
+      }
+
+      showToast('Sync…');
+
+      // 1) načti lokál (IndexedDB -> S.*)
+      await loadAll();
+
+      // 2) rychlá validace: items musí mít articleNumber
+      const bad = (S.items || []).find(it => !it?.articleNumber);
+      if (bad) {
+        showToast('Některým položkám chybí číslo artiklu (articleNumber).', 'error');
+        return;
+      }
+
+      // 3) push lokál -> cloud
+      const pushRes = await cloudPush();
+
+      // 4) pull cloud -> lokál (cloud je truth pro MVP)
+      const remote = await cloudPull();
+
+      // 5) přepiš lokální DB cloudem
+      await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
+      for (const it of (remote.items || []))      await idbPut(ST_ITEMS, it);
+      for (const m  of (remote.movements || []))  await idbPut(ST_MOVES, m);
+      for (const r  of (remote.coRecords || []))  await idbPut(ST_CORECS, r);
+
+      // 6) reload + UI
+      await loadAll();
+
+      showToast(
+        `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}`,
+        'success'
+      );
+    } catch (e) {
+      showToast('Sync chyba: ' + (e?.message || e), 'error');
+    } finally {
+      applyRoleUI();
+      setTimeout(() => btn.classList.remove('syncing'), 500);
+    }
   });
 
   // Stock search + filter
