@@ -24,9 +24,87 @@ export async function handler(event) {
 
   try {
     await client.connect();
-    const r = await client.query("select now() as now, current_database() as db;");
-    return resp(200, { ok: true, result: r.rows[0] });
+
+    // ---------- GET = pull ----------
+    if (event.httpMethod === "GET") {
+      const items = (await client.query("select data from public.pg_items")).rows.map(r => r.data);
+      const movements = (await client.query("select data from public.pg_movements order by timestamp asc")).rows.map(r => r.data);
+      const coRecords = (await client.query("select data from public.pg_co_records order by timestamp asc")).rows.map(r => r.data);
+
+      return resp(200, { ok: true, items, movements, coRecords });
+    }
+
+    // ---------- POST = push ----------
+    if (event.httpMethod === "POST") {
+      const payload = JSON.parse(event.body || "{}");
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      const movements = Array.isArray(payload.movements) ? payload.movements : [];
+      const coRecords = Array.isArray(payload.coRecords) ? payload.coRecords : [];
+
+      await client.query("begin");
+
+      // items: key = articleNumber
+      for (const it of items) {
+        const article = it?.articleNumber;
+        if (!article) continue;
+
+        await client.query(
+          `insert into public.pg_items(article_number, data, updated_at)
+           values ($1, $2::jsonb, now())
+           on conflict (article_number) do update
+           set data = excluded.data, updated_at = now()`,
+          [article, JSON.stringify(it)]
+        );
+      }
+
+      // movements: key = id
+      for (const m of movements) {
+        const id = m?.id;
+        if (!id) continue;
+
+        await client.query(
+          `insert into public.pg_movements(id, article_number, timestamp, data, updated_at)
+           values ($1, $2, $3, $4::jsonb, now())
+           on conflict (id) do update
+           set data = excluded.data, updated_at = now()`,
+          [
+            id,
+            m.articleNumber || "",
+            m.timestamp || new Date().toISOString(),
+            JSON.stringify(m),
+          ]
+        );
+      }
+
+      // coRecords: key = id
+      for (const r of coRecords) {
+        const id = r?.id;
+        if (!id) continue;
+
+        await client.query(
+          `insert into public.pg_co_records(id, machine_id, timestamp, data, updated_at)
+           values ($1, $2, $3, $4::jsonb, now())
+           on conflict (id) do update
+           set data = excluded.data, updated_at = now()`,
+          [
+            id,
+            r.machineId || "",
+            r.timestamp || new Date().toISOString(),
+            JSON.stringify(r),
+          ]
+        );
+      }
+
+      await client.query("commit");
+      return resp(200, {
+        ok: true,
+        upserted: { items: items.length, movements: movements.length, coRecords: coRecords.length },
+      });
+    }
+
+    return resp(405, { ok: false, error: "Method not allowed" });
   } catch (e) {
+    try { await client.query("rollback"); } catch {}
     return resp(500, { ok: false, error: String(e?.message || e) });
   } finally {
     try { await client.end(); } catch {}
