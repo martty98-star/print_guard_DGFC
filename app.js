@@ -1093,6 +1093,29 @@ function setMode(mode) {
 
 function isAdmin() { return cfg.role === 'admin'; }
 
+async function cloudPull() {
+  const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud pull failed');
+  return j;
+}
+
+async function cloudPush() {
+  const res = await fetch('/.netlify/functions/sync', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    cache: 'no-store',
+    body: JSON.stringify({
+      items: S.items,
+      movements: S.movements,
+      coRecords: S.coRecords
+    })
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud push failed');
+  return j;
+}
+
 function applyRoleUI() {
   // schovej/ukaž stock "Položky" v bottom nav
   const itemsBtn = document.querySelector('#stock-nav .nav-item[data-screen="stock-items"]');
