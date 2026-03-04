@@ -1048,12 +1048,133 @@ function setupSettings() {
   });
 }
 
-function exportCSVIntervals() { /* beze změny */ }
-function exportCSVRawCo()    { /* beze změny */ }
-function exportCSVStock()    { /* beze změny */ }
-async function exportJSON()  { /* beze změny */ }
-async function handleImportJSON(e) { /* beze změny */ }
-function dlBlob(content, type, filename) { /* beze změny */ }
+function exportCSVIntervals() {
+  const hdr = 'timestamp_from,timestamp_to,days_elapsed,machine,ink_total_l_to,media_total_m2_to,ink_used_l,media_used_m2,ink_per_m2,ink_cost,media_cost,total_cost,cost_per_m2';
+  const rows = [];
+
+  MACHINES.forEach(({ id }) => {
+    computeCoIntervals(id).forEach(iv => {
+      rows.push([
+        iv.from, iv.to, iv.days.toFixed(4), id,
+        iv.inkTotalTo.toFixed(4), iv.mediaTotalTo.toFixed(4),
+        iv.inkUsed.toFixed(4), iv.mediaUsed.toFixed(4),
+        iv.inkPerM2 !== null ? iv.inkPerM2.toFixed(6) : '',
+        iv.inkCost.toFixed(4), iv.mediaCost.toFixed(4), iv.totalCost.toFixed(4),
+        iv.costPerM2 !== null ? iv.costPerM2.toFixed(4) : '',
+      ].join(','));
+    });
+  });
+
+  dlBlob(hdr + '\n' + rows.join('\n'), 'text/csv;charset=utf-8', `colorado-intervals-${ds()}.csv`);
+  showToast('CSV exportováno', 'success');
+}
+
+function exportCSVRawCo() {
+  const hdr = 'timestamp,machine,ink_total_l,media_total_m2,note';
+  const rows = S.coRecords.map(r => [
+    r.timestamp,
+    r.machineId,
+    r.inkTotalLiters,
+    r.mediaTotalM2,
+    '"' + String(r.note || '').replace(/"/g, '""') + '"',
+  ].join(','));
+
+  dlBlob(hdr + '\n' + rows.join('\n'), 'text/csv;charset=utf-8', `colorado-raw-${ds()}.csv`);
+  showToast('CSV exportováno', 'success');
+}
+
+function exportCSVStock() {
+  const hdr = 'timestamp,article_number,name,movement_type,qty,unit,stock_after,note';
+  const rows = [];
+
+  S.items.forEach(it => {
+    let running = 0;
+    getMovements(it.articleNumber).forEach(m => {
+      if (m.movType === 'stocktake') running = m.qty;
+      else if (m.movType === 'receipt') running += m.qty;
+      else if (m.movType === 'issue') running = Math.max(0, running - m.qty);
+
+      rows.push([
+        m.timestamp,
+        it.articleNumber,
+        '"' + String(it.name || '').replace(/"/g, '""') + '"',
+        m.movType,
+        m.qty,
+        it.unit || 'ks',
+        running,
+        '"' + String(m.note || '').replace(/"/g, '""') + '"',
+      ].join(','));
+    });
+  });
+
+  rows.sort((a, b) => a.localeCompare(b));
+  dlBlob(hdr + '\n' + rows.join('\n'), 'text/csv;charset=utf-8', `sklad-pohyby-${ds()}.csv`);
+  showToast('CSV exportováno', 'success');
+}
+
+async function exportJSON() {
+  const payload = {
+    version: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    items: await idbAll(ST_ITEMS),
+    movements: await idbAll(ST_MOVES),
+    coRecords: await idbAll(ST_CORECS),
+  };
+
+  dlBlob(JSON.stringify(payload, null, 2), 'application/json;charset=utf-8', `printguard-zaloha-${ds()}.json`);
+  showToast('Záloha exportována', 'success');
+}
+
+async function handleImportJSON(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  e.target.value = '';
+
+  try {
+    const data = JSON.parse(await file.text());
+
+    const items = (Array.isArray(data.items) ? data.items : []).map(normalizeItem).filter(Boolean);
+    const movements = (Array.isArray(data.movements) ? data.movements : []).map(normalizeMovement).filter(Boolean);
+    const coRecsRaw = Array.isArray(data.coRecords) ? data.coRecords : (Array.isArray(data.co_records) ? data.co_records : []);
+    const coRecs = coRecsRaw.map(normalizeCoRecord).filter(Boolean);
+
+    const legacySnaps = Array.isArray(data.snapshots) ? data.snapshots : [];
+    const converted = legacySnaps.map(s => normalizeMovement({
+      id: s.id || genId('mov'),
+      articleNumber: s.articleNumber,
+      movType: 'stocktake',
+      qty: s.onHand ?? 0,
+      note: 'Importováno ze StockGuard',
+      timestamp: s.snapshotAt || new Date().toISOString(),
+      deviceId: s.deviceId || 'imported',
+    })).filter(Boolean);
+
+    const allMoves = [...movements, ...converted];
+    const summary = `${items.length} položek, ${allMoves.length} pohybů skladu${coRecs.length ? `, ${coRecs.length} Colorado záznamů` : ''}`;
+
+    showConfirm(`Import: ${summary}
+
+Slučit s existujícími daty?`, async () => {
+      for (const it of items) await idbPut(ST_ITEMS, it);
+      for (const m of allMoves) await idbPut(ST_MOVES, m);
+      for (const r of coRecs) await idbPut(ST_CORECS, r);
+      await loadAll();
+      showToast('Import dokončen', 'success');
+    });
+  } catch (err) {
+    showToast('Chyba importu: ' + err.message, 'error');
+  }
+}
+
+function dlBlob(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 // ══════════════════════════════════════════════════════════
 //  NAVIGATION + MODE
