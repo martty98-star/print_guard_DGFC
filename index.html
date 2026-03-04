@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="description" content="PrintGuard — Správa skladu a audit spotřeby Canon Colorado">
+  <meta name="theme-color" content="#f5f2ed">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="PrintGuard">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f5f2ed">
+  <title>PrintGuard</title>
+</head>
+<body>
+
+  <div id="offline-banner" class="offline-banner hidden">
+    <span>⚠</span><span id="offline-text">Offline — data uložena lokálně</span>
+  </div>
+
+  <!-- ══ TOPBAR ══ -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand-mark">PG</div>
+      <span class="brand-name">PrintGuard</span>
+    </div>
+    <div class="topbar-center">
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="stock">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          Sklad
+        </button>
+        <button class="mode-btn" data-mode="colorado">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Colorado
+        </button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button id="sync-btn" class="icon-btn" title="Obnovit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      </button>
+      <button id="nav-settings" class="icon-btn" title="Nastavení">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.07 4.93a1 1 0 0 0-1.41 0l-1.47 1.47a7.07 7.07 0 0 0-8.38 0L6.34 4.93a1 1 0 0 0-1.41 1.41l1.47 1.47a7.07 7.07 0 0 0 0 8.38l-1.47 1.47a1 1 0 0 0 1.41 1.41l1.47-1.47a7.07 7.07 0 0 0 8.38 0l1.47 1.47a1 1 0 0 0 1.41-1.41l-1.47-1.47a7.07 7.07 0 0 0 0-8.38l1.47-1.47a1 1 0 0 0 0-1.41z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ BOTTOM NAVS ══ -->
+  <nav class="bottom-nav" id="stock-nav">
+    <button class="nav-item active" data-screen="stock-overview">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Přehled</span>
+    </button>
+    <button class="nav-item" data-screen="stock-movement">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+      <span>Pohyb</span>
+    </button>
+    <button class="nav-item" data-screen="stock-alerts">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <span id="alerts-nav-label">Upozornění</span>
+    </button>
+    <button class="nav-item" data-screen="stock-items">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      <span>Položky</span>
+    </button>
+    <button class="nav-item" data-screen="settings">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.07 4.93a1 1 0 0 0-1.41 0l-1.47 1.47a7.07 7.07 0 0 0-8.38 0L6.34 4.93a1 1 0 0 0-1.41 1.41l1.47 1.47a7.07 7.07 0 0 0 0 8.38l-1.47 1.47a1 1 0 0 0 1.41 1.41l1.47-1.47a7.07 7.07 0 0 0 8.38 0l1.47 1.47a1 1 0 0 0 1.41-1.41l-1.47-1.47a7.07 7.07 0 0 0 0-8.38l1.47-1.47a1 1 0 0 0 0-1.41z"></path>
+  </svg>
+  <span>Nastavení</span>
+</button>
+  </nav>
+
+  <nav class="bottom-nav hidden" id="colorado-nav">
+    <button class="nav-item active" data-screen="co-dashboard">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+      <span>Spotřeba</span>
+    </button>
+    <button class="nav-item" data-screen="co-entry">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+      <span>Nový záznam</span>
+    </button>
+    <button class="nav-item" data-screen="co-history">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span>Historie</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════
+       SKLAD — SCREENS
+  ═══════════════════════════════════════════ -->
+
+  <!-- Přehled skladu -->
+  <main id="screen-stock-overview" class="screen active">
+    <div class="screen-header">
+      <h1>Přehled skladu</h1>
+      <div class="header-meta" id="stock-last-update">—</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-chip ok"   data-filter="ok">  <span class="stat-num" id="count-ok">—</span>  <span class="stat-lbl">OK</span></div>
+      <div class="stat-chip warn" data-filter="warn"><span class="stat-num" id="count-warn">—</span><span class="stat-lbl">Varování</span></div>
+      <div class="stat-chip crit" data-filter="crit"><span class="stat-num" id="count-crit">—</span><span class="stat-lbl">Kritické</span></div>
+    </div>
+    <div class="search-filter-row">
+      <input type="text" id="stock-search" placeholder="Hledat položku…" autocomplete="off">
+      <div class="pills">
+        <button class="pill active" data-filter="all">Vše</button>
+        <button class="pill" data-filter="crit">Kritické</button>
+        <button class="pill" data-filter="warn">Varování</button>
+        <button class="pill" data-filter="ok">OK</button>
+      </div>
+    </div>
+    <div id="stock-list" class="item-list">
+      <div class="loading-state"><div class="spinner"></div><p>Načítám…</p></div>
+    </div>
+    <button class="fab" id="fab-movement" title="Nový pohyb">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+  </main>
+
+  <!-- Pohyb skladu (příjem / výdej / inventura) -->
+  <main id="screen-stock-movement" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" data-screen="stock-overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <h1>Pohyb skladu</h1>
+    </div>
+    <div class="form-card">
+
+      <div class="form-group">
+        <label>Typ pohybu *</label>
+        <div class="mov-type-row">
+          <button class="mov-type-btn" data-type="receipt">
+            <span class="mov-icon">+</span>
+            <span class="mov-label">Příjem</span>
+            <span class="mov-sub">naskladnění</span>
+          </button>
+          <button class="mov-type-btn active" data-type="issue">
+            <span class="mov-icon">−</span>
+            <span class="mov-label">Výdej</span>
+            <span class="mov-sub">vyskladnění</span>
+          </button>
+          <button class="mov-type-btn" data-type="stocktake">
+            <span class="mov-icon">=</span>
+            <span class="mov-label">Inventura</span>
+            <span class="mov-sub">nastav stav</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Položka *</label>
+        <input type="text" id="mov-item-search" placeholder="Hledat číslo nebo název…" autocomplete="off">
+        <div id="mov-item-results" class="dropdown hidden"></div>
+        <div id="mov-item-selected" class="selected-chip hidden"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="mov-qty" id="mov-qty-label">Množství *</label>
+        <div class="qty-row">
+          <button class="qty-btn" id="mov-minus">−</button>
+          <input type="number" id="mov-qty" min="0" step="1" placeholder="0" inputmode="numeric">
+          <button class="qty-btn" id="mov-plus">+</button>
+        </div>
+        <div id="mov-unit-hint" class="hint"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="mov-note">Poznámka <span class="opt">(volitelné)</span></label>
+        <textarea id="mov-note" rows="2" placeholder="Dodavatel, č. faktury, důvod výdeje…"></textarea>
+      </div>
+
+      <div id="mov-preview" class="preview-box hidden">
+        <div class="preview-row"><span>Aktuální stav na skladě</span><strong id="mov-prev-current">—</strong></div>
+        <div class="preview-row"><span>Stav po operaci</span><strong id="mov-prev-after">—</strong></div>
+        <div class="preview-row"><span>Status po operaci</span><strong id="mov-prev-status">—</strong></div>
+      </div>
+
+      <button id="mov-save-btn" class="btn-primary" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        Uložit pohyb
+      </button>
+    </div>
+  </main>
+
+  <!-- Upozornění -->
+  <main id="screen-stock-alerts" class="screen">
+    <div class="screen-header"><h1>Upozornění</h1></div>
+    <div id="alerts-list" class="item-list"></div>
+  </main>
+
+  <!-- Správa položek -->
+  <main id="screen-stock-items" class="screen">
+    <div class="screen-header">
+      <h1>Správa položek</h1>
+      <button class="btn-sm" id="add-item-btn">+ Přidat položku</button>
+    </div>
+    <div id="items-mgmt-list" class="item-list"></div>
+  </main>
+
+  <!-- Detail položky -->
+  <main id="screen-stock-detail" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" data-screen="stock-overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <h1 id="detail-title">Detail položky</h1>
+    </div>
+    <div id="detail-content"></div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       COLORADO — SCREENS
+  ═══════════════════════════════════════════ -->
+
+  <!-- Colorado dashboard -->
+  <main id="screen-co-dashboard" class="screen">
+    <div class="screen-header">
+      <h1>Spotřeba Colorado</h1>
+      <div class="header-meta" id="co-last-update">—</div>
+    </div>
+    <div class="machine-card" id="card-colorado1"></div>
+    <div class="machine-card" id="card-colorado2"></div>
+    <div class="machine-card combined" id="card-combined"></div>
+    <div class="info-note">
+      Průměry jsou vypočítány z posledních N intervalů (nastavitelné). Čisticí / purge cykly způsobí vyšší L/m² pro daný interval — to je záměrné, auditní hodnota reálné spotřeby.
+    </div>
+    <button class="fab" id="fab-co-entry">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+  </main>
+
+  <!-- Colorado nový záznam -->
+  <main id="screen-co-entry" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" data-screen="co-dashboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <h1>Nový záznam</h1>
+    </div>
+    <div class="form-card">
+      <div class="form-group">
+        <label>Tiskárna *</label>
+        <div class="machine-select-row">
+          <button class="machine-btn active" data-machine="colorado1">Colorado 1</button>
+          <button class="machine-btn" data-machine="colorado2">Colorado 2</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="co-ink">Inkoust celkem — lifetime čítač (L) *</label>
+        <input type="number" id="co-ink" min="0" step="0.001" placeholder="1234.567" inputmode="decimal">
+        <div class="hint">Celoživotní hodnota z displeje tiskárny v litrech</div>
+      </div>
+      <div class="form-group">
+        <label for="co-media">Médium celkem — lifetime čítač (m²) *</label>
+        <input type="number" id="co-media" min="0" step="0.1" placeholder="56789.0" inputmode="decimal">
+        <div class="hint">Celoživotní hodnota z displeje tiskárny v m²</div>
+      </div>
+      <div class="form-group">
+        <label for="co-timestamp">Datum a čas záznamu</label>
+        <input type="datetime-local" id="co-timestamp">
+        <div class="hint">Výchozí: aktuální čas. Lze upravit pro zpětné zadání.</div>
+      </div>
+      <div class="form-group">
+        <label for="co-note">Poznámka <span class="opt">(volitelné)</span></label>
+        <textarea id="co-note" rows="2" placeholder="Např. po čisticím cyklu, po výměně cartridge…"></textarea>
+      </div>
+      <div id="co-preview" class="preview-box hidden">
+        <div class="preview-title">Náhled výpočtu (oproti předchozímu záznamu)</div>
+        <div class="preview-row"><span>Spotřeba inkoustu</span><strong id="co-prev-ink">—</strong></div>
+        <div class="preview-row"><span>Spotřeba média</span><strong id="co-prev-media">—</strong></div>
+        <div class="preview-row"><span>Spotřeba inkoustu na m²</span><strong id="co-prev-ratio">—</strong></div>
+        <div class="preview-row"><span>Počet dní od posledního záznamu</span><strong id="co-prev-days">—</strong></div>
+      </div>
+      <button id="co-save-btn" class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        Uložit záznam Colorado
+      </button>
+    </div>
+  </main>
+
+  <!-- Colorado historie -->
+  <main id="screen-co-history" class="screen">
+    <div class="screen-header"><h1>Historie Colorado</h1></div>
+    <div class="hist-tabs">
+      <button class="hist-tab active" data-machine="colorado1">Colorado 1</button>
+      <button class="hist-tab" data-machine="colorado2">Colorado 2</button>
+    </div>
+    <div id="co-history-wrap" class="table-wrap"></div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       NASTAVENÍ
+  ═══════════════════════════════════════════ -->
+  <main id="screen-settings" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" data-screen="stock-overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <h1>Nastavení</h1>
+    </div>
+    <div class="settings-stack">
+
+      <section class="settings-card">
+        <h3>Sklad — výpočet spotřeby</h3>
+        <div class="form-group">
+          <label for="cfg-weeks">Počet týdnů pro průměr spotřeby (N)</label>
+          <input type="number" id="cfg-weeks" min="2" max="52" value="8">
+        </div>
+        <div class="hint">Průměrná týdenní spotřeba = suma výdejů za posledních N týdnů ÷ N. Doporučeno 6–8.</div>
+      </section>
+
+      <section class="settings-card">
+        <h3>Colorado — výpočet průměrů</h3>
+        <div class="form-group">
+          <label for="cfg-n">Počet intervalů pro klouzavý průměr (N)</label>
+          <input type="number" id="cfg-n" min="2" max="52" value="8">
+        </div>
+        <div class="hint">Průměr z posledních N meziodečtů. Doporučeno 6–8.</div>
+      </section>
+
+      <section class="settings-card">
+        <h3>Nákladové sazby — Colorado (volitelné)</h3>
+        <div class="form-group">
+          <label for="cfg-ink-cost">Náklad inkoustu (Kč/L)</label>
+          <input type="number" id="cfg-ink-cost" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label for="cfg-media-cost">Náklad média (Kč/m²)</label>
+          <input type="number" id="cfg-media-cost" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="hint">Po vyplnění se zobrazí finanční metriky Kč/m² v přehledu Colorado.</div>
+      </section>
+
+      <section class="settings-card" id="admin-card">
+
+  <h3>Admin access</h3>
+
+  <div class="form-group">
+    <label for="admin-pin">PIN</label>
+    <input type="password" id="admin-pin" placeholder="••••" inputmode="numeric" autocomplete="off">
+  </div>
+
+  <div class="form-group">
+    <button class="btn-secondary" id="admin-unlock-btn">Unlock admin</button>
+    <button class="btn-secondary danger" id="admin-lock-btn">Lock (operator mode)</button>
+  </div>
+
+  <div class="hint">
+    Admin odemyká správu katalogu položek (Položky + Přidat/Upravit/Smazat).
+    Operátor má jen zadávání záznamů.
+  </div>
+</section>
+
+
+      <section class="settings-card">
+        <h3>Export CSV — Colorado (pro finance)</h3>
+        <button class="btn-secondary" id="export-csv-intervals">Export CSV — intervaly spotřeby</button>
+        <button class="btn-secondary" id="export-csv-raw-co">Export CSV — surové záznamy Colorado</button>
+        <div class="csv-info">
+          <strong>Sloupce intervalů:</strong>
+          timestamp_from, timestamp_to, days_elapsed, machine, ink_total_l_to, media_total_m2_to, ink_used_l, media_used_m2, ink_per_m2, ink_cost, media_cost, total_cost, cost_per_m2
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h3>Export CSV — Sklad</h3>
+        <button class="btn-secondary" id="export-csv-stock">Export CSV — pohyby skladu</button>
+        <div class="csv-info">
+          <strong>Sloupce:</strong>
+          timestamp, article_number, name, movement_type, qty, unit, stock_after, note
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h3>Záloha JSON</h3>
+        <button class="btn-secondary" id="export-json">Export celé zálohy (JSON)</button>
+        <input type="file" id="import-json-input" accept="application/json" style="display:none">
+        <button class="btn-secondary" id="import-json-btn">Import zálohy (JSON / StockGuard)</button>
+        <div class="hint">Import je kompatibilní se starým formátem StockGuard — snapshots se automaticky převedou jako inventurní záznamy.</div>
+      </section>
+
+      <section class="settings-card">
+        <h3>Zařízení</h3>
+        <div class="param-row"><span>ID zařízení</span><code id="device-id-display">—</code></div>
+        <div class="param-row"><span>Verze aplikace</span><code id="app-version-display">—</code></div>
+        <button class="btn-secondary danger" id="clear-all-btn">Smazat všechna lokální data</button>
+      </section>
+
+      <button class="btn-primary" id="save-settings-btn">Uložit nastavení</button>
+    </div>
+  </main>
+
+  <!-- ═══ MODAL: Přidat / upravit položku ═══ -->
+  <div id="item-modal" class="modal-overlay hidden">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <h2 id="item-modal-title">Nová položka</h2>
+        <button class="modal-x" id="item-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="form-group span2">
+            <label for="im-name">Název *</label>
+            <input type="text" id="im-name" placeholder="např. Nitrile Gloves">
+          </div>
+          <div class="form-group">
+            <label for="im-article">Číslo artiklu *</label>
+            <input type="text" id="im-article" placeholder="GLOVES-NITRILE">
+          </div>
+          <div class="form-group">
+            <label for="im-unit">Jednotka</label>
+            <input type="text" id="im-unit" placeholder="box, pcs, roll, bottle…">
+          </div>
+          <div class="form-group">
+            <label for="im-category">Kategorie</label>
+            <input type="text" id="im-category" placeholder="Cleaning, Ink, Safety…">
+          </div>
+          <div class="form-group">
+            <label for="im-supplier">Dodavatel</label>
+            <input type="text" id="im-supplier" placeholder="Firma s.r.o.">
+          </div>
+          <div class="form-group">
+            <label for="im-moq">Min. obj. množství (MOQ)</label>
+            <input type="number" id="im-moq" min="1" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label for="im-lead">Dodací lhůta (dny)</label>
+            <input type="number" id="im-lead" min="0" placeholder="7">
+          </div>
+          <div class="form-group">
+            <label for="im-safety">Bezpečnostní zásoba (dny)</label>
+            <input type="number" id="im-safety" min="0" placeholder="7">
+          </div>
+          <div class="form-group">
+            <label for="im-minqty">Kritická hranice množství <span class="opt">(0 = auto výpočet)</span></label>
+            <input type="number" id="im-minqty" min="0" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="item-modal-cancel">Zrušit</button>
+        <button class="btn-primary" id="item-modal-save">Uložit položku</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast + Confirm -->
+  <div id="toast" class="toast hidden"></div>
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <p id="confirm-text"></p>
+      <div class="modal-footer" style="border:none;padding:0">
+        <button id="confirm-cancel" class="btn-secondary">Zrušit</button>
+        <button id="confirm-ok" class="btn-primary">Potvrdit</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
