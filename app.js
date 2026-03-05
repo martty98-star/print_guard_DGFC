@@ -1033,6 +1033,7 @@ function setupSettings() {
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
   el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
   el('export-csv-stock').addEventListener('click',     exportCSVStock);
+  el('export-csv-stock-levels')?.addEventListener('click', exportCSVStockLevels);
   el('export-json').addEventListener('click',          exportJSON);
   el('import-json-btn').addEventListener('click', ()  => el('import-json-input').click());
   el('import-json-input').addEventListener('change',   handleImportJSON);
@@ -1048,12 +1049,135 @@ function setupSettings() {
   });
 }
 
+function csvEscape(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  // Excel-friendly CSV escaping: quote if contains comma, quote, or newline
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
 function exportCSVIntervals() { /* beze změny */ }
 function exportCSVRawCo()    { /* beze změny */ }
-function exportCSVStock()    { /* beze změny */ }
+function exportCSVStock() {
+  // Export stock movements (ledger)
+  const rows = [];
+  rows.push([
+    'timestamp',
+    'article_number',
+    'name',
+    'movement_type',
+    'qty',
+    'unit',
+    'stock_after',
+    'note',
+    'device_id',
+    'movement_id'
+  ].join(','));
+
+  // Group movements per article to compute running stock_after in a deterministic way
+  const byArticle = {};
+  for (const m of (S.movements || [])) {
+    (byArticle[m.articleNumber] ||= []).push(m);
+  }
+
+  for (const [articleNumber, moves] of Object.entries(byArticle)) {
+    moves.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const item = S.items.find(it => it.articleNumber === articleNumber) || { articleNumber, name: articleNumber, unit: 'ks' };
+
+    let running = 0;
+    // baseline logic: if stocktake appears, it becomes absolute
+    for (const mv of moves) {
+      if (mv.movType === 'stocktake') running = mv.qty;
+      else if (mv.movType === 'receipt') running += mv.qty;
+      else if (mv.movType === 'issue') running -= mv.qty;
+      running = Math.max(0, running);
+
+      rows.push([
+        csvEscape(mv.timestamp),
+        csvEscape(articleNumber),
+        csvEscape(item.name || articleNumber),
+        csvEscape(mv.movType),
+        csvEscape(mv.qty),
+        csvEscape(item.unit || 'ks'),
+        csvEscape(running),
+        csvEscape(mv.note || ''),
+        csvEscape(mv.deviceId || ''),
+        csvEscape(mv.id || '')
+      ].join(','));
+    }
+  }
+
+const out = rows.join('\n');
+const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  dlBlob(out, 'text/csv;charset=utf-8', `printguard-stock-movements-${stamp}.csv`);
+  showToast('CSV staženo', 'success');
+}
+
+function exportCSVStockLevels() {
+  // Export CURRENT stock levels (computed from ledger)
+  const rows = [];
+  rows.push([
+    'exported_at',
+    'article_number',
+    'name',
+    'category',
+    'unit',
+    'on_hand',
+    'avg_weekly_issue',
+    'days_left',
+    'status',
+    'min_qty',
+    'lead_time_days',
+    'safety_days'
+  ].join(','));
+
+  const exportedAt = new Date().toISOString();
+
+  const activeItems = (S.items || []).filter(it => it.isActive !== false);
+  // stable ordering
+  activeItems.sort((a, b) => String(a.articleNumber).localeCompare(String(b.articleNumber)));
+
+  for (const it of activeItems) {
+    const m = computeStock(it);
+    rows.push([
+      csvEscape(exportedAt),
+      csvEscape(it.articleNumber),
+      csvEscape(it.name || it.articleNumber),
+      csvEscape(it.category || ''),
+      csvEscape(it.unit || 'ks'),
+      csvEscape(m.onHand),
+      csvEscape(m.avgWeekly > 0 ? (Math.round(m.avgWeekly * 10) / 10) : ''),
+      csvEscape(m.daysLeft === 999 ? '999' : (Math.round(m.daysLeft * 10) / 10)),
+      csvEscape(m.status),
+      csvEscape(it.minQty || ''),
+      csvEscape(it.leadTimeDays || ''),
+      csvEscape(it.safetyDays || '')
+    ].join(','));
+  }
+
+  const out = rows.join('\n');
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  dlBlob(out, 'text/csv;charset=utf-8', `printguard-stock-levels-${stamp}.csv`);
+  showToast('CSV staženo', 'success');
+}
+
+
+
 async function exportJSON()  { /* beze změny */ }
 async function handleImportJSON(e) { /* beze změny */ }
-function dlBlob(content, type, filename) { /* beze změny */ }
+function dlBlob(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
 
 // ══════════════════════════════════════════════════════════
 //  NAVIGATION + MODE
