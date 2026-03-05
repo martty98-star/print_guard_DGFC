@@ -7,10 +7,11 @@
 
 const APP_VERSION = 'printguard-2.0.0';
 const DB_NAME     = 'printguard-db';
-const DB_VERSION  = 1;
+const DB_VERSION  = 2;
 const ST_ITEMS    = 'items';
-const ST_MOVES    = 'movements';   // stock movements (receipt/issue/stocktake)
-const ST_CORECS   = 'co_records';  // colorado lifetime counter records
+const ST_MOVES    = 'movements';
+const ST_CORECS   = 'co_records';
+const ST_SETTINGS = 'settings';
 
 // ── Config ─────────────────────────────────────────────────
 const cfg = {
@@ -76,6 +77,8 @@ function openDB() {
         const c = d.createObjectStore(ST_CORECS, { keyPath: 'id' });
         c.createIndex('byMachine', 'machineId', { unique: false });
       }
+      if (!d.objectStoreNames.contains(ST_SETTINGS))
+        d.createObjectStore(ST_SETTINGS, { keyPath: 'key' });
     };
     req.onsuccess = e => res(e.target.result);
     req.onerror   = e => rej(e.target.error);
@@ -113,11 +116,34 @@ function genId(prefix = 'id') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// ── Settings IDB persistence ───────────────────────────────
+async function saveSettingsToIDB() {
+  await idbPut(ST_SETTINGS, {
+    key:        'config',
+    weeksN:     cfg.weeksN,
+    rollingN:   cfg.rollingN,
+    inkCost:    cfg.inkCost,
+    mediaCost:  cfg.mediaCost,
+    savedAt:    new Date().toISOString(),
+  });
+}
+
+async function loadSettingsFromIDB() {
+  const all = await idbAll(ST_SETTINGS);
+  const rec = all.find(r => r.key === 'config');
+  if (!rec) return;
+  if (rec.weeksN   != null) cfg.weeksN   = rec.weeksN;
+  if (rec.rollingN != null) cfg.rollingN = rec.rollingN;
+  if (rec.inkCost  != null) cfg.inkCost  = rec.inkCost;
+  if (rec.mediaCost!= null) cfg.mediaCost= rec.mediaCost;
+}
+
 // ── Load all data ──────────────────────────────────────────
 async function loadAll() {
   S.items     = await idbAll(ST_ITEMS);
   S.movements = (await idbAll(ST_MOVES)).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   S.coRecords = (await idbAll(ST_CORECS)).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  await loadSettingsFromIDB();
 
   const ts = new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   elSet('stock-last-update', ts);
@@ -1107,11 +1133,12 @@ function loadSettingsUI() {
 }
 
 function setupSettings() {
-  el('save-settings-btn').addEventListener('click', () => {
+  el('save-settings-btn').addEventListener('click', async () => {
     cfg.weeksN    = parseInt(el('cfg-weeks').value, 10)      || 8;
     cfg.rollingN  = parseInt(el('cfg-n').value,     10)      || 8;
     cfg.inkCost   = parseFloat(el('cfg-ink-cost').value)   || 0;
     cfg.mediaCost = parseFloat(el('cfg-media-cost').value) || 0;
+    await saveSettingsToIDB();
     renderStockOverview();
     renderCoDashboard();
     renderCoHistory();
@@ -1128,7 +1155,7 @@ function setupSettings() {
 
   el('clear-all-btn').addEventListener('click', () => {
     showConfirm('Smazat VŠECHNA lokální data? Tato akce je nevratná.', async () => {
-      await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
+      await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
       S.items = []; S.movements = []; S.coRecords = [];
       renderStockOverview(); renderAlerts(); renderItemsMgmt();
       renderCoDashboard(); renderCoHistory();
@@ -1474,9 +1501,17 @@ async function cloudPush() {
     headers: { 'content-type': 'application/json' },
     cache: 'no-store',
     body: JSON.stringify({
-      items: S.items,
+      items:     S.items,
       movements: S.movements,
-      coRecords: S.coRecords
+      coRecords: S.coRecords,
+      settings:  [{
+        key: 'config',
+        weeksN:    cfg.weeksN,
+        rollingN:  cfg.rollingN,
+        inkCost:   cfg.inkCost,
+        mediaCost: cfg.mediaCost,
+        savedAt:   new Date().toISOString(),
+      }],
     })
   });
   const j = await res.json().catch(() => ({}));
@@ -1629,9 +1664,10 @@ el('sync-btn').addEventListener('click', async () => {
     const remote = await cloudPull();
 
     // 5) VALIDACE + SANITIZE remote dat
-    const rawItems = Array.isArray(remote?.items) ? remote.items : [];
-    const rawMoves = Array.isArray(remote?.movements) ? remote.movements : [];
-    const rawCo    = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
+    const rawItems    = Array.isArray(remote?.items)     ? remote.items     : [];
+    const rawMoves    = Array.isArray(remote?.movements) ? remote.movements : [];
+    const rawCo       = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
+    const rawSettings = Array.isArray(remote?.settings)  ? remote.settings  : [];
 
     const goodItems = [];
     const badItems  = [];
@@ -1689,12 +1725,15 @@ el('sync-btn').addEventListener('click', async () => {
     }
 
     // 6) přepiš lokální DB cloudem (jen validní data)
-    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
+    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
 
-    // put po jednom, aby šlo dohledat případný fail
     for (const it of goodItems) await idbPut(ST_ITEMS, it);
     for (const m  of goodMoves) await idbPut(ST_MOVES, m);
     for (const r  of goodCo)    await idbPut(ST_CORECS, r);
+    // settings: ulož jen validní záznam s key
+    for (const s of rawSettings) {
+      if (s?.key) await idbPut(ST_SETTINGS, s);
+    }
 
     // 7) reload + UI
     await loadAll();
