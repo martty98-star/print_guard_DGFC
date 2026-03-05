@@ -1033,7 +1033,6 @@ function setupSettings() {
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
   el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
   el('export-csv-stock').addEventListener('click',     exportCSVStock);
-  el('export-csv-stock-levels')?.addEventListener('click', exportCSVStockLevels);
   el('export-json').addEventListener('click',          exportJSON);
   el('import-json-btn').addEventListener('click', ()  => el('import-json-input').click());
   el('import-json-input').addEventListener('change',   handleImportJSON);
@@ -1047,14 +1046,6 @@ function setupSettings() {
       showToast('Data smazána');
     });
   });
-}
-
-function csvEscape(v) {
-  if (v === null || v === undefined) return '';
-  const s = String(v);
-  // Excel-friendly CSV escaping: quote if contains comma, quote, or newline
-  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-  return s;
 }
 
 function exportCSVIntervals() { /* beze změny */ }
@@ -1101,44 +1092,6 @@ function setMode(mode) {
 
 function isAdmin() { return cfg.role === 'admin'; }
 
-function normalizeItem(raw) {
-  if (!raw || typeof raw !== 'object') return null;
-  const articleNumber = String(raw.articleNumber || '').trim().toUpperCase();
-  if (!articleNumber) return null;
-  return { ...raw, articleNumber };
-}
-
-function normalizeMovement(raw) {
-  if (!raw || typeof raw !== 'object') return null;
-  const id = String(raw.id || '').trim();
-  if (!id) return null;
-  const articleNumber = String(raw.articleNumber || '').trim().toUpperCase();
-  return { ...raw, id, articleNumber };
-}
-
-function normalizeCoRecord(raw) {
-  if (!raw || typeof raw !== 'object') return null;
-  const id = String(raw.id || '').trim();
-  if (!id) return null;
-  return { ...raw, id };
-}
-
-function sanitizeSyncPayload(payload = {}) {
-  const items = (Array.isArray(payload.items) ? payload.items : []).map(normalizeItem).filter(Boolean);
-  const movements = (Array.isArray(payload.movements) ? payload.movements : []).map(normalizeMovement).filter(Boolean);
-  const coRecords = (Array.isArray(payload.coRecords) ? payload.coRecords : []).map(normalizeCoRecord).filter(Boolean);
-  return {
-    items,
-    movements,
-    coRecords,
-    dropped: {
-      items: (Array.isArray(payload.items) ? payload.items.length : 0) - items.length,
-      movements: (Array.isArray(payload.movements) ? payload.movements.length : 0) - movements.length,
-      coRecords: (Array.isArray(payload.coRecords) ? payload.coRecords.length : 0) - coRecords.length,
-    }
-  };
-}
-
 async function cloudPull() {
   const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
   const j = await res.json().catch(() => ({}));
@@ -1147,25 +1100,19 @@ async function cloudPull() {
 }
 
 async function cloudPush() {
-  const clean = sanitizeSyncPayload({
-    items: S.items,
-    movements: S.movements,
-    coRecords: S.coRecords,
-  });
-
   const res = await fetch('/.netlify/functions/sync', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     cache: 'no-store',
     body: JSON.stringify({
-      items: clean.items,
-      movements: clean.movements,
-      coRecords: clean.coRecords
+      items: S.items,
+      movements: S.movements,
+      coRecords: S.coRecords
     })
   });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud push failed');
-  return { ...j, dropped: clean.dropped };
+  return j;
 }
 
 function applyRoleUI() {
@@ -1279,39 +1226,117 @@ el('sync-btn').addEventListener('click', async () => {
     // 1) načti lokál (IndexedDB -> S.*)
     await loadAll();
 
-      // 2) rychlá validace: items musí mít articleNumber
-      const bad = (S.items || []).find(it => !it?.articleNumber);
-      if (bad) {
-        showToast('Některým položkám chybí číslo artiklu (articleNumber).', 'error');
-        return;
-      }
+    // 2) validace lokálu
+    const badLocalItem = (S.items || []).find(it => !it?.articleNumber);
+    if (badLocalItem) {
+      console.warn('[SYNC] Local item missing articleNumber:', badLocalItem);
+      showToast('Lokální data: některé položky nemají articleNumber.', 'error');
+      return;
+    }
+    const badLocalMove = (S.movements || []).find(m => !m?.id);
+    if (badLocalMove) {
+      console.warn('[SYNC] Local movement missing id:', badLocalMove);
+      showToast('Lokální data: některé pohyby nemají id.', 'error');
+      return;
+    }
+    const badLocalCo = (S.coRecords || []).find(r => !r?.id);
+    if (badLocalCo) {
+      console.warn('[SYNC] Local coRecord missing id:', badLocalCo);
+      showToast('Lokální data: některé Colorado záznamy nemají id.', 'error');
+      return;
+    }
 
     // 3) push lokál -> cloud
     const pushRes = await cloudPush();
 
-      // 4) pull cloud -> lokál (cloud je truth pro MVP)
-      const remote = await cloudPull();
+    // 4) pull cloud -> lokál (cloud je truth pro MVP)
+    const remote = await cloudPull();
 
-      // 5) přepiš lokální DB cloudem
-      await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
-      for (const it of (remote.items || []))      await idbPut(ST_ITEMS, it);
-      for (const m  of (remote.movements || []))  await idbPut(ST_MOVES, m);
-      for (const r  of (remote.coRecords || []))  await idbPut(ST_CORECS, r);
+    // 5) VALIDACE + SANITIZE remote dat
+    const rawItems = Array.isArray(remote?.items) ? remote.items : [];
+    const rawMoves = Array.isArray(remote?.movements) ? remote.movements : [];
+    const rawCo    = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
+
+    const goodItems = [];
+    const badItems  = [];
+    for (const it of rawItems) {
+      // toleruj i alternativní názvy (když to někdo v cloudu posral)
+      const articleNumber =
+        it?.articleNumber ??
+        it?.ArticleNumber ??
+        it?.article ??
+        it?.code ??
+        null;
+
+      if (!articleNumber || String(articleNumber).trim() === '') {
+        badItems.push(it);
+        continue;
+      }
+
+      // normalizuj
+      const fixed = { ...it, articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-') };
+      goodItems.push(fixed);
+    }
+
+    const goodMoves = [];
+    const badMoves  = [];
+    for (const m of rawMoves) {
+      const id = m?.id ?? null;
+      const articleNumber = m?.articleNumber ?? m?.ArticleNumber ?? null;
+      if (!id || String(id).trim() === '' || !articleNumber || String(articleNumber).trim() === '') {
+        badMoves.push(m);
+        continue;
+      }
+      goodMoves.push({
+        ...m,
+        id: String(id).trim(),
+        articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-')
+      });
+    }
+
+    const goodCo = [];
+    const badCo  = [];
+    for (const r of rawCo) {
+      const id = r?.id ?? null;
+      const machineId = r?.machineId ?? null;
+      if (!id || String(id).trim() === '' || !machineId || String(machineId).trim() === '') {
+        badCo.push(r);
+        continue;
+      }
+      goodCo.push({ ...r, id: String(id).trim(), machineId: String(machineId).trim() });
+    }
+
+    if (badItems.length || badMoves.length || badCo.length) {
+      console.warn('[SYNC] Dropping invalid remote records:', {
+        badItems, badMoves, badCo
+      });
+    }
+
+    // 6) přepiš lokální DB cloudem (jen validní data)
+    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
+
+    // put po jednom, aby šlo dohledat případný fail
+    for (const it of goodItems) await idbPut(ST_ITEMS, it);
+    for (const m  of goodMoves) await idbPut(ST_MOVES, m);
+    for (const r  of goodCo)    await idbPut(ST_CORECS, r);
 
     // 7) reload + UI
     await loadAll();
 
-      showToast(
-        `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}`,
-        'success'
-      );
-    } catch (e) {
-      showToast('Sync chyba: ' + (e?.message || e), 'error');
-    } finally {
-      applyRoleUI();
-      setTimeout(() => btn.classList.remove('syncing'), 500);
-    }
-  });
+    const dropped = badItems.length + badMoves.length + badCo.length;
+    showToast(
+      `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}` +
+      (dropped ? ` · zahoz.:${dropped}` : ''),
+      dropped ? 'warn' : 'success'
+    );
+  } catch (e) {
+    console.error('[SYNC] Error:', e);
+    showToast('Sync chyba: ' + (e?.message || e), 'error');
+  } finally {
+    applyRoleUI();
+    setTimeout(() => btn.classList.remove('syncing'), 500);
+  }
+});
 
   // Stock search + filter
   el('stock-search').addEventListener('input', e => {
