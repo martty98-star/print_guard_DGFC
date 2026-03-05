@@ -52,6 +52,10 @@ const S = {
   movItem:       null,
   logFilter:     'all',
   logSearch:     '',
+  logDateFrom:   '',
+  logDateTo:     '',
+  coDateFrom:    '',
+  coDateTo:      '',
 };
 
 // ── IndexedDB ──────────────────────────────────────────────
@@ -1023,7 +1027,14 @@ function renderCoHistory() {
   }
 
   const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
-  const rows = [...recs].reverse().slice(0, 50).map(rec => {
+  const filteredRecs = recs.filter(rec => dateRangeFilter(rec.timestamp, S.coDateFrom, S.coDateTo));
+
+  if (!filteredRecs.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné záznamy v daném období.</p></div>`;
+    return;
+  }
+
+  const rows = [...filteredRecs].reverse().map(rec => {
     const iv = ivByRec[rec.id];
     return `<tr>
       <td>${fmtDT(rec.timestamp)}</td>
@@ -1270,6 +1281,41 @@ function dlBlob(content, type, filename) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
 }
 
+// ── Date range helper ────────────────────────────────────
+function dateRangeFilter(timestamp, from, to) {
+  if (!from && !to) return true;
+  const t = new Date(timestamp);
+  if (from && t < new Date(from + 'T00:00:00')) return false;
+  if (to   && t > new Date(to   + 'T23:59:59')) return false;
+  return true;
+}
+function applyPreset(range, target) {
+  const now = new Date();
+  const p = n => String(n).padStart(2, '0');
+  const fmt = d => `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  const todayStr = fmt(now);
+  let fromStr = '';
+  if (range === 'month') {
+    fromStr = `${now.getFullYear()}-${p(now.getMonth()+1)}-01`;
+  } else if (range === 'year') {
+    fromStr = `${now.getFullYear()}-01-01`;
+  } else {
+    const d = new Date(now); d.setDate(d.getDate() - parseInt(range));
+    fromStr = fmt(d);
+  }
+  if (target === 'log') {
+    S.logDateFrom = fromStr; S.logDateTo = todayStr;
+    el('stock-log-from').value = fromStr;
+    el('stock-log-to').value   = todayStr;
+    renderStockLog();
+  } else {
+    S.coDateFrom = fromStr; S.coDateTo = todayStr;
+    el('co-hist-from').value = fromStr;
+    el('co-hist-to').value   = todayStr;
+    renderCoHistory();
+  }
+}
+
 // ══════════════════════════════════════════════════════════
 //  STOCK — LOG (všechny pohyby, reportová obrazovka)
 // ══════════════════════════════════════════════════════════
@@ -1298,7 +1344,8 @@ function renderStockLog() {
       || m.articleNumber.toLowerCase().includes(q)
       || m.itemName.toLowerCase().includes(q)
       || (m.note || '').toLowerCase().includes(q);
-    return matchType && matchQ;
+    const matchDate = dateRangeFilter(m.timestamp, S.logDateFrom, S.logDateTo);
+    return matchType && matchQ && matchDate;
   });
 
   const wrap = el('stock-log-wrap');
@@ -1686,6 +1733,29 @@ el('sync-btn').addEventListener('click', async () => {
       renderStockLog();
     }));
   el('stock-log-export-btn').addEventListener('click', exportCSVStockLog);
+
+  // Stock log date range
+  el('stock-log-from').addEventListener('change', e => { S.logDateFrom = e.target.value; renderStockLog(); });
+  el('stock-log-to').addEventListener('change',   e => { S.logDateTo   = e.target.value; renderStockLog(); });
+  el('stock-log-clear-dates').addEventListener('click', () => {
+    S.logDateFrom = ''; S.logDateTo = '';
+    el('stock-log-from').value = ''; el('stock-log-to').value = '';
+    renderStockLog();
+  });
+
+  // Colorado history date range
+  el('co-hist-from').addEventListener('change', e => { S.coDateFrom = e.target.value; renderCoHistory(); });
+  el('co-hist-to').addEventListener('change',   e => { S.coDateTo   = e.target.value; renderCoHistory(); });
+  el('co-hist-clear-dates').addEventListener('click', () => {
+    S.coDateFrom = ''; S.coDateTo = '';
+    el('co-hist-from').value = ''; el('co-hist-to').value = '';
+    renderCoHistory();
+  });
+  el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
+
+  // Preset buttons (společné pro obě obrazovky)
+  document.querySelectorAll('.dr-preset').forEach(btn =>
+    btn.addEventListener('click', () => applyPreset(btn.dataset.range, btn.dataset.target)));
 
   // ✅ Admin unlock/lock listenery musí být až po DOM ready (tady)
   el('admin-unlock-btn')?.addEventListener('click', () => {
