@@ -297,14 +297,20 @@ function openStockDetail(articleNumber) {
 
     <div class="detail-section">
       <div class="detail-section-head">
-        <div class="detail-section-title">Historie pohybů</div>
+        <div class="detail-tabs">
+          <button class="detail-tab active" data-tab="movements">Pohyby</button>
+          <button class="detail-tab" data-tab="history">Stav skladu</button>
+        </div>
         <button class="btn-sm" id="detail-add-mov-btn">+ Nový pohyb</button>
       </div>
-      <div class="table-wrap" style="margin-top:10px">
+      <div id="detail-tab-movements" class="table-wrap" style="margin-top:10px">
         ${moves.length ? `<table class="data-table">
           <thead><tr><th>Datum</th><th>Typ</th><th>Množství</th><th>Stav po</th><th>Poznámka</th><th></th></tr></thead>
           <tbody>${buildMovementRows(item, moves)}</tbody>
         </table>` : '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby. Přidejte příjem nebo inventuru.</p></div>'}
+      </div>
+      <div id="detail-tab-history" class="table-wrap hidden" style="margin-top:10px">
+        ${buildStockHistoryTable(item, moves)}
       </div>
     </div>`;
 
@@ -312,6 +318,17 @@ function openStockDetail(articleNumber) {
     S.movItem = item;
     prefillMovItem(item);
     navigate('stock-movement');
+  });
+
+  // Detail tabs (Pohyby / Stav skladu)
+  el('detail-content').querySelectorAll('.detail-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      el('detail-content').querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.tab;
+      el('detail-tab-movements')?.classList.toggle('hidden', which !== 'movements');
+      el('detail-tab-history')?.classList.toggle('hidden', which !== 'history');
+    });
   });
 
   el('detail-content').querySelectorAll('.btn-del').forEach(btn => {
@@ -344,6 +361,44 @@ function buildMovementRows(item, moves) {
       <td><button class="btn-del" data-id="${esc(m.id)}" title="Smazat">✕</button></td>
     </tr>`;
   }).join('');
+}
+
+/**
+ * Build a "stock level over time" table (derived from movement ledger).
+ * Shows running on-hand after every movement, most recent first.
+ */
+function buildStockHistoryTable(item, moves) {
+  if (!moves.length) {
+    return '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby — history není k dispozici.</p></div>';
+  }
+  // replay from beginning
+  let running = 0;
+  const rows = [];
+  for (const m of moves) {
+    let delta;
+    if (m.movType === 'stocktake') { delta = m.qty - running; running = m.qty; }
+    else if (m.movType === 'receipt') { delta = m.qty; running += m.qty; }
+    else if (m.movType === 'issue') { delta = -m.qty; running = Math.max(0, running - m.qty); }
+    else { delta = 0; }
+    rows.push({ m, after: running, delta });
+  }
+  const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' };
+  const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
+  const html = [...rows].reverse().slice(0, 100).map(({ m, after, delta }) => {
+    const sign = delta > 0 ? `+${fmtN(delta,0)}` : delta < 0 ? `${fmtN(delta,0)}` : `=${fmtN(m.qty,0)}`;
+    const dClass = delta > 0 ? 'receipt-c' : delta < 0 ? 'issue-c' : 'stocktake-c';
+    return `<tr>
+      <td>${fmtDT(m.timestamp)}</td>
+      <td class="${typeClass[m.movType]||''}">${typeLabel[m.movType]||m.movType}</td>
+      <td class="num ${dClass}">${sign} ${esc(item.unit||'ks')}</td>
+      <td class="num"><strong>${fmtN(after,0)}</strong> ${esc(item.unit||'ks')}</td>
+      <td class="note-td">${esc(m.note||'—')}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="data-table">
+    <thead><tr><th>Datum</th><th>Typ</th><th>Změna</th><th>Stav po</th><th>Poznámka</th></tr></thead>
+    <tbody>${html}</tbody>
+  </table>`;
 }
 
 async function deleteMovement(id) {
@@ -1033,6 +1088,7 @@ function setupSettings() {
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
   el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
   el('export-csv-stock').addEventListener('click',     exportCSVStock);
+  el('export-csv-stock-levels').addEventListener('click', exportCSVStockLevels);
   el('export-json').addEventListener('click',          exportJSON);
   el('import-json-btn').addEventListener('click', ()  => el('import-json-input').click());
   el('import-json-input').addEventListener('change',   handleImportJSON);
@@ -1048,12 +1104,164 @@ function setupSettings() {
   });
 }
 
-function exportCSVIntervals() { /* beze změny */ }
-function exportCSVRawCo()    { /* beze změny */ }
-function exportCSVStock()    { /* beze změny */ }
-async function exportJSON()  { /* beze změny */ }
-async function handleImportJSON(e) { /* beze změny */ }
-function dlBlob(content, type, filename) { /* beze změny */ }
+// ── CSV helpers ──────────────────────────────────────────
+function csvEsc(v) {
+  const s = String(v === null || v === undefined ? '' : v);
+  if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r'))
+    return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function csvRow(arr) { return arr.map(csvEsc).join(','); }
+function fmtFileDT() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
+}
+
+function exportCSVIntervals() {
+  const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
+  const header = ['timestamp_from','timestamp_to','days_elapsed','machine',
+    'ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2',
+    'ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'];
+  const rows = [csvRow(header)];
+  MACHINES.forEach(({ id }) => {
+    computeCoIntervals(id).forEach(iv => {
+      rows.push(csvRow([
+        iv.from, iv.to, fmtN(iv.days,2), id,
+        fmtN(iv.inkTotalTo,3), fmtN(iv.mediaTotalTo,1),
+        fmtN(iv.inkUsed,3), fmtN(iv.mediaUsed,1),
+        iv.inkPerM2 !== null ? fmtN(iv.inkPerM2,6) : '',
+        hasCosts ? fmtN(iv.inkCost,2) : '',
+        hasCosts ? fmtN(iv.mediaCost,2) : '',
+        hasCosts ? fmtN(iv.totalCost,2) : '',
+        iv.costPerM2 !== null ? fmtN(iv.costPerM2,4) : '',
+      ]));
+    });
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_intervals_${fmtFileDT()}.csv`);
+}
+
+function exportCSVRawCo() {
+  const header = ['id','machine','timestamp','ink_total_l','media_total_m2','note','created_at'];
+  const rows = [csvRow(header)];
+  [...S.coRecords].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp)).forEach(r => {
+    rows.push(csvRow([r.id, r.machineId, r.timestamp, r.inkTotalLiters, r.mediaTotalM2, r.note||'', r.createdAt||'']));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_raw_${fmtFileDT()}.csv`);
+}
+
+function exportCSVStock() {
+  const header = ['timestamp','article_number','name','movement_type','qty','unit','stock_after','note'];
+  const rows = [csvRow(header)];
+  // replay per item to get stock_after
+  const itemMap = {};
+  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
+  const byArticle = {};
+  S.movements.forEach(m => {
+    if (!byArticle[m.articleNumber]) byArticle[m.articleNumber] = [];
+    byArticle[m.articleNumber].push(m);
+  });
+  // build sorted output
+  [...S.movements].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp)).forEach(m => {
+    const it = itemMap[m.articleNumber] || {};
+    const artMoves = (byArticle[m.articleNumber] || []).sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+    let running = 0;
+    for (const mm of artMoves) {
+      if (mm.movType === 'stocktake') running = mm.qty;
+      else if (mm.movType === 'receipt') running += mm.qty;
+      else if (mm.movType === 'issue') running = Math.max(0, running - mm.qty);
+      if (mm.id === m.id) break;
+    }
+    rows.push(csvRow([m.timestamp, m.articleNumber, it.name||'', m.movType, m.qty, it.unit||'ks', running, m.note||'']));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_movements_${fmtFileDT()}.csv`);
+}
+
+function exportCSVStockLevels() {
+  const exported_at = new Date().toISOString();
+  const header = ['exported_at','article_number','name','category','unit','on_hand',
+    'avg_weekly_issue','days_left','status','min_qty','lead_time_days','safety_days'];
+  const rows = [csvRow(header)];
+  S.items.filter(it => it.isActive !== false).forEach(it => {
+    const m = computeStock(it);
+    rows.push(csvRow([
+      exported_at, it.articleNumber, it.name||'', it.category||'', it.unit||'ks',
+      fmtN(m.onHand,0), m.avgWeekly > 0 ? fmtN(m.avgWeekly,3) : '0',
+      m.daysLeft >= 999 ? '' : m.daysLeft, m.status,
+      it.minQty||0, it.leadTimeDays||0, it.safetyDays||0,
+    ]));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_levels_${fmtFileDT()}.csv`);
+}
+
+async function exportJSON() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    appVersion: APP_VERSION,
+    items:      S.items,
+    movements:  S.movements,
+    coRecords:  S.coRecords,
+  };
+  dlBlob(JSON.stringify(data, null, 2), 'application/json', `printguard_backup_${fmtFileDT()}.json`);
+}
+
+async function handleImportJSON(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  e.target.value = '';
+  const text = await file.text();
+  let data;
+  try { data = JSON.parse(text); } catch { showToast('Neplatný JSON soubor', 'error'); return; }
+
+  // support old StockGuard snapshot format
+  let items = [];
+  let movements = [];
+  let coRecords = [];
+
+  if (Array.isArray(data.items)) {
+    items = data.items.filter(it => it?.articleNumber);
+  }
+  if (Array.isArray(data.movements)) {
+    movements = data.movements.filter(m => m?.id && m?.articleNumber);
+  }
+  // StockGuard snapshots: data.snapshots[]
+  if (Array.isArray(data.snapshots)) {
+    data.snapshots.forEach(snap => {
+      const articleNumber = snap.articleNumber || snap.article_number || snap.code;
+      if (!articleNumber) return;
+      movements.push({
+        id: genId('imp'),
+        articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g,'–'),
+        movType: 'stocktake',
+        qty: parseFloat(snap.qty ?? snap.quantity ?? snap.onHand ?? 0),
+        timestamp: snap.timestamp || snap.date || new Date().toISOString(),
+        note: 'Import StockGuard',
+        deviceId: cfg.deviceId,
+      });
+    });
+  }
+  if (Array.isArray(data.coRecords)) {
+    coRecords = data.coRecords.filter(r => r?.id && r?.machineId);
+  }
+
+  showConfirm(`Importovat ${items.length} položek, ${movements.length} pohybů, ${coRecords.length} CO záznamů? Existující data budou přepsána.`, async () => {
+    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
+    for (const it of items) await idbPut(ST_ITEMS, it);
+    for (const m  of movements) await idbPut(ST_MOVES, m);
+    for (const r  of coRecords) await idbPut(ST_CORECS, r);
+    await loadAll();
+    showToast(`Import hotov: ${items.length} pol., ${movements.length} poh.`, 'success');
+  });
+}
+
+function dlBlob(content, type, filename) {
+  const blob = new Blob(['\ufeff' + content], { type });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+}
 
 // ══════════════════════════════════════════════════════════
 //  NAVIGATION + MODE
