@@ -299,7 +299,7 @@ function openStockDetail(articleNumber) {
       ${item.leadTimeDays? `<div class="param-row"><span>Dodací lhůta</span><span>${item.leadTimeDays} dní</span></div>` : ''}
       ${item.safetyDays  ? `<div class="param-row"><span>Bezp. zásoba</span><span>${item.safetyDays} dní</span></div>` : ''}
       ${item.minQty      ? `<div class="param-row"><span>Min. množství</span><span>${item.minQty} ${esc(item.unit || 'ks')}</span></div>` : ''}
-      ${item.orderUrl    ? `<div class="param-row"><span>Odkaz na objednávku</span><a href="${esc(item.orderUrl)}" target="_blank" rel="noopener" class="order-link">🛒 Objednat</a></div>` : ''}
+      ${item.orderUrl    ? `<div class="param-row admin-only"><span>Odkaz na objednávku</span><a href="${esc(item.orderUrl)}" target="_blank" rel="noopener" class="order-link">🛒 Objednat</a></div>` : ''}
     </div>
 
     <div class="detail-section">
@@ -415,6 +415,20 @@ async function deleteMovement(id) {
     S.movements = S.movements.filter(m => m.id !== id);
     renderStockOverview();
     renderAlerts();
+    if (S.detailArticle) openStockDetail(S.detailArticle);
+    showToast('Pohyb smazán');
+  });
+}
+
+// Admin-gated verze pro Historie pohybů
+async function deleteMovementAdmin(id) {
+  if (!isAdmin()) { showToast('Mazání pohybů — jen admin', 'error'); return; }
+  showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
+    await idbDelete(ST_MOVES, id);
+    S.movements = S.movements.filter(m => m.id !== id);
+    renderStockOverview();
+    renderAlerts();
+    renderStockLog();
     if (S.detailArticle) openStockDetail(S.detailArticle);
     showToast('Pohyb smazán');
   });
@@ -659,7 +673,7 @@ function renderItemsMgmt() {
             <div class="mgmt-meta">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')} · Na skladě: ${fmtN(m.onHand, 0)}</div>
           </div>
           <div class="mgmt-actions">
-            ${it.orderUrl ? `<a href="${esc(it.orderUrl)}" target="_blank" rel="noopener" class="btn-icon-sm" title="Objednat">🛒</a>` : ''}
+            ${it.orderUrl ? `<a href="${esc(it.orderUrl)}" target="_blank" rel="noopener" class="btn-icon-sm admin-only" title="Objednat">🛒</a>` : ''}
             <button class="btn-icon-sm" data-edit="${esc(it.articleNumber)}" title="Upravit">✎</button>
             <button class="btn-icon-sm danger" data-del="${esc(it.articleNumber)}" title="Smazat">✕</button>
           </div>
@@ -1045,7 +1059,7 @@ function renderCoHistory() {
       <td class="num">${iv && iv.inkPerM2 !== null ? fmtN(iv.inkPerM2, 4) : '—'}</td>
       ${hasCosts ? `<td class="num">${iv && iv.costPerM2 !== null ? fmtN(iv.costPerM2, 2) : '—'}</td>` : ''}
       <td class="note-td">${esc(rec.note || '—')}</td>
-      <td><button class="btn-del" data-id="${esc(rec.id)}" title="Smazat">✕</button></td>
+      <td><button class="btn-del admin-only" data-id="${esc(rec.id)}" title="Smazat (jen admin)">✕</button></td>
     </tr>`;
   }).join('');
 
@@ -1069,7 +1083,8 @@ function renderCoHistory() {
 }
 
 async function deleteCoRecord(id) {
-  showConfirm('Smazat tento záznam Colorado?', async () => {
+  if (!isAdmin()) { showToast('Mazání záznamů Colorado — jen admin', 'error'); return; }
+  showConfirm('Smazat tento záznam Colorado? (Admin)', async () => {
     await idbDelete(ST_CORECS, id);
     S.coRecords = S.coRecords.filter(r => r.id !== id);
     renderCoDashboard();
@@ -1367,18 +1382,22 @@ function renderStockLog() {
       <td class="num ${dClass}">${sign} <small>${esc(m.unit)}</small></td>
       <td class="num"><strong>${fmtN(m.stockAfter,0)}</strong> <small>${esc(m.unit)}</small></td>
       <td class="note-td">${esc(m.note||'—')}</td>
+      <td><button class="btn-del admin-only" data-id="${esc(m.id)}" title="Smazat (jen admin)">✕</button></td>
     </tr>`;
   }).join('');
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
-      <th>Datum</th><th>Položka</th><th>Typ</th><th>Změna</th><th>Stav po</th><th>Poznámka</th>
+      <th>Datum</th><th>Položka</th><th>Typ</th><th>Změna</th><th>Stav po</th><th>Poznámka</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 
   wrap.querySelectorAll('.log-item-name[data-article]').forEach(td =>
     td.addEventListener('click', () => openStockDetail(td.dataset.article))
+  );
+  wrap.querySelectorAll('.btn-del[data-id]').forEach(btn =>
+    btn.addEventListener('click', () => deleteMovementAdmin(btn.dataset.id))
   );
 }
 
@@ -1466,16 +1485,23 @@ async function cloudPush() {
 }
 
 function applyRoleUI() {
+  const admin = isAdmin();
+
   // schovej/ukaž stock "Položky" v bottom nav
   const itemsBtn = document.querySelector('#stock-nav .nav-item[data-screen="stock-items"]');
-  if (itemsBtn) itemsBtn.style.display = isAdmin() ? '' : 'none';
+  if (itemsBtn) itemsBtn.style.display = admin ? '' : 'none';
 
   // schovej/ukaž tlačítko "+ Přidat položku" na obrazovce stock-items
   const addBtn = el('add-item-btn');
-  if (addBtn) addBtn.style.display = isAdmin() ? '' : 'none';
+  if (addBtn) addBtn.style.display = admin ? '' : 'none';
+
+  // všechny .admin-only elementy (✕ mazání, 🛒 objednat, …)
+  document.querySelectorAll('.admin-only').forEach(node => {
+    node.style.display = admin ? '' : 'none';
+  });
 
   // když nejsi admin a někdo se tam dostane přes URL param, vrať ho pryč
-  if (!isAdmin()) {
+  if (!admin) {
     const itemsScreen = el('screen-stock-items');
     if (itemsScreen?.classList.contains('active')) navigate('stock-overview');
   }
