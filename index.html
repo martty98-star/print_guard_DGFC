@@ -233,6 +233,22 @@
         <button class="pill" data-logfilter="stocktake">Inventura</button>
       </div>
     </div>
+    <div class="date-range-row">
+      <div class="date-range-inputs">
+        <label class="dr-label">Od</label>
+        <input type="date" id="stock-log-from">
+        <label class="dr-label">Do</label>
+        <input type="date" id="stock-log-to">
+        <button class="dr-clear" id="stock-log-clear-dates" title="Zrušit filtr dat">✕</button>
+      </div>
+      <div class="dr-presets">
+        <button class="dr-preset" data-range="7"  data-target="log">7 dní</button>
+        <button class="dr-preset" data-range="30" data-target="log">30 dní</button>
+        <button class="dr-preset" data-range="90" data-target="log">90 dní</button>
+        <button class="dr-preset" data-range="month" data-target="log">Tento měsíc</button>
+        <button class="dr-preset" data-range="year"  data-target="log">Tento rok</button>
+      </div>
+    </div>
     <div id="stock-log-wrap" class="table-wrap"></div>
   </main>
 
@@ -306,10 +322,29 @@
 
   <!-- Colorado historie -->
   <main id="screen-co-history" class="screen">
-    <div class="screen-header"><h1>Historie Colorado</h1></div>
+    <div class="screen-header">
+      <h1>Historie Colorado</h1>
+      <button class="btn-sm" id="co-history-export-btn">↓ Export CSV</button>
+    </div>
     <div class="hist-tabs">
       <button class="hist-tab active" data-machine="colorado1">Colorado 1</button>
       <button class="hist-tab" data-machine="colorado2">Colorado 2</button>
+    </div>
+    <div class="date-range-row">
+      <div class="date-range-inputs">
+        <label class="dr-label">Od</label>
+        <input type="date" id="co-hist-from">
+        <label class="dr-label">Do</label>
+        <input type="date" id="co-hist-to">
+        <button class="dr-clear" id="co-hist-clear-dates" title="Zrušit filtr dat">✕</button>
+      </div>
+      <div class="dr-presets">
+        <button class="dr-preset" data-range="7"  data-target="co">7 dní</button>
+        <button class="dr-preset" data-range="30" data-target="co">30 dní</button>
+        <button class="dr-preset" data-range="90" data-target="co">90 dní</button>
+        <button class="dr-preset" data-range="month" data-target="co">Tento měsíc</button>
+        <button class="dr-preset" data-range="year"  data-target="co">Tento rok</button>
+      </div>
     </div>
     <div id="co-history-wrap" class="table-wrap"></div>
   </main>
