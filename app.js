@@ -47,9 +47,11 @@ const S = {
   stockSearch: '',
   detailArticle: null,
   coHistMachine: 'colorado1',
-  editingItem:   null,   // null=new, or item object when editing
-  movType:       'issue', // current selected movement type
-  movItem:       null,   // currently selected item for movement
+  editingItem:   null,
+  movType:       'issue',
+  movItem:       null,
+  logFilter:     'all',
+  logSearch:     '',
 };
 
 // ── IndexedDB ──────────────────────────────────────────────
@@ -293,6 +295,7 @@ function openStockDetail(articleNumber) {
       ${item.leadTimeDays? `<div class="param-row"><span>Dodací lhůta</span><span>${item.leadTimeDays} dní</span></div>` : ''}
       ${item.safetyDays  ? `<div class="param-row"><span>Bezp. zásoba</span><span>${item.safetyDays} dní</span></div>` : ''}
       ${item.minQty      ? `<div class="param-row"><span>Min. množství</span><span>${item.minQty} ${esc(item.unit || 'ks')}</span></div>` : ''}
+      ${item.orderUrl    ? `<div class="param-row"><span>Odkaz na objednávku</span><a href="${esc(item.orderUrl)}" target="_blank" rel="noopener" class="order-link">🛒 Objednat</a></div>` : ''}
     </div>
 
     <div class="detail-section">
@@ -303,13 +306,13 @@ function openStockDetail(articleNumber) {
         </div>
         <button class="btn-sm" id="detail-add-mov-btn">+ Nový pohyb</button>
       </div>
-      <div id="detail-tab-movements" class="table-wrap" style="margin-top:10px">
+      <div class="detail-tab-pane table-wrap" data-pane="movements" style="margin-top:10px">
         ${moves.length ? `<table class="data-table">
           <thead><tr><th>Datum</th><th>Typ</th><th>Množství</th><th>Stav po</th><th>Poznámka</th><th></th></tr></thead>
           <tbody>${buildMovementRows(item, moves)}</tbody>
         </table>` : '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby. Přidejte příjem nebo inventuru.</p></div>'}
       </div>
-      <div id="detail-tab-history" class="table-wrap hidden" style="margin-top:10px">
+      <div class="detail-tab-pane table-wrap hidden" data-pane="history" style="margin-top:10px">
         ${buildStockHistoryTable(item, moves)}
       </div>
     </div>`;
@@ -320,14 +323,15 @@ function openStockDetail(articleNumber) {
     navigate('stock-movement');
   });
 
-  // Detail tabs (Pohyby / Stav skladu)
-  el('detail-content').querySelectorAll('.detail-tab').forEach(tab => {
+  // Detail tabs (Pohyby / Stav skladu) — querySelector uvnitř detail-content, ne getElementById
+  const dc = el('detail-content');
+  dc.querySelectorAll('.detail-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      el('detail-content').querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+      dc.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const which = tab.dataset.tab;
-      el('detail-tab-movements')?.classList.toggle('hidden', which !== 'movements');
-      el('detail-tab-history')?.classList.toggle('hidden', which !== 'history');
+      dc.querySelector('.detail-tab-pane[data-pane="movements"]')?.classList.toggle('hidden', which !== 'movements');
+      dc.querySelector('.detail-tab-pane[data-pane="history"]')?.classList.toggle('hidden', which !== 'history');
     });
   });
 
@@ -651,6 +655,7 @@ function renderItemsMgmt() {
             <div class="mgmt-meta">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')} · Na skladě: ${fmtN(m.onHand, 0)}</div>
           </div>
           <div class="mgmt-actions">
+            ${it.orderUrl ? `<a href="${esc(it.orderUrl)}" target="_blank" rel="noopener" class="btn-icon-sm" title="Objednat">🛒</a>` : ''}
             <button class="btn-icon-sm" data-edit="${esc(it.articleNumber)}" title="Upravit">✎</button>
             <button class="btn-icon-sm danger" data-del="${esc(it.articleNumber)}" title="Smazat">✕</button>
           </div>
@@ -681,6 +686,7 @@ function openItemModal(articleNumber) {
   el('im-lead').value     = it.leadTimeDays || '';
   el('im-safety').value   = it.safetyDays  || '';
   el('im-minqty').value   = it.minQty      || '';
+  el('im-url').value      = it.orderUrl    || '';
   el('im-article').readOnly = !!S.editingItem;
   el('item-modal').classList.remove('hidden');
   el('im-name').focus();
@@ -708,6 +714,7 @@ async function saveItemModal() {
     leadTimeDays: parseInt(el('im-lead').value)  || 7,
     safetyDays:   parseInt(el('im-safety').value)|| 7,
     minQty:       parseFloat(el('im-minqty').value) || 0,
+    orderUrl:     el('im-url').value.trim() || undefined,
     isActive: true,
   };
 
@@ -1264,6 +1271,93 @@ function dlBlob(content, type, filename) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  STOCK — LOG (všechny pohyby, reportová obrazovka)
+// ══════════════════════════════════════════════════════════
+
+function renderStockLog() {
+  const itemMap = {};
+  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
+
+  // replay running stock per article
+  const runningMap = {};
+  const enriched = S.movements.map(m => {
+    const r = runningMap[m.articleNumber] ?? 0;
+    let after;
+    if (m.movType === 'stocktake') after = m.qty;
+    else if (m.movType === 'receipt') after = r + m.qty;
+    else after = Math.max(0, r - m.qty);
+    runningMap[m.articleNumber] = after;
+    return { ...m, stockAfter: after, itemName: itemMap[m.articleNumber]?.name || m.articleNumber, unit: itemMap[m.articleNumber]?.unit || 'ks' };
+  });
+
+  // filter
+  const q = S.logSearch.toLowerCase();
+  const filtered = enriched.filter(m => {
+    const matchType = S.logFilter === 'all' || m.movType === S.logFilter;
+    const matchQ = !q
+      || m.articleNumber.toLowerCase().includes(q)
+      || m.itemName.toLowerCase().includes(q)
+      || (m.note || '').toLowerCase().includes(q);
+    return matchType && matchQ;
+  });
+
+  const wrap = el('stock-log-wrap');
+  if (!filtered.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné pohyby neodpovídají filtru.</p></div>`;
+    return;
+  }
+
+  const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' };
+  const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
+
+  const rows = [...filtered].reverse().map(m => {
+    const sign = m.movType === 'issue' ? `−${fmtN(m.qty,0)}` : m.movType === 'receipt' ? `+${fmtN(m.qty,0)}` : `=${fmtN(m.qty,0)}`;
+    const dClass = m.movType === 'receipt' ? 'receipt-c' : m.movType === 'issue' ? 'issue-c' : 'stocktake-c';
+    return `<tr>
+      <td>${fmtDT(m.timestamp)}</td>
+      <td class="log-item-name" data-article="${esc(m.articleNumber)}" style="cursor:pointer">${esc(m.itemName)}<br><span style="font-size:.6rem;color:var(--text-faint);letter-spacing:.05em">${esc(m.articleNumber)}</span></td>
+      <td class="${typeClass[m.movType]||''}">${typeLabel[m.movType]||m.movType}</td>
+      <td class="num ${dClass}">${sign} <small>${esc(m.unit)}</small></td>
+      <td class="num"><strong>${fmtN(m.stockAfter,0)}</strong> <small>${esc(m.unit)}</small></td>
+      <td class="note-td">${esc(m.note||'—')}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Datum</th><th>Položka</th><th>Typ</th><th>Změna</th><th>Stav po</th><th>Poznámka</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  wrap.querySelectorAll('.log-item-name[data-article]').forEach(td =>
+    td.addEventListener('click', () => openStockDetail(td.dataset.article))
+  );
+}
+
+function exportCSVStockLog() {
+  const itemMap = {};
+  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
+  const runningMap = {};
+  const header = ['timestamp','article_number','name','category','unit','movement_type','qty','stock_after','note'];
+  const rows = [csvRow(header)];
+  S.movements.forEach(m => {
+    const it = itemMap[m.articleNumber] || {};
+    const r = runningMap[m.articleNumber] ?? 0;
+    let after;
+    if (m.movType === 'stocktake') after = m.qty;
+    else if (m.movType === 'receipt') after = r + m.qty;
+    else after = Math.max(0, r - m.qty);
+    runningMap[m.articleNumber] = after;
+    rows.push(csvRow([
+      m.timestamp, m.articleNumber, it.name||'', it.category||'', it.unit||'ks',
+      m.movType, m.qty, after, m.note||''
+    ]));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `pohyby_skladu_${fmtFileDT()}.csv`);
+}
+
+// ══════════════════════════════════════════════════════════
 //  NAVIGATION + MODE
 // ══════════════════════════════════════════════════════════
 
@@ -1278,6 +1372,7 @@ function navigate(screenId) {
 
   if (screenId === 'stock-alerts')  renderAlerts();
   if (screenId === 'stock-items')   renderItemsMgmt();
+  if (screenId === 'stock-log')     renderStockLog();
   if (screenId === 'co-history')    renderCoHistory();
   if (screenId === 'settings')      loadSettingsUI();
 
@@ -1578,6 +1673,19 @@ el('sync-btn').addEventListener('click', async () => {
   setupMovementEntry();
   setupCoEntry();
   setupSettings();
+
+  // Stock log search + filter
+  el('stock-log-search').addEventListener('input', e => {
+    S.logSearch = e.target.value; renderStockLog();
+  });
+  document.querySelectorAll('[data-logfilter]').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('[data-logfilter]').forEach(pp => pp.classList.remove('active'));
+      p.classList.add('active');
+      S.logFilter = p.dataset.logfilter;
+      renderStockLog();
+    }));
+  el('stock-log-export-btn').addEventListener('click', exportCSVStockLog);
 
   // ✅ Admin unlock/lock listenery musí být až po DOM ready (tady)
   el('admin-unlock-btn')?.addEventListener('click', () => {
