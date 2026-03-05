@@ -642,6 +642,21 @@ textarea { resize: vertical; min-height: 58px; }
 .empty-state-icon { font-size: 1.8rem; margin-bottom: 12px; opacity: .45; }
 .empty-state p { font-size: .75rem; letter-spacing: .04em; }
 
+/* ── Detail tabs (Pohyby / Stav skladu) ── */
+.detail-tabs {
+  display: flex; gap: 0; border: 1px solid var(--border); overflow: hidden;
+}
+.detail-tab {
+  background: var(--bg4); border: none; border-right: 1px solid var(--border);
+  color: var(--text-faint); cursor: pointer;
+  font-family: var(--font-ui); font-size: .6rem; font-weight: 600;
+  letter-spacing: var(--wide); text-transform: uppercase;
+  padding: 6px 14px; transition: all var(--tr); white-space: nowrap;
+}
+.detail-tab:last-child { border-right: none; }
+.detail-tab:hover { background: var(--bg3); color: var(--text); }
+.detail-tab.active { background: var(--text); color: var(--bg4); }
+
 /* ── Responsive ── */
 @media (min-width: 640px) {
   .screen { max-width: 720px; margin: 0 auto; }
