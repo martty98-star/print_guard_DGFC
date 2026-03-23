@@ -57,6 +57,14 @@ const S = {
   logDateTo:     '',
   coDateFrom:    '',
   coDateTo:      '',
+  printLogDateFrom: '',
+  printLogDateTo:   '',
+  printLogPrinter:  'all',
+  printLogResult:   'all',
+  printLogRows:     [],
+  printLogSummary:  null,
+  printLogLoading:  false,
+  printLogLoaded:   false,
 };
 
 // ── IndexedDB ──────────────────────────────────────────────
@@ -1120,6 +1128,177 @@ async function deleteCoRecord(id) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  PRINT LOG MODULE
+// ══════════════════════════════════════════════════════════
+
+const PRINT_LOG_PAGE_SIZE = 50;
+
+function getPrintLogParams() {
+  const params = new URLSearchParams();
+  if (S.printLogDateFrom) params.set('from', S.printLogDateFrom);
+  if (S.printLogDateTo)   params.set('to', S.printLogDateTo);
+  if (S.printLogPrinter !== 'all') params.set('printer', S.printLogPrinter);
+  if (S.printLogResult !== 'all')  params.set('result', S.printLogResult);
+  params.set('limit', String(PRINT_LOG_PAGE_SIZE));
+  return params;
+}
+
+async function fetchPrintLogSummary() {
+  const res = await fetch('/.netlify/functions/print-log-summary?' + getPrintLogParams().toString(), { cache: 'no-store' });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Print log summary failed');
+  return j;
+}
+
+async function fetchPrintLogRows() {
+  const res = await fetch('/.netlify/functions/print-log-rows?' + getPrintLogParams().toString(), { cache: 'no-store' });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Print log rows failed');
+  return j;
+}
+
+async function loadPrintLog(force = false) {
+  if (S.printLogLoading) return;
+  if (S.printLogLoaded && !force) return;
+
+  S.printLogLoading = true;
+  elSet('print-log-status', 'Načítám…');
+  const wrap = el('print-log-table-wrap');
+  if (wrap && !S.printLogRows.length) {
+    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Načítám Print Log…</p></div>`;
+  }
+
+  try {
+    const [summary, rows] = await Promise.all([fetchPrintLogSummary(), fetchPrintLogRows()]);
+    S.printLogSummary = summary.summary || null;
+    S.printLogRows = Array.isArray(rows.rows) ? rows.rows : [];
+    S.printLogLoaded = true;
+    renderPrintLog();
+    elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Backend data');
+  } catch (err) {
+    if (wrap) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Nepodařilo se načíst Print Log.</p><div class="table-empty-note">${esc(err.message || err)}</div></div>`;
+    }
+    elSet('print-log-status', 'Chyba načítání');
+    showToast('Print Log: ' + (err.message || err), 'error');
+  } finally {
+    S.printLogLoading = false;
+  }
+}
+
+function renderPrintLog() {
+  renderPrintLogSummary();
+  renderPrintLogComparison();
+  renderPrintLogRows();
+}
+
+function renderPrintLogSummary() {
+  const summary = S.printLogSummary || {};
+  elSet('pl-done-jobs', fmtInt(summary.doneJobs));
+  elSet('pl-aborted-jobs', fmtInt(summary.abortedJobs));
+  elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
+  elSet('pl-printed-area', fmtMeasure(summary.printedArea, 'm²', 1));
+  elSet('pl-media-length', fmtMeasure(summary.mediaLengthUsed, 'm', 1));
+  elSet('pl-duration', fmtDuration(summary.totalDurationSec));
+  elSet('pl-compare-range', printLogRangeLabel());
+}
+
+function renderPrintLogComparison() {
+  const compare = S.printLogSummary?.byPrinter || {};
+  const printers = ['Colorado-91', 'Colorado-92'];
+  const grid = el('pl-compare-grid');
+  if (!grid) return;
+  grid.innerHTML = printers.map(name => {
+    const rec = compare[name] || {};
+    return `<div class="metric-block">
+      <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
+      <span class="metric-unit">${esc(name)}</span>
+      <span class="metric-desc">Done · ${fmtMeasure(rec.printedArea || 0, 'm²', 1)} · ${fmtMeasure(rec.mediaLengthUsed || 0, 'm', 1)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderPrintLogRows() {
+  const wrap = el('print-log-table-wrap');
+  const foot = el('print-log-footnote');
+  if (!wrap) return;
+  if (!S.printLogRows.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné tiskové úlohy neodpovídají filtru.</p></div>`;
+    if (foot) foot.textContent = '0 řádků';
+    return;
+  }
+
+  const rows = S.printLogRows.map(row => `<tr>
+    <td>${fmtDT(row.readyAt)}</td>
+    <td>${esc(row.printerName || '—')}</td>
+    <td>${esc(row.jobName || '—')}</td>
+    <td><span class="result-badge ${printResultClass(row.result)}">${esc(row.result || '—')}</span></td>
+    <td>${esc(row.mediaType || '—')}</td>
+    <td class="num">${fmtMeasure(row.printedArea, 'm²', 1)}</td>
+    <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
+    <td class="note-td">${esc(row.sourceFile || '—')}</td>
+  </tr>`).join('');
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>readyAt</th>
+      <th>printerName</th>
+      <th>jobName</th>
+      <th>result</th>
+      <th>mediaType</th>
+      <th>printedArea</th>
+      <th>durationSec</th>
+      <th>sourceFile</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  if (foot) foot.textContent = `Posledních ${S.printLogRows.length} řádků`; 
+}
+
+function printLogRangeLabel() {
+  if (S.printLogDateFrom || S.printLogDateTo) {
+    return `${S.printLogDateFrom || '…'} → ${S.printLogDateTo || '…'}`;
+  }
+  return 'celé dostupné období';
+}
+
+function printResultClass(result) {
+  const norm = String(result || '').toLowerCase();
+  if (norm === 'done') return 'done';
+  if (norm === 'abrt' || norm === 'aborted') return 'abrt';
+  if (norm === 'deleted') return 'deleted';
+  return '';
+}
+
+function fmtInt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0';
+  return String(Math.round(Number(n)));
+}
+
+function fmtMeasure(n, unit, dec = 1) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return `${Number(n).toFixed(dec)} ${unit}`;
+}
+
+function fmtDuration(totalSec) {
+  const sec = Math.max(0, Number(totalSec) || 0);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  return `${m}m`;
+}
+
+function fmtDurationSeconds(totalSec) {
+  const sec = Math.max(0, Number(totalSec) || 0);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════════
 //  SETTINGS + EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════
 
@@ -1350,11 +1529,17 @@ function applyPreset(range, target) {
     el('stock-log-from').value = fromStr;
     el('stock-log-to').value   = todayStr;
     renderStockLog();
-  } else {
+  } else if (target === 'co') {
     S.coDateFrom = fromStr; S.coDateTo = todayStr;
     el('co-hist-from').value = fromStr;
     el('co-hist-to').value   = todayStr;
     renderCoHistory();
+  } else {
+    S.printLogDateFrom = fromStr; S.printLogDateTo = todayStr;
+    el('print-log-from').value = fromStr;
+    el('print-log-to').value   = todayStr;
+    S.printLogLoaded = false;
+    loadPrintLog(true);
   }
 }
 
@@ -1467,6 +1652,7 @@ function navigate(screenId) {
   if (screenId === 'stock-items')   renderItemsMgmt();
   if (screenId === 'stock-log')     renderStockLog();
   if (screenId === 'co-history')    renderCoHistory();
+  if (screenId === 'print-log')     loadPrintLog();
   if (screenId === 'settings')      loadSettingsUI();
 
   window.scrollTo(0, 0);
@@ -1817,6 +2003,22 @@ el('sync-btn').addEventListener('click', async () => {
     renderCoHistory();
   });
   el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
+
+  // Print log filters
+  el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-to').addEventListener('change',   e => { S.printLogDateTo   = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-result').addEventListener('change',  e => { S.printLogResult  = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-clear-dates').addEventListener('click', () => {
+    S.printLogDateFrom = ''; S.printLogDateTo = '';
+    el('print-log-from').value = ''; el('print-log-to').value = '';
+    S.printLogLoaded = false;
+    loadPrintLog(true);
+  });
+  el('print-log-refresh-btn').addEventListener('click', () => {
+    S.printLogLoaded = false;
+    loadPrintLog(true);
+  });
 
   // Preset buttons (společné pro obě obrazovky)
   document.querySelectorAll('.dr-preset').forEach(btn =>
