@@ -62,6 +62,7 @@ const S = {
   printLogPrinter:  'all',
   printLogResult:   'all',
   printLogRows:     [],
+  printLogOffset:   0,
   printLogSummary:  null,
   printLogLoading:  false,
   printLogLoaded:   false,
@@ -1133,6 +1134,13 @@ async function deleteCoRecord(id) {
 
 const PRINT_LOG_PAGE_SIZE = 50;
 
+function mapPrinterName(name) {
+  if (!name) return '—';
+  if (name.includes('91')) return 'Colorado A';
+  if (name.includes('92')) return 'Colorado B';
+  return name;
+}
+
 function getPrintLogParams() {
   const params = new URLSearchParams();
   if (S.printLogDateFrom) params.set('from', S.printLogDateFrom);
@@ -1140,6 +1148,7 @@ function getPrintLogParams() {
   if (S.printLogPrinter !== 'all') params.set('printer', S.printLogPrinter);
   if (S.printLogResult !== 'all')  params.set('result', S.printLogResult);
   params.set('limit', String(PRINT_LOG_PAGE_SIZE));
+  params.set('offset', String(S.printLogOffset));
   return params;
 }
 
@@ -1161,6 +1170,11 @@ async function loadPrintLog(force = false) {
   if (S.printLogLoading) return;
   if (S.printLogLoaded && !force) return;
 
+  if (force) {
+    S.printLogRows = [];
+    S.printLogOffset = 0;
+  }
+
   S.printLogLoading = true;
   elSet('print-log-status', 'Načítám…');
   const wrap = el('print-log-table-wrap');
@@ -1171,7 +1185,9 @@ async function loadPrintLog(force = false) {
   try {
     const [summary, rows] = await Promise.all([fetchPrintLogSummary(), fetchPrintLogRows()]);
     S.printLogSummary = summary.summary || null;
-    S.printLogRows = Array.isArray(rows.rows) ? rows.rows : [];
+    const newRows = Array.isArray(rows.rows) ? rows.rows : [];
+    S.printLogRows = [...S.printLogRows, ...newRows];
+    S.printLogOffset += newRows.length;
     S.printLogLoaded = true;
     renderPrintLog();
     elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Backend data');
@@ -1205,14 +1221,15 @@ function renderPrintLogSummary() {
 
 function renderPrintLogComparison() {
   const compare = S.printLogSummary?.byPrinter || {};
-  const printers = ['Colorado-91', 'Colorado-92'];
+  const printers = Object.keys(compare);
   const grid = el('pl-compare-grid');
   if (!grid) return;
   grid.innerHTML = printers.map(name => {
     const rec = compare[name] || {};
+    const displayName = mapPrinterName(name);
     return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
-      <span class="metric-unit">${esc(name)}</span>
+      <span class="metric-unit">${esc(displayName)}</span>
       <span class="metric-desc">Done · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}</span>
     </div>`;
   }).join('');
@@ -1230,7 +1247,7 @@ function renderPrintLogRows() {
 
   const rows = S.printLogRows.map(row => `<tr>
     <td>${fmtDT(row.readyAt)}</td>
-    <td>${esc(row.printerName || '—')}</td>
+    <td>${esc(mapPrinterName(row.printerName))}</td>
     <td>${esc(row.jobName || '—')}</td>
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(row.result || '—')}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
@@ -1238,6 +1255,9 @@ function renderPrintLogRows() {
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
     <td class="note-td">${esc(row.sourceFile || '—')}</td>
   </tr>`).join('');
+
+  const hasMore = S.printLogRows.length >= PRINT_LOG_PAGE_SIZE;
+  const loadMoreBtn = hasMore ? `<button id="pl-load-more" class="btn">Load more</button>` : '';
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
@@ -1251,9 +1271,10 @@ function renderPrintLogRows() {
       <th>sourceFile</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-  </table>`;
+  </table>
+  ${loadMoreBtn}`;
 
-  if (foot) foot.textContent = `Posledních ${S.printLogRows.length} řádků`; 
+  if (foot) foot.textContent = `Celkem ${S.printLogRows.length} řádků`; 
 }
 
 function printLogRangeLabel() {
@@ -2018,6 +2039,11 @@ el('sync-btn').addEventListener('click', async () => {
   el('print-log-refresh-btn').addEventListener('click', () => {
     S.printLogLoaded = false;
     loadPrintLog(true);
+  });
+  document.addEventListener('click', e => {
+    if (e.target?.id === 'pl-load-more') {
+      loadPrintLog(false);
+    }
   });
 
   // Preset buttons (společné pro obě obrazovky)
