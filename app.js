@@ -57,6 +57,19 @@ const S = {
   logDateTo:     '',
   coDateFrom:    '',
   coDateTo:      '',
+  printLogDateFrom: '',
+  printLogDateTo:   '',
+  printLogPrinter:  'all',
+  printLogResult:   'all',
+  printLogMode:     'raw',
+  printLogGroupFilter: 'all',
+  printLogRows:     [],
+  printLogSummary:  null,
+  printLogOffset:   0,
+  printLogHasMore:  false,
+  printLogLoading:  false,
+  printLogLoaded:   false,
+  printLogExpandedGroup: null,
 };
 
 // ── IndexedDB ──────────────────────────────────────────────
@@ -1120,6 +1133,402 @@ async function deleteCoRecord(id) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  PRINT LOG MODULE
+// ══════════════════════════════════════════════════════════
+
+const PRINT_LOG_PAGE_SIZE = 50;
+const PRINT_LOG_CORRELATION_WINDOW_MS = 2 * 60 * 60 * 1000;
+const PRINT_LOG_GROUP_STATUSES = {
+  success: 'Success',
+  reprinted_successfully: 'Resolved retry',
+  open_issue: 'Open issue',
+  deleted_only: 'Deleted only',
+  aborted_only: 'Aborted only',
+  multiple_attempts: 'Multiple attempts',
+  unresolved: 'Unresolved',
+};
+
+function getPrintLogParams() {
+  const params = new URLSearchParams();
+  if (S.printLogDateFrom) params.set('from', S.printLogDateFrom);
+  if (S.printLogDateTo)   params.set('to', S.printLogDateTo);
+  if (S.printLogPrinter !== 'all') params.set('printer', S.printLogPrinter);
+  if (S.printLogResult !== 'all')  params.set('result', S.printLogResult);
+  params.set('limit', String(PRINT_LOG_PAGE_SIZE));
+  params.set('offset', String(S.printLogOffset));
+  return params;
+}
+
+function resetPrintLogRows() {
+  S.printLogRows = [];
+  S.printLogOffset = 0;
+  S.printLogHasMore = false;
+  S.printLogExpandedGroup = null;
+}
+
+async function fetchPrintLogSummary() {
+  const res = await fetch('/.netlify/functions/print-log-summary?' + getPrintLogParams().toString(), { cache: 'no-store' });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Print log summary failed');
+  return j;
+}
+
+async function fetchPrintLogRows() {
+  const res = await fetch('/.netlify/functions/print-log-rows?' + getPrintLogParams().toString(), { cache: 'no-store' });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Print log rows failed');
+  return j;
+}
+
+async function loadPrintLog(force = false, append = false) {
+  if (S.printLogLoading) return;
+  if (S.printLogLoaded && !force && !append) return;
+
+  if (!append) resetPrintLogRows();
+
+  S.printLogLoading = true;
+  elSet('print-log-status', 'Načítám…');
+  const wrap = el('print-log-table-wrap');
+  if (wrap && !S.printLogRows.length) {
+    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Načítám Print Log…</p></div>`;
+  }
+
+  try {
+    const requests = append && S.printLogSummary
+      ? [Promise.resolve({ summary: S.printLogSummary, generatedAt: null }), fetchPrintLogRows()]
+      : [fetchPrintLogSummary(), fetchPrintLogRows()];
+    const [summary, rows] = await Promise.all(requests);
+
+    S.printLogSummary = summary.summary || S.printLogSummary || null;
+    const nextRows = Array.isArray(rows.rows) ? rows.rows : [];
+    S.printLogRows = append ? [...S.printLogRows, ...nextRows] : nextRows;
+    S.printLogOffset += nextRows.length;
+    S.printLogHasMore = !!rows.hasMore;
+    S.printLogLoaded = true;
+    renderPrintLog();
+    elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Backend data');
+  } catch (err) {
+    if (wrap) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Nepodařilo se načíst Print Log.</p><div class="table-empty-note">${esc(err.message || err)}</div></div>`;
+    }
+    elSet('print-log-status', 'Chyba načítání');
+    showToast('Print Log: ' + (err.message || err), 'error');
+  } finally {
+    S.printLogLoading = false;
+    updatePrintLogLoadMoreBtn();
+  }
+}
+
+function renderPrintLog() {
+  renderPrintLogSummary();
+  renderPrintLogComparison();
+  renderPrintLogBody();
+  updatePrintLogModeUI();
+  updatePrintLogLoadMoreBtn();
+}
+
+function renderPrintLogSummary() {
+  const summary = S.printLogSummary || {};
+  elSet('pl-done-jobs', fmtInt(summary.doneJobs));
+  elSet('pl-aborted-jobs', fmtInt(summary.abortedJobs));
+  elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
+  elSet('pl-printed-area', fmtMeasure(summary.printedArea, 'm²', 1));
+  elSet('pl-media-length', fmtMeasure(summary.mediaLengthUsed, 'm', 1));
+  elSet('pl-duration', fmtDuration(summary.totalDurationSec));
+  elSet('pl-compare-range', printLogRangeLabel());
+}
+
+function renderPrintLogComparison() {
+  const compare = S.printLogSummary?.byPrinter || {};
+  const printers = ['Colorado-91', 'Colorado-92'];
+  const grid = el('pl-compare-grid');
+  if (!grid) return;
+  grid.innerHTML = printers.map(name => {
+    const rec = compare[name] || {};
+    return `<div class="metric-block">
+      <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
+      <span class="metric-unit">${esc(getPrinterDisplayName(name))}</span>
+      <span class="metric-desc">Done · ${fmtMeasure(rec.printedArea || 0, 'm²', 1)} · ${fmtMeasure(rec.mediaLengthUsed || 0, 'm', 1)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderPrintLogBody() {
+  if (S.printLogMode === 'backlog') renderPrintLogBacklog();
+  else renderPrintLogRows();
+}
+
+function renderPrintLogRows() {
+  const wrap = el('print-log-table-wrap');
+  const foot = el('print-log-footnote');
+  if (!wrap) return;
+  if (!S.printLogRows.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné tiskové úlohy neodpovídají filtru.</p></div>`;
+    if (foot) foot.textContent = '0 řádků';
+    return;
+  }
+
+  const rows = S.printLogRows.map(row => `<tr>
+    <td>${fmtDT(row.readyAt)}</td>
+    <td>${esc(getPrinterDisplayName(row.printerName || ''))}</td>
+    <td>${esc(row.jobName || '—')}</td>
+    <td><span class="result-badge ${printResultClass(row.result)}">${esc(row.result || '—')}</span></td>
+    <td>${esc(row.mediaType || '—')}</td>
+    <td class="num">${fmtMeasure(row.printedArea, 'm²', 1)}</td>
+    <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
+    <td class="note-td">${esc(row.sourceFile || '—')}</td>
+  </tr>`).join('');
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>readyAt</th>
+      <th>printerName</th>
+      <th>jobName</th>
+      <th>result</th>
+      <th>mediaType</th>
+      <th>printedAreaM2</th>
+      <th>durationSec</th>
+      <th>sourceFile</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  if (foot) foot.textContent = `Raw activity · ${S.printLogRows.length} řádků načteno`;
+}
+
+function renderPrintLogBacklog() {
+  const wrap = el('print-log-table-wrap');
+  const foot = el('print-log-footnote');
+  if (!wrap) return;
+
+  const groups = filterPrintLogGroups(buildPrintLogGroups(S.printLogRows));
+  if (!groups.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🧩</div><p>Žádné korelované joby neodpovídají filtru.</p></div>`;
+    if (foot) foot.textContent = 'Backlog · 0 skupin';
+    return;
+  }
+
+  const body = groups.map(group => {
+    const expanded = S.printLogExpandedGroup === group.groupKey;
+    return `<tbody>
+      <tr>
+        <td>${fmtDT(group.latestTimestamp)}</td>
+        <td>${esc(getPrinterDisplayName(group.printerName))}</td>
+        <td><button class="print-log-row-btn" data-plgroupkey="${esc(group.groupKey)}">${esc(group.jobName || '—')}</button></td>
+        <td><span class="operational-badge ${group.status}">${esc(PRINT_LOG_GROUP_STATUSES[group.status] || group.status)}</span></td>
+        <td class="num">${fmtInt(group.attemptCount)}</td>
+        <td><span class="result-badge ${printResultClass(group.finalResult)}">${esc(group.finalResult || '—')}</span></td>
+        <td class="num">${fmtMeasure(group.printedAreaM2, 'm²', 1)}</td>
+        <td>${esc(group.mediaType || '—')}</td>
+        <td class="note-td">${esc(group.sourceFile || '—')}</td>
+      </tr>
+      ${expanded ? `<tr><td colspan="9" class="print-log-detail-cell">${renderPrintLogGroupDetail(group)}</td></tr>` : ''}
+    </tbody>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Latest</th>
+      <th>Printer</th>
+      <th>Job</th>
+      <th>Status</th>
+      <th>Attempts</th>
+      <th>Final result</th>
+      <th>printedAreaM2</th>
+      <th>mediaType</th>
+      <th>sourceFile</th>
+    </tr></thead>
+    ${body}
+  </table>`;
+
+  wrap.querySelectorAll('[data-plgroupkey]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      S.printLogExpandedGroup = S.printLogExpandedGroup === btn.dataset.plgroupkey ? null : btn.dataset.plgroupkey;
+      renderPrintLogBacklog();
+    });
+  });
+
+  if (foot) foot.textContent = `Backlog · ${groups.length} skupin z ${S.printLogRows.length} načtených řádků`;
+}
+
+function renderPrintLogGroupDetail(group) {
+  return `<div class="print-log-detail">
+    <div class="hint">${esc(group.resolutionText)}</div>
+    <div class="print-log-attempts">${group.attempts.map((attempt, index) => `<div class="print-log-attempt">
+      <div class="print-log-attempt-top">
+        <strong>Pokus ${index + 1}</strong>
+        <span class="result-badge ${printResultClass(attempt.result)}">${esc(attempt.result || '—')}</span>
+      </div>
+      <div class="print-log-attempt-meta">
+        ${fmtDT(attempt.readyAt)} · ${esc(getPrinterDisplayName(attempt.printerName || ''))}<br>
+        ${esc(attempt.mediaType || '—')} · ${fmtMeasure(attempt.printedArea, 'm²', 1)} · ${fmtDurationSeconds(attempt.durationSec)}<br>
+        ${esc(attempt.sourceFile || '—')}
+      </div>
+    </div>`).join('')}</div>
+  </div>`;
+}
+
+function buildPrintLogGroups(rows) {
+  if (!rows.length) return [];
+  const sorted = [...rows].sort((a, b) => new Date(a.readyAt) - new Date(b.readyAt));
+  const groups = [];
+  const byFingerprint = new Map();
+
+  for (const row of sorted) {
+    const fingerprint = getPrintLogFingerprint(row);
+    const ts = new Date(row.readyAt).getTime();
+    const existing = byFingerprint.get(fingerprint);
+    if (!existing || ts - existing.latestMs > PRINT_LOG_CORRELATION_WINDOW_MS) {
+      const next = { fingerprint, rows: [row], latestMs: ts };
+      byFingerprint.set(fingerprint, next);
+      groups.push(next);
+    } else {
+      existing.rows.push(row);
+      existing.latestMs = ts;
+    }
+  }
+
+  return groups.map((group, idx) => derivePrintLogGroup(group.rows, idx)).sort((a, b) => new Date(b.latestTimestamp) - new Date(a.latestTimestamp));
+}
+
+function derivePrintLogGroup(rows, index) {
+  const attempts = [...rows].sort((a, b) => new Date(a.readyAt) - new Date(b.readyAt));
+  const last = attempts[attempts.length - 1] || {};
+  const normResults = attempts.map(a => normalizePrintResult(a.result));
+  const issueCount = normResults.filter(r => r === 'abrt' || r === 'deleted').length;
+  const hasDone = normResults.includes('done');
+  const onlyDeleted = normResults.every(r => r === 'deleted');
+  const onlyAbrt = normResults.every(r => r === 'abrt');
+  const finalResult = last.result || '—';
+
+  let status = 'unresolved';
+  if (hasDone) {
+    if (issueCount > 0) status = 'reprinted_successfully';
+    else if (attempts.length > 1) status = 'multiple_attempts';
+    else status = 'success';
+  } else if (onlyDeleted) status = 'deleted_only';
+  else if (onlyAbrt) status = 'aborted_only';
+  else if (issueCount > 0) status = 'open_issue';
+
+  const resolutionText = hasDone && issueCount > 0
+    ? 'Issue states were followed by a later successful Done attempt.'
+    : hasDone
+      ? 'This lifecycle contains only successful completion states.'
+      : 'No later successful Done attempt was found for this lifecycle.';
+
+  return {
+    groupKey: `${getPrintLogFingerprint(last)}__${index}`,
+    latestTimestamp: last.readyAt,
+    printerName: last.printerName || '',
+    jobName: last.jobName || '',
+    mediaType: last.mediaType || '',
+    sourceFile: last.sourceFile || '',
+    finalResult,
+    printedAreaM2: attempts.reduce((sum, row) => sum + (Number(row.printedArea) || 0), 0),
+    attemptCount: attempts.length,
+    status,
+    resolutionText,
+    attempts,
+  };
+}
+
+function filterPrintLogGroups(groups) {
+  if (S.printLogGroupFilter === 'open') {
+    return groups.filter(g => ['open_issue', 'deleted_only', 'aborted_only', 'unresolved'].includes(g.status));
+  }
+  if (S.printLogGroupFilter === 'resolved') {
+    return groups.filter(g => g.status === 'reprinted_successfully');
+  }
+  if (S.printLogGroupFilter === 'multiple') {
+    return groups.filter(g => g.attemptCount > 1 || g.status === 'multiple_attempts' || g.status === 'reprinted_successfully');
+  }
+  return groups;
+}
+
+function getPrintLogFingerprint(row) {
+  return [
+    normalizePrintKey(row.sourceFile || ''),
+    normalizePrintKey(row.jobName || ''),
+    normalizePrintKey(row.printerName || ''),
+    normalizePrintKey(row.mediaType || ''),
+  ].join('|');
+}
+
+function normalizePrintKey(v) {
+  return String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function normalizePrintResult(v) {
+  const norm = String(v || '').trim().toLowerCase();
+  if (norm === 'done') return 'done';
+  if (norm === 'abrt' || norm === 'aborted') return 'abrt';
+  if (norm === 'deleted') return 'deleted';
+  return norm;
+}
+
+function updatePrintLogModeUI() {
+  document.querySelectorAll('[data-plmode]').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.plmode === S.printLogMode)
+  );
+  el('print-log-group-filters')?.classList.toggle('hidden', S.printLogMode !== 'backlog');
+}
+
+function updatePrintLogLoadMoreBtn() {
+  const btn = el('print-log-load-more-btn');
+  if (!btn) return;
+  btn.classList.toggle('hidden', !S.printLogHasMore || S.printLogLoading);
+  btn.disabled = S.printLogLoading;
+}
+
+function printLogRangeLabel() {
+  if (S.printLogDateFrom || S.printLogDateTo) {
+    return `${S.printLogDateFrom || '…'} → ${S.printLogDateTo || '…'}`;
+  }
+  return 'celé dostupné období';
+}
+
+function getPrinterDisplayName(printerName) {
+  if (printerName === 'Colorado-91') return 'Colorado A';
+  if (printerName === 'Colorado-92') return 'Colorado B';
+  return printerName || '—';
+}
+
+function printResultClass(result) {
+  const norm = normalizePrintResult(result);
+  if (norm === 'done') return 'done';
+  if (norm === 'abrt') return 'abrt';
+  if (norm === 'deleted') return 'deleted';
+  return '';
+}
+
+function fmtInt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0';
+  return String(Math.round(Number(n)));
+}
+
+function fmtMeasure(n, unit, dec = 1) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return `${Number(n).toFixed(dec)} ${unit}`;
+}
+
+function fmtDuration(totalSec) {
+  const sec = Math.max(0, Number(totalSec) || 0);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  return `${m}m`;
+}
+
+function fmtDurationSeconds(totalSec) {
+  const sec = Math.max(0, Number(totalSec) || 0);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════════
 //  SETTINGS + EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════
 
@@ -1350,11 +1759,17 @@ function applyPreset(range, target) {
     el('stock-log-from').value = fromStr;
     el('stock-log-to').value   = todayStr;
     renderStockLog();
-  } else {
+  } else if (target === 'co') {
     S.coDateFrom = fromStr; S.coDateTo = todayStr;
     el('co-hist-from').value = fromStr;
     el('co-hist-to').value   = todayStr;
     renderCoHistory();
+  } else {
+    S.printLogDateFrom = fromStr; S.printLogDateTo = todayStr;
+    el('print-log-from').value = fromStr;
+    el('print-log-to').value   = todayStr;
+    S.printLogLoaded = false;
+    loadPrintLog(true);
   }
 }
 
@@ -1467,6 +1882,7 @@ function navigate(screenId) {
   if (screenId === 'stock-items')   renderItemsMgmt();
   if (screenId === 'stock-log')     renderStockLog();
   if (screenId === 'co-history')    renderCoHistory();
+  if (screenId === 'print-log')     loadPrintLog();
   if (screenId === 'settings')      loadSettingsUI();
 
   window.scrollTo(0, 0);
@@ -1817,6 +2233,36 @@ el('sync-btn').addEventListener('click', async () => {
     renderCoHistory();
   });
   el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
+
+  // Print log filters
+  el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-to').addEventListener('change',   e => { S.printLogDateTo   = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-result').addEventListener('change',  e => { S.printLogResult  = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-clear-dates').addEventListener('click', () => {
+    S.printLogDateFrom = ''; S.printLogDateTo = '';
+    el('print-log-from').value = ''; el('print-log-to').value = '';
+    S.printLogLoaded = false;
+    loadPrintLog(true);
+  });
+  el('print-log-refresh-btn').addEventListener('click', () => {
+    S.printLogLoaded = false;
+    loadPrintLog(true);
+  });
+  el('print-log-load-more-btn').addEventListener('click', () => loadPrintLog(true, true));
+  document.querySelectorAll('[data-plmode]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      S.printLogMode = btn.dataset.plmode;
+      renderPrintLog();
+    }));
+  document.querySelectorAll('[data-plgroup]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-plgroup]').forEach(other => other.classList.remove('active'));
+      btn.classList.add('active');
+      S.printLogGroupFilter = btn.dataset.plgroup;
+      S.printLogExpandedGroup = null;
+      renderPrintLogBacklog();
+    }));
 
   // Preset buttons (společné pro obě obrazovky)
   document.querySelectorAll('.dr-preset').forEach(btn =>

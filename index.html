@@ -96,6 +96,10 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       <span>Historie</span>
     </button>
+    <button class="nav-item" data-screen="print-log">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+      <span>Print Log</span>
+    </button>
   </nav>
 
   <!-- ═══════════════════════════════════════════
@@ -347,6 +351,98 @@
       </div>
     </div>
     <div id="co-history-wrap" class="table-wrap"></div>
+  </main>
+
+
+  <!-- Print Log / analytics -->
+  <main id="screen-print-log" class="screen">
+    <div class="screen-header">
+      <h1>Print Log</h1>
+      <div class="header-meta" id="print-log-status">Backend data</div>
+    </div>
+
+    <div class="print-log-summary" id="print-log-summary-cards">
+      <div class="stat-chip"><span class="stat-num" id="pl-done-jobs">—</span><span class="stat-lbl">Done jobs</span></div>
+      <div class="stat-chip warn"><span class="stat-num" id="pl-aborted-jobs">—</span><span class="stat-lbl">Aborted jobs</span></div>
+      <div class="stat-chip crit"><span class="stat-num" id="pl-deleted-jobs">—</span><span class="stat-lbl">Deleted jobs</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-printed-area">—</span><span class="stat-lbl">Printed area</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-media-length">—</span><span class="stat-lbl">Media length used</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-duration">—</span><span class="stat-lbl">Total duration</span></div>
+    </div>
+
+    <div class="machine-card" style="margin-bottom:14px">
+      <div class="mc-header">
+        <span class="mc-label">Colorado-91 vs Colorado-92</span>
+        <span class="mc-badge" id="pl-compare-range">aktuální filtr</span>
+      </div>
+      <div class="print-compare-grid" id="pl-compare-grid">
+        <div class="metric-block">
+          <span class="metric-big">—</span>
+          <span class="metric-unit">Colorado-91</span>
+          <span class="metric-desc">Čekám na data</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-big">—</span>
+          <span class="metric-unit">Colorado-92</span>
+          <span class="metric-desc">Čekám na data</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="date-range-row print-log-filters">
+      <div class="date-range-inputs">
+        <label class="dr-label">Od</label>
+        <input type="date" id="print-log-from">
+        <label class="dr-label">Do</label>
+        <input type="date" id="print-log-to">
+        <button class="dr-clear" id="print-log-clear-dates" title="Zrušit filtr dat">✕</button>
+      </div>
+      <div class="print-log-selects">
+        <div class="form-group compact">
+          <label for="print-log-printer">Printer</label>
+          <select id="print-log-printer">
+            <option value="all">All</option>
+            <option value="Colorado-91">Colorado-91</option>
+            <option value="Colorado-92">Colorado-92</option>
+          </select>
+        </div>
+        <div class="form-group compact">
+          <label for="print-log-result">Result</label>
+          <select id="print-log-result">
+            <option value="all">All</option>
+            <option value="Done">Done</option>
+            <option value="Abrt">Abrt</option>
+            <option value="Deleted">Deleted</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="machine-card">
+      <div class="mc-header">
+        <span class="mc-label">Print operations</span>
+        <button class="btn-sm" id="print-log-refresh-btn">↻ Obnovit</button>
+      </div>
+      <div class="hist-tabs print-log-mode-tabs">
+        <button class="hist-tab active" data-plmode="raw">Raw activity</button>
+        <button class="hist-tab" data-plmode="backlog">Troubleshooting / Backlog</button>
+      </div>
+      <div class="pills print-log-group-filters hidden" id="print-log-group-filters">
+        <button class="pill active" data-plgroup="all">Vše</button>
+        <button class="pill" data-plgroup="open">Open issues</button>
+        <button class="pill" data-plgroup="resolved">Resolved retries</button>
+        <button class="pill" data-plgroup="multiple">Multiple attempts</button>
+      </div>
+      <div id="print-log-table-wrap" class="table-wrap">
+        <div class="loading-state"><div class="spinner"></div><p>Načítám Print Log…</p></div>
+      </div>
+      <div class="print-log-actions">
+        <button class="btn-secondary hidden" id="print-log-load-more-btn">Načíst další</button>
+      </div>
+      <div class="print-log-footer">
+        <span id="print-log-footnote">Posledních 50 řádků</span>
+      </div>
+    </div>
   </main>
 
   <!-- ═══════════════════════════════════════════
