@@ -15,7 +15,10 @@ function resp(statusCode, body) {
 async function withClient(run) {
   const conn = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
   if (!conn) throw new Error("Missing NETLIFY_DATABASE_URL");
-  const client = new Client({ connectionString: conn, ssl: { rejectUnauthorized: false } });
+  const client = new Client({
+    connectionString: conn,
+    ssl: { rejectUnauthorized: false },
+  });
   await client.connect();
   try {
     return await run(client);
@@ -44,38 +47,46 @@ function pick(cols, candidates, label) {
 
 function buildFilters(query, map, values) {
   const where = [];
+
   if (query.from) {
     values.push(`${query.from}T00:00:00.000Z`);
     where.push(`${map.readyAt} >= $${values.length}`);
   }
+
   if (query.to) {
     values.push(`${query.to}T23:59:59.999Z`);
     where.push(`${map.readyAt} <= $${values.length}`);
   }
-  if (query.printer && query.printer !== 'all') {
+
+  if (query.printer && query.printer !== "all") {
     values.push(query.printer);
     where.push(`${map.printerName} = $${values.length}`);
   }
-  if (query.result && query.result !== 'all') {
+
+  if (query.result && query.result !== "all") {
     values.push(query.result);
     where.push(`${map.result} = $${values.length}`);
   }
-  return where.length ? `where ${where.join(' and ')}` : '';
+
+  return where.length ? `where ${where.join(" and ")}` : "";
 }
 
 export async function handler(event) {
-  if (event.httpMethod !== "GET") return resp(405, { ok: false, error: "Method not allowed" });
+  if (event.httpMethod !== "GET") {
+    return resp(405, { ok: false, error: "Method not allowed" });
+  }
 
   try {
     const body = await withClient(async client => {
-      const cols = await getColumns(client, 'v_print_log_rows');
+      const cols = await getColumns(client, "v_print_log_rows");
+
       const map = {
-        readyAt: pick(cols, ['ready_at', 'readyat'], 'readyAt'),
-        printerName: pick(cols, ['printer_name', 'printername'], 'printerName'),
-        result: pick(cols, ['result'], 'result'),
-        printedArea: pick(cols, ['printed_area', 'printedarea'], 'printedArea'),
-        mediaLengthUsed: pick(cols, ['media_length_used', 'medialengthused', 'media_length', 'medialength'], 'mediaLengthUsed'),
-        durationSec: pick(cols, ['duration_sec', 'durationsec'], 'durationSec'),
+        readyAt: pick(cols, ["ready_at", "readyat"], "readyAt"),
+        printerName: pick(cols, ["printer_name", "printername"], "printerName"),
+        result: pick(cols, ["result"], "result"),
+        printedAreaM2: pick(cols, ["printed_area_m2", "printedaream2"], "printedAreaM2"),
+        mediaLengthM: pick(cols, ["media_length_m", "medialengthm"], "mediaLengthM"),
+        durationSec: pick(cols, ["duration_sec", "durationsec"], "durationSec"),
       };
 
       const values = [];
@@ -86,8 +97,8 @@ export async function handler(event) {
           count(*) filter (where lower(${map.result}) = 'done')::int as done_jobs,
           count(*) filter (where lower(${map.result}) in ('abrt', 'aborted'))::int as aborted_jobs,
           count(*) filter (where lower(${map.result}) = 'deleted')::int as deleted_jobs,
-          coalesce(sum(${map.printedArea}), 0)::float8 as printed_area,
-          coalesce(sum(${map.mediaLengthUsed}), 0)::float8 as media_length_used,
+          coalesce(sum(${map.printedAreaM2}), 0)::float8 as printed_area_m2,
+          coalesce(sum(${map.mediaLengthM}), 0)::float8 as media_length_m,
           coalesce(sum(${map.durationSec}), 0)::float8 as total_duration_sec
         from public.v_print_log_rows
         ${where}`;
@@ -96,8 +107,8 @@ export async function handler(event) {
         select
           ${map.printerName} as printer_name,
           count(*) filter (where lower(${map.result}) = 'done')::int as done_jobs,
-          coalesce(sum(${map.printedArea}), 0)::float8 as printed_area,
-          coalesce(sum(${map.mediaLengthUsed}), 0)::float8 as media_length_used
+          coalesce(sum(${map.printedAreaM2}), 0)::float8 as printed_area_m2,
+          coalesce(sum(${map.mediaLengthM}), 0)::float8 as media_length_m
         from public.v_print_log_rows
         ${where}
         group by ${map.printerName}`;
@@ -109,11 +120,12 @@ export async function handler(event) {
 
       const totals = totalsRes.rows[0] || {};
       const byPrinter = {};
+
       for (const row of printersRes.rows) {
         byPrinter[row.printer_name] = {
           doneJobs: row.done_jobs || 0,
-          printedArea: row.printed_area || 0,
-          mediaLengthUsed: row.media_length_used || 0,
+          printedAreaM2: Number(row.printed_area_m2 || 0),
+          mediaLengthM: Number(row.media_length_m || 0),
         };
       }
 
@@ -123,9 +135,9 @@ export async function handler(event) {
           doneJobs: totals.done_jobs || 0,
           abortedJobs: totals.aborted_jobs || 0,
           deletedJobs: totals.deleted_jobs || 0,
-          printedArea: totals.printed_area || 0,
-          mediaLengthUsed: totals.media_length_used || 0,
-          totalDurationSec: totals.total_duration_sec || 0,
+          printedAreaM2: Number(totals.printed_area_m2 || 0),
+          mediaLengthM: Number(totals.media_length_m || 0),
+          totalDurationSec: Number(totals.total_duration_sec || 0),
           byPrinter,
         },
         generatedAt: new Date().toISOString(),
