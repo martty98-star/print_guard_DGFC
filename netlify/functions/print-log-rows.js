@@ -98,7 +98,14 @@ export async function handler(event) {
         Math.max(parseInt(event.queryStringParameters?.limit || "50", 10) || 50, 1),
         200
       );
-      values.push(limit);
+      const offset = Math.max(
+        parseInt(event.queryStringParameters?.offset || "0", 10) || 0,
+        0
+      );
+      values.push(limit + 1);
+      const limitParam = values.length;
+      values.push(offset);
+      const offsetParam = values.length;
 
       const sql = `
         select
@@ -114,13 +121,17 @@ export async function handler(event) {
         from public.v_print_log_rows
         ${where}
         order by ${map.readyAt} desc
-        limit $${values.length}`;
+        limit $${limitParam}
+        offset $${offsetParam}`;
 
       const rowsRes = await client.query(sql, values);
+      const fetchedRows = rowsRes.rows || [];
+      const hasMore = fetchedRows.length > limit;
+      const visibleRows = hasMore ? fetchedRows.slice(0, limit) : fetchedRows;
 
       return {
         ok: true,
-        rows: rowsRes.rows.map(row => ({
+        rows: visibleRows.map(row => ({
           readyAt: row.readyAt,
           printerName: row.printerName,
           jobName: row.jobName,
@@ -132,6 +143,8 @@ export async function handler(event) {
           sourceFile: row.sourceFile,
         })),
         limit,
+        offset,
+        hasMore,
       };
     });
 
