@@ -368,6 +368,13 @@
       <div class="stat-chip"><span class="stat-num" id="pl-printed-area">—</span><span class="stat-lbl">Printed area</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-media-length">—</span><span class="stat-lbl">Media length used</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-duration">—</span><span class="stat-lbl">Total duration</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-total">—</span><span class="stat-lbl">Grouped jobs</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-first-pass">—</span><span class="stat-lbl">First-pass success</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-first-rate">—</span><span class="stat-lbl">First-pass rate</span></div>
+      <div class="stat-chip warn"><span class="stat-num" id="pl-sla-resolved">—</span><span class="stat-lbl">Resolved retries</span></div>
+      <div class="stat-chip crit"><span class="stat-num" id="pl-sla-open">—</span><span class="stat-lbl">Open / unresolved</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts">—</span><span class="stat-lbl">Avg attempts / job</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts-success">—</span><span class="stat-lbl">Avg attempts / success</span></div>
     </div>
 
     <div class="machine-card" style="margin-bottom:14px">
@@ -399,6 +406,13 @@
       </div>
       <div class="print-log-selects">
         <div class="form-group compact">
+          <label for="print-log-view-mode">View</label>
+          <select id="print-log-view-mode">
+            <option value="raw">Raw activity</option>
+            <option value="grouped">Troubleshooting / SLA</option>
+          </select>
+        </div>
+        <div class="form-group compact">
           <label for="print-log-printer">Printer</label>
           <select id="print-log-printer">
             <option value="all">All</option>
@@ -415,12 +429,22 @@
             <option value="Deleted">Deleted</option>
           </select>
         </div>
+        <div class="form-group compact hidden" id="print-log-group-filter-wrap">
+          <label for="print-log-group-filter">Lifecycle filter</label>
+          <select id="print-log-group-filter">
+            <option value="all">All lifecycle groups</option>
+            <option value="open_issue">Only open issues</option>
+            <option value="resolved_after_retry">Only resolved retries</option>
+            <option value="multiple_attempts">Only multiple-attempt jobs</option>
+            <option value="first_pass">Only first-pass successes</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <div class="machine-card">
       <div class="mc-header">
-        <span class="mc-label">Recent print activity</span>
+        <span class="mc-label" id="print-log-table-title">Recent print activity</span>
         <button class="btn-sm" id="print-log-refresh-btn">↻ Obnovit</button>
       </div>
       <div id="print-log-table-wrap" class="table-wrap">
