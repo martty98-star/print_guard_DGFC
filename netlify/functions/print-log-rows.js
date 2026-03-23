@@ -15,7 +15,10 @@ function resp(statusCode, body) {
 async function withClient(run) {
   const conn = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
   if (!conn) throw new Error("Missing NETLIFY_DATABASE_URL");
-  const client = new Client({ connectionString: conn, ssl: { rejectUnauthorized: false } });
+  const client = new Client({
+    connectionString: conn,
+    ssl: { rejectUnauthorized: false },
+  });
   await client.connect();
   try {
     return await run(client);
@@ -44,45 +47,57 @@ function pick(cols, candidates, label) {
 
 function buildFilters(query, map, values) {
   const where = [];
+
   if (query.from) {
     values.push(`${query.from}T00:00:00.000Z`);
     where.push(`${map.readyAt} >= $${values.length}`);
   }
+
   if (query.to) {
     values.push(`${query.to}T23:59:59.999Z`);
     where.push(`${map.readyAt} <= $${values.length}`);
   }
-  if (query.printer && query.printer !== 'all') {
+
+  if (query.printer && query.printer !== "all") {
     values.push(query.printer);
     where.push(`${map.printerName} = $${values.length}`);
   }
-  if (query.result && query.result !== 'all') {
+
+  if (query.result && query.result !== "all") {
     values.push(query.result);
     where.push(`${map.result} = $${values.length}`);
   }
-  return where.length ? `where ${where.join(' and ')}` : '';
+
+  return where.length ? `where ${where.join(" and ")}` : "";
 }
 
 export async function handler(event) {
-  if (event.httpMethod !== "GET") return resp(405, { ok: false, error: "Method not allowed" });
+  if (event.httpMethod !== "GET") {
+    return resp(405, { ok: false, error: "Method not allowed" });
+  }
 
   try {
     const body = await withClient(async client => {
-      const cols = await getColumns(client, 'v_print_log_rows');
+      const cols = await getColumns(client, "v_print_log_rows");
+
       const map = {
-        readyAt: pick(cols, ['ready_at', 'readyat'], 'readyAt'),
-        printerName: pick(cols, ['printer_name', 'printername'], 'printerName'),
-        jobName: pick(cols, ['job_name', 'jobname'], 'jobName'),
-        result: pick(cols, ['result'], 'result'),
-        mediaType: pick(cols, ['media_type', 'mediatype'], 'mediaType'),
-        printedArea: pick(cols, ['printed_area', 'printedarea'], 'printedArea'),
-        durationSec: pick(cols, ['duration_sec', 'durationsec'], 'durationSec'),
-        sourceFile: pick(cols, ['source_file', 'sourcefile'], 'sourceFile'),
+        readyAt: pick(cols, ["ready_at", "readyat"], "readyAt"),
+        printerName: pick(cols, ["printer_name", "printername"], "printerName"),
+        jobName: pick(cols, ["job_name", "jobname"], "jobName"),
+        result: pick(cols, ["result"], "result"),
+        mediaType: pick(cols, ["media_type", "mediatype"], "mediaType"),
+        printedAreaM2: pick(cols, ["printed_area_m2", "printedaream2"], "printedAreaM2"),
+        mediaLengthM: pick(cols, ["media_length_m", "medialengthm"], "mediaLengthM"),
+        durationSec: pick(cols, ["duration_sec", "durationsec"], "durationSec"),
+        sourceFile: pick(cols, ["source_file", "sourcefile"], "sourceFile"),
       };
 
       const values = [];
       const where = buildFilters(event.queryStringParameters || {}, map, values);
-      const limit = Math.min(Math.max(parseInt(event.queryStringParameters?.limit || '50', 10) || 50, 1), 200);
+      const limit = Math.min(
+        Math.max(parseInt(event.queryStringParameters?.limit || "50", 10) || 50, 1),
+        200
+      );
       values.push(limit);
 
       const sql = `
@@ -92,7 +107,8 @@ export async function handler(event) {
           ${map.jobName} as "jobName",
           ${map.result} as "result",
           ${map.mediaType} as "mediaType",
-          ${map.printedArea} as "printedArea",
+          ${map.printedAreaM2} as "printedAreaM2",
+          ${map.mediaLengthM} as "mediaLengthM",
           ${map.durationSec} as "durationSec",
           ${map.sourceFile} as "sourceFile"
         from public.v_print_log_rows
@@ -101,9 +117,20 @@ export async function handler(event) {
         limit $${values.length}`;
 
       const rowsRes = await client.query(sql, values);
+
       return {
         ok: true,
-        rows: rowsRes.rows,
+        rows: rowsRes.rows.map(row => ({
+          readyAt: row.readyAt,
+          printerName: row.printerName,
+          jobName: row.jobName,
+          result: row.result,
+          mediaType: row.mediaType,
+          printedAreaM2: row.printedAreaM2 == null ? null : Number(row.printedAreaM2),
+          mediaLengthM: row.mediaLengthM == null ? null : Number(row.mediaLengthM),
+          durationSec: row.durationSec == null ? null : Number(row.durationSec),
+          sourceFile: row.sourceFile,
+        })),
         limit,
       };
     });

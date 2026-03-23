@@ -1197,8 +1197,8 @@ function renderPrintLogSummary() {
   elSet('pl-done-jobs', fmtInt(summary.doneJobs));
   elSet('pl-aborted-jobs', fmtInt(summary.abortedJobs));
   elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
-  elSet('pl-printed-area', fmtMeasure(summary.printedArea, 'm²', 1));
-  elSet('pl-media-length', fmtMeasure(summary.mediaLengthUsed, 'm', 1));
+  elSet('pl-printed-area', fmtMeasure(summary.printedAreaM2, 'm²', 2));
+  elSet('pl-media-length', fmtMeasure(summary.mediaLengthM, 'm', 2));
   elSet('pl-duration', fmtDuration(summary.totalDurationSec));
   elSet('pl-compare-range', printLogRangeLabel());
 }
@@ -1213,7 +1213,7 @@ function renderPrintLogComparison() {
     return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
       <span class="metric-unit">${esc(name)}</span>
-      <span class="metric-desc">Done · ${fmtMeasure(rec.printedArea || 0, 'm²', 1)} · ${fmtMeasure(rec.mediaLengthUsed || 0, 'm', 1)}</span>
+      <span class="metric-desc">Done · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}</span>
     </div>`;
   }).join('');
 }
@@ -1234,7 +1234,7 @@ function renderPrintLogRows() {
     <td>${esc(row.jobName || '—')}</td>
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(row.result || '—')}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
-    <td class="num">${fmtMeasure(row.printedArea, 'm²', 1)}</td>
+    <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
     <td class="note-td">${esc(row.sourceFile || '—')}</td>
   </tr>`).join('');
