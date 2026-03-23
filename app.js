@@ -63,9 +63,12 @@ const S = {
   printLogResult:   'all',
   printLogRows:     [],
   printLogOffset:   0,
+  printLogHasMore:  true,
   printLogSummary:  null,
   printLogLoading:  false,
   printLogLoaded:   false,
+  syncRunning:      false,
+  syncIntervalId:   null,
 };
 
 // ── IndexedDB ──────────────────────────────────────────────
@@ -1168,11 +1171,12 @@ async function fetchPrintLogRows() {
 
 async function loadPrintLog(force = false) {
   if (S.printLogLoading) return;
-  if (S.printLogLoaded && !force) return;
+  if (S.printLogLoaded && !force && !S.printLogHasMore) return;
 
   if (force) {
     S.printLogRows = [];
     S.printLogOffset = 0;
+    S.printLogHasMore = true;
   }
 
   S.printLogLoading = true;
@@ -1188,6 +1192,7 @@ async function loadPrintLog(force = false) {
     const newRows = Array.isArray(rows.rows) ? rows.rows : [];
     S.printLogRows = [...S.printLogRows, ...newRows];
     S.printLogOffset += newRows.length;
+    S.printLogHasMore = Boolean(rows.hasMore);
     S.printLogLoaded = true;
     renderPrintLog();
     elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Backend data');
@@ -1256,8 +1261,7 @@ function renderPrintLogRows() {
     <td class="note-td">${esc(row.sourceFile || '—')}</td>
   </tr>`).join('');
 
-  const hasMore = S.printLogRows.length >= PRINT_LOG_PAGE_SIZE;
-  const loadMoreBtn = hasMore ? `<button id="pl-load-more" class="btn">Load more</button>` : '';
+  const loadMoreBtn = S.printLogHasMore ? `<button id="pl-load-more" class="btn">Load more</button>` : '';
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
@@ -1726,6 +1730,151 @@ async function cloudPush() {
   return j;
 }
 
+async function runSync(options = {}) {
+  const { silent = false } = options;
+  const btn = el('sync-btn');
+  if (S.syncRunning) return false;
+  if (!navigator.onLine) {
+    if (!silent) showToast('Jsi offline — sync nejde.', 'error');
+    return false;
+  }
+
+  S.syncRunning = true;
+  btn?.classList.add('syncing');
+
+  try {
+    if (!silent) showToast('Sync…');
+
+    await loadAll();
+
+    const badLocalItem = (S.items || []).find(it => !it?.articleNumber);
+    if (badLocalItem) {
+      console.warn('[SYNC] Local item missing articleNumber:', badLocalItem);
+      if (!silent) showToast('Lokální data: některé položky nemají articleNumber.', 'error');
+      return false;
+    }
+    const badLocalMove = (S.movements || []).find(m => !m?.id);
+    if (badLocalMove) {
+      console.warn('[SYNC] Local movement missing id:', badLocalMove);
+      if (!silent) showToast('Lokální data: některé pohyby nemají id.', 'error');
+      return false;
+    }
+    const badLocalCo = (S.coRecords || []).find(r => !r?.id);
+    if (badLocalCo) {
+      console.warn('[SYNC] Local coRecord missing id:', badLocalCo);
+      if (!silent) showToast('Lokální data: některé Colorado záznamy nemají id.', 'error');
+      return false;
+    }
+
+    const pushRes = await cloudPush();
+    const remote = await cloudPull();
+
+    const rawItems    = Array.isArray(remote?.items)     ? remote.items     : [];
+    const rawMoves    = Array.isArray(remote?.movements) ? remote.movements : [];
+    const rawCo       = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
+    const rawSettings = Array.isArray(remote?.settings)  ? remote.settings  : [];
+
+    const goodItems = [];
+    const badItems  = [];
+    for (const it of rawItems) {
+      const articleNumber =
+        it?.articleNumber ??
+        it?.ArticleNumber ??
+        it?.article ??
+        it?.code ??
+        null;
+
+      if (!articleNumber || String(articleNumber).trim() === '') {
+        badItems.push(it);
+        continue;
+      }
+
+      const fixed = { ...it, articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-') };
+      goodItems.push(fixed);
+    }
+
+    const goodMoves = [];
+    const badMoves  = [];
+    for (const m of rawMoves) {
+      const id = m?.id ?? null;
+      const articleNumber = m?.articleNumber ?? m?.ArticleNumber ?? null;
+      if (!id || String(id).trim() === '' || !articleNumber || String(articleNumber).trim() === '') {
+        badMoves.push(m);
+        continue;
+      }
+      goodMoves.push({
+        ...m,
+        id: String(id).trim(),
+        articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-')
+      });
+    }
+
+    const goodCo = [];
+    const badCo  = [];
+    for (const r of rawCo) {
+      const id = r?.id ?? null;
+      const machineId = r?.machineId ?? null;
+      if (!id || String(id).trim() === '' || !machineId || String(machineId).trim() === '') {
+        badCo.push(r);
+        continue;
+      }
+      goodCo.push({ ...r, id: String(id).trim(), machineId: String(machineId).trim() });
+    }
+
+    if (badItems.length || badMoves.length || badCo.length) {
+      console.warn('[SYNC] Dropping invalid remote records:', {
+        badItems, badMoves, badCo
+      });
+    }
+
+    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
+
+    for (const it of goodItems) await idbPut(ST_ITEMS, it);
+    for (const m  of goodMoves) await idbPut(ST_MOVES, m);
+    for (const r  of goodCo)    await idbPut(ST_CORECS, r);
+    for (const s of rawSettings) {
+      if (s?.key) await idbPut(ST_SETTINGS, s);
+    }
+
+    await loadAll();
+
+    const dropped = badItems.length + badMoves.length + badCo.length;
+    if (!silent) {
+      showToast(
+        `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}` +
+        (dropped ? ` · zahoz.:${dropped}` : ''),
+        dropped ? 'warn' : 'success'
+      );
+    }
+    return true;
+  } catch (e) {
+    console.error('[SYNC] Error:', e);
+    if (!silent) showToast('Sync chyba: ' + (e?.message || e), 'error');
+    return false;
+  } finally {
+    S.syncRunning = false;
+    applyRoleUI();
+    setTimeout(() => btn?.classList.remove('syncing'), 500);
+  }
+}
+
+function setupBackgroundSync() {
+  if (navigator.onLine) {
+    runSync({ silent: true });
+  }
+
+  window.addEventListener('online', () => {
+    updateOfflineBanner();
+    runSync({ silent: true });
+  });
+
+  if (S.syncIntervalId) clearInterval(S.syncIntervalId);
+  S.syncIntervalId = setInterval(() => {
+    if (!navigator.onLine || document.visibilityState !== 'visible') return;
+    runSync({ silent: true });
+  }, 5 * 60 * 1000);
+}
+
 function applyRoleUI() {
   const admin = isAdmin();
 
@@ -1825,139 +1974,10 @@ async function init() {
   // Topbar
   el('nav-settings').addEventListener('click', () => navigate('settings'));
 
-  // ✅ SYNC (cloud push + pull + overwrite local)
+// ✅ SYNC (cloud push + pull + overwrite local)
 // ✅ SYNC (cloud push + pull + overwrite local) — HARDENED
 el('sync-btn').addEventListener('click', async () => {
-  const btn = el('sync-btn');
-  if (!btn) return;
-
-  btn.classList.add('syncing');
-
-  try {
-    if (!navigator.onLine) {
-      showToast('Jsi offline — sync nejde.', 'error');
-      return;
-    }
-
-    showToast('Sync…');
-
-    // 1) načti lokál (IndexedDB -> S.*)
-    await loadAll();
-
-    // 2) validace lokálu
-    const badLocalItem = (S.items || []).find(it => !it?.articleNumber);
-    if (badLocalItem) {
-      console.warn('[SYNC] Local item missing articleNumber:', badLocalItem);
-      showToast('Lokální data: některé položky nemají articleNumber.', 'error');
-      return;
-    }
-    const badLocalMove = (S.movements || []).find(m => !m?.id);
-    if (badLocalMove) {
-      console.warn('[SYNC] Local movement missing id:', badLocalMove);
-      showToast('Lokální data: některé pohyby nemají id.', 'error');
-      return;
-    }
-    const badLocalCo = (S.coRecords || []).find(r => !r?.id);
-    if (badLocalCo) {
-      console.warn('[SYNC] Local coRecord missing id:', badLocalCo);
-      showToast('Lokální data: některé Colorado záznamy nemají id.', 'error');
-      return;
-    }
-
-    // 3) push lokál -> cloud
-    const pushRes = await cloudPush();
-
-    // 4) pull cloud -> lokál (cloud je truth pro MVP)
-    const remote = await cloudPull();
-
-    // 5) VALIDACE + SANITIZE remote dat
-    const rawItems    = Array.isArray(remote?.items)     ? remote.items     : [];
-    const rawMoves    = Array.isArray(remote?.movements) ? remote.movements : [];
-    const rawCo       = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
-    const rawSettings = Array.isArray(remote?.settings)  ? remote.settings  : [];
-
-    const goodItems = [];
-    const badItems  = [];
-    for (const it of rawItems) {
-      // toleruj i alternativní názvy (když to někdo v cloudu posral)
-      const articleNumber =
-        it?.articleNumber ??
-        it?.ArticleNumber ??
-        it?.article ??
-        it?.code ??
-        null;
-
-      if (!articleNumber || String(articleNumber).trim() === '') {
-        badItems.push(it);
-        continue;
-      }
-
-      // normalizuj
-      const fixed = { ...it, articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-') };
-      goodItems.push(fixed);
-    }
-
-    const goodMoves = [];
-    const badMoves  = [];
-    for (const m of rawMoves) {
-      const id = m?.id ?? null;
-      const articleNumber = m?.articleNumber ?? m?.ArticleNumber ?? null;
-      if (!id || String(id).trim() === '' || !articleNumber || String(articleNumber).trim() === '') {
-        badMoves.push(m);
-        continue;
-      }
-      goodMoves.push({
-        ...m,
-        id: String(id).trim(),
-        articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-')
-      });
-    }
-
-    const goodCo = [];
-    const badCo  = [];
-    for (const r of rawCo) {
-      const id = r?.id ?? null;
-      const machineId = r?.machineId ?? null;
-      if (!id || String(id).trim() === '' || !machineId || String(machineId).trim() === '') {
-        badCo.push(r);
-        continue;
-      }
-      goodCo.push({ ...r, id: String(id).trim(), machineId: String(machineId).trim() });
-    }
-
-    if (badItems.length || badMoves.length || badCo.length) {
-      console.warn('[SYNC] Dropping invalid remote records:', {
-        badItems, badMoves, badCo
-      });
-    }
-
-    // 6) přepiš lokální DB cloudem (jen validní data)
-    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
-
-    for (const it of goodItems) await idbPut(ST_ITEMS, it);
-    for (const m  of goodMoves) await idbPut(ST_MOVES, m);
-    for (const r  of goodCo)    await idbPut(ST_CORECS, r);
-    // settings: ulož jen validní záznam s key
-    for (const s of rawSettings) {
-      if (s?.key) await idbPut(ST_SETTINGS, s);
-    }
-
-    // 7) reload + UI
-    await loadAll();
-
-    const dropped = badItems.length + badMoves.length + badCo.length;
-    showToast(
-      `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}` +
-      (dropped ? ` · zahoz.:${dropped}` : ''),
-      dropped ? 'warn' : 'success'
-    );
-  } catch (e) {
-    console.error('[SYNC] Error:', e);
-    showToast('Sync chyba: ' + (e?.message || e), 'error');
-  } finally {
-    applyRoleUI();
-    setTimeout(() => btn.classList.remove('syncing'), 500);
-  }
+  await runSync();
 });
 
   // Stock search + filter
@@ -2026,18 +2046,16 @@ el('sync-btn').addEventListener('click', async () => {
   el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
 
   // Print log filters
-  el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
-  el('print-log-to').addEventListener('change',   e => { S.printLogDateTo   = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
-  el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
-  el('print-log-result').addEventListener('change',  e => { S.printLogResult  = e.target.value; S.printLogLoaded = false; loadPrintLog(true); });
+  el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; loadPrintLog(true); });
+  el('print-log-to').addEventListener('change',   e => { S.printLogDateTo   = e.target.value; loadPrintLog(true); });
+  el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; loadPrintLog(true); });
+  el('print-log-result').addEventListener('change',  e => { S.printLogResult  = e.target.value; loadPrintLog(true); });
   el('print-log-clear-dates').addEventListener('click', () => {
     S.printLogDateFrom = ''; S.printLogDateTo = '';
     el('print-log-from').value = ''; el('print-log-to').value = '';
-    S.printLogLoaded = false;
     loadPrintLog(true);
   });
   el('print-log-refresh-btn').addEventListener('click', () => {
-    S.printLogLoaded = false;
     loadPrintLog(true);
   });
   document.addEventListener('click', e => {
@@ -2073,6 +2091,7 @@ el('sync-btn').addEventListener('click', async () => {
 
   await loadAll();
   applyRoleUI(); // ✅ IMPORTANT
+  setupBackgroundSync();
 
   // Service Worker
   if ('serviceWorker' in navigator) {
