@@ -372,18 +372,18 @@
 
     <div class="machine-card" style="margin-bottom:14px">
       <div class="mc-header">
-        <span class="mc-label">Colorado-91 vs Colorado-92</span>
+        <span class="mc-label">Colorado A vs Colorado B</span>
         <span class="mc-badge" id="pl-compare-range">aktuální filtr</span>
       </div>
       <div class="print-compare-grid" id="pl-compare-grid">
         <div class="metric-block">
           <span class="metric-big">—</span>
-          <span class="metric-unit">Colorado-91</span>
+          <span class="metric-unit">Colorado A</span>
           <span class="metric-desc">Čekám na data</span>
         </div>
         <div class="metric-block">
           <span class="metric-big">—</span>
-          <span class="metric-unit">Colorado-92</span>
+          <span class="metric-unit">Colorado B</span>
           <span class="metric-desc">Čekám na data</span>
         </div>
       </div>
@@ -402,8 +402,8 @@
           <label for="print-log-printer">Printer</label>
           <select id="print-log-printer">
             <option value="all">All</option>
-            <option value="Colorado-91">Colorado-91</option>
-            <option value="Colorado-92">Colorado-92</option>
+            <option value="Colorado-91">Colorado A</option>
+            <option value="Colorado-92">Colorado B</option>
           </select>
         </div>
         <div class="form-group compact">
@@ -420,24 +420,11 @@
 
     <div class="machine-card">
       <div class="mc-header">
-        <span class="mc-label">Print operations</span>
+        <span class="mc-label">Recent print activity</span>
         <button class="btn-sm" id="print-log-refresh-btn">↻ Obnovit</button>
-      </div>
-      <div class="hist-tabs print-log-mode-tabs">
-        <button class="hist-tab active" data-plmode="raw">Raw activity</button>
-        <button class="hist-tab" data-plmode="backlog">Troubleshooting / Backlog</button>
-      </div>
-      <div class="pills print-log-group-filters hidden" id="print-log-group-filters">
-        <button class="pill active" data-plgroup="all">Vše</button>
-        <button class="pill" data-plgroup="open">Open issues</button>
-        <button class="pill" data-plgroup="resolved">Resolved retries</button>
-        <button class="pill" data-plgroup="multiple">Multiple attempts</button>
       </div>
       <div id="print-log-table-wrap" class="table-wrap">
         <div class="loading-state"><div class="spinner"></div><p>Načítám Print Log…</p></div>
-      </div>
-      <div class="print-log-actions">
-        <button class="btn-secondary hidden" id="print-log-load-more-btn">Načíst další</button>
       </div>
       <div class="print-log-footer">
         <span id="print-log-footnote">Posledních 50 řádků</span>

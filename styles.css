@@ -757,23 +757,7 @@ textarea { resize: vertical; min-height: 58px; }
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.print-log-mode-tabs {
-  margin-bottom: 12px;
-}
-.print-log-group-filters {
-  margin-bottom: 12px;
-}
-.print-log-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-}
-.print-log-actions .btn-secondary {
-  width: auto;
-  min-width: 180px;
-}
-.result-badge,
-.operational-badge {
+.result-badge {
   display: inline-flex;
   align-items: center;
   padding: 3px 7px;
@@ -786,52 +770,6 @@ textarea { resize: vertical; min-height: 58px; }
 .result-badge.done { color: var(--ok); border-color: var(--ok); background: var(--ok-dim); }
 .result-badge.abrt { color: var(--warn); border-color: var(--warn); background: var(--warn-dim); }
 .result-badge.deleted { color: var(--crit); border-color: var(--crit); background: var(--crit-dim); }
-.operational-badge.success { color: var(--ok); border-color: var(--ok); background: var(--ok-dim); }
-.operational-badge.reprinted_successfully,
-.operational-badge.multiple_attempts { color: var(--stocktake); border-color: var(--stocktake); background: var(--ink-dim); }
-.operational-badge.open_issue,
-.operational-badge.aborted_only,
-.operational-badge.deleted_only,
-.operational-badge.unresolved { color: var(--crit); border-color: var(--crit); background: var(--crit-dim); }
-.print-log-row-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  padding: 0;
-  text-align: left;
-}
-.print-log-detail-cell {
-  background: var(--bg4);
-  padding: 0 !important;
-}
-.print-log-detail {
-  padding: 14px;
-  display: grid;
-  gap: 10px;
-}
-.print-log-attempts {
-  display: grid;
-  gap: 8px;
-}
-.print-log-attempt {
-  border: 1px solid var(--border);
-  background: var(--bg);
-  padding: 10px 12px;
-}
-.print-log-attempt-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.print-log-attempt-meta {
-  font-size: .68rem;
-  color: var(--text-dim);
-  line-height: 1.6;
-}
 .table-empty-note {
   margin-top: 6px;
   color: var(--text-faint);
