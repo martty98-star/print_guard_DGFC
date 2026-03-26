@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>EIZO ColorEdge – cena/výkon (prezentace)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#111823;
+      --panel2:#0f1620;
+      --text:#e7eef7;
+      --muted:#a9b7c6;
+      --accent:#7dd3fc;
+      --good:#86efac;
+      --warn:#fcd34d;
+      --bad:#fda4af;
+      --line:rgba(255,255,255,.10);
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(125,211,252,.10), transparent 55%),
+                  radial-gradient(900px 700px at 85% 30%, rgba(134,239,172,.08), transparent 50%),
+                  var(--bg);
+      color:var(--text);
+      overflow:hidden;
+    }
+
+    /* Layout */
+    .deck{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    header{
+      padding:14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(17,24,35,.92), rgba(17,24,35,.65));
+      backdrop-filter: blur(8px);
+    }
+    .title{
+      display:flex; flex-direction:column; gap:2px;
+      min-width:0;
+    }
+    .title h1{
+      margin:0; font-size:14px; letter-spacing:.2px; font-weight:650;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .title .sub{
+      font-size:12px; color:var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .controls{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .btn{
+      appearance:none; border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.16); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{ border-color: rgba(125,211,252,.45); background: rgba(125,211,252,.10); }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:11px;
+      color:var(--muted);
+      padding:2px 6px;
+      border:1px solid var(--line);
+      border-bottom-color: rgba(255,255,255,.18);
+      border-radius:8px;
+      background: rgba(0,0,0,.25);
+    }
+    .progress{
+      display:flex; align-items:center; gap:10px; min-width:180px;
+    }
+    .bar{
+      height:8px; flex:1;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .bar > span{
+      display:block; height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(125,211,252,.95), rgba(134,239,172,.9));
+    }
+    .counter{
+      font-size:12px; color:var(--muted);
+      min-width:62px; text-align:right;
+    }
+
+    main{
+      position:relative;
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+    }
+
+    /* Slide */
+    .slide{
+      width:min(1100px, 96vw);
+      height:min(640px, 78vh);
+      background: linear-gradient(180deg, rgba(17,24,35,.94), rgba(15,22,32,.92));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:28px 30px;
+      display:none;
+      position:absolute;
+      inset:auto;
+      overflow:hidden;
+    }
+    .slide.active{ display:block; }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:18px;
+      height:100%;
+    }
+    .grid.single{ grid-template-columns:1fr; }
+
+    .eyebrow{
+      color:var(--muted);
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size:11px;
+      margin-bottom:10px;
+    }
+    h2{
+      margin:0 0 12px 0;
+      font-size:34px;
+      line-height:1.08;
+      letter-spacing:-.02em;
+    }
+    p{
+      margin:0 0 10px 0;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.5;
+    }
+
+    .card{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.035);
+      border-radius:16px;
+      padding:14px 14px;
+    }
+    .stack{ display:flex; flex-direction:column; gap:12px; }
+
+    .pillrow{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .pill{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill strong{ color:var(--text); font-weight:650; }
+
+    ul{
+      margin:10px 0 0 0;
+      padding:0 0 0 18px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.55;
+    }
+    li{ margin:6px 0; }
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:12px; color:var(--muted);
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(125,211,252,.85);
+      box-shadow: 0 0 0 3px rgba(125,211,252,.12);
+      flex:0 0 auto;
+    }
+
+    /* Table */
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.12);
+      font-size:13px;
+    }
+    th,td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      vertical-align:top;
+    }
+    th{
+      text-align:left;
+      color:var(--text);
+      font-weight:650;
+      background: rgba(255,255,255,.04);
+    }
+    tr:last-child td{ border-bottom:none; }
+    .price{
+      font-weight:700; color:var(--text);
+    }
+    .muted{ color:var(--muted); }
+
+    /* Score chips */
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .chip{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .chip.good{ border-color: rgba(134,239,172,.35); background: rgba(134,239,172,.10); color: #c9fdd7; }
+    .chip.warn{ border-color: rgba(252,211,77,.35); background: rgba(252,211,77,.10); color: #ffe7a6; }
+    .chip.bad{  border-color: rgba(253,164,175,.35); background: rgba(253,164,175,.10); color: #ffd1d8; }
+
+    /* Footer hints */
+    footer{
+      padding:10px 18px;
+      border-top:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      color:var(--muted);
+      font-size:12px;
+      background: linear-gradient(180deg, rgba(17,24,35,.40), rgba(17,24,35,.78));
+      backdrop-filter: blur(8px);
+    }
+    .hint{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .sep{ opacity:.45; }
+    a{ color: var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    /* Print */
+    @media print{
+      body{ overflow:visible; background:#fff; color:#000; }
+      header, footer, .controls{ display:none !important; }
+      main{ padding:0; }
+      .slide{
+        display:block !important;
+        position:relative !important;
+        page-break-after:always;
+        width:100%;
+        height:auto;
+        box-shadow:none;
+        border:1px solid #ddd;
+        background:#fff;
+        color:#000;
+      }
+      .muted{ color:#333; }
+      .card, table{ border-color:#ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <header>
+      <div class="title">
+        <h1>EIZO ColorEdge – porovnání cena/výkon</h1>
+        <div class="sub">Interní přehled pro grafiku / prepress / tisk (rychlé rozhodnutí)</div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="prevBtn" title="Předchozí (←)">
+          ← Předchozí
+        </button>
+        <button class="btn primary" id="nextBtn" title="Další (→)">
+          Další →
+        </button>
+        <button class="btn" id="overviewBtn" title="Přehled (O)">
+          Přehled (O)
+        </button>
+        <button class="btn" id="printBtn" title="Tisk/PDF (Ctrl+P)">
+          Tisk / PDF
+        </button>
+        <div class="progress" aria-label="Postup">
+          <div class="bar"><span id="barFill"></span></div>
+          <div class="counter" id="counter">1 / 7</div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Slide 1 -->
+      <section class="slide active" data-title="Kontext">
+        <div class="grid">
+          <div class="stack">
+            <div class="eyebrow">Cíl</div>
+            <h2>Vybrat ColorEdge podle reálné hodnoty</h2>
+            <p>
+              Rozhodovací rámec: kolik stojí <strong>přesnost + stabilita + komfort kalibrace</strong> vůči tomu,
+              co reálně využiješ v workflow (ICC, prepress, proofing, grafika, video).
+            </p>
+
+            <div class="card">
+              <div class="tag"><span class="dot"></span><strong>Hlavní volba pro většinu lidí:</strong></div>
+              <p style="margin-top:8px">
+                <strong>CS2740</strong> (27" 4K) = nejlepší celkový poměr cena/výkon v profi třídě,
+                pokud ti stačí kalibrace externí sondou.
+              </p>
+              <div class="pillrow">
+                <span class="pill"><strong>4K</strong> pracovní plocha</span>
+                <span class="pill"><strong>Wide gamut</strong> pro tisk</span>
+                <span class="pill"><strong>Profi uniformita</strong></span>
+                <span class="pill"><strong>Bez vestavěného senzoru</strong></span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="tag"><span class="dot" style="background:rgba(252,211,77,.85); box-shadow:0 0 0 3px rgba(252,211,77,.12)"></span><strong>Největší rozdíl v ceně:</strong></div>
+              <ul>
+                <li><strong>CS řada</strong>: levnější, kalibrace externí sondou.</li>
+                <li><strong>CG řada</strong>: dražší, ale má <strong>vestavěný kalibrační senzor</strong> (komfort + konzistence).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="eyebrow">Rychlé „kdy co“</div>
+            <div class="card">
+              <h3 style="margin:0 0 8px 0; font-size:16px;">Když chceš 4K bez extrémní ceny</h3>
+              <p><strong>CS2740</strong> – rozumná investice, vysoká vizuální kvalita.</p>
+              <div class="chips">
+                <span class="chip good">4K</span>
+                <span class="chip good">Cena/výkon</span>
+                <span class="chip warn">Externí kalibrace</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 8px 0; font-size:16px;">Když chceš „nastav a neřeš“</h3>
+              <p><strong>CG2700S / CG2700X</strong> – vestavěný senzor = méně starostí, vyšší stabilita.</p>
+              <div class="chips">
+                <span class="chip good">Auto-kalibrace</span>
+                <span class="chip warn">Vyšší cena</span>
+                <span class="chip good">Pro studio</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 8px 0; font-size:16px;">Když řešíš rozpočet</h3>
+              <p><strong>CS2731 / CS2400S</strong> – profi barvy za méně, bez 4K.</p>
+              <div class="chips">
+                <span class="chip good">Nižší cena</span>
+                <span class="chip warn">Nižší rozlišení</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 2 -->
+      <section class="slide" data-title="Top doporučení">
+        <div class="grid">
+          <div class="stack">
+            <div class="eyebrow">#1 Nejlepší cena/výkon</div>
+            <h2>CS2740 (27&quot; 4K)</h2>
+            <p>
+              Nejlepší univerzální volba: 4K pracovní plocha, vysoká přesnost, dobrá uniformita, rozumná cena.
+              Kompromis: kalibrace externí sondou.
+            </p>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Co kupuješ</h3>
+              <ul>
+                <li><strong>4K</strong> (víc prostoru pro UI, detail, jemná kresba)</li>
+                <li><strong>Wide gamut</strong> pro tisk / foto (typicky AdobeRGB/DCI-P3 coverage v praxi)</li>
+                <li><strong>Profi uniformita</strong> a stabilita podsvitu v rámci řady</li>
+                <li><strong>10-bit workflow</strong> (dle řetězce: GPU + aplikace + kabel)</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Kdy to dává smysl nejvíc</h3>
+              <ul>
+                <li>grafika, DTP, tiskové PDF, retuš, layout</li>
+                <li>když chceš 4K, ale <strong>nechceš platit CG prémii</strong></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="eyebrow">Realita</div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Tradeoffy (upřímně)</h3>
+              <ul>
+                <li><strong>Není</strong> vestavěný kalibrační senzor → musíš hlídat kalibraci externě.</li>
+                <li>Pokud jedeš extrémně striktní proofing, CG řada je pohodlnější.</li>
+                <li>4K může být náročnější na HW / scaling ve Windows.</li>
+              </ul>
+              <div class="chips">
+                <span class="chip good">Top value</span>
+                <span class="chip warn">Externí sonda</span>
+                <span class="chip warn">4K scaling</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Orientační cena (CZ)</h3>
+              <p style="margin:0"><span class="price">~32 900 Kč</span> <span class="muted">(dle dostupnosti/prodejce)</span></p>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Doporučený „setup“</h3>
+              <ul>
+                <li>externí sonda (X-Rite/Calibrite apod.) + pravidelný interval kalibrace</li>
+                <li>konzistentní osvětlení pracoviště</li>
+                <li>správně nastavený ICC pipeline (profil monitoru + profil tiskárny/RIP)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3 -->
+      <section class="slide" data-title="Nejlepší pod 30k">
+        <div class="grid">
+          <div class="stack">
+            <div class="eyebrow">#2 Nejlepší rozpočet &quot;profi&quot;</div>
+            <h2>CS2731 (27&quot; WQHD)</h2>
+            <p>
+              Výborná hodnota, pokud nepotřebuješ 4K. Stále profesionální barevnost a pohodlná velikost 27".
+              Dobré pro DTP, retuš, grafiku a obecný prepress.
+            </p>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Proč to dává smysl</h3>
+              <ul>
+                <li>nižší cena než 4K modely, přesto <strong>profi standard</strong></li>
+                <li>WQHD bývá praktičtější na škálování a výkon než 4K</li>
+                <li>dobrý sweet-spot mezi velikostí a ostrostí UI</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Pro koho</h3>
+              <ul>
+                <li>když chceš 27" pracovní plochu, ale 4K nepotřebuješ</li>
+                <li>když řešíš rozpočet, ale nechceš slevit z přesnosti</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="eyebrow">Tradeoffy</div>
+            <div class="card">
+              <ul>
+                <li><strong>Bez</strong> vestavěného kalibračního senzoru → externí sonda</li>
+                <li>nižší rozlišení než CS2740 → méně prostoru pro UI</li>
+              </ul>
+              <div class="chips">
+                <span class="chip good">Cena</span>
+                <span class="chip good">27&quot;</span>
+                <span class="chip warn">Externí sonda</span>
+                <span class="chip warn">Není 4K</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Orientační cena (CZ)</h3>
+              <p style="margin:0"><span class="price">~27 500 Kč</span> <span class="muted">(často skladem)</span></p>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Kdy radši CS2740</h3>
+              <ul>
+                <li>když často zoomuješ detaily, děláš velké plátno, nebo řešíš 4K video</li>
+                <li>když chceš maximum pracovního prostoru na jednom panelu</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4 -->
+      <section class="slide" data-title="Prémiová volba">
+        <div class="grid">
+          <div class="stack">
+            <div class="eyebrow">#3 Nejvyšší jistota</div>
+            <h2>CG2700X (27&quot; 4K, vestavěná kalibrace)</h2>
+            <p>
+              Když chceš maximální konzistenci a komfort: vestavěný kalibrační senzor, 4K,
+              silná volba pro studio a náročný proofing.
+            </p>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Co platíš navíc</h3>
+              <ul>
+                <li><strong>Auto-kalibrace</strong> (senzor v monitoru) → méně chyb, méně operativy</li>
+                <li>pocit „set-and-forget“ ve firmě/studiu</li>
+                <li>vhodnější pro prostředí, kde se monitor používá denně a často pro kritické barvy</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="eyebrow">Cena vs přínos</div>
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Orientační cena (CZ)</h3>
+              <p style="margin:0"><span class="price">~70 600 Kč</span> <span class="muted">(výrazně vyšší investice)</span></p>
+              <div class="chips">
+                <span class="chip good">4K</span>
+                <span class="chip good">Auto-kalibrace</span>
+                <span class="chip warn">Vysoká cena</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Kdy to má smysl</h3>
+              <ul>
+                <li>když je barva „high-stakes“ (proof / klient / opakovatelnost)</li>
+                <li>když chceš minimalizovat lidský faktor a kalibrační disciplínu týmu</li>
+                <li>když víš, že 4K využiješ (pracovní plocha, detail, video)</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Kdy je to overkill</h3>
+              <ul>
+                <li>když kalibruješ málo a stejně jedeš „OK“ toleranci</li>
+                <li>když většinu času děláš běžnou grafiku/web a ne kritický proofing</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 5 -->
+      <section class="slide" data-title="Střed s auto-kalibrací">
+        <div class="grid">
+          <div class="stack">
+            <div class="eyebrow">#4 CG komfort, bez 4K</div>
+            <h2>CG2700S (27&quot; WQHD, vestavěná kalibrace)</h2>
+            <p>
+              Nejlepší kompromis, pokud chceš vestavěný senzor (auto-kalibrace), ale nepotřebuješ 4K.
+              Cenově příjemnější než CG2700X.
+            </p>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Proč je zajímavý</h3>
+              <ul>
+                <li><strong>Auto-kalibrace</strong> = pohodlí + konzistence</li>
+                <li>WQHD = často praktičtější workflow než 4K (škálování, výkon)</li>
+                <li>dobrá volba pro tým a dlouhodobý provoz</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="eyebrow">Realita</div>
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Orientační cena (CZ)</h3>
+              <p style="margin:0"><span class="price">~44 900 Kč</span> <span class="muted">(typicky rychlá dostupnost)</span></p>
+              <div class="chips">
+                <span class="chip good">Auto-kalibrace</span>
+                <span class="chip good">27&quot;</span>
+                <span class="chip warn">Není 4K</span>
+                <span class="chip warn">Stále dražší než CS</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Kdy vybrat CG2700S</h3>
+              <ul>
+                <li>chceš komfort CG řady, ale nechceš platit za 4K panel</li>
+                <li>chceš lepší procesní stabilitu (méně „lidských“ chyb v kalibraci)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 6 -->
+      <section class="slide" data-title="Nejlevnější profi start">
+        <div class="grid">
+          <div class="stack">
+            <div class="eyebrow">#5 Nejnižší rozpočet</div>
+            <h2>CS2400S (24&quot; 1920×1200)</h2>
+            <p>
+              Nejlevnější vstup do ColorEdge pro „profi barvy“. Pokud je rozhodující rozpočet,
+              pořád získáš lepší jistotu než běžné kancelářské/„gaming“ panely.
+            </p>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Kdy dává smysl</h3>
+              <ul>
+                <li>když chceš ColorEdge ekosystém, ale nechceš investovat 25–35k+</li>
+                <li>sekundární monitor pro náhled/asset management</li>
+                <li>menší pracovní místo</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="eyebrow">Tradeoffy</div>
+            <div class="card">
+              <ul>
+                <li>menší plocha + nižší rozlišení → méně komfortní pro komplexní UI</li>
+                <li>externí kalibrace</li>
+              </ul>
+              <div class="chips">
+                <span class="chip good">Cena</span>
+                <span class="chip warn">Menší plocha</span>
+                <span class="chip warn">Externí sonda</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Orientační cena (CZ)</h3>
+              <p style="margin:0"><span class="price">~17 990 Kč</span> <span class="muted">(často skladem)</span></p>
+            </div>
+
+            <div class="card">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Poznámka k workflow</h3>
+              <p>
+                Pokud děláš layouty, velké tiskové plochy nebo často porovnáváš varianty, 27" je znatelně příjemnější.
+                CS2400S ber jako budget start / sekundár.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 7 -->
+      <section class="slide" data-title="Srovnávací tabulka">
+        <div class="grid single">
+          <div class="stack">
+            <div class="eyebrow">Porovnání (rychlý výběr)</div>
+            <h2>Tabulka + doporučení podle situace</h2>
+
+            <table aria-label="Porovnání EIZO ColorEdge">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Rozlišení</th>
+                  <th>Kalibrace</th>
+                  <th>Pro koho</th>
+                  <th>Cena (CZ)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>CS2740</strong></td>
+                  <td>27&quot; 4K</td>
+                  <td>Externí sonda</td>
+                  <td>Nejlepší celkový poměr cena/výkon</td>
+                  <td class="price">~32 900</td>
+                </tr>
+                <tr>
+                  <td><strong>CS2731</strong></td>
+                  <td>27&quot; WQHD</td>
+                  <td>Externí sonda</td>
+                  <td>Rozpočet do ~30k, profi barvy bez 4K</td>
+                  <td class="price">~27 500</td>
+                </tr>
+                <tr>
+                  <td><strong>CG2700S</strong></td>
+                  <td>27&quot; WQHD</td>
+                  <td>Vestavěný senzor</td>
+                  <td>Auto-kalibrace, bez 4K</td>
+                  <td class="price">~44 900</td>
+                </tr>
+                <tr>
+                  <td><strong>CG2700X</strong></td>
+                  <td>27&quot; 4K</td>
+                  <td>Vestavěný senzor</td>
+                  <td>Max jistota + komfort, studio/proof</td>
+                  <td class="price">~70 600</td>
+                </tr>
+                <tr>
+                  <td><strong>CS2400S</strong></td>
+                  <td>24&quot; 1920×1200</td>
+                  <td>Externí sonda</td>
+                  <td>Nejlevnější profi start / sekundár</td>
+                  <td class="price">~17 990</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="card" style="margin-top:14px">
+              <h3 style="margin:0 0 10px 0; font-size:16px;">Doporučení podle scénáře</h3>
+              <ul>
+                <li><strong>Chci 4K a hodnotu</strong> → CS2740</li>
+                <li><strong>Chci ušetřit, 4K nepotřebuju</strong> → CS2731</li>
+                <li><strong>Chci auto-kalibraci, 4K nepotřebuju</strong> → CG2700S</li>
+                <li><strong>Chci auto-kalibraci + 4K, studio</strong> → CG2700X</li>
+                <li><strong>Chci jen nejlevnější ColorEdge</strong> → CS2400S</li>
+              </ul>
+              <div class="chips">
+                <span class="chip good">CS2740 = default</span>
+                <span class="chip warn">CG = komfort za peníze</span>
+                <span class="chip warn">CS = disciplína kalibrace</span>
+              </div>
+            </div>
+
+            <p style="margin-top:10px">
+              Pozn.: Ceny jsou orientační (liší se podle prodejce a dostupnosti). Pokud chceš, doplním do slajdů konkrétní linky na prodejce / tvoje interní SKU.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Overview slide (hidden helper) -->
+      <section class="slide" id="overview" data-title="Přehled">
+        <div class="grid single">
+          <div class="stack">
+            <div class="eyebrow">Přehled slajdů</div>
+            <h2>Obsah</h2>
+            <div class="card" id="toc"></div>
+            <p class="muted">Tip: klávesy <span class="kbd">←</span>/<span class="kbd">→</span>, <span class="kbd">O</span> pro přehled, <span class="kbd">Esc</span> zpět.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="hint">
+        <span><span class="kbd">←</span>/<span class="kbd">→</span> navigace</span>
+        <span class="sep">•</span>
+        <span><span class="kbd">O</span> přehled</span>
+        <span class="sep">•</span>
+        <span><span class="kbd">Esc</span> zpět</span>
+        <span class="sep">•</span>
+        <span><span class="kbd">Ctrl</span>+<span class="kbd">P</span> export do PDF</span>
+      </div>
+      <div class="muted" id="slideTitle">Kontext</div>
+    </footer>
+  </div>
+
+  <script>
+    (function(){
+      const slides = Array.from(document.querySelectorAll('main .slide'))
+        .filter(s => s.id !== 'overview'); // overview handled separately
+      const overview = document.getElementById('overview');
+      const toc = document.getElementById('toc');
+
+      const counter = document.getElementById('counter');
+      const barFill = document.getElementById('barFill');
+      const slideTitle = document.getElementById('slideTitle');
+
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const overviewBtn = document.getElementById('overviewBtn');
+      const printBtn = document.getElementById('printBtn');
+
+      let idx = 0;
+      let inOverview = false;
+
+      function setActive(i){
+        idx = Math.max(0, Math.min(slides.length - 1, i));
+        inOverview = false;
+
+        slides.forEach((s, n) => s.classList.toggle('active', n === idx));
+        overview.classList.remove('active');
+
+        const t = slides[idx].dataset.title || `Slide ${idx+1}`;
+        slideTitle.textContent = t;
+
+        counter.textContent = `${idx+1} / ${slides.length}`;
+        barFill.style.width = `${((idx+1)/slides.length)*100}%`;
+
+        prevBtn.disabled = (idx === 0);
+        nextBtn.disabled = (idx === slides.length - 1);
+        prevBtn.style.opacity = prevBtn.disabled ? .55 : 1;
+        nextBtn.style.opacity = nextBtn.disabled ? .55 : 1;
+      }
+
+      function openOverview(){
+        inOverview = true;
+        slides.forEach(s => s.classList.remove('active'));
+        overview.classList.add('active');
+        slideTitle.textContent = "Přehled";
+
+        counter.textContent = `— / ${slides.length}`;
+        barFill.style.width = `0%`;
+      }
+
+      function closeOverview(){
+        setActive(idx);
+      }
+
+      function next(){ if(!inOverview) setActive(idx+1); }
+      function prev(){ if(!inOverview) setActive(idx-1); }
+
+      // Build TOC
+      function buildToc(){
+        const list = document.createElement('div');
+        list.className = 'stack';
+        slides.forEach((s, n) => {
+          const item = document.createElement('div');
+          item.className = 'card';
+          item.style.cursor = 'pointer';
+          item.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+              <div>
+                <div class="eyebrow" style="margin:0">Slide ${n+1}</div>
+                <div style="font-weight:650; font-size:16px; margin-top:2px">${s.dataset.title || ('Slide ' + (n+1))}</div>
+              </div>
+              <div class="kbd">Enter</div>
+            </div>
+          `;
+          item.addEventListener('click', () => setActive(n));
+          list.appendChild(item);
+        });
+        toc.innerHTML = '';
+        toc.appendChild(list);
+      }
+
+      // Buttons
+      prevBtn.addEventListener('click', prev);
+      nextBtn.addEventListener('click', next);
+      overviewBtn.addEventListener('click', () => inOverview ? closeOverview() : openOverview());
+      printBtn.addEventListener('click', () => window.print());
+
+      // Keyboard
+      window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if(key === 'arrowright' || key === 'pagedown'){ e.preventDefault(); next(); }
+        if(key === 'arrowleft'  || key === 'pageup'){   e.preventDefault(); prev(); }
+        if(key === 'o'){ e.preventDefault(); inOverview ? closeOverview() : openOverview(); }
+        if(key === 'escape'){ if(inOverview){ e.preventDefault(); closeOverview(); } }
+        if(key === 'home'){ e.preventDefault(); setActive(0); }
+        if(key === 'end'){ e.preventDefault(); setActive(slides.length - 1); }
+      });
+
+      // Init
+      buildToc();
+      setActive(0);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+﻿[2026-03-25 15:06:00] ==================== START SYNC ====================
+[2026-03-25 15:06:00] [Colorado-91] Nacitam index: http://10.25.1.91/accounting/
+[2026-03-25 15:06:00] [Colorado-91] Debug HTML ulozeno: C:\PrintGuard\ColoradoAccounting\debug-Colorado-91.html
+[2026-03-25 15:06:00] [Colorado-91] Na strance nebyly nalezeny zadne CSV ani ACL soubory.
+[2026-03-25 15:06:00] [Colorado-92] Nacitam index: http://10.25.1.92/accounting/
+[2026-03-25 15:06:00] [Colorado-92] Debug HTML ulozeno: C:\PrintGuard\ColoradoAccounting\debug-Colorado-92.html
+[2026-03-25 15:06:00] [Colorado-92] Na strance nebyly nalezeny zadne CSV ani ACL soubory.
+[2026-03-25 15:06:00] ===================== END SYNC =====================
