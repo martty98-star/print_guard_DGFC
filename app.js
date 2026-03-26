@@ -1199,12 +1199,12 @@ function normalizePrintLogResult(result) {
 
 function lifecycleFilterLabel(filter) {
   return ({
-    all: 'Všechny lifecycle skupiny',
+    all: 'Všechny skupiny průběhu',
     open_issue: 'Pouze otevřené problémy',
-    resolved_after_retry: 'Pouze vyřešené retry',
+    resolved_after_retry: 'Pouze vyřešené opakováním',
     multiple_attempts: 'Pouze vícenásobné pokusy',
-    first_pass: 'Pouze first-pass success',
-  })[filter] || 'Všechny lifecycle skupiny';
+    first_pass: 'Pouze úspěch napoprvé',
+  })[filter] || 'Všechny skupiny průběhu';
 }
 
 function derivePrintLifecycleStatus(attempts) {
@@ -1232,33 +1232,33 @@ function derivePrintLifecycleStatus(attempts) {
 function printLifecycleExplanation(group) {
   const attempts = group.attemptCount || 0;
   switch (group.lifecycleStatus) {
-    case 'success_first_try': return 'Completed on first try';
-    case 'resolved_after_retry': return attempts > 2 ? `${attempts} attempts before success` : 'Resolved after retry';
-    case 'open_issue': return 'Still unresolved';
-    case 'deleted_only': return 'Only deleted attempts';
-    case 'aborted_only': return 'Only aborted attempts';
-    case 'multiple_attempts_success': return `${attempts} successful attempts logged`;
-    default: return 'Mixed lifecycle pattern';
+    case 'success_first_try': return 'Dokončeno napoprvé';
+    case 'resolved_after_retry': return attempts > 2 ? `${attempts} pokusů před úspěchem` : 'Vyřešeno po opakování';
+    case 'open_issue': return 'Stále nevyřešeno';
+    case 'deleted_only': return 'Pouze smazané pokusy';
+    case 'aborted_only': return 'Pouze přerušené pokusy';
+    case 'multiple_attempts_success': return `${attempts} úspěšných pokusů v záznamu`;
+    default: return 'Smíšený průběh úlohy';
   }
 }
 
 function printLifecycleBadgeLabel(status) {
   return ({
-    success_first_try: 'First pass',
-    resolved_after_retry: 'Resolved retry',
-    open_issue: 'Open issue',
-    deleted_only: 'Deleted only',
-    aborted_only: 'Aborted only',
-    multiple_attempts_success: 'Multi success',
-    unresolved: 'Unresolved',
+    success_first_try: 'Napoprvé',
+    resolved_after_retry: 'Vyřešeno opakováním',
+    open_issue: 'Otevřený problém',
+    deleted_only: 'Jen smazáno',
+    aborted_only: 'Jen přerušeno',
+    multiple_attempts_success: 'Více úspěchů',
+    unresolved: 'Nevyřešeno',
   })[status] || status;
 }
 
 function printLifecycleFinalResult(group) {
   const latest = group.attempts[group.attempts.length - 1];
   const norm = normalizePrintLogResult(latest?.result);
-  if (norm === 'done') return 'Done';
-  if (norm === 'deleted') return 'Deleted';
+  if (norm === 'done') return 'Hotovo';
+  if (norm === 'deleted') return 'Smazáno';
   if (norm === 'abrt') return 'Abrt';
   return latest?.result || '—';
 }
@@ -1380,7 +1380,7 @@ async function loadPrintLog(force = false) {
   elSet('print-log-status', 'Načítám…');
   const wrap = el('print-log-table-wrap');
   if (wrap && !S.printLogRows.length) {
-    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Načítám Print Log…</p></div>`;
+    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Načítám tiskový log…</p></div>`;
   }
 
   try {
@@ -1392,13 +1392,13 @@ async function loadPrintLog(force = false) {
     S.printLogHasMore = Boolean(rows.hasMore);
     S.printLogLoaded = true;
     renderPrintLog();
-    elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Backend data');
+    elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Data ze serveru');
   } catch (err) {
     if (wrap) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Nepodařilo se načíst Print Log.</p><div class="table-empty-note">${esc(err.message || err)}</div></div>`;
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Nepodařilo se načíst tiskový log.</p><div class="table-empty-note">${esc(err.message || err)}</div></div>`;
     }
     elSet('print-log-status', 'Chyba načítání');
-    showToast('Print Log: ' + (err.message || err), 'error');
+    showToast('Tiskový log: ' + (err.message || err), 'error');
   } finally {
     S.printLogLoading = false;
   }
@@ -1440,7 +1440,7 @@ function renderPrintLogComparison() {
     return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
       <span class="metric-unit">${esc(displayName)}</span>
-      <span class="metric-desc">Done · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}</span>
+      <span class="metric-desc">Hotovo · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}</span>
     </div>`;
   }).join('');
 }
@@ -1460,25 +1460,25 @@ function renderPrintLogRows() {
     <td>${fmtDT(row.readyAt)}</td>
     <td>${esc(mapPrinterName(row.printerName))}</td>
     <td>${esc(row.jobName || '—')}</td>
-    <td><span class="result-badge ${printResultClass(row.result)}">${esc(row.result || '—')}</span></td>
+    <td><span class="result-badge ${printResultClass(row.result)}">${esc(printResultLabel(row.result))}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
     <td class="note-td">${esc(row.sourceFile || '—')}</td>
   </tr>`).join('');
 
-  const loadMoreBtn = S.printLogHasMore ? `<button id="pl-load-more" class="btn">Load more</button>` : '';
+  const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
-      <th>readyAt</th>
-      <th>printerName</th>
-      <th>jobName</th>
-      <th>result</th>
-      <th>mediaType</th>
-      <th>printedArea</th>
-      <th>durationSec</th>
-      <th>sourceFile</th>
+      <th>Čas připravení</th>
+      <th>Tiskárna</th>
+      <th>Úloha</th>
+      <th>Výsledek</th>
+      <th>Médium</th>
+      <th>Tištěná plocha</th>
+      <th>Doba tisku</th>
+      <th>Zdrojový soubor</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
@@ -1490,7 +1490,7 @@ function renderPrintLogRows() {
 function renderPrintLifecycleGroups(wrap, foot) {
   const groups = getFilteredLifecycleGroups();
   if (!groups.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🧩</div><p>Žádné lifecycle skupiny neodpovídají filtru.</p></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🧩</div><p>Žádné skupiny průběhu neodpovídají filtru.</p></div>`;
     if (foot) foot.textContent = lifecycleFilterLabel(S.printLogGroupFilter);
     return;
   }
@@ -1499,7 +1499,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
     const expanded = !!S.printLogExpandedGroups[group.id];
     const detailRows = group.attempts.map(attempt => `<tr>
       <td>${fmtDT(attempt.readyAt)}</td>
-      <td><span class="result-badge ${printResultClass(attempt.result)}">${esc(attempt.result || '—')}</span></td>
+      <td><span class="result-badge ${printResultClass(attempt.result)}">${esc(printResultLabel(attempt.result))}</span></td>
       <td class="num">${fmtDurationSeconds(attempt.durationSec)}</td>
       <td class="num">${fmtMeasure(attempt.printedAreaM2, 'm²', 2)}</td>
       <td>${esc(attempt.mediaType || '—')}</td>
@@ -1522,10 +1522,10 @@ function renderPrintLifecycleGroups(wrap, foot) {
           <div class="pl-group-detail">
             <div class="pl-detail-head">
               <strong>${esc(group.explanation)}</strong>
-              <span>${group.attemptCount} attempts · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)}</span>
+              <span>${group.attemptCount} pokusů · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)}</span>
             </div>
             <table class="data-table pl-detail-table">
-              <thead><tr><th>Timestamp</th><th>Result</th><th>Duration</th><th>Printed area</th><th>Media</th><th>Source file</th></tr></thead>
+              <thead><tr><th>Čas</th><th>Výsledek</th><th>Doba</th><th>Tištěná plocha</th><th>Médium</th><th>Zdrojový soubor</th></tr></thead>
               <tbody>${detailRows}</tbody>
             </table>
           </div>
@@ -1534,13 +1534,13 @@ function renderPrintLifecycleGroups(wrap, foot) {
     </tbody>`;
   }).join('');
 
-  const loadMoreBtn = S.printLogHasMore ? `<button id="pl-load-more" class="btn">Load more</button>` : '';
+  const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
   wrap.innerHTML = `<table class="data-table pl-group-table">
-    <thead><tr><th>Latest</th><th>Printer</th><th>Job</th><th>Status</th><th>Attempts</th><th>Final</th><th>Final area</th><th>Media</th><th>Source</th></tr></thead>
+    <thead><tr><th>Poslední pokus</th><th>Tiskárna</th><th>Úloha</th><th>Stav</th><th>Pokusy</th><th>Finální výsledek</th><th>Finální plocha</th><th>Médium</th><th>Zdroj</th></tr></thead>
     ${rows}
   </table>${loadMoreBtn}`;
 
-  if (foot) foot.textContent = `${groups.length} lifecycle skupin · ${lifecycleFilterLabel(S.printLogGroupFilter)}${S.printLogHasMore ? ' · z načtených dat' : ''}`;
+  if (foot) foot.textContent = `${groups.length} skupin průběhu · ${lifecycleFilterLabel(S.printLogGroupFilter)}${S.printLogHasMore ? ' · z načtených dat' : ''}`;
 }
 
 function printLogRangeLabel() {
@@ -1556,6 +1556,14 @@ function printResultClass(result) {
   if (norm === 'abrt' || norm === 'aborted') return 'abrt';
   if (norm === 'deleted') return 'deleted';
   return '';
+}
+
+function printResultLabel(result) {
+  const norm = String(result || '').trim().toLowerCase();
+  if (norm === 'done') return 'Hotovo';
+  if (norm === 'abrt' || norm === 'aborted') return 'Přerušeno';
+  if (norm === 'deleted') return 'Smazáno';
+  return result || '—';
 }
 
 function fmtInt(n) {
@@ -2314,7 +2322,7 @@ el('sync-btn').addEventListener('click', async () => {
     S.printLogViewMode = e.target.value || 'raw';
     const isGrouped = S.printLogViewMode === 'grouped';
     el('print-log-group-filter-wrap')?.classList.toggle('hidden', !isGrouped);
-    elSet('print-log-table-title', isGrouped ? 'Troubleshooting / SLA' : 'Recent print activity');
+    elSet('print-log-table-title', isGrouped ? 'Řešení problémů / SLA' : 'Poslední tiskové aktivity');
     renderPrintLogRows();
   });
   el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; loadPrintLog(true); });
