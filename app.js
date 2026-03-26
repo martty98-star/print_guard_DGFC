@@ -1173,6 +1173,15 @@ async function fetchPrintLogRows() {
   return j;
 }
 
+function normalizePrintLogRow(row) {
+  const sourceFile = row?.sourceFile ?? row?.source_file ?? '';
+  return {
+    ...row,
+    sourceFile: sourceFile || '',
+    source_file: sourceFile || '',
+  };
+}
+
 function normalizePrintLogText(v) {
   return String(v || '')
     .trim()
@@ -1187,13 +1196,6 @@ function normalizePrintLogSourceFile(v) {
   if (!raw) return '';
   const last = raw.split(/[\\/]/).pop() || raw;
   return normalizePrintLogText(last);
-}
-
-function normalizePrintLogRow(row) {
-  return {
-    ...row,
-    sourceFile: row?.sourceFile ?? row?.source_file ?? '',
-  };
 }
 
 function normalizePrintLogResult(result) {
@@ -1538,10 +1540,10 @@ function renderPrintLifecycleGroups(wrap, foot) {
   }).join('');
 
   const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
-  wrap.innerHTML = `<table class="data-table pl-group-table">
-    <thead><tr><th>Poslední pokus</th><th>Tiskárna</th><th>Úloha</th><th>Stav</th><th>Pokusy</th><th>Finální výsledek</th><th>Finální plocha</th><th>Médium</th></tr></thead>
-    ${rows}
-  </table>${loadMoreBtn}`;
+    wrap.innerHTML = `<table class="data-table pl-group-table">
+      <thead><tr><th>Poslední pokus</th><th>Tiskárna</th><th>Úloha</th><th>Stav</th><th>Pokusy</th><th>Finální výsledek</th><th>Finální plocha</th><th>Médium</th></tr></thead>
+      ${rows}
+    </table>${loadMoreBtn}`;
 
   if (foot) foot.textContent = `${groups.length} skupin průběhu · ${lifecycleFilterLabel(S.printLogGroupFilter)}${S.printLogHasMore ? ' · z načtených dat' : ''}`;
 }
