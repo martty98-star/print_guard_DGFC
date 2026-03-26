@@ -27,22 +27,29 @@ async function withClient(run) {
   }
 }
 
+// FIX: Use LIMIT 0 query against the view itself instead of information_schema.
+// information_schema.columns often returns no rows for views when the DB role
+// lacks explicit SELECT grants on information_schema — this causes every pick()
+// to throw a 500. Reading from result.fields[] always works for views and tables.
 async function getColumns(client, tableName) {
   const q = await client.query(
-    `select column_name
-       from information_schema.columns
-      where table_schema = 'public'
-        and table_name = $1`,
-    [tableName]
+    `select * from public.${tableName} limit 0`
   );
-  return new Set(q.rows.map(r => r.column_name));
+  return new Set(q.fields.map(f => f.name));
 }
 
+// FIX: Extended candidate list — covers snake_case, camelCase, and run-together
+// variants that different Postgres drivers or view definitions may produce.
 function pick(cols, candidates, label) {
   for (const name of candidates) {
     if (cols.has(name)) return name;
   }
-  throw new Error(`Missing ${label} column in v_print_log_rows`);
+  // Emit a clear error listing what was found vs what was tried
+  throw new Error(
+    `Missing ${label} column in v_print_log_rows. ` +
+    `Tried: [${candidates.join(", ")}]. ` +
+    `Available: [${[...cols].join(", ")}]`
+  );
 }
 
 function buildFilters(query, map, values) {
@@ -81,15 +88,16 @@ export async function handler(event) {
       const cols = await getColumns(client, "v_print_log_rows");
 
       const map = {
-        readyAt: pick(cols, ["ready_at", "readyat"], "readyAt"),
-        printerName: pick(cols, ["printer_name", "printername"], "printerName"),
-        jobName: pick(cols, ["job_name", "jobname"], "jobName"),
-        result: pick(cols, ["result"], "result"),
-        mediaType: pick(cols, ["media_type", "mediatype"], "mediaType"),
-        printedAreaM2: pick(cols, ["printed_area_m2", "printedaream2"], "printedAreaM2"),
-        mediaLengthM: pick(cols, ["media_length_m", "medialengthm"], "mediaLengthM"),
-        durationSec: pick(cols, ["duration_sec", "durationsec"], "durationSec"),
-        sourceFile: pick(cols, ["source_file", "sourcefile"], "sourceFile"),
+        readyAt:       pick(cols, ["ready_at", "readyat", "ready_at_utc", "readyAt"], "readyAt"),
+        printerName:   pick(cols, ["printer_name", "printername", "printer", "printerName"], "printerName"),
+        // FIX: extended candidates for job_name, media_type, source_file
+        jobName:       pick(cols, ["job_name", "jobname", "job", "jobName", "title"], "jobName"),
+        result:        pick(cols, ["result", "status", "print_result"], "result"),
+        mediaType:     pick(cols, ["media_type", "mediatype", "media", "mediaType", "medium"], "mediaType"),
+        printedAreaM2: pick(cols, ["printed_area_m2", "printedaream2", "printed_area", "printedAreaM2", "area_m2"], "printedAreaM2"),
+        mediaLengthM:  pick(cols, ["media_length_m", "medialengthm", "media_length", "mediaLengthM", "length_m"], "mediaLengthM"),
+        durationSec:   pick(cols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"], "durationSec"),
+        sourceFile:    pick(cols, ["source_file", "sourcefile", "source", "sourceFile", "file_name", "filename"], "sourceFile"),
       };
 
       const values = [];
@@ -109,15 +117,15 @@ export async function handler(event) {
 
       const sql = `
         select
-          ${map.readyAt} as "readyAt",
-          ${map.printerName} as "printerName",
-          ${map.jobName} as "jobName",
-          ${map.result} as "result",
-          ${map.mediaType} as "mediaType",
+          ${map.readyAt}       as "readyAt",
+          ${map.printerName}   as "printerName",
+          ${map.jobName}       as "jobName",
+          ${map.result}        as "result",
+          ${map.mediaType}     as "mediaType",
           ${map.printedAreaM2} as "printedAreaM2",
-          ${map.mediaLengthM} as "mediaLengthM",
-          ${map.durationSec} as "durationSec",
-          ${map.sourceFile} as "sourceFile"
+          ${map.mediaLengthM}  as "mediaLengthM",
+          ${map.durationSec}   as "durationSec",
+          ${map.sourceFile}    as "sourceFile"
         from public.v_print_log_rows
         ${where}
         order by ${map.readyAt} desc
@@ -132,15 +140,15 @@ export async function handler(event) {
       return {
         ok: true,
         rows: visibleRows.map(row => ({
-          readyAt: row.readyAt,
-          printerName: row.printerName,
-          jobName: row.jobName,
-          result: row.result,
-          mediaType: row.mediaType,
+          readyAt:       row.readyAt,
+          printerName:   row.printerName,
+          jobName:       row.jobName,
+          result:        row.result,
+          mediaType:     row.mediaType,
           printedAreaM2: row.printedAreaM2 == null ? null : Number(row.printedAreaM2),
-          mediaLengthM: row.mediaLengthM == null ? null : Number(row.mediaLengthM),
-          durationSec: row.durationSec == null ? null : Number(row.durationSec),
-          sourceFile: row.sourceFile,
+          mediaLengthM:  row.mediaLengthM  == null ? null : Number(row.mediaLengthM),
+          durationSec:   row.durationSec   == null ? null : Number(row.durationSec),
+          sourceFile:    row.sourceFile,
         })),
         limit,
         offset,
