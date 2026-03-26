@@ -1189,6 +1189,13 @@ function normalizePrintLogSourceFile(v) {
   return normalizePrintLogText(last);
 }
 
+function normalizePrintLogRow(row) {
+  return {
+    ...row,
+    sourceFile: row?.sourceFile ?? row?.source_file ?? '',
+  };
+}
+
 function normalizePrintLogResult(result) {
   const norm = String(result || '').trim().toLowerCase();
   if (norm === 'done') return 'done';
@@ -1386,7 +1393,7 @@ async function loadPrintLog(force = false) {
   try {
     const [summary, rows] = await Promise.all([fetchPrintLogSummary(), fetchPrintLogRows()]);
     S.printLogSummary = summary.summary || null;
-    const newRows = Array.isArray(rows.rows) ? rows.rows : [];
+    const newRows = Array.isArray(rows.rows) ? rows.rows.map(normalizePrintLogRow) : [];
     S.printLogRows = [...S.printLogRows, ...newRows];
     S.printLogOffset += newRows.length;
     S.printLogHasMore = Boolean(rows.hasMore);
@@ -1464,7 +1471,6 @@ function renderPrintLogRows() {
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
-    <td class="note-td">${esc(row.sourceFile || '—')}</td>
   </tr>`).join('');
 
   const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
@@ -1478,7 +1484,6 @@ function renderPrintLogRows() {
       <th>Médium</th>
       <th>Tištěná plocha</th>
       <th>Doba tisku</th>
-      <th>Zdrojový soubor</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
@@ -1503,7 +1508,6 @@ function renderPrintLifecycleGroups(wrap, foot) {
       <td class="num">${fmtDurationSeconds(attempt.durationSec)}</td>
       <td class="num">${fmtMeasure(attempt.printedAreaM2, 'm²', 2)}</td>
       <td>${esc(attempt.mediaType || '—')}</td>
-      <td class="note-td">${esc(attempt.sourceFile || '—')}</td>
     </tr>`).join('');
     return `<tbody class="pl-group-body ${expanded ? 'expanded' : ''}">
       <tr class="pl-group-row" data-group-id="${esc(group.id)}">
@@ -1515,17 +1519,16 @@ function renderPrintLifecycleGroups(wrap, foot) {
         <td>${esc(group.finalResult)}</td>
         <td class="num">${fmtMeasure(group.finalPrintedAreaM2, 'm²', 2)}</td>
         <td>${esc(group.mediaType || '—')}</td>
-        <td class="note-td">${esc(group.sourceFile || '—')}</td>
       </tr>
       <tr class="pl-group-detail-row ${expanded ? '' : 'hidden'}">
-        <td colspan="9">
+        <td colspan="8">
           <div class="pl-group-detail">
             <div class="pl-detail-head">
               <strong>${esc(group.explanation)}</strong>
               <span>${group.attemptCount} pokusů · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)}</span>
             </div>
             <table class="data-table pl-detail-table">
-              <thead><tr><th>Čas</th><th>Výsledek</th><th>Doba</th><th>Tištěná plocha</th><th>Médium</th><th>Zdrojový soubor</th></tr></thead>
+              <thead><tr><th>Čas</th><th>Výsledek</th><th>Doba</th><th>Tištěná plocha</th><th>Médium</th></tr></thead>
               <tbody>${detailRows}</tbody>
             </table>
           </div>
@@ -1536,7 +1539,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
 
   const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
   wrap.innerHTML = `<table class="data-table pl-group-table">
-    <thead><tr><th>Poslední pokus</th><th>Tiskárna</th><th>Úloha</th><th>Stav</th><th>Pokusy</th><th>Finální výsledek</th><th>Finální plocha</th><th>Médium</th><th>Zdroj</th></tr></thead>
+    <thead><tr><th>Poslední pokus</th><th>Tiskárna</th><th>Úloha</th><th>Stav</th><th>Pokusy</th><th>Finální výsledek</th><th>Finální plocha</th><th>Médium</th></tr></thead>
     ${rows}
   </table>${loadMoreBtn}`;
 
