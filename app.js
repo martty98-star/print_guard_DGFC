@@ -38,6 +38,31 @@ function ls(k, v) {
   return localStorage.getItem(k);
 }
 
+function i18n(key) {
+  if (typeof window !== 'undefined' && window.I18N && typeof window.I18N.t === 'function') {
+    return window.I18N.t(key);
+  }
+  return key;
+}
+
+function statusLabel(status) {
+  const map = {
+    ok: i18n('status.ok'),
+    warn: i18n('status.warn'),
+    crit: i18n('status.crit'),
+  };
+  return map[status] || status;
+}
+
+function movementLabel(type) {
+  const map = {
+    receipt: i18n('mov.receipt'),
+    issue: i18n('mov.issue'),
+    stocktake: i18n('mov.stocktake'),
+  };
+  return map[type] || type;
+}
+
 // ── App state ──────────────────────────────────────────────
 const S = {
   items:       [],     // catalog
@@ -250,7 +275,8 @@ function renderStockOverview() {
   elSet('count-crit', crit);
 
   const alertCount = warn + crit;
-  el('alerts-nav-label').textContent = alertCount > 0 ? `Upozornění (${alertCount})` : 'Upozornění';
+  const alertsLabel = i18n('nav.alerts');
+  el('alerts-nav-label').textContent = alertCount > 0 ? `${alertsLabel} (${alertCount})` : alertsLabel;
 
   const filtered = all.filter(it => {
     const m = computeStock(it);
@@ -274,7 +300,7 @@ function renderStockOverview() {
   list.innerHTML = filtered.map(it => {
     const m = computeStock(it);
     const dClass = m.status === 'crit' ? 'crit-c' : m.status === 'warn' ? 'warn-c' : '';
-    const statusLbl = { ok: 'OK', warn: 'Varování', crit: 'Kritické' }[m.status];
+    const statusLbl = statusLabel(m.status);
     return `<div class="item-card ${m.status}" data-article="${esc(it.articleNumber)}" role="button" tabindex="0">
       <div class="item-card-top">
         <div>
@@ -315,7 +341,7 @@ function openStockDetail(articleNumber) {
 
   const m     = computeStock(item);
   const moves = getMovements(articleNumber);
-  const statusLbl = { ok: 'OK', warn: 'Varování', crit: 'Kritické' }[m.status];
+  const statusLbl = statusLabel(m.status);
 
   el('detail-content').innerHTML = `
     <div class="detail-hero">
@@ -398,7 +424,11 @@ function buildMovementRows(item, moves) {
     rows.push({ m, after: running });
   }
   return [...rows].reverse().slice(0, 50).map(({ m, after }) => {
-    const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' }[m.movType] || m.movType;
+    const typeLabel = ({
+      receipt: `↑ ${movementLabel('receipt')}`,
+      issue: `↓ ${movementLabel('issue')}`,
+      stocktake: `= ${movementLabel('stocktake')}`,
+    })[m.movType] || movementLabel(m.movType);
     const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' }[m.movType] || '';
     const qtySign   = m.movType === 'issue' ? `−${fmtN(m.qty, 0)}` : m.movType === 'receipt' ? `+${fmtN(m.qty, 0)}` : `=${fmtN(m.qty, 0)}`;
     return `<tr>
@@ -431,7 +461,11 @@ function buildStockHistoryTable(item, moves) {
     else { delta = 0; }
     rows.push({ m, after: running, delta });
   }
-  const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' };
+  const typeLabel = {
+    receipt: `↑ ${movementLabel('receipt')}`,
+    issue: `↓ ${movementLabel('issue')}`,
+    stocktake: `= ${movementLabel('stocktake')}`,
+  };
   const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
   const html = [...rows].reverse().slice(0, 100).map(({ m, after, delta }) => {
     const sign = delta > 0 ? `+${fmtN(delta,0)}` : delta < 0 ? `${fmtN(delta,0)}` : `=${fmtN(m.qty,0)}`;
@@ -483,12 +517,12 @@ function renderAlerts() {
 
   const list = el('alerts-list');
   if (!alertItems.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✓</div><p>Žádná upozornění — vše v pořádku.</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✓</div><p>${i18n('msg.no-alerts')}</p></div>`;
     return;
   }
   list.innerHTML = alertItems.map(it => {
     const m = computeStock(it);
-    const lbl = m.status === 'crit' ? 'Kritické' : 'Varování';
+    const lbl = statusLabel(m.status);
     return `<div class="item-card ${m.status}" data-article="${esc(it.articleNumber)}" role="button" tabindex="0">
       <div class="item-card-top">
         <div>
@@ -644,7 +678,11 @@ function updateMovPreview() {
 
   el('mov-prev-current').textContent = `${fmtN(cur, 0)} ${unit}`;
   el('mov-prev-after').textContent   = `${fmtN(after, 0)} ${unit}`;
-  const statusLbl = { ok: 'OK ✓', warn: '⚠ Varování', crit: '🔴 Kritické' }[nm.status];
+  const statusLbl = ({
+    ok: `${statusLabel('ok')} ✓`,
+    warn: `⚠ ${statusLabel('warn')}`,
+    crit: `🔴 ${statusLabel('crit')}`,
+  })[nm.status] || statusLabel(nm.status);
   const statusEl  = el('mov-prev-status');
   statusEl.textContent = statusLbl;
   statusEl.style.color = { ok: 'var(--ok)', warn: 'var(--warn)', crit: 'var(--crit)' }[nm.status];
@@ -671,8 +709,8 @@ async function saveMovement() {
     await idbPut(ST_MOVES, move);
     S.movements.push(move);
     S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    const typeLabel = { receipt: 'Příjem', issue: 'Výdej', stocktake: 'Inventura' }[S.movType];
-    showToast(`${typeLabel} uložen`, 'success');
+    const typeLabel = movementLabel(S.movType);
+    showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
     el('mov-qty').value  = '';
     el('mov-note').value = '';
     clearMovItem();
@@ -1881,7 +1919,11 @@ function renderStockLog() {
     return;
   }
 
-  const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' };
+  const typeLabel = {
+    receipt: `↑ ${movementLabel('receipt')}`,
+    issue: `↓ ${movementLabel('issue')}`,
+    stocktake: `= ${movementLabel('stocktake')}`,
+  };
   const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
 
   const rows = [...filtered].reverse().map(m => {
@@ -2228,6 +2270,9 @@ function showConfirm(text, onOk) {
 // ══════════════════════════════════════════════════════════
 
 async function init() {
+  if (window.I18N && typeof window.I18N.init === 'function') {
+    window.I18N.init();
+  }
   db = await openDB();
 
   // Mode toggle
@@ -2287,6 +2332,16 @@ el('sync-btn').addEventListener('click', async () => {
   setupMovementEntry();
   setupCoEntry();
   setupSettings();
+
+  const langSelect = el('lang-select');
+  if (langSelect) {
+    langSelect.value = (window.I18N && window.I18N.currentLang) || (window.I18N && window.I18N.defaultLang) || 'cs';
+    langSelect.addEventListener('change', e => {
+      if (window.I18N && typeof window.I18N.setLang === 'function') {
+        window.I18N.setLang(e.target.value);
+      }
+    });
+  }
 
   // Stock log search + filter
   el('stock-log-search').addEventListener('input', e => {
@@ -2397,6 +2452,16 @@ el('sync-btn').addEventListener('click', async () => {
   if (p.get('screen')) navigate(p.get('screen'));
   applyRoleUI();
 }
+
+window.addEventListener('i18n:changed', () => {
+  try { renderStockOverview(); } catch (_) {}
+  try { renderAlerts(); } catch (_) {}
+  try { renderItemsMgmt(); } catch (_) {}
+  try { renderStockLog(); } catch (_) {}
+  try { renderCoDashboard(); } catch (_) {}
+  try { renderCoHistory(); } catch (_) {}
+  try { renderPrintLogRows(); } catch (_) {}
+});
 
 function updateOfflineBanner() {
   el('offline-banner')?.classList.toggle('hidden', navigator.onLine);
