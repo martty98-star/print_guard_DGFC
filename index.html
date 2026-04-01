@@ -267,7 +267,10 @@
   <main id="screen-co-dashboard" class="screen">
     <div class="screen-header">
       <h1 data-i18n="header.co-dashboard">Spotřeba Colorado</h1>
-      <div class="header-meta" id="co-last-update">—</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" id="co-month-export-btn" data-i18n="colorado.export.monthly">↓ Měsíční CSV</button>
+        <div class="header-meta" id="co-last-update">—</div>
+      </div>
     </div>
     <div class="machine-card" id="card-colorado1"></div>
     <div class="machine-card" id="card-colorado2"></div>
@@ -373,7 +376,7 @@
       <div class="stat-chip crit"><span class="stat-num" id="pl-deleted-jobs">—</span><span class="stat-lbl" data-i18n="print.stats.deleted">Smazané úlohy</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-printed-area">—</span><span class="stat-lbl" data-i18n="print.stats.printed-area">Vytištěná plocha</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-media-length">—</span><span class="stat-lbl" data-i18n="print.stats.media">Spotřeba média</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-est-ink">—</span><span class="stat-lbl">Odhad inkoustu</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-est-ink">—</span><span class="stat-lbl" data-i18n="print.stats.ink">Inkoust</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-duration">—</span><span class="stat-lbl" data-i18n="print.stats.duration">Celková doba</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-sla-total">—</span><span class="stat-lbl" data-i18n="print.stats.grouped">Seskupené úlohy</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-sla-first-pass">—</span><span class="stat-lbl" data-i18n="print.stats.first-pass">Úspěch napoprvé</span></div>
@@ -383,6 +386,7 @@
       <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts">—</span><span class="stat-lbl" data-i18n="print.stats.attempts">Průměr pokusů / úloha</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts-success">—</span><span class="stat-lbl" data-i18n="print.stats.attempts-success">Průměr pokusů / úspěch</span></div>
     </div>
+    <div class="header-meta" id="pl-cmyk-note" style="margin:4px 2px 12px"> </div>
 
     <div class="machine-card" style="margin-bottom:14px">
       <div class="mc-header">
