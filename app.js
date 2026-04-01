@@ -1201,14 +1201,14 @@ function mapPrinterName(name) {
   return name;
 }
 
-function getPrintLogParams() {
+function getPrintLogParams(overrides = {}) {
   const params = new URLSearchParams();
   if (S.printLogDateFrom) params.set('from', S.printLogDateFrom);
   if (S.printLogDateTo)   params.set('to', S.printLogDateTo);
   if (S.printLogPrinter !== 'all') params.set('printer', S.printLogPrinter);
   if (S.printLogResult !== 'all')  params.set('result', S.printLogResult);
-  params.set('limit', String(PRINT_LOG_PAGE_SIZE));
-  params.set('offset', String(S.printLogOffset));
+  params.set('limit', String(overrides.limit ?? PRINT_LOG_PAGE_SIZE));
+  params.set('offset', String(overrides.offset ?? S.printLogOffset));
   return params;
 }
 
@@ -1219,8 +1219,8 @@ async function fetchPrintLogSummary() {
   return j;
 }
 
-async function fetchPrintLogRows() {
-  const res = await fetch('/.netlify/functions/print-log-rows?' + getPrintLogParams().toString(), { cache: 'no-store' });
+async function fetchPrintLogRows(overrides = {}) {
+  const res = await fetch('/.netlify/functions/print-log-rows?' + getPrintLogParams(overrides).toString(), { cache: 'no-store' });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.ok) throw new Error(j.error || 'Print log rows failed');
   return j;
@@ -1233,6 +1233,68 @@ function normalizePrintLogRow(row) {
     sourceFile: sourceFile || '',
     source_file: sourceFile || '',
   };
+}
+
+function getPrintLogMachineId(printerName) {
+  const name = String(printerName || '');
+  if (name.includes('91')) return 'colorado1';
+  if (name.includes('92')) return 'colorado2';
+  return null;
+}
+
+function getPrintLogEstimateInterval(row) {
+  const machineId = getPrintLogMachineId(row?.printerName);
+  const readyMs = new Date(row?.readyAt).getTime();
+  if (!machineId || !Number.isFinite(readyMs)) return null;
+  return computeCoIntervals(machineId).find(iv => {
+    const fromMs = new Date(iv.from).getTime();
+    const toMs = new Date(iv.to).getTime();
+    return Number.isFinite(fromMs) && Number.isFinite(toMs) && readyMs > fromMs && readyMs <= toMs;
+  }) || null;
+}
+
+function getPrintLogInkEstimate(row) {
+  const interval = getPrintLogEstimateInterval(row);
+  const areaM2 = Number(row?.printedAreaM2);
+  if (!interval || !Number.isFinite(areaM2) || areaM2 <= 0 || interval.inkPerM2 === null) {
+    return { estimatedInkL: null, estimatedInkPerM2: interval?.inkPerM2 ?? null };
+  }
+  return {
+    estimatedInkL: areaM2 * interval.inkPerM2,
+    estimatedInkPerM2: interval.inkPerM2,
+  };
+}
+
+function getPrintLogPeriodInkRatio(machineId) {
+  const fromMs = S.printLogDateFrom ? new Date(`${S.printLogDateFrom}T00:00:00`).getTime() : null;
+  const toMs = S.printLogDateTo ? new Date(`${S.printLogDateTo}T23:59:59.999`).getTime() : null;
+  const intervals = computeCoIntervals(machineId).filter(iv => {
+    const from = new Date(iv.from).getTime();
+    const to = new Date(iv.to).getTime();
+    if (!Number.isFinite(from) || !Number.isFinite(to)) return false;
+    if (fromMs !== null && to < fromMs) return false;
+    if (toMs !== null && from > toMs) return false;
+    return true;
+  });
+  const inkUsed = intervals.reduce((sum, iv) => sum + (Number(iv.inkUsed) || 0), 0);
+  const mediaUsed = intervals.reduce((sum, iv) => sum + (Number(iv.mediaUsed) || 0), 0);
+  return mediaUsed > 0 ? inkUsed / mediaUsed : null;
+}
+
+function getPrintLogSummaryEstimatedInk(summary) {
+  const byPrinter = summary?.byPrinter || {};
+  let total = 0;
+  let hasEstimate = false;
+  Object.entries(byPrinter).forEach(([printerName, rec]) => {
+    const machineId = getPrintLogMachineId(printerName);
+    if (!machineId) return;
+    const ratio = getPrintLogPeriodInkRatio(machineId);
+    const areaM2 = Number(rec?.printedAreaM2);
+    if (!Number.isFinite(areaM2) || areaM2 <= 0 || ratio === null) return;
+    total += areaM2 * ratio;
+    hasEstimate = true;
+  });
+  return hasEstimate ? total : null;
 }
 
 function normalizePrintLogText(v) {
@@ -1480,11 +1542,13 @@ function renderPrintLog() {
 function renderPrintLogSummary() {
   const summary = S.printLogSummary || {};
   const lifecycle = getPrintLogLifecycleMetrics();
+  const estimatedInk = getPrintLogSummaryEstimatedInk(summary);
   elSet('pl-done-jobs', fmtInt(summary.doneJobs));
   elSet('pl-aborted-jobs', fmtInt(summary.abortedJobs));
   elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
   elSet('pl-printed-area', fmtMeasure(summary.printedAreaM2, 'm²', 2));
   elSet('pl-media-length', fmtMeasure(summary.mediaLengthM, 'm', 2));
+  elSet('pl-est-ink', estimatedInk === null ? '—' : fmtMeasure(estimatedInk, 'L', 3));
   elSet('pl-duration', fmtDuration(summary.totalDurationSec));
   elSet('pl-sla-total', fmtInt(lifecycle.totalGroups));
   elSet('pl-sla-first-pass', fmtInt(lifecycle.firstPassCount));
@@ -1504,10 +1568,13 @@ function renderPrintLogComparison() {
   grid.innerHTML = printers.map(name => {
     const rec = compare[name] || {};
     const displayName = mapPrinterName(name);
+    const machineId = getPrintLogMachineId(name);
+    const ratio = machineId ? getPrintLogPeriodInkRatio(machineId) : null;
+    const estimatedInk = ratio !== null && Number(rec.printedAreaM2) > 0 ? rec.printedAreaM2 * ratio : null;
     return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
       <span class="metric-unit">${esc(displayName)}</span>
-      <span class="metric-desc">${i18n('print.result.done')} · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}</span>
+      <span class="metric-desc">${i18n('print.result.done')} · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}${estimatedInk === null ? '' : ` · ${fmtMeasure(estimatedInk, 'L', 3)}`}</span>
     </div>`;
   }).join('');
 }
@@ -1529,16 +1596,21 @@ function renderPrintLogRows() {
   const thResult = i18n('table.result');
   const thMedia = i18n('table.media');
   const thArea = i18n('table.printed-area');
+  const thEstInk = 'Odhad inkoustu';
   const thDuration = i18n('table.duration');
-  const rows = S.printLogRows.map(row => `<tr>
+  const rows = S.printLogRows.map(row => {
+    const estimate = getPrintLogInkEstimate(row);
+    return `<tr>
     <td>${fmtDT(row.readyAt)}</td>
     <td>${esc(mapPrinterName(row.printerName))}</td>
     <td>${esc(row.jobName || '—')}</td>
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(printResultLabel(row.result))}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
+    <td class="num">${estimate.estimatedInkL === null ? '—' : fmtMeasure(estimate.estimatedInkL, 'L', 3)}</td>
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
 
   const loadMoreBtn = S.printLogHasMore
     ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">${i18n('print.load-more')}</button></div>`
@@ -1552,6 +1624,7 @@ function renderPrintLogRows() {
       <th>${thResult}</th>
       <th>${thMedia}</th>
       <th>${thArea}</th>
+      <th>${thEstInk}</th>
       <th>${thDuration}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -1571,13 +1644,21 @@ function renderPrintLifecycleGroups(wrap, foot) {
 
   const rows = groups.map(group => {
     const expanded = !!S.printLogExpandedGroups[group.id];
-    const detailRows = group.attempts.map(attempt => `<tr>
+    const detailRows = group.attempts.map(attempt => {
+      const estimate = getPrintLogInkEstimate(attempt);
+      return `<tr>
       <td>${fmtDT(attempt.readyAt)}</td>
       <td><span class="result-badge ${printResultClass(attempt.result)}">${esc(printResultLabel(attempt.result))}</span></td>
       <td class="num">${fmtDurationSeconds(attempt.durationSec)}</td>
       <td class="num">${fmtMeasure(attempt.printedAreaM2, 'm²', 2)}</td>
+      <td class="num">${estimate.estimatedInkL === null ? '—' : fmtMeasure(estimate.estimatedInkL, 'L', 3)}</td>
       <td>${esc(attempt.mediaType || '—')}</td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
+    const estimatedInk = group.attempts.reduce((sum, attempt) => {
+      const estimate = getPrintLogInkEstimate(attempt);
+      return sum + (estimate.estimatedInkL || 0);
+    }, 0);
     return `<tbody class="pl-group-body ${expanded ? 'expanded' : ''}">
       <tr class="pl-group-row" data-group-id="${esc(group.id)}">
         <td>${fmtDT(group.latestReadyAt)}</td>
@@ -1587,17 +1668,18 @@ function renderPrintLifecycleGroups(wrap, foot) {
         <td class="num">${fmtInt(group.attemptCount)}</td>
         <td>${esc(group.finalResult)}</td>
         <td class="num">${fmtMeasure(group.finalPrintedAreaM2, 'm²', 2)}</td>
+        <td class="num">${estimatedInk > 0 ? fmtMeasure(estimatedInk, 'L', 3) : '—'}</td>
         <td>${esc(group.mediaType || '—')}</td>
       </tr>
       <tr class="pl-group-detail-row ${expanded ? '' : 'hidden'}">
-        <td colspan="8">
+        <td colspan="9">
           <div class="pl-group-detail">
             <div class="pl-detail-head">
               <strong>${esc(group.explanation)}</strong>
               <span>${group.attemptCount} ${i18n('table.attempts').toLowerCase()} · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)}</span>
             </div>
             <table class="data-table pl-detail-table">
-              <thead><tr><th>${i18n('table.ready')}</th><th>${i18n('table.result')}</th><th>${i18n('table.duration')}</th><th>${i18n('table.printed-area')}</th><th>${i18n('table.media')}</th></tr></thead>
+              <thead><tr><th>${i18n('table.ready')}</th><th>${i18n('table.result')}</th><th>${i18n('table.duration')}</th><th>${i18n('table.printed-area')}</th><th>Odhad inkoustu</th><th>${i18n('table.media')}</th></tr></thead>
               <tbody>${detailRows}</tbody>
             </table>
           </div>
@@ -1610,7 +1692,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
     ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">${i18n('print.load-more')}</button></div>`
     : '';
   wrap.innerHTML = `<table class="data-table pl-group-table">
-      <thead><tr><th>${i18n('table.last-attempt')}</th><th>${i18n('table.machine')}</th><th>${i18n('table.job')}</th><th>${i18n('table.status')}</th><th>${i18n('table.attempts')}</th><th>${i18n('table.final-result')}</th><th>${i18n('table.final-area')}</th><th>${i18n('table.media')}</th></tr></thead>
+      <thead><tr><th>${i18n('table.last-attempt')}</th><th>${i18n('table.machine')}</th><th>${i18n('table.job')}</th><th>${i18n('table.status')}</th><th>${i18n('table.attempts')}</th><th>${i18n('table.final-result')}</th><th>${i18n('table.final-area')}</th><th>Odhad inkoustu</th><th>${i18n('table.media')}</th></tr></thead>
       ${rows}
     </table>${loadMoreBtn}`;
 
@@ -1800,6 +1882,60 @@ function exportCSVStockLevels() {
     ]));
   });
   dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_levels_${fmtFileDT()}.csv`);
+}
+
+async function exportCSVPrintLog() {
+  try {
+    const header = [
+      'ready_at',
+      'printer',
+      'job_name',
+      'result',
+      'media_type',
+      'printed_area_m2',
+      'estimated_ink_l',
+      'estimated_ink_l_per_m2',
+      'estimate_method',
+      'estimate_interval_from',
+      'estimate_interval_to',
+      'duration_sec'
+    ];
+    const rows = [csvRow(header)];
+    const allRows = [];
+    let offset = 0;
+
+    while (true) {
+      const batch = await fetchPrintLogRows({ limit: 200, offset });
+      const normalized = Array.isArray(batch.rows) ? batch.rows.map(normalizePrintLogRow) : [];
+      allRows.push(...normalized);
+      if (!batch.hasMore || !normalized.length) break;
+      offset += normalized.length;
+    }
+
+    allRows.forEach(row => {
+      const interval = getPrintLogEstimateInterval(row);
+      const estimate = getPrintLogInkEstimate(row);
+      rows.push(csvRow([
+        row.readyAt || '',
+        mapPrinterName(row.printerName),
+        row.jobName || '',
+        printResultLabel(row.result),
+        row.mediaType || '',
+        Number.isFinite(Number(row.printedAreaM2)) ? fmtN(row.printedAreaM2, 2) : '',
+        estimate.estimatedInkL === null ? '' : fmtN(estimate.estimatedInkL, 3),
+        estimate.estimatedInkPerM2 === null ? '' : fmtN(estimate.estimatedInkPerM2, 6),
+        interval && estimate.estimatedInkPerM2 !== null ? 'derived_from_lifetime_interval_ratio' : '',
+        interval?.from || '',
+        interval?.to || '',
+        Number.isFinite(Number(row.durationSec)) ? fmtN(row.durationSec, 0) : '',
+      ]));
+    });
+
+    dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `print_log_estimated_ink_${fmtFileDT()}.csv`);
+    showToast(`Export hotov: ${allRows.length} záznamů`, 'success');
+  } catch (err) {
+    showToast(`Export selhal: ${err.message || err}`, 'error');
+  }
 }
 
 async function exportJSON() {
@@ -2430,6 +2566,7 @@ el('sync-btn').addEventListener('click', async () => {
   el('print-log-refresh-btn').addEventListener('click', () => {
     loadPrintLog(true);
   });
+  el('print-log-export-btn').addEventListener('click', exportCSVPrintLog);
   document.addEventListener('click', e => {
     const groupRow = e.target?.closest?.('.pl-group-row[data-group-id]');
     if (groupRow) {
