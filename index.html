@@ -512,14 +512,21 @@
       <section class="settings-card">
         <h3 data-i18n="settings.cost.title">Nákladové sazby — Colorado (volitelné)</h3>
         <div class="form-group">
-          <label for="cfg-ink-cost" data-i18n="settings.cost.ink">Náklad inkoustu (SEK/L)</label>
+          <label for="cfg-cost-currency" data-i18n="settings.cost.currency">Měna nákladů</label>
+          <select id="cfg-cost-currency">
+            <option value="CZK">CZK</option>
+            <option value="SEK">SEK</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cfg-ink-cost" data-i18n="settings.cost.ink">Náklad inkoustu (za litr)</label>
           <input type="number" id="cfg-ink-cost" min="0" step="0.01" placeholder="0">
         </div>
         <div class="form-group">
-          <label for="cfg-media-cost" data-i18n="settings.cost.media">Náklad média (SEK/m²)</label>
+          <label for="cfg-media-cost" data-i18n="settings.cost.media">Náklad média (za m²)</label>
           <input type="number" id="cfg-media-cost" min="0" step="0.01" placeholder="0">
         </div>
-        <div class="hint" data-i18n="settings.cost.hint">Po vyplnění se zobrazí finanční metriky SEK/m² v přehledu Colorado.</div>
+        <div class="hint" data-i18n="settings.cost.hint">Po vyplnění se zobrazí finanční metriky v přehledu Colorado.</div>
       </section>
 
       <section class="settings-card" id="admin-card">

@@ -23,6 +23,20 @@ const cfg = {
   set inkCost(v)    { ls('pg_ink_cost', v); },
   get mediaCost()   { return parseFloat(ls('pg_media_cost') || '0'); },
   set mediaCost(v)  { ls('pg_media_cost', v); },
+  get costCurrency() {
+    const stored = String(ls('pg_cost_currency') || '').toUpperCase();
+    if (stored === 'CZK' || stored === 'SEK') return stored;
+    const lang =
+      (typeof window !== 'undefined' && window.I18N && window.I18N.currentLang) ||
+      (typeof window !== 'undefined' && window.I18N && window.I18N.defaultLang) ||
+      document.documentElement.lang ||
+      'cs';
+    return lang === 'en' ? 'SEK' : 'CZK';
+  },
+  set costCurrency(v) {
+    const norm = String(v || '').toUpperCase();
+    ls('pg_cost_currency', norm === 'CZK' ? 'CZK' : 'SEK');
+  },
   get deviceId() {
     let id = ls('pg_device_id');
     if (!id) { id = 'pg-' + Math.random().toString(36).slice(2, 10); ls('pg_device_id', id); }
@@ -43,6 +57,14 @@ function i18n(key) {
     return window.I18N.t(key);
   }
   return key;
+}
+
+function getCostUnitPerM2() {
+  return `${cfg.costCurrency} / m²`;
+}
+
+function getCostUnitPerMonth() {
+  return `${cfg.costCurrency} / ${i18n('unit.month-word')}`;
 }
 
 function statusLabel(status) {
@@ -164,6 +186,7 @@ async function saveSettingsToIDB() {
     rollingN:   cfg.rollingN,
     inkCost:    cfg.inkCost,
     mediaCost:  cfg.mediaCost,
+    costCurrency: cfg.costCurrency,
     savedAt:    new Date().toISOString(),
   });
 }
@@ -176,6 +199,7 @@ async function loadSettingsFromIDB() {
   if (rec.rollingN != null) cfg.rollingN = rec.rollingN;
   if (rec.inkCost  != null) cfg.inkCost  = rec.inkCost;
   if (rec.mediaCost!= null) cfg.mediaCost= rec.mediaCost;
+  if (rec.costCurrency != null) cfg.costCurrency = rec.costCurrency;
 }
 
 // ── Load all data ──────────────────────────────────────────
@@ -976,7 +1000,7 @@ function renderMachineCard(machineId, label) {
       </div>
       ${s.hasCosts && s.avgCostPM2 !== null ? `<div class="metric-block cost-bg">
         <span class="metric-big">${fmtN(s.avgCostPM2, 2)}</span>
-        <span class="metric-unit">${i18n('unit.czk-per-m2')}</span>
+        <span class="metric-unit">${getCostUnitPerM2()}</span>
         <span class="metric-desc">${i18n('colorado.card.metrics.cost-per-m2')}</span>
       </div>` : ''}
     </div>
@@ -1029,7 +1053,7 @@ function renderCombinedCard() {
       </div>
       ${hasCosts && costMonth !== null ? `<div class="metric-block cost-bg">
         <span class="metric-big">${fmtN(costMonth, 0)}</span>
-        <span class="metric-unit">${i18n('unit.czk-per-month')}</span>
+        <span class="metric-unit">${getCostUnitPerMonth()}</span>
         <span class="metric-desc">${i18n('colorado.card.combined.cost-month')}</span>
       </div>` : ''}
     </div>`;
@@ -1165,7 +1189,7 @@ function renderCoHistory() {
       <th>${i18n('colorado.table.ink-delta')}</th>
       <th>${i18n('colorado.table.media-delta')}</th>
       <th>${i18n('unit.l-per-m2')}</th>
-      ${hasCosts ? `<th>${i18n('colorado.table.cost-per-m2')}</th>` : ''}
+      ${hasCosts ? `<th>${getCostUnitPerM2()}</th>` : ''}
       <th>${i18n('table.note')}</th>
       <th></th>
     </tr></thead>
@@ -1349,6 +1373,62 @@ function getPrintLogSummaryInk(summary) {
     inkL: estimated,
     source: estimated === null ? null : 'estimated',
   };
+}
+
+const PRINT_LOG_INK_WARN_L_PER_M2 = 0.05;
+
+function logPrintLogInkDiagnostics() {
+  const summary = S.printLogSummary || null;
+  if (!summary) return;
+
+  const displayInk = getPrintLogSummaryInk(summary);
+  const totalAreaM2 = getNullableNumber(summary.printedAreaM2);
+  const litersPerM2 = displayInk.inkL !== null && totalAreaM2 && totalAreaM2 > 0
+    ? displayInk.inkL / totalAreaM2
+    : null;
+
+  const sampleRows = (S.printLogRows || [])
+    .map(row => {
+      const direct = getPrintLogDirectInk(row);
+      const display = getPrintLogInkDisplay(row);
+      return {
+        readyAt: row.readyAt || '',
+        printerName: row.printerName || '',
+        jobName: row.jobName || '',
+        result: row.result || '',
+        printedAreaM2: getNullableNumber(row.printedAreaM2),
+        inkSource: display.source || '',
+        inkCyanL: direct.channels?.cyan,
+        inkMagentaL: direct.channels?.magenta,
+        inkYellowL: direct.channels?.yellow,
+        inkBlackL: direct.channels?.black,
+        inkWhiteL: direct.channels?.white,
+        finalInkL: display.inkL,
+      };
+    })
+    .filter(row => row.finalInkL !== null)
+    .slice(0, 10);
+
+  console.groupCollapsed('[Print Log] Ink diagnostics');
+  console.log('overview', {
+    source: displayInk.source || null,
+    totalInkL: displayInk.inkL,
+    printedAreaM2: totalAreaM2,
+    litersPerM2,
+    loadedRows: (S.printLogRows || []).length,
+  });
+  if (sampleRows.length) console.table(sampleRows);
+  console.groupEnd();
+
+  if (litersPerM2 !== null && litersPerM2 > PRINT_LOG_INK_WARN_L_PER_M2) {
+    console.warn('[Print Log] Suspicious ink intensity detected', {
+      litersPerM2,
+      threshold: PRINT_LOG_INK_WARN_L_PER_M2,
+      totalInkL: displayInk.inkL,
+      printedAreaM2: totalAreaM2,
+      source: displayInk.source || null,
+    });
+  }
 }
 
 function formatPrintLogInkBreakdown(channels) {
@@ -1588,6 +1668,7 @@ async function loadPrintLog(force = false) {
     S.printLogHasMore = Boolean(rows.hasMore);
     S.printLogLoaded = true;
     renderPrintLog();
+    logPrintLogInkDiagnostics();
     const statusTxt = summary.generatedAt
       ? `${i18n('print.status.updated')} ${fmtDT(summary.generatedAt)}`
       : i18n('print.status.default');
@@ -1841,6 +1922,7 @@ function loadSettingsUI() {
   el('cfg-n').value          = cfg.rollingN;
   el('cfg-ink-cost').value   = cfg.inkCost   || '';
   el('cfg-media-cost').value = cfg.mediaCost || '';
+  el('cfg-cost-currency').value = cfg.costCurrency;
   el('device-id-display').textContent  = cfg.deviceId;
   el('app-version-display').textContent = APP_VERSION;
 }
@@ -1851,6 +1933,7 @@ function setupSettings() {
     cfg.rollingN  = parseInt(el('cfg-n').value,     10)      || 8;
     cfg.inkCost   = parseFloat(el('cfg-ink-cost').value)   || 0;
     cfg.mediaCost = parseFloat(el('cfg-media-cost').value) || 0;
+    cfg.costCurrency = el('cfg-cost-currency').value || cfg.costCurrency;
     await saveSettingsToIDB();
     renderStockOverview();
     renderCoDashboard();
@@ -2178,6 +2261,15 @@ async function exportJSON() {
     items:      S.items,
     movements:  S.movements,
     coRecords:  S.coRecords,
+    settings: [{
+      key: 'config',
+      weeksN: cfg.weeksN,
+      rollingN: cfg.rollingN,
+      inkCost: cfg.inkCost,
+      mediaCost: cfg.mediaCost,
+      costCurrency: cfg.costCurrency,
+      savedAt: new Date().toISOString(),
+    }],
   };
   dlBlob(JSON.stringify(data, null, 2), 'application/json', `printguard_backup_${fmtFileDT()}.json`);
 }
@@ -2194,6 +2286,8 @@ async function handleImportJSON(e) {
   let items = [];
   let movements = [];
   let coRecords = [];
+  let settings = [];
+  const hasSettingsPayload = Array.isArray(data.settings);
 
   if (Array.isArray(data.items)) {
     items = data.items.filter(it => it?.articleNumber);
@@ -2220,12 +2314,18 @@ async function handleImportJSON(e) {
   if (Array.isArray(data.coRecords)) {
     coRecords = data.coRecords.filter(r => r?.id && r?.machineId);
   }
+  if (hasSettingsPayload) {
+    settings = data.settings.filter(s => s?.key);
+  }
 
   showConfirm(`Importovat ${items.length} položek, ${movements.length} pohybů, ${coRecords.length} CO záznamů? Existující data budou přepsána.`, async () => {
-    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
+    const clears = [idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)];
+    if (hasSettingsPayload) clears.push(idbClear(ST_SETTINGS));
+    await Promise.all(clears);
     for (const it of items) await idbPut(ST_ITEMS, it);
     for (const m  of movements) await idbPut(ST_MOVES, m);
     for (const r  of coRecords) await idbPut(ST_CORECS, r);
+    for (const s  of settings) await idbPut(ST_SETTINGS, s);
     await loadAll();
     showToast(`Import hotov: ${items.length} pol., ${movements.length} poh.`, 'success');
   });
@@ -2438,6 +2538,7 @@ async function cloudPush() {
         rollingN:  cfg.rollingN,
         inkCost:   cfg.inkCost,
         mediaCost: cfg.mediaCost,
+        costCurrency: cfg.costCurrency,
         savedAt:   new Date().toISOString(),
       }],
     })
@@ -2856,6 +2957,10 @@ el('sync-btn').addEventListener('click', async () => {
 }
 
 window.addEventListener('i18n:changed', () => {
+  const costCurrencySelect = el('cfg-cost-currency');
+  if (costCurrencySelect && !ls('pg_cost_currency')) {
+    costCurrencySelect.value = cfg.costCurrency;
+  }
   try { renderStockOverview(); } catch (_) {}
   try { renderAlerts(); } catch (_) {}
   try { renderItemsMgmt(); } catch (_) {}
