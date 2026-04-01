@@ -134,6 +134,9 @@ export async function handler(event) {
         litersExpr(map.inkTotalL, map.inkTotalMl) ||
         sumExpr([inkCyanExpr, inkMagentaExpr, inkYellowExpr, inkBlackExpr, inkWhiteExpr]) ||
         "null";
+      const inkTotalAggExpr = inkTotalExpr === "null"
+        ? "0::float8"
+        : `coalesce(sum(${inkTotalExpr}), 0)::float8`;
 
       const values = [];
       const where = buildFilters(event.queryStringParameters || {}, map, values);
@@ -145,7 +148,7 @@ export async function handler(event) {
           count(*) filter (where lower(${map.result}) = 'deleted')::int       as deleted_jobs,
           coalesce(sum(${map.printedAreaM2}), 0)::float8                      as printed_area_m2,
           coalesce(sum(${map.mediaLengthM}), 0)::float8                       as media_length_m,
-          coalesce(sum(${inkTotalExpr}), 0)::float8                           as ink_total_l,
+          ${inkTotalAggExpr}                                                  as ink_total_l,
           coalesce(sum(${map.durationSec}), 0)::float8                        as total_duration_sec
         from public.v_print_log_rows
         ${where}`;
@@ -156,7 +159,7 @@ export async function handler(event) {
           count(*) filter (where lower(${map.result}) = 'done')::int               as done_jobs,
           coalesce(sum(${map.printedAreaM2}), 0)::float8                           as printed_area_m2,
           coalesce(sum(${map.mediaLengthM}), 0)::float8                            as media_length_m,
-          coalesce(sum(${inkTotalExpr}), 0)::float8                                as ink_total_l
+          ${inkTotalAggExpr}                                                       as ink_total_l
         from public.v_print_log_rows
         ${where}
         group by ${map.printerName}`;
