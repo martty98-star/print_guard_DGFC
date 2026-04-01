@@ -130,6 +130,17 @@ body {
 .icon-btn:hover { color: var(--text); background: var(--bg3); }
 .icon-btn.syncing svg { animation: spin .9s linear infinite; }
 
+/* ── Language Switcher ── */
+.lang-switcher {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--font-ui); font-size: .75rem;
+  font-weight: 500; padding: 6px 10px; border-radius: 6px;
+  cursor: pointer; transition: all var(--tr);
+  margin-left: 4px;
+}
+.lang-switcher:hover { background: var(--border); }
+.lang-switcher option { background: var(--bg4); color: var(--text); }
+
 /* ── Bottom Nav ── */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
@@ -167,6 +178,9 @@ body {
 
 .screen-header {
   display: flex; align-items: center; gap: 14px; margin-bottom: 26px;
+}
+.header-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
 }
 .screen-header h1 {
   font-family: var(--font-d); font-size: 1.55rem; font-weight: 500;

@@ -50,6 +50,18 @@ function pickOptional(cols, candidates) {
   return null;
 }
 
+function litersExpr(litersColumn, milliLitersColumn) {
+  if (litersColumn) return `${litersColumn}`;
+  if (milliLitersColumn) return `(${milliLitersColumn} / 1000.0)`;
+  return null;
+}
+
+function sumExpr(parts) {
+  const present = parts.filter(Boolean);
+  if (!present.length) return null;
+  return present.map(part => `coalesce(${part}, 0)`).join(' + ');
+}
+
 function buildFilters(query, map, values) {
   const where = [];
 
@@ -95,7 +107,29 @@ export async function handler(event) {
         mediaLengthM:  pick(cols, ["media_length_m", "medialengthm", "media_length", "mediaLengthM", "length_m"], "mediaLengthM"),
         durationSec:   pick(cols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"], "durationSec"),
         sourceFile:    pickOptional(cols, ["source_file", "sourcefile", "source", "sourceFile", "file_name", "filename"]),
+        inkTotalL:     pickOptional(cols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
+        inkTotalMl:    pickOptional(cols, ["ink_total_ml", "ink_total", "inkTotalMl", "total_ink_ml"]),
+        inkCyanL:      pickOptional(cols, ["ink_cyan_l", "inkCyanL"]),
+        inkCyan:       pickOptional(cols, ["ink_cyan", "inkcyan"]),
+        inkMagentaL:   pickOptional(cols, ["ink_magenta_l", "inkMagentaL"]),
+        inkMagenta:    pickOptional(cols, ["ink_magenta", "inkmagenta"]),
+        inkYellowL:    pickOptional(cols, ["ink_yellow_l", "inkYellowL"]),
+        inkYellow:     pickOptional(cols, ["ink_yellow", "inkyellow"]),
+        inkBlackL:     pickOptional(cols, ["ink_black_l", "inkBlackL"]),
+        inkBlack:      pickOptional(cols, ["ink_black", "inkblack"]),
+        inkWhiteL:     pickOptional(cols, ["ink_white_l", "inkWhiteL"]),
+        inkWhite:      pickOptional(cols, ["ink_white", "inkwhite"]),
       };
+
+      const inkCyanExpr = litersExpr(map.inkCyanL, map.inkCyan);
+      const inkMagentaExpr = litersExpr(map.inkMagentaL, map.inkMagenta);
+      const inkYellowExpr = litersExpr(map.inkYellowL, map.inkYellow);
+      const inkBlackExpr = litersExpr(map.inkBlackL, map.inkBlack);
+      const inkWhiteExpr = litersExpr(map.inkWhiteL, map.inkWhite);
+      const inkTotalExpr =
+        litersExpr(map.inkTotalL, map.inkTotalMl) ||
+        sumExpr([inkCyanExpr, inkMagentaExpr, inkYellowExpr, inkBlackExpr, inkWhiteExpr]) ||
+        "null";
 
       const values = [];
       const where = buildFilters(event.queryStringParameters || {}, map, values);
@@ -126,7 +160,13 @@ export async function handler(event) {
           ${map.printedAreaM2} as "printedAreaM2",
           ${map.mediaLengthM}  as "mediaLengthM",
           ${map.durationSec}   as "durationSec",
-          ${sourceFileSelect}
+          ${sourceFileSelect},
+          ${inkTotalExpr} as "inkTotalL",
+          ${inkCyanExpr || "null"} as "inkCyanL",
+          ${inkMagentaExpr || "null"} as "inkMagentaL",
+          ${inkYellowExpr || "null"} as "inkYellowL",
+          ${inkBlackExpr || "null"} as "inkBlackL",
+          ${inkWhiteExpr || "null"} as "inkWhiteL"
         from public.v_print_log_rows
         ${where}
         order by ${map.readyAt} desc
@@ -149,6 +189,12 @@ export async function handler(event) {
           printedAreaM2: row.printedAreaM2 == null ? null : Number(row.printedAreaM2),
           mediaLengthM: row.mediaLengthM == null ? null : Number(row.mediaLengthM),
           durationSec: row.durationSec == null ? null : Number(row.durationSec),
+          inkTotalL: row.inkTotalL == null ? null : Number(row.inkTotalL),
+          inkCyanL: row.inkCyanL == null ? null : Number(row.inkCyanL),
+          inkMagentaL: row.inkMagentaL == null ? null : Number(row.inkMagentaL),
+          inkYellowL: row.inkYellowL == null ? null : Number(row.inkYellowL),
+          inkBlackL: row.inkBlackL == null ? null : Number(row.inkBlackL),
+          inkWhiteL: row.inkWhiteL == null ? null : Number(row.inkWhiteL),
           sourceFile: row.sourceFile ?? null,
           source_file: row.sourceFile ?? null,
         })),
