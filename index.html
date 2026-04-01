@@ -21,7 +21,7 @@
 <body>
 
   <div id="offline-banner" class="offline-banner hidden">
-    <span>⚠</span><span id="offline-text">Offline — data uložena lokálně</span>
+    <span>⚠</span><span id="offline-text" data-i18n="msg.offline">Offline — data uložena lokálně</span>
   </div>
 
   <!-- ══ TOPBAR ══ -->
@@ -34,19 +34,19 @@
       <div class="mode-toggle">
         <button class="mode-btn active" data-mode="stock">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-          Sklad
+          <span data-i18n="nav.stock">Sklad</span>
         </button>
         <button class="mode-btn" data-mode="colorado">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          Colorado
+          <span data-i18n="nav.colorado">Colorado</span>
         </button>
       </div>
     </div>
     <div class="topbar-right">
-      <button id="sync-btn" class="icon-btn" title="Obnovit">
+      <button id="sync-btn" class="icon-btn" title="Obnovit" data-i18n-title="btn.refresh">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       </button>
-      <button id="nav-settings" class="icon-btn" title="Nastavení">
+      <button id="nav-settings" class="icon-btn" title="Nastavení" data-i18n-title="nav.settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.07 4.93a1 1 0 0 0-1.41 0l-1.47 1.47a7.07 7.07 0 0 0-8.38 0L6.34 4.93a1 1 0 0 0-1.41 1.41l1.47 1.47a7.07 7.07 0 0 0 0 8.38l-1.47 1.47a1 1 0 0 0 1.41 1.41l1.47-1.47a7.07 7.07 0 0 0 8.38 0l1.47 1.47a1 1 0 0 0 1.41-1.41l-1.47-1.47a7.07 7.07 0 0 0 0-8.38l1.47-1.47a1 1 0 0 0 0-1.41z"></path></svg>
       </button>
     </div>
@@ -56,49 +56,49 @@
   <nav class="bottom-nav" id="stock-nav">
     <button class="nav-item active" data-screen="stock-overview">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-      <span>Přehled</span>
+      <span data-i18n="nav.overview">Přehled</span>
     </button>
     <button class="nav-item" data-screen="stock-movement">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-      <span>Pohyb</span>
+      <span data-i18n="nav.movement">Pohyb</span>
     </button>
     <button class="nav-item" data-screen="stock-alerts">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-      <span id="alerts-nav-label">Upozornění</span>
+      <span id="alerts-nav-label" data-i18n="nav.alerts">Upozornění</span>
     </button>
     <button class="nav-item" data-screen="stock-log">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      <span>Historie</span>
+      <span data-i18n="nav.history">Historie</span>
     </button>
     <button class="nav-item" data-screen="stock-items">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-      <span>Položky</span>
+      <span data-i18n="nav.items">Položky</span>
     </button>
     <button class="nav-item" data-screen="settings">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <circle cx="12" cy="12" r="3"></circle>
     <path d="M19.07 4.93a1 1 0 0 0-1.41 0l-1.47 1.47a7.07 7.07 0 0 0-8.38 0L6.34 4.93a1 1 0 0 0-1.41 1.41l1.47 1.47a7.07 7.07 0 0 0 0 8.38l-1.47 1.47a1 1 0 0 0 1.41 1.41l1.47-1.47a7.07 7.07 0 0 0 8.38 0l1.47 1.47a1 1 0 0 0 1.41-1.41l-1.47-1.47a7.07 7.07 0 0 0 0-8.38l1.47-1.47a1 1 0 0 0 0-1.41z"></path>
   </svg>
-  <span>Nastavení</span>
+  <span data-i18n="nav.settings">Nastavení</span>
 </button>
   </nav>
 
   <nav class="bottom-nav hidden" id="colorado-nav">
     <button class="nav-item active" data-screen="co-dashboard">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-      <span>Spotřeba</span>
+      <span data-i18n="nav.consumption">Spotřeba</span>
     </button>
     <button class="nav-item" data-screen="co-entry">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-      <span>Nový záznam</span>
+      <span data-i18n="nav.new-record">Nový záznam</span>
     </button>
     <button class="nav-item" data-screen="co-history">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      <span>Historie</span>
+      <span data-i18n="nav.history">Historie</span>
     </button>
     <button class="nav-item" data-screen="print-log">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
-      <span>Tiskový log</span>
+      <span data-i18n="nav.print-log">Tiskový log</span>
     </button>
   </nav>
 
@@ -109,13 +109,13 @@
   <!-- Přehled skladu -->
   <main id="screen-stock-overview" class="screen active">
     <div class="screen-header">
-      <h1>Přehled skladu</h1>
+      <h1 data-i18n="header.stock-overview">Přehled skladu</h1>
       <div class="header-meta" id="stock-last-update">—</div>
     </div>
     <div class="stats-row">
-      <div class="stat-chip ok"   data-filter="ok">  <span class="stat-num" id="count-ok">—</span>  <span class="stat-lbl">OK</span></div>
-      <div class="stat-chip warn" data-filter="warn"><span class="stat-num" id="count-warn">—</span><span class="stat-lbl">Varování</span></div>
-      <div class="stat-chip crit" data-filter="crit"><span class="stat-num" id="count-crit">—</span><span class="stat-lbl">Kritické</span></div>
+      <div class="stat-chip ok"   data-filter="ok">  <span class="stat-num" id="count-ok">—</span>  <span class="stat-lbl" data-i18n="status.ok">OK</span></div>
+      <div class="stat-chip warn" data-filter="warn"><span class="stat-num" id="count-warn">—</span><span class="stat-lbl" data-i18n="status.warn">Varování</span></div>
+      <div class="stat-chip crit" data-filter="crit"><span class="stat-num" id="count-crit">—</span><span class="stat-lbl" data-i18n="status.crit">Kritické</span></div>
     </div>
     <div class="search-filter-row">
       <input type="text" id="stock-search" placeholder="Hledat položku…" autocomplete="off">
@@ -129,7 +129,7 @@
     <div id="stock-list" class="item-list">
       <div class="loading-state"><div class="spinner"></div><p>Načítám…</p></div>
     </div>
-    <button class="fab" id="fab-movement" title="Nový pohyb">
+    <button class="fab" id="fab-movement" title="Nový pohyb" data-i18n-title="btn.add-movement">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
     </button>
   </main>
@@ -138,7 +138,7 @@
   <main id="screen-stock-movement" class="screen">
     <div class="screen-header">
       <button class="back-btn" data-screen="stock-overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-      <h1>Pohyb skladu</h1>
+      <h1 data-i18n="header.stock-movement">Pohyb skladu</h1>
     </div>
     <div class="form-card">
 
@@ -200,14 +200,14 @@
 
   <!-- Upozornění -->
   <main id="screen-stock-alerts" class="screen">
-    <div class="screen-header"><h1>Upozornění</h1></div>
+    <div class="screen-header"><h1 data-i18n="header.stock-alerts">Upozornění</h1></div>
     <div id="alerts-list" class="item-list"></div>
   </main>
 
   <!-- Správa položek -->
   <main id="screen-stock-items" class="screen">
     <div class="screen-header">
-      <h1>Správa položek</h1>
+      <h1 data-i18n="header.stock-items">Správa položek</h1>
       <button class="btn-sm" id="add-item-btn">+ Přidat položku</button>
     </div>
     <div id="items-mgmt-list" class="item-list"></div>
@@ -225,7 +225,7 @@
   <!-- Historie pohybů skladu -->
   <main id="screen-stock-log" class="screen">
     <div class="screen-header">
-      <h1>Historie pohybů</h1>
+      <h1 data-i18n="header.stock-log">Historie pohybů</h1>
       <button class="btn-sm" id="stock-log-export-btn">↓ Export CSV</button>
     </div>
     <div class="search-filter-row" style="margin-bottom:14px">
@@ -263,7 +263,7 @@
   <!-- Colorado dashboard -->
   <main id="screen-co-dashboard" class="screen">
     <div class="screen-header">
-      <h1>Spotřeba Colorado</h1>
+      <h1 data-i18n="header.co-dashboard">Spotřeba Colorado</h1>
       <div class="header-meta" id="co-last-update">—</div>
     </div>
     <div class="machine-card" id="card-colorado1"></div>
@@ -281,7 +281,7 @@
   <main id="screen-co-entry" class="screen">
     <div class="screen-header">
       <button class="back-btn" data-screen="co-dashboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-      <h1>Nový záznam</h1>
+      <h1 data-i18n="header.co-entry">Nový záznam</h1>
     </div>
     <div class="form-card">
       <div class="form-group">
@@ -327,7 +327,7 @@
   <!-- Colorado historie -->
   <main id="screen-co-history" class="screen">
     <div class="screen-header">
-      <h1>Historie Colorado</h1>
+      <h1 data-i18n="header.co-history">Historie Colorado</h1>
       <button class="btn-sm" id="co-history-export-btn">↓ Export CSV</button>
     </div>
     <div class="hist-tabs">
@@ -357,7 +357,7 @@
   <!-- Print Log / analytics -->
   <main id="screen-print-log" class="screen">
     <div class="screen-header">
-      <h1>Tiskový log</h1>
+      <h1 data-i18n="header.print-log">Tiskový log</h1>
       <div class="header-meta" id="print-log-status">Data ze serveru</div>
     </div>
 
@@ -462,9 +462,20 @@
   <main id="screen-settings" class="screen">
     <div class="screen-header">
       <button class="back-btn" data-screen="stock-overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-      <h1>Nastavení</h1>
+      <h1 data-i18n="header.settings">Nastavení</h1>
     </div>
     <div class="settings-stack">
+
+      <section class="settings-card">
+        <h3 data-i18n="settings.language">Jazyk / Language</h3>
+        <div class="form-group">
+          <label for="lang-select" data-i18n="lbl.language">Jazyk</label>
+          <select id="lang-select">
+            <option value="cs" data-i18n="lang.cs">Čeština</option>
+            <option value="en" data-i18n="lang.en">English</option>
+          </select>
+        </div>
+      </section>
 
       <section class="settings-card">
         <h3>Sklad — výpočet spotřeby</h3>
@@ -627,6 +638,7 @@
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
