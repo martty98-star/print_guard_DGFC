@@ -373,6 +373,7 @@
       <div class="stat-chip crit"><span class="stat-num" id="pl-deleted-jobs">—</span><span class="stat-lbl" data-i18n="print.stats.deleted">Smazané úlohy</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-printed-area">—</span><span class="stat-lbl" data-i18n="print.stats.printed-area">Vytištěná plocha</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-media-length">—</span><span class="stat-lbl" data-i18n="print.stats.media">Spotřeba média</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-est-ink">—</span><span class="stat-lbl">Odhad inkoustu</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-duration">—</span><span class="stat-lbl" data-i18n="print.stats.duration">Celková doba</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-sla-total">—</span><span class="stat-lbl" data-i18n="print.stats.grouped">Seskupené úlohy</span></div>
       <div class="stat-chip"><span class="stat-num" id="pl-sla-first-pass">—</span><span class="stat-lbl" data-i18n="print.stats.first-pass">Úspěch napoprvé</span></div>
@@ -451,7 +452,10 @@
     <div class="machine-card">
       <div class="mc-header">
         <span class="mc-label" id="print-log-table-title" data-i18n="print.table.title">Poslední tiskové aktivity</span>
-        <button class="btn-sm" id="print-log-refresh-btn">↻ Obnovit</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn-sm" id="print-log-export-btn">↓ Export CSV</button>
+          <button class="btn-sm" id="print-log-refresh-btn">↻ Obnovit</button>
+        </div>
       </div>
       <div id="print-log-table-wrap" class="table-wrap">
         <div class="loading-state"><div class="spinner"></div><p data-i18n="loading.print-log">Načítám tiskový log…</p></div>
