@@ -69,6 +69,11 @@ function litersExpr(litersColumn, milliLitersColumn) {
   return null;
 }
 
+function microLitersExpr(rawUnitsColumn) {
+  if (!rawUnitsColumn) return null;
+  return `(${rawUnitsColumn} / 1000000.0)`;
+}
+
 function sumExpr(parts) {
   const present = parts.filter(Boolean);
   if (!present.length) return null;
@@ -81,6 +86,28 @@ function buildInkExpressions(map) {
   const inkYellowExpr = litersExpr(map.inkYellowL, map.inkYellow);
   const inkBlackExpr = litersExpr(map.inkBlackL, map.inkBlack);
   const inkWhiteExpr = litersExpr(map.inkWhiteL, map.inkWhite);
+  const inkTotalExpr =
+    litersExpr(map.inkTotalL, map.inkTotalMl) ||
+    sumExpr([inkCyanExpr, inkMagentaExpr, inkYellowExpr, inkBlackExpr, inkWhiteExpr]) ||
+    "null";
+
+  return {
+    inkCyanExpr,
+    inkMagentaExpr,
+    inkYellowExpr,
+    inkBlackExpr,
+    inkWhiteExpr,
+    inkTotalExpr,
+  };
+}
+
+function buildAccountingInkExpressions(map) {
+  // print_accounting_rows stores raw CSV channel counters as printer micro-liter units.
+  const inkCyanExpr = map.inkCyanL ? `${map.inkCyanL}` : microLitersExpr(map.inkCyan);
+  const inkMagentaExpr = map.inkMagentaL ? `${map.inkMagentaL}` : microLitersExpr(map.inkMagenta);
+  const inkYellowExpr = map.inkYellowL ? `${map.inkYellowL}` : microLitersExpr(map.inkYellow);
+  const inkBlackExpr = map.inkBlackL ? `${map.inkBlackL}` : microLitersExpr(map.inkBlack);
+  const inkWhiteExpr = map.inkWhiteL ? `${map.inkWhiteL}` : microLitersExpr(map.inkWhite);
   const inkTotalExpr =
     litersExpr(map.inkTotalL, map.inkTotalMl) ||
     sumExpr([inkCyanExpr, inkMagentaExpr, inkYellowExpr, inkBlackExpr, inkWhiteExpr]) ||
@@ -125,7 +152,7 @@ function buildAccountingInkJoin(query, viewMap, accountingCols, values) {
     inkWhite:      pickOptional(accountingCols, ["ink_white", "inkwhite"]),
   };
 
-  const inkExprs = buildInkExpressions(accountingMap);
+  const inkExprs = buildAccountingInkExpressions(accountingMap);
   if (inkExprs.inkTotalExpr === "null") return null;
 
   const accountingWhere = buildFilters(query, accountingMap, values);
