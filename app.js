@@ -1808,6 +1808,19 @@ function fmtFileDT() {
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
 }
 
+function fmtExportDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return String(iso);
+  return d.toLocaleString('cs-CZ', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function exportCSVIntervals() {
   const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
   const header = ['timestamp_from','timestamp_to','days_elapsed','machine',
@@ -1817,7 +1830,7 @@ function exportCSVIntervals() {
   MACHINES.forEach(({ id }) => {
     computeCoIntervals(id).forEach(iv => {
       rows.push(csvRow([
-        iv.from, iv.to, fmtN(iv.days,2), id,
+        fmtExportDateTime(iv.from), fmtExportDateTime(iv.to), fmtN(iv.days,2), id,
         fmtN(iv.inkTotalTo,3), fmtN(iv.mediaTotalTo,1),
         fmtN(iv.inkUsed,3), fmtN(iv.mediaUsed,1),
         iv.inkPerM2 !== null ? fmtN(iv.inkPerM2,6) : '',
@@ -1835,7 +1848,15 @@ function exportCSVRawCo() {
   const header = ['id','machine','timestamp','ink_total_l','media_total_m2','note','created_at'];
   const rows = [csvRow(header)];
   [...S.coRecords].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp)).forEach(r => {
-    rows.push(csvRow([r.id, r.machineId, r.timestamp, r.inkTotalLiters, r.mediaTotalM2, r.note||'', r.createdAt||'']));
+    rows.push(csvRow([
+      r.id,
+      r.machineId,
+      fmtExportDateTime(r.timestamp),
+      r.inkTotalLiters,
+      r.mediaTotalM2,
+      r.note||'',
+      fmtExportDateTime(r.createdAt)
+    ]));
   });
   dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_raw_${fmtFileDT()}.csv`);
 }
@@ -1862,13 +1883,13 @@ function exportCSVStock() {
       else if (mm.movType === 'issue') running = Math.max(0, running - mm.qty);
       if (mm.id === m.id) break;
     }
-    rows.push(csvRow([m.timestamp, m.articleNumber, it.name||'', m.movType, m.qty, it.unit||'ks', running, m.note||'']));
+    rows.push(csvRow([fmtExportDateTime(m.timestamp), m.articleNumber, it.name||'', m.movType, m.qty, it.unit||'ks', running, m.note||'']));
   });
   dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_movements_${fmtFileDT()}.csv`);
 }
 
 function exportCSVStockLevels() {
-  const exported_at = new Date().toISOString();
+  const exported_at = fmtExportDateTime(new Date().toISOString());
   const header = ['exported_at','article_number','name','category','unit','on_hand',
     'avg_weekly_issue','days_left','status','min_qty','lead_time_days','safety_days'];
   const rows = [csvRow(header)];
@@ -1916,7 +1937,7 @@ async function exportCSVPrintLog() {
       const interval = getPrintLogEstimateInterval(row);
       const estimate = getPrintLogInkEstimate(row);
       rows.push(csvRow([
-        row.readyAt || '',
+        fmtExportDateTime(row.readyAt),
         mapPrinterName(row.printerName),
         row.jobName || '',
         printResultLabel(row.result),
@@ -1925,8 +1946,8 @@ async function exportCSVPrintLog() {
         estimate.estimatedInkL === null ? '' : fmtN(estimate.estimatedInkL, 3),
         estimate.estimatedInkPerM2 === null ? '' : fmtN(estimate.estimatedInkPerM2, 6),
         interval && estimate.estimatedInkPerM2 !== null ? 'derived_from_lifetime_interval_ratio' : '',
-        interval?.from || '',
-        interval?.to || '',
+        fmtExportDateTime(interval?.from),
+        fmtExportDateTime(interval?.to),
         Number.isFinite(Number(row.durationSec)) ? fmtN(row.durationSec, 0) : '',
       ]));
     });
@@ -2137,7 +2158,7 @@ function exportCSVStockLog() {
     else after = Math.max(0, r - m.qty);
     runningMap[m.articleNumber] = after;
     rows.push(csvRow([
-      m.timestamp, m.articleNumber, it.name||'', it.category||'', it.unit||'ks',
+      fmtExportDateTime(m.timestamp), m.articleNumber, it.name||'', it.category||'', it.unit||'ks',
       m.movType, m.qty, after, m.note||''
     ]));
   });
