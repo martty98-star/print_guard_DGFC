@@ -1297,6 +1297,76 @@ function getPrintLogSummaryEstimatedInk(summary) {
   return hasEstimate ? total : null;
 }
 
+function getNullableNumber(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function getPrintLogDirectInk(row) {
+  const channels = getPrintLogInkChannels(row);
+  const total = getNullableNumber(row?.inkTotalL);
+  if (total !== null) return { inkL: total, source: 'direct', channels };
+
+  const sum = Object.values(channels).reduce((acc, value) => acc + (value || 0), 0);
+  const hasChannels = Object.values(channels).some(value => value !== null);
+  return {
+    inkL: hasChannels ? sum : null,
+    source: hasChannels ? 'direct' : null,
+    channels,
+  };
+}
+
+function getPrintLogInkChannels(row) {
+  return {
+    cyan: getNullableNumber(row?.inkCyanL),
+    magenta: getNullableNumber(row?.inkMagentaL),
+    yellow: getNullableNumber(row?.inkYellowL),
+    black: getNullableNumber(row?.inkBlackL),
+    white: getNullableNumber(row?.inkWhiteL),
+  };
+}
+
+function getPrintLogInkDisplay(row) {
+  const direct = getPrintLogDirectInk(row);
+  if (direct.inkL !== null) return direct;
+  const estimate = getPrintLogInkEstimate(row);
+  return {
+    inkL: estimate.estimatedInkL,
+    source: estimate.estimatedInkL === null ? null : 'estimated',
+    channels: null,
+    estimatedInkPerM2: estimate.estimatedInkPerM2,
+  };
+}
+
+function getPrintLogSummaryInk(summary) {
+  const direct = getNullableNumber(summary?.inkTotalL);
+  if (summary?.inkDataAvailable && direct !== null) {
+    return { inkL: direct, source: 'direct' };
+  }
+  const estimated = getPrintLogSummaryEstimatedInk(summary);
+  return {
+    inkL: estimated,
+    source: estimated === null ? null : 'estimated',
+  };
+}
+
+function formatPrintLogInkBreakdown(channels) {
+  if (!channels) return '';
+  const parts = [];
+  if (channels.cyan !== null) parts.push(`C ${fmtN(channels.cyan, 3)}`);
+  if (channels.magenta !== null) parts.push(`M ${fmtN(channels.magenta, 3)}`);
+  if (channels.yellow !== null) parts.push(`Y ${fmtN(channels.yellow, 3)}`);
+  if (channels.black !== null) parts.push(`K ${fmtN(channels.black, 3)}`);
+  if (channels.white !== null && channels.white > 0) parts.push(`W ${fmtN(channels.white, 3)}`);
+  return parts.join(' · ');
+}
+
+function hasPrintLogInkBreakdown(channels) {
+  if (!channels) return false;
+  return Object.values(channels).some(value => value !== null && value > 0);
+}
+
 function normalizePrintLogText(v) {
   return String(v || '')
     .trim()
@@ -1542,13 +1612,17 @@ function renderPrintLog() {
 function renderPrintLogSummary() {
   const summary = S.printLogSummary || {};
   const lifecycle = getPrintLogLifecycleMetrics();
-  const estimatedInk = getPrintLogSummaryEstimatedInk(summary);
+  const displayInk = getPrintLogSummaryInk(summary);
+  const summaryChannels = getPrintLogInkChannels(summary);
+  const summaryBreakdown = summary?.inkDataAvailable && hasPrintLogInkBreakdown(summaryChannels)
+    ? formatPrintLogInkBreakdown(summaryChannels)
+    : '';
   elSet('pl-done-jobs', fmtInt(summary.doneJobs));
   elSet('pl-aborted-jobs', fmtInt(summary.abortedJobs));
   elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
   elSet('pl-printed-area', fmtMeasure(summary.printedAreaM2, 'm²', 2));
   elSet('pl-media-length', fmtMeasure(summary.mediaLengthM, 'm', 2));
-  elSet('pl-est-ink', estimatedInk === null ? '—' : fmtMeasure(estimatedInk, 'L', 3));
+  elSet('pl-est-ink', displayInk.inkL === null ? '—' : fmtMeasure(displayInk.inkL, 'L', 3));
   elSet('pl-duration', fmtDuration(summary.totalDurationSec));
   elSet('pl-sla-total', fmtInt(lifecycle.totalGroups));
   elSet('pl-sla-first-pass', fmtInt(lifecycle.firstPassCount));
@@ -1558,10 +1632,12 @@ function renderPrintLogSummary() {
   elSet('pl-sla-attempts', fmtN(lifecycle.avgAttempts, 2));
   elSet('pl-sla-attempts-success', fmtN(lifecycle.avgAttemptsSuccess, 2));
   elSet('pl-compare-range', printLogRangeLabel());
+  elSet('pl-cmyk-note', summaryBreakdown ? `CMYK · ${summaryBreakdown}` : '');
 }
 
 function renderPrintLogComparison() {
   const compare = S.printLogSummary?.byPrinter || {};
+  const canUseDirectInk = Boolean(S.printLogSummary?.inkDataAvailable);
   const printers = Object.keys(compare);
   const grid = el('pl-compare-grid');
   if (!grid) return;
@@ -1570,11 +1646,16 @@ function renderPrintLogComparison() {
     const displayName = mapPrinterName(name);
     const machineId = getPrintLogMachineId(name);
     const ratio = machineId ? getPrintLogPeriodInkRatio(machineId) : null;
-    const estimatedInk = ratio !== null && Number(rec.printedAreaM2) > 0 ? rec.printedAreaM2 * ratio : null;
+    const directInk = canUseDirectInk ? getNullableNumber(rec.inkTotalL) : null;
+    const breakdown = formatPrintLogInkBreakdown(getPrintLogInkChannels(rec));
+    const displayInk = directInk !== null
+      ? directInk
+      : (ratio !== null && Number(rec.printedAreaM2) > 0 ? rec.printedAreaM2 * ratio : null);
     return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
       <span class="metric-unit">${esc(displayName)}</span>
-      <span class="metric-desc">${i18n('print.result.done')} · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}${estimatedInk === null ? '' : ` · ${fmtMeasure(estimatedInk, 'L', 3)}`}</span>
+      <span class="metric-desc">${i18n('print.result.done')} · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}${displayInk === null ? '' : ` · ${fmtMeasure(displayInk, 'L', 3)}`}</span>
+      ${directInk !== null && breakdown ? `<span class="metric-desc">${esc(breakdown)}</span>` : ''}
     </div>`;
   }).join('');
 }
@@ -1596,10 +1677,11 @@ function renderPrintLogRows() {
   const thResult = i18n('table.result');
   const thMedia = i18n('table.media');
   const thArea = i18n('table.printed-area');
-  const thEstInk = 'Odhad inkoustu';
+  const thInk = i18n('print.stats.ink');
   const thDuration = i18n('table.duration');
   const rows = S.printLogRows.map(row => {
-    const estimate = getPrintLogInkEstimate(row);
+    const ink = getPrintLogInkDisplay(row);
+    const breakdown = ink.source === 'direct' ? formatPrintLogInkBreakdown(ink.channels) : '';
     return `<tr>
     <td>${fmtDT(row.readyAt)}</td>
     <td>${esc(mapPrinterName(row.printerName))}</td>
@@ -1607,7 +1689,7 @@ function renderPrintLogRows() {
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(printResultLabel(row.result))}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
-    <td class="num">${estimate.estimatedInkL === null ? '—' : fmtMeasure(estimate.estimatedInkL, 'L', 3)}</td>
+    <td class="num">${ink.inkL === null ? '—' : fmtMeasure(ink.inkL, 'L', 3)}${breakdown ? `<div style="font-size:.72rem;color:var(--text-faint);white-space:nowrap">${esc(breakdown)}</div>` : ''}</td>
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
   </tr>`;
   }).join('');
@@ -1624,7 +1706,7 @@ function renderPrintLogRows() {
       <th>${thResult}</th>
       <th>${thMedia}</th>
       <th>${thArea}</th>
-      <th>${thEstInk}</th>
+      <th>${thInk}</th>
       <th>${thDuration}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -1645,19 +1727,20 @@ function renderPrintLifecycleGroups(wrap, foot) {
   const rows = groups.map(group => {
     const expanded = !!S.printLogExpandedGroups[group.id];
     const detailRows = group.attempts.map(attempt => {
-      const estimate = getPrintLogInkEstimate(attempt);
+      const ink = getPrintLogInkDisplay(attempt);
+      const breakdown = ink.source === 'direct' ? formatPrintLogInkBreakdown(ink.channels) : '';
       return `<tr>
       <td>${fmtDT(attempt.readyAt)}</td>
       <td><span class="result-badge ${printResultClass(attempt.result)}">${esc(printResultLabel(attempt.result))}</span></td>
       <td class="num">${fmtDurationSeconds(attempt.durationSec)}</td>
       <td class="num">${fmtMeasure(attempt.printedAreaM2, 'm²', 2)}</td>
-      <td class="num">${estimate.estimatedInkL === null ? '—' : fmtMeasure(estimate.estimatedInkL, 'L', 3)}</td>
+      <td class="num">${ink.inkL === null ? '—' : fmtMeasure(ink.inkL, 'L', 3)}${breakdown ? `<div style="font-size:.72rem;color:var(--text-faint);white-space:nowrap">${esc(breakdown)}</div>` : ''}</td>
       <td>${esc(attempt.mediaType || '—')}</td>
     </tr>`;
     }).join('');
-    const estimatedInk = group.attempts.reduce((sum, attempt) => {
-      const estimate = getPrintLogInkEstimate(attempt);
-      return sum + (estimate.estimatedInkL || 0);
+    const totalInk = group.attempts.reduce((sum, attempt) => {
+      const ink = getPrintLogInkDisplay(attempt);
+      return sum + (ink.inkL || 0);
     }, 0);
     return `<tbody class="pl-group-body ${expanded ? 'expanded' : ''}">
       <tr class="pl-group-row" data-group-id="${esc(group.id)}">
@@ -1668,7 +1751,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
         <td class="num">${fmtInt(group.attemptCount)}</td>
         <td>${esc(group.finalResult)}</td>
         <td class="num">${fmtMeasure(group.finalPrintedAreaM2, 'm²', 2)}</td>
-        <td class="num">${estimatedInk > 0 ? fmtMeasure(estimatedInk, 'L', 3) : '—'}</td>
+        <td class="num">${totalInk > 0 ? fmtMeasure(totalInk, 'L', 3) : '—'}</td>
         <td>${esc(group.mediaType || '—')}</td>
       </tr>
       <tr class="pl-group-detail-row ${expanded ? '' : 'hidden'}">
@@ -1679,7 +1762,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
               <span>${group.attemptCount} ${i18n('table.attempts').toLowerCase()} · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)}</span>
             </div>
             <table class="data-table pl-detail-table">
-              <thead><tr><th>${i18n('table.ready')}</th><th>${i18n('table.result')}</th><th>${i18n('table.duration')}</th><th>${i18n('table.printed-area')}</th><th>Odhad inkoustu</th><th>${i18n('table.media')}</th></tr></thead>
+              <thead><tr><th>${i18n('table.ready')}</th><th>${i18n('table.result')}</th><th>${i18n('table.duration')}</th><th>${i18n('table.printed-area')}</th><th>${i18n('print.stats.ink')}</th><th>${i18n('table.media')}</th></tr></thead>
               <tbody>${detailRows}</tbody>
             </table>
           </div>
@@ -1692,7 +1775,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
     ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">${i18n('print.load-more')}</button></div>`
     : '';
   wrap.innerHTML = `<table class="data-table pl-group-table">
-      <thead><tr><th>${i18n('table.last-attempt')}</th><th>${i18n('table.machine')}</th><th>${i18n('table.job')}</th><th>${i18n('table.status')}</th><th>${i18n('table.attempts')}</th><th>${i18n('table.final-result')}</th><th>${i18n('table.final-area')}</th><th>Odhad inkoustu</th><th>${i18n('table.media')}</th></tr></thead>
+      <thead><tr><th>${i18n('table.last-attempt')}</th><th>${i18n('table.machine')}</th><th>${i18n('table.job')}</th><th>${i18n('table.status')}</th><th>${i18n('table.attempts')}</th><th>${i18n('table.final-result')}</th><th>${i18n('table.final-area')}</th><th>${i18n('print.stats.ink')}</th><th>${i18n('table.media')}</th></tr></thead>
       ${rows}
     </table>${loadMoreBtn}`;
 
@@ -1821,6 +1904,22 @@ function fmtExportDateTime(iso) {
   });
 }
 
+function getCurrentMonthExportRange() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const p = n => String(n).padStart(2, '0');
+  return {
+    fromMs: from.getTime(),
+    toMs: to.getTime(),
+    fromIso: from.toISOString(),
+    toIso: to.toISOString(),
+    fromDate: `${from.getFullYear()}-${p(from.getMonth() + 1)}-${p(from.getDate())}`,
+    toDate: `${to.getFullYear()}-${p(to.getMonth() + 1)}-${p(to.getDate())}`,
+    fileMonth: `${from.getFullYear()}-${p(from.getMonth() + 1)}`,
+  };
+}
+
 function exportCSVIntervals() {
   const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
   const header = ['timestamp_from','timestamp_to','days_elapsed','machine',
@@ -1842,6 +1941,108 @@ function exportCSVIntervals() {
     });
   });
   dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_intervals_${fmtFileDT()}.csv`);
+}
+
+function exportCSVCurrentMonthCo() {
+  const range = getCurrentMonthExportRange();
+  const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
+  const header = [
+    'row_type','report_month_from','report_month_to','machine',
+    'timestamp_from','timestamp_to','days_elapsed',
+    'ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2',
+    'ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'
+  ];
+  const rows = [csvRow(header)];
+  const totals = [];
+
+  MACHINES.forEach(({ id }) => {
+    const intervals = computeCoIntervals(id).filter(iv => {
+      const toMs = new Date(iv.to).getTime();
+      return Number.isFinite(toMs) && toMs >= range.fromMs && toMs <= range.toMs;
+    });
+
+    if (!intervals.length) return;
+
+    intervals.forEach(iv => {
+      rows.push(csvRow([
+        'interval',
+        range.fromDate,
+        range.toDate,
+        id,
+        fmtExportDateTime(iv.from),
+        fmtExportDateTime(iv.to),
+        fmtN(iv.days, 2),
+        fmtN(iv.inkTotalTo, 3),
+        fmtN(iv.mediaTotalTo, 1),
+        fmtN(iv.inkUsed, 3),
+        fmtN(iv.mediaUsed, 1),
+        iv.inkPerM2 !== null ? fmtN(iv.inkPerM2, 6) : '',
+        hasCosts ? fmtN(iv.inkCost, 2) : '',
+        hasCosts ? fmtN(iv.mediaCost, 2) : '',
+        hasCosts ? fmtN(iv.totalCost, 2) : '',
+        iv.costPerM2 !== null ? fmtN(iv.costPerM2, 4) : '',
+      ]));
+    });
+
+    const inkUsed = intervals.reduce((sum, iv) => sum + (Number(iv.inkUsed) || 0), 0);
+    const mediaUsed = intervals.reduce((sum, iv) => sum + (Number(iv.mediaUsed) || 0), 0);
+    const inkCost = intervals.reduce((sum, iv) => sum + (Number(iv.inkCost) || 0), 0);
+    const mediaCost = intervals.reduce((sum, iv) => sum + (Number(iv.mediaCost) || 0), 0);
+    const totalCost = inkCost + mediaCost;
+    totals.push({ id, inkUsed, mediaUsed, inkCost, mediaCost, totalCost });
+
+    rows.push(csvRow([
+      'machine_total',
+      range.fromDate,
+      range.toDate,
+      id,
+      '',
+      '',
+      '',
+      '',
+      '',
+      fmtN(inkUsed, 3),
+      fmtN(mediaUsed, 1),
+      mediaUsed > 0 ? fmtN(inkUsed / mediaUsed, 6) : '',
+      hasCosts ? fmtN(inkCost, 2) : '',
+      hasCosts ? fmtN(mediaCost, 2) : '',
+      hasCosts ? fmtN(totalCost, 2) : '',
+      mediaUsed > 0 && hasCosts ? fmtN(totalCost / mediaUsed, 4) : '',
+    ]));
+  });
+
+  if (!totals.length) {
+    showToast(i18n('colorado.export.monthly.none'), 'error');
+    return;
+  }
+
+  const totalInkUsed = totals.reduce((sum, rec) => sum + rec.inkUsed, 0);
+  const totalMediaUsed = totals.reduce((sum, rec) => sum + rec.mediaUsed, 0);
+  const totalInkCost = totals.reduce((sum, rec) => sum + rec.inkCost, 0);
+  const totalMediaCost = totals.reduce((sum, rec) => sum + rec.mediaCost, 0);
+  const totalCost = totalInkCost + totalMediaCost;
+
+  rows.push(csvRow([
+    'month_total',
+    range.fromDate,
+    range.toDate,
+    'all',
+    '',
+    '',
+    '',
+    '',
+    '',
+    fmtN(totalInkUsed, 3),
+    fmtN(totalMediaUsed, 1),
+    totalMediaUsed > 0 ? fmtN(totalInkUsed / totalMediaUsed, 6) : '',
+    hasCosts ? fmtN(totalInkCost, 2) : '',
+    hasCosts ? fmtN(totalMediaCost, 2) : '',
+    hasCosts ? fmtN(totalCost, 2) : '',
+    totalMediaUsed > 0 && hasCosts ? fmtN(totalCost / totalMediaUsed, 4) : '',
+  ]));
+
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_monthly_${range.fileMonth}_${fmtFileDT()}.csv`);
+  showToast(i18n('colorado.export.monthly.done'), 'success');
 }
 
 function exportCSVRawCo() {
@@ -1914,9 +2115,14 @@ async function exportCSVPrintLog() {
       'result',
       'media_type',
       'printed_area_m2',
-      'estimated_ink_l',
-      'estimated_ink_l_per_m2',
-      'estimate_method',
+      'ink_total_l',
+      'ink_source',
+      'ink_cyan_l',
+      'ink_magenta_l',
+      'ink_yellow_l',
+      'ink_black_l',
+      'ink_white_l',
+      'derived_ink_l_per_m2',
       'estimate_interval_from',
       'estimate_interval_to',
       'duration_sec'
@@ -1935,7 +2141,8 @@ async function exportCSVPrintLog() {
 
     allRows.forEach(row => {
       const interval = getPrintLogEstimateInterval(row);
-      const estimate = getPrintLogInkEstimate(row);
+      const ink = getPrintLogInkDisplay(row);
+      const direct = getPrintLogDirectInk(row);
       rows.push(csvRow([
         fmtExportDateTime(row.readyAt),
         mapPrinterName(row.printerName),
@@ -1943,9 +2150,14 @@ async function exportCSVPrintLog() {
         printResultLabel(row.result),
         row.mediaType || '',
         Number.isFinite(Number(row.printedAreaM2)) ? fmtN(row.printedAreaM2, 2) : '',
-        estimate.estimatedInkL === null ? '' : fmtN(estimate.estimatedInkL, 3),
-        estimate.estimatedInkPerM2 === null ? '' : fmtN(estimate.estimatedInkPerM2, 6),
-        interval && estimate.estimatedInkPerM2 !== null ? 'derived_from_lifetime_interval_ratio' : '',
+        ink.inkL === null ? '' : fmtN(ink.inkL, 3),
+        ink.source === 'direct' ? 'direct_print_accounting_rows' : ink.source === 'estimated' ? 'derived_from_lifetime_interval_ratio' : '',
+        direct.channels?.cyan === null || direct.channels?.cyan === undefined ? '' : fmtN(direct.channels.cyan, 3),
+        direct.channels?.magenta === null || direct.channels?.magenta === undefined ? '' : fmtN(direct.channels.magenta, 3),
+        direct.channels?.yellow === null || direct.channels?.yellow === undefined ? '' : fmtN(direct.channels.yellow, 3),
+        direct.channels?.black === null || direct.channels?.black === undefined ? '' : fmtN(direct.channels.black, 3),
+        direct.channels?.white === null || direct.channels?.white === undefined ? '' : fmtN(direct.channels.white, 3),
+        ink.source === 'estimated' && ink.estimatedInkPerM2 !== null ? fmtN(ink.estimatedInkPerM2, 6) : '',
         fmtExportDateTime(interval?.from),
         fmtExportDateTime(interval?.to),
         Number.isFinite(Number(row.durationSec)) ? fmtN(row.durationSec, 0) : '',
@@ -2562,6 +2774,7 @@ el('sync-btn').addEventListener('click', async () => {
     renderCoHistory();
   });
   el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
+  el('co-month-export-btn').addEventListener('click', exportCSVCurrentMonthCo);
 
   // Print log filters
   el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; loadPrintLog(true); });
