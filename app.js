@@ -28,13 +28,6 @@ const cfg = {
     if (!id) { id = 'pg-' + Math.random().toString(36).slice(2, 10); ls('pg_device_id', id); }
     return id;
   },
-  set deviceId(v) {
-    if (v === null || v === undefined || String(v).trim() === '') {
-      localStorage.removeItem('pg_device_id');
-      return;
-    }
-    ls('pg_device_id', String(v).trim());
-  },
   get role() { return ls('pg_role') || 'operator'; },          // operator | admin
   set role(v) { ls('pg_role', v); },
   get adminPin() { return ls('pg_admin_pin') || '2026'; },    // default PIN (změň si)
@@ -43,6 +36,31 @@ const cfg = {
 function ls(k, v) {
   if (v !== undefined) { localStorage.setItem(k, String(v)); return v; }
   return localStorage.getItem(k);
+}
+
+function i18n(key) {
+  if (typeof window !== 'undefined' && window.I18N && typeof window.I18N.t === 'function') {
+    return window.I18N.t(key);
+  }
+  return key;
+}
+
+function statusLabel(status) {
+  const map = {
+    ok: i18n('status.ok'),
+    warn: i18n('status.warn'),
+    crit: i18n('status.crit'),
+  };
+  return map[status] || status;
+}
+
+function movementLabel(type) {
+  const map = {
+    receipt: i18n('mov.receipt'),
+    issue: i18n('mov.issue'),
+    stocktake: i18n('mov.stocktake'),
+  };
+  return map[type] || type;
 }
 
 // ── App state ──────────────────────────────────────────────
@@ -138,76 +156,26 @@ function genId(prefix = 'id') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const LOCAL_CONFIG_KEYS = [
-  'pg_weeks',
-  'pg_rolling',
-  'pg_ink_cost',
-  'pg_media_cost',
-  'pg_device_id',
-  'pg_role',
-  'pg_admin_pin',
-  'pg_lang',
-];
-
-function getStoredLanguage() {
-  return localStorage.getItem('pg_lang') || '';
-}
-
-function setStoredLanguage(lang) {
-  if (!lang) {
-    localStorage.removeItem('pg_lang');
-    return;
-  }
-  localStorage.setItem('pg_lang', String(lang));
-}
-
-function buildSettingsSnapshot() {
-  return {
-    key: 'config',
-    weeksN: cfg.weeksN,
-    rollingN: cfg.rollingN,
-    inkCost: cfg.inkCost,
-    mediaCost: cfg.mediaCost,
-    deviceId: cfg.deviceId,
-    role: cfg.role,
-    adminPin: cfg.adminPin,
-    lang: getStoredLanguage(),
-    savedAt: new Date().toISOString(),
-  };
-}
-
-function applySettingsRecord(rec) {
-  if (!rec || typeof rec !== 'object') return;
-  if (rec.weeksN != null) cfg.weeksN = rec.weeksN;
-  if (rec.rollingN != null) cfg.rollingN = rec.rollingN;
-  if (rec.inkCost != null) cfg.inkCost = rec.inkCost;
-  if (rec.mediaCost != null) cfg.mediaCost = rec.mediaCost;
-  if (rec.deviceId != null) cfg.deviceId = rec.deviceId;
-  if (rec.role != null) cfg.role = rec.role;
-  if (rec.adminPin != null) cfg.adminPin = rec.adminPin;
-  if (rec.lang != null) {
-    const lang = String(rec.lang).trim();
-    setStoredLanguage(lang);
-    if (lang && typeof I18N !== 'undefined' && typeof I18N.setLang === 'function' && I18N.currentLang !== lang) {
-      try { I18N.setLang(lang); } catch {}
-    }
-  }
-}
-
-function clearStoredConfig() {
-  LOCAL_CONFIG_KEYS.forEach(key => localStorage.removeItem(key));
-}
-
 // ── Settings IDB persistence ───────────────────────────────
 async function saveSettingsToIDB() {
-  await idbPut(ST_SETTINGS, buildSettingsSnapshot());
+  await idbPut(ST_SETTINGS, {
+    key:        'config',
+    weeksN:     cfg.weeksN,
+    rollingN:   cfg.rollingN,
+    inkCost:    cfg.inkCost,
+    mediaCost:  cfg.mediaCost,
+    savedAt:    new Date().toISOString(),
+  });
 }
 
 async function loadSettingsFromIDB() {
   const all = await idbAll(ST_SETTINGS);
   const rec = all.find(r => r.key === 'config');
   if (!rec) return;
-  applySettingsRecord(rec);
+  if (rec.weeksN   != null) cfg.weeksN   = rec.weeksN;
+  if (rec.rollingN != null) cfg.rollingN = rec.rollingN;
+  if (rec.inkCost  != null) cfg.inkCost  = rec.inkCost;
+  if (rec.mediaCost!= null) cfg.mediaCost= rec.mediaCost;
 }
 
 // ── Load all data ──────────────────────────────────────────
@@ -226,7 +194,6 @@ async function loadAll() {
   renderItemsMgmt();
   renderCoDashboard();
   renderCoHistory();
-  loadSettingsUI();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -308,7 +275,8 @@ function renderStockOverview() {
   elSet('count-crit', crit);
 
   const alertCount = warn + crit;
-  el('alerts-nav-label').textContent = alertCount > 0 ? `${I18N.t('nav.alerts')} (${alertCount})` : I18N.t('nav.alerts');
+  const alertsLabel = i18n('nav.alerts');
+  el('alerts-nav-label').textContent = alertCount > 0 ? `${alertsLabel} (${alertCount})` : alertsLabel;
 
   const filtered = all.filter(it => {
     const m = computeStock(it);
@@ -321,10 +289,13 @@ function renderStockOverview() {
   });
 
   const list = el('stock-list');
+  const lblOnHand = i18n('stock.metric.onhand');
+  const lblCoverage = i18n('stock.metric.coverage');
+  const lblWeekly = i18n('stock.metric.weekly');
   if (!filtered.length) {
     list.innerHTML = `<div class="empty-state">
       <div class="empty-state-icon">📦</div>
-      <p>${all.length ? I18N.t('msg.no-filter-match') : I18N.t('msg.no-items') + '\n' + I18N.t('nav.items')}</p>
+      <p>${all.length ? 'Žádné položky neodpovídají filtru.' : 'Žádné položky.\nPřidejte je v záložce Položky nebo importujte JSON.'}</p>
     </div>`;
     return;
   }
@@ -332,7 +303,7 @@ function renderStockOverview() {
   list.innerHTML = filtered.map(it => {
     const m = computeStock(it);
     const dClass = m.status === 'crit' ? 'crit-c' : m.status === 'warn' ? 'warn-c' : '';
-    const statusLbl = { ok: I18N.t('status.ok'), warn: I18N.t('status.warn'), crit: I18N.t('status.crit') }[m.status];
+    const statusLbl = statusLabel(m.status);
     return `<div class="item-card ${m.status}" data-article="${esc(it.articleNumber)}" role="button" tabindex="0">
       <div class="item-card-top">
         <div>
@@ -344,15 +315,15 @@ function renderStockOverview() {
       <div class="item-card-metrics">
         <div class="metric-mini">
           <span class="metric-mini-val">${fmtN(m.onHand, 0)} <small>${esc(it.unit || 'ks')}</small></span>
-          <span class="metric-mini-lbl">${I18N.t('metric.on-hand')}</span>
+          <span class="metric-mini-lbl">${lblOnHand}</span>
         </div>
         <div class="metric-mini">
           <span class="metric-mini-val ${dClass}">${fmtDays(m.daysLeft)}</span>
-          <span class="metric-mini-lbl">${I18N.t('metric.days-left')}</span>
+          <span class="metric-mini-lbl">${lblCoverage}</span>
         </div>
         <div class="metric-mini">
           <span class="metric-mini-val">${m.avgWeekly > 0 ? fmtN(m.avgWeekly, 1) : '—'}</span>
-          <span class="metric-mini-lbl">${I18N.t('metric.weekly-consumption')}</span>
+          <span class="metric-mini-lbl">${lblWeekly}</span>
         </div>
       </div>
     </div>`;
@@ -373,7 +344,9 @@ function openStockDetail(articleNumber) {
 
   const m     = computeStock(item);
   const moves = getMovements(articleNumber);
-  const statusLbl = { ok: 'OK', warn: 'Varování', crit: 'Kritické' }[m.status];
+  const statusLbl = statusLabel(m.status);
+  const lblCoverage = i18n('stock.metric.coverage');
+  const lblWeekly = i18n('stock.metric.weekly');
 
   el('detail-content').innerHTML = `
     <div class="detail-hero">
@@ -383,8 +356,8 @@ function openStockDetail(articleNumber) {
         <span class="detail-unit">${esc(item.unit || 'ks')}</span>
       </div>
       <div class="detail-metrics-grid">
-        <div class="dm-item"><span class="dm-val">${fmtDays(m.daysLeft)}</span><span class="dm-lbl">Zásoba na</span></div>
-        <div class="dm-item"><span class="dm-val">${m.avgWeekly > 0 ? fmtN(m.avgWeekly, 1) : '—'}</span><span class="dm-lbl">Týd. spotřeba</span></div>
+        <div class="dm-item"><span class="dm-val">${fmtDays(m.daysLeft)}</span><span class="dm-lbl">${lblCoverage}</span></div>
+        <div class="dm-item"><span class="dm-val">${m.avgWeekly > 0 ? fmtN(m.avgWeekly, 1) : '—'}</span><span class="dm-lbl">${lblWeekly}</span></div>
         <div class="dm-item"><span class="dm-val">${item.leadTimeDays || '—'}</span><span class="dm-lbl">Dod. lhůta (dny)</span></div>
       </div>
     </div>
@@ -409,9 +382,9 @@ function openStockDetail(articleNumber) {
         </div>
         <button class="btn-sm" id="detail-add-mov-btn">+ Nový pohyb</button>
       </div>
-      <div class="detail-tab-pane table-wrap" data-pane="movements" style="margin-top:10px">
+        <div class="detail-tab-pane table-wrap" data-pane="movements" style="margin-top:10px">
         ${moves.length ? `<table class="data-table">
-          <thead><tr><th>Datum</th><th>Typ</th><th>Množství</th><th>Stav po</th><th>Poznámka</th><th></th></tr></thead>
+          <thead><tr><th>${i18n('table.date')}</th><th>${i18n('table.type')}</th><th>${i18n('table.qty')}</th><th>${i18n('table.after')}</th><th>${i18n('table.note')}</th><th></th></tr></thead>
           <tbody>${buildMovementRows(item, moves)}</tbody>
         </table>` : '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby. Přidejte příjem nebo inventuru.</p></div>'}
       </div>
@@ -456,7 +429,11 @@ function buildMovementRows(item, moves) {
     rows.push({ m, after: running });
   }
   return [...rows].reverse().slice(0, 50).map(({ m, after }) => {
-    const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' }[m.movType] || m.movType;
+    const typeLabel = ({
+      receipt: `↑ ${movementLabel('receipt')}`,
+      issue: `↓ ${movementLabel('issue')}`,
+      stocktake: `= ${movementLabel('stocktake')}`,
+    })[m.movType] || movementLabel(m.movType);
     const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' }[m.movType] || '';
     const qtySign   = m.movType === 'issue' ? `−${fmtN(m.qty, 0)}` : m.movType === 'receipt' ? `+${fmtN(m.qty, 0)}` : `=${fmtN(m.qty, 0)}`;
     return `<tr>
@@ -489,7 +466,11 @@ function buildStockHistoryTable(item, moves) {
     else { delta = 0; }
     rows.push({ m, after: running, delta });
   }
-  const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' };
+  const typeLabel = {
+    receipt: `↑ ${movementLabel('receipt')}`,
+    issue: `↓ ${movementLabel('issue')}`,
+    stocktake: `= ${movementLabel('stocktake')}`,
+  };
   const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
   const html = [...rows].reverse().slice(0, 100).map(({ m, after, delta }) => {
     const sign = delta > 0 ? `+${fmtN(delta,0)}` : delta < 0 ? `${fmtN(delta,0)}` : `=${fmtN(m.qty,0)}`;
@@ -503,7 +484,7 @@ function buildStockHistoryTable(item, moves) {
     </tr>`;
   }).join('');
   return `<table class="data-table">
-    <thead><tr><th>Datum</th><th>Typ</th><th>Změna</th><th>Stav po</th><th>Poznámka</th></tr></thead>
+    <thead><tr><th>${i18n('table.date')}</th><th>${i18n('table.type')}</th><th>${i18n('table.change')}</th><th>${i18n('table.after')}</th><th>${i18n('table.note')}</th></tr></thead>
     <tbody>${html}</tbody>
   </table>`;
 }
@@ -540,13 +521,15 @@ function renderAlerts() {
     .sort((a, b) => computeStock(a).daysLeft - computeStock(b).daysLeft);
 
   const list = el('alerts-list');
+  const lblOnHand = i18n('stock.metric.onhand');
+  const lblCoverage = i18n('stock.metric.coverage');
   if (!alertItems.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✓</div><p>${I18N.t('msg.no-alerts')}</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✓</div><p>${i18n('msg.no-alerts')}</p></div>`;
     return;
   }
   list.innerHTML = alertItems.map(it => {
     const m = computeStock(it);
-    const lbl = m.status === 'crit' ? I18N.t('status.crit') : I18N.t('status.warn');
+    const lbl = statusLabel(m.status);
     return `<div class="item-card ${m.status}" data-article="${esc(it.articleNumber)}" role="button" tabindex="0">
       <div class="item-card-top">
         <div>
@@ -558,15 +541,15 @@ function renderAlerts() {
       <div class="item-card-metrics">
         <div class="metric-mini">
           <span class="metric-mini-val">${fmtN(m.onHand, 0)} <small>${esc(it.unit || 'ks')}</small></span>
-          <span class="metric-mini-lbl">${I18N.t('metric.on-hand')}</span>
+          <span class="metric-mini-lbl">${lblOnHand}</span>
         </div>
         <div class="metric-mini">
           <span class="metric-mini-val ${m.status === 'crit' ? 'crit-c' : 'warn-c'}">${fmtDays(m.daysLeft)}</span>
-          <span class="metric-mini-lbl">${I18N.t('metric.days-left')}</span>
+          <span class="metric-mini-lbl">${lblCoverage}</span>
         </div>
         <div class="metric-mini">
           <span class="metric-mini-val">${it.leadTimeDays || '—'}</span>
-          <span class="metric-mini-lbl">${I18N.t('metric.delivery-time')}</span>
+          <span class="metric-mini-lbl">Dod. lhůta</span>
         </div>
       </div>
     </div>`;
@@ -610,12 +593,13 @@ function setupMovementEntry() {
     if (!matches.length) {
       resultsEl.innerHTML = '<div class="dropdown-item"><span class="di-name">Nic nenalezeno</span></div>';
     } else {
+      const lblOnHand = i18n('stock.metric.onhand');
       resultsEl.innerHTML = matches.map(it => {
         const m = computeStock(it);
         return `<div class="dropdown-item" data-a="${esc(it.articleNumber)}">
           <span class="di-name">${esc(it.name || it.articleNumber)}</span>
           <span class="di-code">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')}</span>
-          <span class="di-stock">Na skladě: ${fmtN(m.onHand, 0)} ${esc(it.unit || 'ks')}</span>
+          <span class="di-stock">${lblOnHand}: ${fmtN(m.onHand, 0)} ${esc(it.unit || 'ks')}</span>
         </div>`;
       }).join('');
     }
@@ -677,12 +661,8 @@ function clearMovItem() {
 }
 
 function updateMovQtyLabel() {
-  const labels = {
-    receipt: I18N.t('lbl.quantity'),
-    issue: I18N.t('lbl.quantity'),
-    stocktake: I18N.t('lbl.quantity')
-  };
-  el('mov-qty-label').textContent = labels[S.movType] || I18N.t('lbl.quantity');
+  const labels = { receipt: 'Přijímaný počet kusů *', issue: 'Vydávaný počet kusů *', stocktake: 'Aktuální stav na skladě (nová hodnota) *' };
+  el('mov-qty-label').textContent = labels[S.movType] || 'Množství *';
 }
 
 function updateMovPreview() {
@@ -706,7 +686,11 @@ function updateMovPreview() {
 
   el('mov-prev-current').textContent = `${fmtN(cur, 0)} ${unit}`;
   el('mov-prev-after').textContent   = `${fmtN(after, 0)} ${unit}`;
-  const statusLbl = { ok: 'OK ✓', warn: '⚠ Varování', crit: '🔴 Kritické' }[nm.status];
+  const statusLbl = ({
+    ok: `${statusLabel('ok')} ✓`,
+    warn: `⚠ ${statusLabel('warn')}`,
+    crit: `🔴 ${statusLabel('crit')}`,
+  })[nm.status] || statusLabel(nm.status);
   const statusEl  = el('mov-prev-status');
   statusEl.textContent = statusLbl;
   statusEl.style.color = { ok: 'var(--ok)', warn: 'var(--warn)', crit: 'var(--crit)' }[nm.status];
@@ -733,8 +717,8 @@ async function saveMovement() {
     await idbPut(ST_MOVES, move);
     S.movements.push(move);
     S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    const typeLabel = { receipt: 'Příjem', issue: 'Výdej', stocktake: 'Inventura' }[S.movType];
-    showToast(`${typeLabel} uložen`, 'success');
+    const typeLabel = movementLabel(S.movType);
+    showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
     el('mov-qty').value  = '';
     el('mov-note').value = '';
     clearMovItem();
@@ -754,6 +738,7 @@ async function saveMovement() {
 
 function renderItemsMgmt() {
   const list = el('items-mgmt-list');
+  const lblOnHand = i18n('stock.metric.onhand');
   if (!S.items.length) {
     list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné položky.\nKlikněte + Přidat položku nebo importujte JSON.</p></div>`;
     return;
@@ -773,7 +758,7 @@ function renderItemsMgmt() {
         return `<div class="mgmt-card" style="margin-bottom:5px">
           <div class="mgmt-info">
             <div class="mgmt-name">${esc(it.name || it.articleNumber)}</div>
-            <div class="mgmt-meta">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')} · Na skladě: ${fmtN(m.onHand, 0)}</div>
+            <div class="mgmt-meta">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')} · ${lblOnHand}: ${fmtN(m.onHand, 0)}</div>
           </div>
           <div class="mgmt-actions">
             ${it.orderUrl ? `<a href="${esc(it.orderUrl)}" target="_blank" rel="noopener" class="btn-icon-sm admin-only" title="Objednat">🛒</a>` : ''}
@@ -941,58 +926,64 @@ function renderMachineCard(machineId, label) {
   const s    = computeCoStats(machineId);
 
   if (!s || recs.length < 2) {
+    const lastLine = recs.length === 1
+      ? `<br>${i18n('colorado.card.need-two.last')}: <strong>${fmtDT(recs[0].timestamp)}</strong> · ${i18n('colorado.card.ink-total')} <strong>${fmtN(recs[0].inkTotalLiters, 2)} L</strong> · ${i18n('colorado.card.media-total')} <strong>${fmtN(recs[0].mediaTotalM2, 1)} m²</strong>`
+      : '';
     wrap.innerHTML = `<div class="mc-header">
       <span class="mc-label">${esc(label)}</span>
-      <span class="mc-badge">${recs.length} záznam${recs.length === 1 ? '' : 'ů'}</span>
+      <span class="mc-badge">${recs.length} ${recs.length === 1 ? i18n('colorado.card.record.one') : i18n('colorado.card.record.other')}</span>
     </div>
     <div class="mc-empty">
-      Potřeba alespoň 2 záznamy pro výpočet spotřeby.
-      ${recs.length === 1 ? `<br>Poslední: <strong>${fmtDT(recs[0].timestamp)}</strong> · Ink: ${fmtN(recs[0].inkTotalLiters, 2)} L · Médium: ${fmtN(recs[0].mediaTotalM2, 1)} m²` : ''}
+      ${i18n('colorado.card.need-two')}
+      ${lastLine}
     </div>`;
     return;
   }
 
+  const recordWord = s.recordCount === 1 ? i18n('colorado.card.record.one') : i18n('colorado.card.record.other');
+  const intervalWord = s.intervalCount === 1 ? i18n('colorado.card.interval.one') : i18n('colorado.card.interval.other');
+
   wrap.innerHTML = `
     <div class="mc-header">
       <span class="mc-label">${esc(label)}</span>
-      <span class="mc-badge">${s.recordCount} záznamů · ${s.intervalCount} intervalů</span>
+      <span class="mc-badge">${s.recordCount} ${recordWord} · ${s.intervalCount} ${intervalWord}</span>
     </div>
     <div class="metrics-grid">
       <div class="metric-block ink-bg">
         <span class="metric-big">${fmtN(s.avgInkDay, 3)}</span>
-        <span class="metric-unit">L / den</span>
-        <span class="metric-desc">Průměrná spotřeba inkoustu</span>
+        <span class="metric-unit">${i18n('unit.l-per-day')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.ink-day')}</span>
       </div>
       <div class="metric-block ink-bg">
         <span class="metric-big">${fmtN(s.avgInkMonth, 2)}</span>
-        <span class="metric-unit">L / měsíc</span>
-        <span class="metric-desc">Odhad měsíční spotřeby</span>
+        <span class="metric-unit">${i18n('unit.l-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.ink-month')}</span>
       </div>
       <div class="metric-block">
         <span class="metric-big">${fmtN(s.avgMediaDay, 1)}</span>
-        <span class="metric-unit">m² / den</span>
-        <span class="metric-desc">Průměrná spotřeba média</span>
+        <span class="metric-unit">${i18n('unit.m2-per-day')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.media-day')}</span>
       </div>
       <div class="metric-block">
         <span class="metric-big">${fmtN(s.avgMediaMonth, 0)}</span>
-        <span class="metric-unit">m² / měsíc</span>
-        <span class="metric-desc">Odhad měsíční spotřeby</span>
+        <span class="metric-unit">${i18n('unit.m2-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.media-month')}</span>
       </div>
       <div class="metric-block ink-bg">
         <span class="metric-big">${s.avgInkPM2 !== null ? fmtN(s.avgInkPM2, 4) : '—'}</span>
-        <span class="metric-unit">L / m²</span>
-        <span class="metric-desc">Spotřeba inkoustu na m²</span>
+        <span class="metric-unit">${i18n('unit.l-per-m2')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.ink-per-m2')}</span>
       </div>
       ${s.hasCosts && s.avgCostPM2 !== null ? `<div class="metric-block cost-bg">
         <span class="metric-big">${fmtN(s.avgCostPM2, 2)}</span>
-        <span class="metric-unit">Kč / m²</span>
-        <span class="metric-desc">Průměrný náklad na m²</span>
+        <span class="metric-unit">${i18n('unit.czk-per-m2')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.cost-per-m2')}</span>
       </div>` : ''}
     </div>
     <div class="mc-last">
-      Poslední záznam: <strong>${fmtDT(s.last.timestamp)}</strong> ·
-      Ink celkem: <strong>${fmtN(s.last.inkTotalLiters, 2)} L</strong> ·
-      Médium celkem: <strong>${fmtN(s.last.mediaTotalM2, 1)} m²</strong>
+      ${i18n('colorado.card.last')} <strong>${fmtDT(s.last.timestamp)}</strong> ·
+      ${i18n('colorado.card.ink-total')} <strong>${fmtN(s.last.inkTotalLiters, 2)} L</strong> ·
+      ${i18n('colorado.card.media-total')} <strong>${fmtN(s.last.mediaTotalM2, 1)} m²</strong>
     </div>`;
 }
 
@@ -1001,7 +992,7 @@ function renderCombinedCard() {
   if (!wrap) return;
   const valid  = MACHINES.map(m => computeCoStats(m.id)).filter(s => s && s.intervalCount > 0);
   if (!valid.length) {
-    wrap.innerHTML = `<div class="mc-header"><span class="mc-label">Celkem — obě tiskárny</span></div><div class="mc-empty">Data nejsou k dispozici.</div>`;
+    wrap.innerHTML = `<div class="mc-header"><span class="mc-label">${i18n('colorado.card.combined.title')}</span></div><div class="mc-empty">${i18n('colorado.card.no-data')}</div>`;
     return;
   }
   const sum = (fn) => valid.reduce((s, v) => s + fn(v), 0);
@@ -1012,34 +1003,34 @@ function renderCombinedCard() {
 
   wrap.innerHTML = `
     <div class="mc-header">
-      <span class="mc-label">Celkem — obě tiskárny</span>
-      <span class="mc-badge">kombinovaný přehled</span>
+      <span class="mc-label">${i18n('colorado.card.combined.title')}</span>
+      <span class="mc-badge">${i18n('colorado.card.combined.badge')}</span>
     </div>
     <div class="metrics-grid">
       <div class="metric-block ink-bg">
         <span class="metric-big">${fmtN(sum(v => v.avgInkDay), 3)}</span>
-        <span class="metric-unit">L / den</span>
-        <span class="metric-desc">Inkoust celkem</span>
+        <span class="metric-unit">${i18n('unit.l-per-day')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.ink-total')}</span>
       </div>
       <div class="metric-block ink-bg">
         <span class="metric-big">${fmtN(inkMonth, 2)}</span>
-        <span class="metric-unit">L / měsíc</span>
-        <span class="metric-desc">Inkoust celkem / měsíc</span>
+        <span class="metric-unit">${i18n('unit.l-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.ink-month')}</span>
       </div>
       <div class="metric-block">
         <span class="metric-big">${fmtN(sum(v => v.avgMediaDay), 1)}</span>
-        <span class="metric-unit">m² / den</span>
-        <span class="metric-desc">Médium celkem</span>
+        <span class="metric-unit">${i18n('unit.m2-per-day')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.media-total')}</span>
       </div>
       <div class="metric-block">
         <span class="metric-big">${fmtN(mediaMonth, 0)}</span>
-        <span class="metric-unit">m² / měsíc</span>
-        <span class="metric-desc">Médium celkem / měsíc</span>
+        <span class="metric-unit">${i18n('unit.m2-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.media-month')}</span>
       </div>
       ${hasCosts && costMonth !== null ? `<div class="metric-block cost-bg">
         <span class="metric-big">${fmtN(costMonth, 0)}</span>
-        <span class="metric-unit">Kč / měsíc</span>
-        <span class="metric-desc">Odhadované celkové náklady</span>
+        <span class="metric-unit">${i18n('unit.czk-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.cost-month')}</span>
       </div>` : ''}
     </div>`;
 }
@@ -1168,14 +1159,14 @@ function renderCoHistory() {
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
-      <th>Datum a čas</th>
-      <th>Ink celkem (L)</th>
-      <th>Médium celkem (m²)</th>
-      <th>Δ Ink (L)</th>
-      <th>Δ Médium (m²)</th>
-      <th>L / m²</th>
-      ${hasCosts ? '<th>Kč / m²</th>' : ''}
-      <th>Poznámka</th>
+      <th>${i18n('colorado.table.datetime')}</th>
+      <th>${i18n('colorado.table.ink-total')}</th>
+      <th>${i18n('colorado.table.media-total')}</th>
+      <th>${i18n('colorado.table.ink-delta')}</th>
+      <th>${i18n('colorado.table.media-delta')}</th>
+      <th>${i18n('unit.l-per-m2')}</th>
+      ${hasCosts ? `<th>${i18n('colorado.table.cost-per-m2')}</th>` : ''}
+      <th>${i18n('table.note')}</th>
       <th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -1210,14 +1201,14 @@ function mapPrinterName(name) {
   return name;
 }
 
-function getPrintLogParams(overrides = {}) {
+function getPrintLogParams() {
   const params = new URLSearchParams();
   if (S.printLogDateFrom) params.set('from', S.printLogDateFrom);
   if (S.printLogDateTo)   params.set('to', S.printLogDateTo);
   if (S.printLogPrinter !== 'all') params.set('printer', S.printLogPrinter);
   if (S.printLogResult !== 'all')  params.set('result', S.printLogResult);
-  params.set('limit', String(overrides.limit ?? PRINT_LOG_PAGE_SIZE));
-  params.set('offset', String(overrides.offset ?? S.printLogOffset));
+  params.set('limit', String(PRINT_LOG_PAGE_SIZE));
+  params.set('offset', String(S.printLogOffset));
   return params;
 }
 
@@ -1235,32 +1226,12 @@ async function fetchPrintLogRows() {
   return j;
 }
 
-function numOrNull(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
 function normalizePrintLogRow(row) {
   const sourceFile = row?.sourceFile ?? row?.source_file ?? '';
-  const inkCyanL = numOrNull(row?.inkCyanL ?? row?.ink_cyan_l);
-  const inkMagentaL = numOrNull(row?.inkMagentaL ?? row?.ink_magenta_l);
-  const inkYellowL = numOrNull(row?.inkYellowL ?? row?.ink_yellow_l);
-  const inkBlackL = numOrNull(row?.inkBlackL ?? row?.ink_black_l);
-  const inkWhiteL = numOrNull(row?.inkWhiteL ?? row?.ink_white_l);
-  const channelInkValues = [inkCyanL, inkMagentaL, inkYellowL, inkBlackL, inkWhiteL];
-  const derivedInkTotalL = channelInkValues.filter(v => v !== null).reduce((sum, v) => sum + v, 0);
-  const inkTotalL = numOrNull(row?.inkTotalL ?? row?.ink_total_l) ?? (channelInkValues.some(v => v !== null) ? derivedInkTotalL : null);
   return {
     ...row,
     sourceFile: sourceFile || '',
     source_file: sourceFile || '',
-    inkTotalL,
-    ink_total_l: inkTotalL,
-    inkCyanL,
-    inkMagentaL,
-    inkYellowL,
-    inkBlackL,
-    inkWhiteL,
   };
 }
 
@@ -1290,12 +1261,12 @@ function normalizePrintLogResult(result) {
 
 function lifecycleFilterLabel(filter) {
   return ({
-    all: 'Všechny skupiny průběhu',
-    open_issue: 'Pouze otevřené problémy',
-    resolved_after_retry: 'Pouze vyřešené opakováním',
-    multiple_attempts: 'Pouze vícenásobné pokusy',
-    first_pass: 'Pouze úspěch napoprvé',
-  })[filter] || 'Všechny skupiny průběhu';
+    all: i18n('print.lifecycle.all'),
+    open_issue: i18n('print.lifecycle.open'),
+    resolved_after_retry: i18n('print.lifecycle.resolved'),
+    multiple_attempts: i18n('print.lifecycle.multi'),
+    first_pass: i18n('print.lifecycle.first'),
+  })[filter] || i18n('print.lifecycle.all');
 }
 
 function derivePrintLifecycleStatus(attempts) {
@@ -1323,34 +1294,36 @@ function derivePrintLifecycleStatus(attempts) {
 function printLifecycleExplanation(group) {
   const attempts = group.attemptCount || 0;
   switch (group.lifecycleStatus) {
-    case 'success_first_try': return 'Dokončeno napoprvé';
-    case 'resolved_after_retry': return attempts > 2 ? `${attempts} pokusů před úspěchem` : 'Vyřešeno po opakování';
-    case 'open_issue': return 'Stále nevyřešeno';
-    case 'deleted_only': return 'Pouze smazané pokusy';
-    case 'aborted_only': return 'Pouze přerušené pokusy';
-    case 'multiple_attempts_success': return `${attempts} úspěšných pokusů v záznamu`;
-    default: return 'Smíšený průběh úlohy';
+    case 'success_first_try': return i18n('print.lifecycle.expl.success_first_try');
+    case 'resolved_after_retry': return attempts > 2
+      ? `${attempts} ${i18n('print.lifecycle.attempts.before-success')}`
+      : i18n('print.lifecycle.expl.resolved_after_retry');
+    case 'open_issue': return i18n('print.lifecycle.expl.open_issue');
+    case 'deleted_only': return i18n('print.lifecycle.expl.deleted_only');
+    case 'aborted_only': return i18n('print.lifecycle.expl.aborted_only');
+    case 'multiple_attempts_success': return `${attempts} ${i18n('print.lifecycle.expl.multiple_attempts_success')}`;
+    default: return i18n('print.lifecycle.expl.unresolved');
   }
 }
 
 function printLifecycleBadgeLabel(status) {
   return ({
-    success_first_try: 'Napoprvé',
-    resolved_after_retry: 'Vyřešeno opakováním',
-    open_issue: 'Otevřený problém',
-    deleted_only: 'Jen smazáno',
-    aborted_only: 'Jen přerušeno',
-    multiple_attempts_success: 'Více úspěchů',
-    unresolved: 'Nevyřešeno',
+    success_first_try: i18n('print.lifecycle.badge.success_first_try'),
+    resolved_after_retry: i18n('print.lifecycle.badge.resolved_after_retry'),
+    open_issue: i18n('print.lifecycle.badge.open_issue'),
+    deleted_only: i18n('print.lifecycle.badge.deleted_only'),
+    aborted_only: i18n('print.lifecycle.badge.aborted_only'),
+    multiple_attempts_success: i18n('print.lifecycle.badge.multiple_attempts_success'),
+    unresolved: i18n('print.lifecycle.badge.unresolved'),
   })[status] || status;
 }
 
 function printLifecycleFinalResult(group) {
   const latest = group.attempts[group.attempts.length - 1];
   const norm = normalizePrintLogResult(latest?.result);
-  if (norm === 'done') return 'Hotovo';
-  if (norm === 'deleted') return 'Smazáno';
-  if (norm === 'abrt') return 'Abrt';
+  if (norm === 'done') return i18n('print.result.done');
+  if (norm === 'deleted') return i18n('print.result.deleted');
+  if (norm === 'abrt') return i18n('print.result.abrt');
   return latest?.result || '—';
 }
 
@@ -1415,7 +1388,6 @@ function buildPrintLifecycleGroups(rows) {
       finalPrintedAreaM2: finalArea == null ? null : Number(finalArea),
       totalPrintedAreaM2: attempts.reduce((sum, a) => sum + (Number(a.printedAreaM2) || 0), 0),
       mediaLengthM: attempts.reduce((sum, a) => sum + (Number(a.mediaLengthM) || 0), 0),
-      totalInkL: attempts.reduce((sum, a) => sum + (Number(a.inkTotalL) || 0), 0),
       totalDurationSec: attempts.reduce((sum, a) => sum + (Number(a.durationSec) || 0), 0),
       explanation: '',
       isSuccessful: normalizePrintLogResult(latest.result) === 'done',
@@ -1469,10 +1441,10 @@ async function loadPrintLog(force = false) {
   }
 
   S.printLogLoading = true;
-  elSet('print-log-status', 'Načítám…');
+  elSet('print-log-status', i18n('print.status.loading'));
   const wrap = el('print-log-table-wrap');
   if (wrap && !S.printLogRows.length) {
-    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Načítám tiskový log…</p></div>`;
+    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>${i18n('loading.print-log')}</p></div>`;
   }
 
   try {
@@ -1484,13 +1456,16 @@ async function loadPrintLog(force = false) {
     S.printLogHasMore = Boolean(rows.hasMore);
     S.printLogLoaded = true;
     renderPrintLog();
-    elSet('print-log-status', summary.generatedAt ? `Aktualizováno ${fmtDT(summary.generatedAt)}` : 'Data ze serveru');
+    const statusTxt = summary.generatedAt
+      ? `${i18n('print.status.updated')} ${fmtDT(summary.generatedAt)}`
+      : i18n('print.status.default');
+    elSet('print-log-status', statusTxt);
   } catch (err) {
     if (wrap) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Nepodařilo se načíst tiskový log.</p><div class="table-empty-note">${esc(err.message || err)}</div></div>`;
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>${i18n('print.error.load')}</p><div class="table-empty-note">${esc(err.message || err)}</div></div>`;
     }
-    elSet('print-log-status', 'Chyba načítání');
-    showToast('Tiskový log: ' + (err.message || err), 'error');
+    elSet('print-log-status', i18n('print.status.error'));
+    showToast(i18n('print.toast.prefix') + (err.message || err), 'error');
   } finally {
     S.printLogLoading = false;
   }
@@ -1510,7 +1485,6 @@ function renderPrintLogSummary() {
   elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
   elSet('pl-printed-area', fmtMeasure(summary.printedAreaM2, 'm²', 2));
   elSet('pl-media-length', fmtMeasure(summary.mediaLengthM, 'm', 2));
-  elSet('pl-ink-total', summary.inkDataAvailable ? fmtMeasure(summary.inkTotalL, 'L', 3) : '—');
   elSet('pl-duration', fmtDuration(summary.totalDurationSec));
   elSet('pl-sla-total', fmtInt(lifecycle.totalGroups));
   elSet('pl-sla-first-pass', fmtInt(lifecycle.firstPassCount));
@@ -1530,11 +1504,10 @@ function renderPrintLogComparison() {
   grid.innerHTML = printers.map(name => {
     const rec = compare[name] || {};
     const displayName = mapPrinterName(name);
-    const inkDesc = S.printLogSummary?.inkDataAvailable ? ` · ${fmtMeasure(rec.inkTotalL, 'L', 3)}` : '';
     return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
       <span class="metric-unit">${esc(displayName)}</span>
-      <span class="metric-desc">Hotovo · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}${inkDesc}</span>
+      <span class="metric-desc">${i18n('print.result.done')} · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}</span>
     </div>`;
   }).join('');
 }
@@ -1545,11 +1518,18 @@ function renderPrintLogRows() {
   if (!wrap) return;
   if (S.printLogViewMode === 'grouped') return renderPrintLifecycleGroups(wrap, foot);
   if (!S.printLogRows.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné tiskové úlohy neodpovídají filtru.</p></div>`;
-    if (foot) foot.textContent = '0 řádků';
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>${i18n('print.empty.jobs')}</p></div>`;
+    if (foot) foot.textContent = `${i18n('print.foot.total.prefix')} 0 ${i18n('print.foot.total.suffix')}`;
     return;
   }
 
+  const thReady = i18n('table.ready');
+  const thMachine = i18n('table.machine');
+  const thJob = i18n('table.job');
+  const thResult = i18n('table.result');
+  const thMedia = i18n('table.media');
+  const thArea = i18n('table.printed-area');
+  const thDuration = i18n('table.duration');
   const rows = S.printLogRows.map(row => `<tr>
     <td>${fmtDT(row.readyAt)}</td>
     <td>${esc(mapPrinterName(row.printerName))}</td>
@@ -1557,34 +1537,34 @@ function renderPrintLogRows() {
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(printResultLabel(row.result))}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
-    <td class="num">${fmtMeasure(row.inkTotalL, 'L', 3)}</td>
     <td class="num">${fmtDurationSeconds(row.durationSec)}</td>
   </tr>`).join('');
 
-  const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
+  const loadMoreBtn = S.printLogHasMore
+    ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">${i18n('print.load-more')}</button></div>`
+    : '';
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
-      <th>Čas připravení</th>
-      <th>Tiskárna</th>
-      <th>Úloha</th>
-      <th>Výsledek</th>
-      <th>Médium</th>
-      <th>Tištěná plocha</th>
-      <th>Inkoust</th>
-      <th>Doba tisku</th>
+      <th>${thReady}</th>
+      <th>${thMachine}</th>
+      <th>${thJob}</th>
+      <th>${thResult}</th>
+      <th>${thMedia}</th>
+      <th>${thArea}</th>
+      <th>${thDuration}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
   ${loadMoreBtn}`;
 
-  if (foot) foot.textContent = `Celkem ${S.printLogRows.length} řádků`;
+  if (foot) foot.textContent = `${i18n('print.foot.total.prefix')} ${S.printLogRows.length} ${i18n('print.foot.total.suffix')}`;
 }
 
 function renderPrintLifecycleGroups(wrap, foot) {
   const groups = getFilteredLifecycleGroups();
   if (!groups.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🧩</div><p>Žádné skupiny průběhu neodpovídají filtru.</p></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🧩</div><p>${i18n('print.empty.groups')}</p></div>`;
     if (foot) foot.textContent = lifecycleFilterLabel(S.printLogGroupFilter);
     return;
   }
@@ -1596,7 +1576,6 @@ function renderPrintLifecycleGroups(wrap, foot) {
       <td><span class="result-badge ${printResultClass(attempt.result)}">${esc(printResultLabel(attempt.result))}</span></td>
       <td class="num">${fmtDurationSeconds(attempt.durationSec)}</td>
       <td class="num">${fmtMeasure(attempt.printedAreaM2, 'm²', 2)}</td>
-      <td class="num">${fmtMeasure(attempt.inkTotalL, 'L', 3)}</td>
       <td>${esc(attempt.mediaType || '—')}</td>
     </tr>`).join('');
     return `<tbody class="pl-group-body ${expanded ? 'expanded' : ''}">
@@ -1608,18 +1587,17 @@ function renderPrintLifecycleGroups(wrap, foot) {
         <td class="num">${fmtInt(group.attemptCount)}</td>
         <td>${esc(group.finalResult)}</td>
         <td class="num">${fmtMeasure(group.finalPrintedAreaM2, 'm²', 2)}</td>
-        <td class="num">${fmtMeasure(group.totalInkL, 'L', 3)}</td>
         <td>${esc(group.mediaType || '—')}</td>
       </tr>
       <tr class="pl-group-detail-row ${expanded ? '' : 'hidden'}">
-        <td colspan="9">
+        <td colspan="8">
           <div class="pl-group-detail">
             <div class="pl-detail-head">
               <strong>${esc(group.explanation)}</strong>
-              <span>${group.attemptCount} pokusů · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)} · ${fmtMeasure(group.totalInkL, 'L', 3)}</span>
+              <span>${group.attemptCount} ${i18n('table.attempts').toLowerCase()} · ${fmtDuration(group.totalDurationSec)} · ${fmtMeasure(group.totalPrintedAreaM2, 'm²', 2)}</span>
             </div>
             <table class="data-table pl-detail-table">
-              <thead><tr><th>Čas</th><th>Výsledek</th><th>Doba</th><th>Tištěná plocha</th><th>Inkoust</th><th>Médium</th></tr></thead>
+              <thead><tr><th>${i18n('table.ready')}</th><th>${i18n('table.result')}</th><th>${i18n('table.duration')}</th><th>${i18n('table.printed-area')}</th><th>${i18n('table.media')}</th></tr></thead>
               <tbody>${detailRows}</tbody>
             </table>
           </div>
@@ -1628,20 +1606,22 @@ function renderPrintLifecycleGroups(wrap, foot) {
     </tbody>`;
   }).join('');
 
-  const loadMoreBtn = S.printLogHasMore ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">Načíst další záznamy</button></div>` : '';
-    wrap.innerHTML = `<table class="data-table pl-group-table">
-      <thead><tr><th>Poslední pokus</th><th>Tiskárna</th><th>Úloha</th><th>Stav</th><th>Pokusy</th><th>Finální výsledek</th><th>Finální plocha</th><th>Inkoust</th><th>Médium</th></tr></thead>
+  const loadMoreBtn = S.printLogHasMore
+    ? `<div class="print-log-load-more-wrap"><button id="pl-load-more" class="print-log-load-more">${i18n('print.load-more')}</button></div>`
+    : '';
+  wrap.innerHTML = `<table class="data-table pl-group-table">
+      <thead><tr><th>${i18n('table.last-attempt')}</th><th>${i18n('table.machine')}</th><th>${i18n('table.job')}</th><th>${i18n('table.status')}</th><th>${i18n('table.attempts')}</th><th>${i18n('table.final-result')}</th><th>${i18n('table.final-area')}</th><th>${i18n('table.media')}</th></tr></thead>
       ${rows}
     </table>${loadMoreBtn}`;
 
-  if (foot) foot.textContent = `${groups.length} skupin průběhu · ${lifecycleFilterLabel(S.printLogGroupFilter)}${S.printLogHasMore ? ' · z načtených dat' : ''}`;
+  if (foot) foot.textContent = `${groups.length} ${i18n('print.lifecycle.summary')} · ${lifecycleFilterLabel(S.printLogGroupFilter)}${S.printLogHasMore ? ' · ' + i18n('print.range.partial') : ''}`;
 }
 
 function printLogRangeLabel() {
   if (S.printLogDateFrom || S.printLogDateTo) {
     return `${S.printLogDateFrom || '…'} → ${S.printLogDateTo || '…'}`;
   }
-  return 'celé dostupné období';
+  return i18n('print.range.full');
 }
 
 function printResultClass(result) {
@@ -1654,9 +1634,9 @@ function printResultClass(result) {
 
 function printResultLabel(result) {
   const norm = String(result || '').trim().toLowerCase();
-  if (norm === 'done') return 'Hotovo';
-  if (norm === 'abrt' || norm === 'aborted') return 'Přerušeno';
-  if (norm === 'deleted') return 'Smazáno';
+  if (norm === 'done') return i18n('print.result.done');
+  if (norm === 'abrt' || norm === 'aborted') return i18n('print.result.abrt');
+  if (norm === 'deleted') return i18n('print.result.deleted');
   return result || '—';
 }
 
@@ -1715,12 +1695,8 @@ function setupSettings() {
 
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
   el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
-  el('export-xls-intervals')?.addEventListener('click', exportXLSIntervals);
-  el('export-xls-raw-co')?.addEventListener('click',    exportXLSRawCo);
   el('export-csv-stock').addEventListener('click',     exportCSVStock);
   el('export-csv-stock-levels').addEventListener('click', exportCSVStockLevels);
-  el('export-xls-stock')?.addEventListener('click',     exportXLSStock);
-  el('export-xls-stock-levels')?.addEventListener('click', exportXLSStockLevels);
   el('export-json').addEventListener('click',          exportJSON);
   el('import-json-btn').addEventListener('click', ()  => el('import-json-input').click());
   el('import-json-input').addEventListener('change',   handleImportJSON);
@@ -1728,11 +1704,9 @@ function setupSettings() {
   el('clear-all-btn').addEventListener('click', () => {
     showConfirm('Smazat VŠECHNA lokální data? Tato akce je nevratná.', async () => {
       await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
-      clearStoredConfig();
       S.items = []; S.movements = []; S.coRecords = [];
-      await loadAll();
-      loadSettingsUI();
-      applyRoleUI();
+      renderStockOverview(); renderAlerts(); renderItemsMgmt();
+      renderCoDashboard(); renderCoHistory();
       showToast('Data smazána');
     });
   });
@@ -1752,104 +1726,42 @@ function fmtFileDT() {
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
 }
 
-function xmlEsc(v) {
-  return String(v ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-function buildWorkbookXml(sheetName, header, rows) {
-  const makeCell = value => {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return `<Cell><Data ss:Type="Number">${value}</Data></Cell>`;
-    }
-    return `<Cell><Data ss:Type="String">${xmlEsc(value)}</Data></Cell>`;
-  };
-  const headerRow = `<Row>${header.map(label => `<Cell ss:StyleID="header"><Data ss:Type="String">${xmlEsc(label)}</Data></Cell>`).join('')}</Row>`;
-  const bodyRows = rows.map(row => `<Row>${row.map(makeCell).join('')}</Row>`).join('');
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Styles>
-  <Style ss:ID="header">
-   <Font ss:Bold="1"/>
-  </Style>
- </Styles>
- <Worksheet ss:Name="${xmlEsc(sheetName).slice(0, 31) || 'Sheet1'}">
-  <Table>
-   ${headerRow}
-   ${bodyRows}
-  </Table>
- </Worksheet>
-</Workbook>`;
-}
-
-function downloadCSVReport(header, rows, filename) {
-  const body = [csvRow(header), ...rows.map(csvRow)].join('\r\n');
-  dlBlob(body, 'text/csv;charset=utf-8', filename);
-}
-
-function downloadXLSReport(sheetName, header, rows, filename) {
-  const xml = buildWorkbookXml(sheetName, header, rows);
-  dlBlob(xml, 'application/vnd.ms-excel;charset=utf-8', filename, { bom: false });
-}
-
-function getCoIntervalReportRows() {
+function exportCSVIntervals() {
   const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
-  const rows = [];
+  const header = ['timestamp_from','timestamp_to','days_elapsed','machine',
+    'ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2',
+    'ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'];
+  const rows = [csvRow(header)];
   MACHINES.forEach(({ id }) => {
     computeCoIntervals(id).forEach(iv => {
-      rows.push([
-        iv.from,
-        iv.to,
-        Number(fmtN(iv.days, 2)),
-        id,
-        Number(fmtN(iv.inkTotalTo, 3)),
-        Number(fmtN(iv.mediaTotalTo, 1)),
-        Number(fmtN(iv.inkUsed, 3)),
-        Number(fmtN(iv.mediaUsed, 1)),
-        iv.inkPerM2 !== null ? Number(fmtN(iv.inkPerM2, 6)) : '',
-        hasCosts ? Number(fmtN(iv.inkCost, 2)) : '',
-        hasCosts ? Number(fmtN(iv.mediaCost, 2)) : '',
-        hasCosts ? Number(fmtN(iv.totalCost, 2)) : '',
-        iv.costPerM2 !== null ? Number(fmtN(iv.costPerM2, 4)) : '',
-      ]);
+      rows.push(csvRow([
+        iv.from, iv.to, fmtN(iv.days,2), id,
+        fmtN(iv.inkTotalTo,3), fmtN(iv.mediaTotalTo,1),
+        fmtN(iv.inkUsed,3), fmtN(iv.mediaUsed,1),
+        iv.inkPerM2 !== null ? fmtN(iv.inkPerM2,6) : '',
+        hasCosts ? fmtN(iv.inkCost,2) : '',
+        hasCosts ? fmtN(iv.mediaCost,2) : '',
+        hasCosts ? fmtN(iv.totalCost,2) : '',
+        iv.costPerM2 !== null ? fmtN(iv.costPerM2,4) : '',
+      ]));
     });
   });
-  return rows;
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_intervals_${fmtFileDT()}.csv`);
 }
 
-function getCoHistoryReportRows(machineId = S.coHistMachine, from = S.coDateFrom, to = S.coDateTo) {
-  const ivByRec = {};
-  computeCoIntervals(machineId).forEach(iv => { ivByRec[iv.recordId] = iv; });
-  return getCoRecs(machineId)
-    .filter(rec => dateRangeFilter(rec.timestamp, from, to))
-    .slice()
-    .reverse()
-    .map(rec => {
-      const iv = ivByRec[rec.id];
-      return [
-        machineId,
-        rec.timestamp,
-        Number(fmtN(rec.inkTotalLiters, 3)),
-        Number(fmtN(rec.mediaTotalM2, 1)),
-        iv ? Number(fmtN(iv.inkUsed, 3)) : '',
-        iv ? Number(fmtN(iv.mediaUsed, 1)) : '',
-        iv && iv.inkPerM2 !== null ? Number(fmtN(iv.inkPerM2, 4)) : '',
-        iv && iv.costPerM2 !== null ? Number(fmtN(iv.costPerM2, 2)) : '',
-        rec.note || '',
-        rec.createdAt || '',
-      ];
-    });
+function exportCSVRawCo() {
+  const header = ['id','machine','timestamp','ink_total_l','media_total_m2','note','created_at'];
+  const rows = [csvRow(header)];
+  [...S.coRecords].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp)).forEach(r => {
+    rows.push(csvRow([r.id, r.machineId, r.timestamp, r.inkTotalLiters, r.mediaTotalM2, r.note||'', r.createdAt||'']));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_raw_${fmtFileDT()}.csv`);
 }
 
-function getAllStockMovementReportRows() {
+function exportCSVStock() {
+  const header = ['timestamp','article_number','name','movement_type','qty','unit','stock_after','note'];
+  const rows = [csvRow(header)];
+  // replay per item to get stock_after
   const itemMap = {};
   S.items.forEach(it => { itemMap[it.articleNumber] = it; });
   const byArticle = {};
@@ -1857,253 +1769,37 @@ function getAllStockMovementReportRows() {
     if (!byArticle[m.articleNumber]) byArticle[m.articleNumber] = [];
     byArticle[m.articleNumber].push(m);
   });
-
-  return [...S.movements]
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(m => {
-      const it = itemMap[m.articleNumber] || {};
-      const artMoves = (byArticle[m.articleNumber] || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      let running = 0;
-      for (const mm of artMoves) {
-        if (mm.movType === 'stocktake') running = mm.qty;
-        else if (mm.movType === 'receipt') running += mm.qty;
-        else if (mm.movType === 'issue') running = Math.max(0, running - mm.qty);
-        if (mm.id === m.id) break;
-      }
-      return [
-        m.timestamp,
-        m.articleNumber,
-        it.name || '',
-        m.movType,
-        m.qty,
-        it.unit || 'ks',
-        running,
-        m.note || '',
-      ];
-    });
-}
-
-function getStockLevelReportRows() {
-  const exportedAt = new Date().toISOString();
-  return S.items
-    .filter(it => it.isActive !== false)
-    .map(it => {
-      const m = computeStock(it);
-      return [
-        exportedAt,
-        it.articleNumber,
-        it.name || '',
-        it.category || '',
-        it.unit || 'ks',
-        Number(fmtN(m.onHand, 0)),
-        m.avgWeekly > 0 ? Number(fmtN(m.avgWeekly, 3)) : 0,
-        m.daysLeft >= 999 ? '' : m.daysLeft,
-        m.status,
-        it.minQty || 0,
-        it.leadTimeDays || 0,
-        it.safetyDays || 0,
-      ];
-    });
-}
-
-function getFilteredStockLogEntries() {
-  const itemMap = {};
-  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
-
-  const runningMap = {};
-  const enriched = S.movements.map(m => {
-    const r = runningMap[m.articleNumber] ?? 0;
-    let after;
-    if (m.movType === 'stocktake') after = m.qty;
-    else if (m.movType === 'receipt') after = r + m.qty;
-    else after = Math.max(0, r - m.qty);
-    runningMap[m.articleNumber] = after;
-    return {
-      ...m,
-      stockAfter: after,
-      itemName: itemMap[m.articleNumber]?.name || m.articleNumber,
-      category: itemMap[m.articleNumber]?.category || '',
-      unit: itemMap[m.articleNumber]?.unit || 'ks',
-    };
+  // build sorted output
+  [...S.movements].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp)).forEach(m => {
+    const it = itemMap[m.articleNumber] || {};
+    const artMoves = (byArticle[m.articleNumber] || []).sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+    let running = 0;
+    for (const mm of artMoves) {
+      if (mm.movType === 'stocktake') running = mm.qty;
+      else if (mm.movType === 'receipt') running += mm.qty;
+      else if (mm.movType === 'issue') running = Math.max(0, running - mm.qty);
+      if (mm.id === m.id) break;
+    }
+    rows.push(csvRow([m.timestamp, m.articleNumber, it.name||'', m.movType, m.qty, it.unit||'ks', running, m.note||'']));
   });
-
-  const q = S.logSearch.toLowerCase();
-  return enriched.filter(m => {
-    const matchType = S.logFilter === 'all' || m.movType === S.logFilter;
-    const matchQ = !q
-      || m.articleNumber.toLowerCase().includes(q)
-      || m.itemName.toLowerCase().includes(q)
-      || (m.note || '').toLowerCase().includes(q);
-    const matchDate = dateRangeFilter(m.timestamp, S.logDateFrom, S.logDateTo);
-    return matchType && matchQ && matchDate;
-  });
-}
-
-function getStockLogReportRows() {
-  return getFilteredStockLogEntries().map(m => ([
-    m.timestamp,
-    m.articleNumber,
-    m.itemName,
-    m.category || '',
-    m.unit,
-    m.movType,
-    m.qty,
-    m.stockAfter,
-    m.note || '',
-  ]));
-}
-
-function getPrintLogInkCells(row) {
-  return [
-    row.inkTotalL ?? '',
-    row.inkCyanL ?? '',
-    row.inkMagentaL ?? '',
-    row.inkYellowL ?? '',
-    row.inkBlackL ?? '',
-    row.inkWhiteL ?? '',
-  ];
-}
-
-function buildPrintLogReportRows(rows) {
-  return rows.map(row => ([
-    row.readyAt || '',
-    mapPrinterName(row.printerName),
-    row.jobName || '',
-    printResultLabel(row.result),
-    row.mediaType || '',
-    row.printedAreaM2 ?? '',
-    row.mediaLengthM ?? '',
-    ...getPrintLogInkCells(row),
-    row.durationSec ?? '',
-    row.sourceFile || '',
-  ]));
-}
-
-async function fetchAllPrintLogRowsForExport() {
-  const rows = [];
-  let offset = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const params = getPrintLogParams({ limit: 200, offset });
-    const res = await fetch('/.netlify/functions/print-log-rows?' + params.toString(), { cache: 'no-store' });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok || !j.ok) throw new Error(j.error || 'Print log export failed');
-    const chunk = Array.isArray(j.rows) ? j.rows.map(normalizePrintLogRow) : [];
-    rows.push(...chunk);
-    hasMore = Boolean(j.hasMore);
-    offset += chunk.length;
-    if (!chunk.length) break;
-  }
-
-  return rows;
-}
-
-function exportCSVIntervals() {
-  const header = ['timestamp_from','timestamp_to','days_elapsed','machine',
-    'ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2',
-    'ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'];
-  downloadCSVReport(header, getCoIntervalReportRows(), `co_intervals_${fmtFileDT()}.csv`);
-}
-
-function exportCSVRawCo() {
-  const header = ['id','machine','timestamp','ink_total_l','media_total_m2','note','created_at'];
-  const rows = [...S.coRecords]
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(r => [
-      r.id,
-      r.machineId,
-      r.timestamp,
-      Number(fmtN(r.inkTotalLiters, 3)),
-      Number(fmtN(r.mediaTotalM2, 1)),
-      r.note || '',
-      r.createdAt || '',
-    ]);
-  downloadCSVReport(header, rows, `co_raw_${fmtFileDT()}.csv`);
-}
-
-function exportXLSIntervals() {
-  const header = ['timestamp_from','timestamp_to','days_elapsed','machine','ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2','ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'];
-  downloadXLSReport('ColoradoIntervals', header, getCoIntervalReportRows(), `co_intervals_${fmtFileDT()}.xls`);
-}
-
-function exportXLSRawCo() {
-  const header = ['id','machine','timestamp','ink_total_l','media_total_m2','note','created_at'];
-  const rows = [...S.coRecords]
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(r => [
-      r.id,
-      r.machineId,
-      r.timestamp,
-      Number(fmtN(r.inkTotalLiters, 3)),
-      Number(fmtN(r.mediaTotalM2, 1)),
-      r.note || '',
-      r.createdAt || '',
-    ]);
-  downloadXLSReport('ColoradoHistory', header, rows, `co_raw_${fmtFileDT()}.xls`);
-}
-
-function exportCSVStock() {
-  const header = ['timestamp','article_number','name','movement_type','qty','unit','stock_after','note'];
-  downloadCSVReport(header, getAllStockMovementReportRows(), `stock_movements_${fmtFileDT()}.csv`);
-}
-
-function exportXLSStock() {
-  const header = ['timestamp','article_number','name','movement_type','qty','unit','stock_after','note'];
-  downloadXLSReport('StockMovements', header, getAllStockMovementReportRows(), `stock_movements_${fmtFileDT()}.xls`);
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_movements_${fmtFileDT()}.csv`);
 }
 
 function exportCSVStockLevels() {
+  const exported_at = new Date().toISOString();
   const header = ['exported_at','article_number','name','category','unit','on_hand',
     'avg_weekly_issue','days_left','status','min_qty','lead_time_days','safety_days'];
-  downloadCSVReport(header, getStockLevelReportRows(), `stock_levels_${fmtFileDT()}.csv`);
-}
-
-function exportXLSStockLevels() {
-  const header = ['exported_at','article_number','name','category','unit','on_hand','avg_weekly_issue','days_left','status','min_qty','lead_time_days','safety_days'];
-  downloadXLSReport('StockLevels', header, getStockLevelReportRows(), `stock_levels_${fmtFileDT()}.xls`);
-}
-
-function exportCSVCoHistoryCurrent() {
-  const header = ['machine','timestamp','ink_total_l','media_total_m2','ink_used_l','media_used_m2','ink_l_per_m2','cost_per_m2_czk','note','created_at'];
-  const rows = getCoHistoryReportRows();
-  if (!rows.length) { showToast('Žádná data Colorado k exportu', 'error'); return; }
-  downloadCSVReport(header, rows, `co_history_${S.coHistMachine}_${fmtFileDT()}.csv`);
-}
-
-function exportXLSCoHistoryCurrent() {
-  const header = ['machine','timestamp','ink_total_l','media_total_m2','ink_used_l','media_used_m2','ink_l_per_m2','cost_per_m2_czk','note','created_at'];
-  const rows = getCoHistoryReportRows();
-  if (!rows.length) { showToast('Žádná data Colorado k exportu', 'error'); return; }
-  downloadXLSReport('ColoradoHistory', header, rows, `co_history_${S.coHistMachine}_${fmtFileDT()}.xls`);
-}
-
-function exportCSVStockLog() {
-  const header = ['timestamp','article_number','name','category','unit','movement_type','qty','stock_after','note'];
-  const rows = getStockLogReportRows();
-  if (!rows.length) { showToast('Žádná data skladu k exportu', 'error'); return; }
-  downloadCSVReport(header, rows, `stock_log_${fmtFileDT()}.csv`);
-}
-
-function exportXLSStockLog() {
-  const header = ['timestamp','article_number','name','category','unit','movement_type','qty','stock_after','note'];
-  const rows = getStockLogReportRows();
-  if (!rows.length) { showToast('Žádná data skladu k exportu', 'error'); return; }
-  downloadXLSReport('StockLog', header, rows, `stock_log_${fmtFileDT()}.xls`);
-}
-
-async function exportCSVPrintLogCurrent() {
-  const rows = await fetchAllPrintLogRowsForExport();
-  if (!rows.length) { showToast('Žádná data tiskového logu k exportu', 'error'); return; }
-  const header = ['ready_at','printer','job_name','result','media_type','printed_area_m2','media_length_m','ink_total_l','ink_cyan_l','ink_magenta_l','ink_yellow_l','ink_black_l','ink_white_l','duration_sec','source_file'];
-  downloadCSVReport(header, buildPrintLogReportRows(rows), `print_log_${fmtFileDT()}.csv`);
-}
-
-async function exportXLSPrintLogCurrent() {
-  const rows = await fetchAllPrintLogRowsForExport();
-  if (!rows.length) { showToast('Žádná data tiskového logu k exportu', 'error'); return; }
-  const header = ['ready_at','printer','job_name','result','media_type','printed_area_m2','media_length_m','ink_total_l','ink_cyan_l','ink_magenta_l','ink_yellow_l','ink_black_l','ink_white_l','duration_sec','source_file'];
-  downloadXLSReport('PrintLog', header, buildPrintLogReportRows(rows), `print_log_${fmtFileDT()}.xls`);
+  const rows = [csvRow(header)];
+  S.items.filter(it => it.isActive !== false).forEach(it => {
+    const m = computeStock(it);
+    rows.push(csvRow([
+      exported_at, it.articleNumber, it.name||'', it.category||'', it.unit||'ks',
+      fmtN(m.onHand,0), m.avgWeekly > 0 ? fmtN(m.avgWeekly,3) : '0',
+      m.daysLeft >= 999 ? '' : m.daysLeft, m.status,
+      it.minQty||0, it.leadTimeDays||0, it.safetyDays||0,
+    ]));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_levels_${fmtFileDT()}.csv`);
 }
 
 async function exportJSON() {
@@ -2113,7 +1809,6 @@ async function exportJSON() {
     items:      S.items,
     movements:  S.movements,
     coRecords:  S.coRecords,
-    settings:   [buildSettingsSnapshot()],
   };
   dlBlob(JSON.stringify(data, null, 2), 'application/json', `printguard_backup_${fmtFileDT()}.json`);
 }
@@ -2130,7 +1825,6 @@ async function handleImportJSON(e) {
   let items = [];
   let movements = [];
   let coRecords = [];
-  let importedSettings = null;
 
   if (Array.isArray(data.items)) {
     items = data.items.filter(it => it?.articleNumber);
@@ -2145,7 +1839,7 @@ async function handleImportJSON(e) {
       if (!articleNumber) return;
       movements.push({
         id: genId('imp'),
-        articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-'),
+        articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g,'–'),
         movType: 'stocktake',
         qty: parseFloat(snap.qty ?? snap.quantity ?? snap.onHand ?? 0),
         timestamp: snap.timestamp || snap.date || new Date().toISOString(),
@@ -2158,49 +1852,18 @@ async function handleImportJSON(e) {
     coRecords = data.coRecords.filter(r => r?.id && r?.machineId);
   }
 
-  const rawSettings = Array.isArray(data.settings)
-    ? data.settings.find(s => s?.key === 'config' || typeof s === 'object')
-    : (data.settings && typeof data.settings === 'object' ? data.settings : null);
-
-  if (rawSettings) {
-    const merged = { ...buildSettingsSnapshot() };
-    const weeksN = parseInt(rawSettings.weeksN, 10);
-    const rollingN = parseInt(rawSettings.rollingN, 10);
-    const inkCost = parseFloat(rawSettings.inkCost);
-    const mediaCost = parseFloat(rawSettings.mediaCost);
-    if (Number.isFinite(weeksN) && weeksN >= 1 && weeksN <= 52) merged.weeksN = weeksN;
-    if (Number.isFinite(rollingN) && rollingN >= 1 && rollingN <= 52) merged.rollingN = rollingN;
-    if (Number.isFinite(inkCost) && inkCost >= 0) merged.inkCost = inkCost;
-    if (Number.isFinite(mediaCost) && mediaCost >= 0) merged.mediaCost = mediaCost;
-    if (rawSettings.deviceId != null && String(rawSettings.deviceId).trim()) merged.deviceId = String(rawSettings.deviceId).trim();
-    if (rawSettings.role === 'admin' || rawSettings.role === 'operator') merged.role = rawSettings.role;
-    if (rawSettings.adminPin != null && String(rawSettings.adminPin).trim()) merged.adminPin = String(rawSettings.adminPin).trim();
-    if (rawSettings.lang != null) merged.lang = String(rawSettings.lang).trim();
-    if (rawSettings.savedAt) merged.savedAt = rawSettings.savedAt;
-    importedSettings = merged;
-  }
-
-  showConfirm(`Importovat ${items.length} položek, ${movements.length} pohybů, ${coRecords.length} CO záznamů${importedSettings ? ', 1 sadu nastavení' : ''}? Existující data budou přepsána.`, async () => {
-    await Promise.all([
-      idbClear(ST_ITEMS),
-      idbClear(ST_MOVES),
-      idbClear(ST_CORECS),
-      importedSettings ? idbClear(ST_SETTINGS) : Promise.resolve(),
-    ]);
+  showConfirm(`Importovat ${items.length} položek, ${movements.length} pohybů, ${coRecords.length} CO záznamů? Existující data budou přepsána.`, async () => {
+    await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)]);
     for (const it of items) await idbPut(ST_ITEMS, it);
     for (const m  of movements) await idbPut(ST_MOVES, m);
     for (const r  of coRecords) await idbPut(ST_CORECS, r);
-    if (importedSettings) await idbPut(ST_SETTINGS, importedSettings);
     await loadAll();
-    loadSettingsUI();
-    applyRoleUI();
     showToast(`Import hotov: ${items.length} pol., ${movements.length} poh.`, 'success');
   });
 }
 
-function dlBlob(content, type, filename, options = {}) {
-  const prefix = options.bom === false ? '' : '\ufeff';
-  const blob = new Blob([prefix + content], { type });
+function dlBlob(content, type, filename) {
+  const blob = new Blob(['\ufeff' + content], { type });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url; a.download = filename;
@@ -2254,7 +1917,32 @@ function applyPreset(range, target) {
 // ══════════════════════════════════════════════════════════
 
 function renderStockLog() {
-  const filtered = getFilteredStockLogEntries();
+  const itemMap = {};
+  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
+
+  // replay running stock per article
+  const runningMap = {};
+  const enriched = S.movements.map(m => {
+    const r = runningMap[m.articleNumber] ?? 0;
+    let after;
+    if (m.movType === 'stocktake') after = m.qty;
+    else if (m.movType === 'receipt') after = r + m.qty;
+    else after = Math.max(0, r - m.qty);
+    runningMap[m.articleNumber] = after;
+    return { ...m, stockAfter: after, itemName: itemMap[m.articleNumber]?.name || m.articleNumber, unit: itemMap[m.articleNumber]?.unit || 'ks' };
+  });
+
+  // filter
+  const q = S.logSearch.toLowerCase();
+  const filtered = enriched.filter(m => {
+    const matchType = S.logFilter === 'all' || m.movType === S.logFilter;
+    const matchQ = !q
+      || m.articleNumber.toLowerCase().includes(q)
+      || m.itemName.toLowerCase().includes(q)
+      || (m.note || '').toLowerCase().includes(q);
+    const matchDate = dateRangeFilter(m.timestamp, S.logDateFrom, S.logDateTo);
+    return matchType && matchQ && matchDate;
+  });
 
   const wrap = el('stock-log-wrap');
   if (!filtered.length) {
@@ -2262,7 +1950,11 @@ function renderStockLog() {
     return;
   }
 
-  const typeLabel = { receipt: '↑ Příjem', issue: '↓ Výdej', stocktake: '= Inventura' };
+  const typeLabel = {
+    receipt: `↑ ${movementLabel('receipt')}`,
+    issue: `↓ ${movementLabel('issue')}`,
+    stocktake: `= ${movementLabel('stocktake')}`,
+  };
   const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
 
   const rows = [...filtered].reverse().map(m => {
@@ -2281,7 +1973,7 @@ function renderStockLog() {
 
   wrap.innerHTML = `<table class="data-table">
     <thead><tr>
-      <th>Datum</th><th>Položka</th><th>Typ</th><th>Změna</th><th>Stav po</th><th>Poznámka</th><th></th>
+      <th>${i18n('table.date')}</th><th>${i18n('table.item')}</th><th>${i18n('table.type')}</th><th>${i18n('table.change')}</th><th>${i18n('table.after')}</th><th>${i18n('table.note')}</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -2292,6 +1984,28 @@ function renderStockLog() {
   wrap.querySelectorAll('.btn-del[data-id]').forEach(btn =>
     btn.addEventListener('click', () => deleteMovementAdmin(btn.dataset.id))
   );
+}
+
+function exportCSVStockLog() {
+  const itemMap = {};
+  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
+  const runningMap = {};
+  const header = ['timestamp','article_number','name','category','unit','movement_type','qty','stock_after','note'];
+  const rows = [csvRow(header)];
+  S.movements.forEach(m => {
+    const it = itemMap[m.articleNumber] || {};
+    const r = runningMap[m.articleNumber] ?? 0;
+    let after;
+    if (m.movType === 'stocktake') after = m.qty;
+    else if (m.movType === 'receipt') after = r + m.qty;
+    else after = Math.max(0, r - m.qty);
+    runningMap[m.articleNumber] = after;
+    rows.push(csvRow([
+      m.timestamp, m.articleNumber, it.name||'', it.category||'', it.unit||'ks',
+      m.movType, m.qty, after, m.note||''
+    ]));
+  });
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `pohyby_skladu_${fmtFileDT()}.csv`);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2349,7 +2063,14 @@ async function cloudPush() {
       items:     S.items,
       movements: S.movements,
       coRecords: S.coRecords,
-      settings:  [buildSettingsSnapshot()],
+      settings:  [{
+        key: 'config',
+        weeksN:    cfg.weeksN,
+        rollingN:  cfg.rollingN,
+        inkCost:   cfg.inkCost,
+        mediaCost: cfg.mediaCost,
+        savedAt:   new Date().toISOString(),
+      }],
     })
   });
   const j = await res.json().catch(() => ({}));
@@ -2580,6 +2301,9 @@ function showConfirm(text, onOk) {
 // ══════════════════════════════════════════════════════════
 
 async function init() {
+  if (window.I18N && typeof window.I18N.init === 'function') {
+    window.I18N.init();
+  }
   db = await openDB();
 
   // Mode toggle
@@ -2640,6 +2364,16 @@ el('sync-btn').addEventListener('click', async () => {
   setupCoEntry();
   setupSettings();
 
+  const langSelect = el('lang-select');
+  if (langSelect) {
+    langSelect.value = (window.I18N && window.I18N.currentLang) || (window.I18N && window.I18N.defaultLang) || 'cs';
+    langSelect.addEventListener('change', e => {
+      if (window.I18N && typeof window.I18N.setLang === 'function') {
+        window.I18N.setLang(e.target.value);
+      }
+    });
+  }
+
   // Stock log search + filter
   el('stock-log-search').addEventListener('input', e => {
     S.logSearch = e.target.value; renderStockLog();
@@ -2652,7 +2386,6 @@ el('sync-btn').addEventListener('click', async () => {
       renderStockLog();
     }));
   el('stock-log-export-btn').addEventListener('click', exportCSVStockLog);
-  el('stock-log-export-xls-btn')?.addEventListener('click', exportXLSStockLog);
 
   // Stock log date range
   el('stock-log-from').addEventListener('change', e => { S.logDateFrom = e.target.value; renderStockLog(); });
@@ -2671,10 +2404,7 @@ el('sync-btn').addEventListener('click', async () => {
     el('co-hist-from').value = ''; el('co-hist-to').value = '';
     renderCoHistory();
   });
-  el('co-dashboard-export-csv-btn')?.addEventListener('click', exportCSVIntervals);
-  el('co-dashboard-export-xls-btn')?.addEventListener('click', exportXLSIntervals);
-  el('co-history-export-btn').addEventListener('click', exportCSVCoHistoryCurrent);
-  el('co-history-export-xls-btn')?.addEventListener('click', exportXLSCoHistoryCurrent);
+  el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
 
   // Print log filters
   el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; loadPrintLog(true); });
@@ -2699,12 +2429,6 @@ el('sync-btn').addEventListener('click', async () => {
   });
   el('print-log-refresh-btn').addEventListener('click', () => {
     loadPrintLog(true);
-  });
-  el('print-log-export-csv-btn')?.addEventListener('click', () => {
-    exportCSVPrintLogCurrent().catch(err => showToast('Export tiskového logu: ' + (err.message || err), 'error'));
-  });
-  el('print-log-export-xls-btn')?.addEventListener('click', () => {
-    exportXLSPrintLogCurrent().catch(err => showToast('Export tiskového logu: ' + (err.message || err), 'error'));
   });
   document.addEventListener('click', e => {
     const groupRow = e.target?.closest?.('.pl-group-row[data-group-id]');
@@ -2758,32 +2482,20 @@ el('sync-btn').addEventListener('click', async () => {
   if (p.get('mode'))   setMode(p.get('mode'));
   if (p.get('screen')) navigate(p.get('screen'));
   applyRoleUI();
-
-  // Language switcher
-  const langSwitcher = el('lang-switcher');
-  if (langSwitcher) {
-    langSwitcher.value = I18N.currentLang;
-    langSwitcher.addEventListener('change', e => {
-      I18N.setLang(e.target.value);
-    });
-  }
-
-  // Init i18n
-  I18N.init();
 }
+
+window.addEventListener('i18n:changed', () => {
+  try { renderStockOverview(); } catch (_) {}
+  try { renderAlerts(); } catch (_) {}
+  try { renderItemsMgmt(); } catch (_) {}
+  try { renderStockLog(); } catch (_) {}
+  try { renderCoDashboard(); } catch (_) {}
+  try { renderCoHistory(); } catch (_) {}
+  try { renderPrintLogRows(); } catch (_) {}
+});
 
 function updateOfflineBanner() {
   el('offline-banner')?.classList.toggle('hidden', navigator.onLine);
 }
-
-// Re-render dynamic content on language change
-window.addEventListener('i18n:changed', () => {
-  renderStockOverview();
-  renderAlerts();
-  renderItemsMgmt();
-  renderCoDashboard();
-  renderCoHistory();
-  if (S.detailArticle) openStockDetail(S.detailArticle);
-});
 
 document.addEventListener('DOMContentLoaded', init);
