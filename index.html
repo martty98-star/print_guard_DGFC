@@ -118,16 +118,16 @@
       <div class="stat-chip crit" data-filter="crit"><span class="stat-num" id="count-crit">—</span><span class="stat-lbl" data-i18n="status.crit">Kritické</span></div>
     </div>
     <div class="search-filter-row">
-      <input type="text" id="stock-search" placeholder="Hledat položku…" autocomplete="off">
+      <input type="text" id="stock-search" placeholder="Hledat položku…" autocomplete="off" data-i18n-placeholder="stock.search.placeholder">
       <div class="pills">
-        <button class="pill active" data-filter="all">Vše</button>
-        <button class="pill" data-filter="crit">Kritické</button>
-        <button class="pill" data-filter="warn">Varování</button>
-        <button class="pill" data-filter="ok">OK</button>
+        <button class="pill active" data-filter="all" data-i18n="filter.all">Vše</button>
+        <button class="pill" data-filter="crit" data-i18n="filter.crit">Kritické</button>
+        <button class="pill" data-filter="warn" data-i18n="filter.warn">Varování</button>
+        <button class="pill" data-filter="ok" data-i18n="filter.ok">OK</button>
       </div>
     </div>
     <div id="stock-list" class="item-list">
-      <div class="loading-state"><div class="spinner"></div><p>Načítám…</p></div>
+      <div class="loading-state"><div class="spinner"></div><p data-i18n="loading.stock">Načítám…</p></div>
     </div>
     <button class="fab" id="fab-movement" title="Nový pohyb" data-i18n-title="btn.add-movement">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -143,35 +143,35 @@
     <div class="form-card">
 
       <div class="form-group">
-        <label>Typ pohybu *</label>
+        <label data-i18n="movement.type.label">Typ pohybu *</label>
         <div class="mov-type-row">
           <button class="mov-type-btn" data-type="receipt">
             <span class="mov-icon">+</span>
-            <span class="mov-label">Příjem</span>
-            <span class="mov-sub">naskladnění</span>
+            <span class="mov-label" data-i18n="movement.type.receipt">Příjem</span>
+            <span class="mov-sub" data-i18n="movement.type.receipt.hint">naskladnění</span>
           </button>
           <button class="mov-type-btn active" data-type="issue">
             <span class="mov-icon">−</span>
-            <span class="mov-label">Výdej</span>
-            <span class="mov-sub">vyskladnění</span>
+            <span class="mov-label" data-i18n="movement.type.issue">Výdej</span>
+            <span class="mov-sub" data-i18n="movement.type.issue.hint">vyskladnění</span>
           </button>
           <button class="mov-type-btn" data-type="stocktake">
             <span class="mov-icon">=</span>
-            <span class="mov-label">Inventura</span>
-            <span class="mov-sub">nastav stav</span>
+            <span class="mov-label" data-i18n="movement.type.stocktake">Inventura</span>
+            <span class="mov-sub" data-i18n="movement.type.stocktake.hint">nastav stav</span>
           </button>
         </div>
       </div>
 
       <div class="form-group">
-        <label>Položka *</label>
-        <input type="text" id="mov-item-search" placeholder="Hledat číslo nebo název…" autocomplete="off">
+        <label data-i18n="movement.item.label">Položka *</label>
+        <input type="text" id="mov-item-search" placeholder="Hledat číslo nebo název…" autocomplete="off" data-i18n-placeholder="movement.item.placeholder">
         <div id="mov-item-results" class="dropdown hidden"></div>
         <div id="mov-item-selected" class="selected-chip hidden"></div>
       </div>
 
       <div class="form-group">
-        <label for="mov-qty" id="mov-qty-label">Množství *</label>
+        <label for="mov-qty" id="mov-qty-label" data-i18n="movement.qty.label">Množství *</label>
         <div class="qty-row">
           <button class="qty-btn" id="mov-minus">−</button>
           <input type="number" id="mov-qty" min="0" step="1" placeholder="0" inputmode="numeric">
@@ -181,19 +181,22 @@
       </div>
 
       <div class="form-group">
-        <label for="mov-note">Poznámka <span class="opt">(volitelné)</span></label>
-        <textarea id="mov-note" rows="2" placeholder="Dodavatel, č. faktury, důvod výdeje…"></textarea>
+        <label for="mov-note">
+          <span data-i18n="movement.note.label">Poznámka</span>
+          <span class="opt" data-i18n="common.optional">(volitelné)</span>
+        </label>
+        <textarea id="mov-note" rows="2" placeholder="Dodavatel, č. faktury, důvod výdeje…" data-i18n-placeholder="movement.note.placeholder"></textarea>
       </div>
 
       <div id="mov-preview" class="preview-box hidden">
-        <div class="preview-row"><span>Aktuální stav na skladě</span><strong id="mov-prev-current">—</strong></div>
-        <div class="preview-row"><span>Stav po operaci</span><strong id="mov-prev-after">—</strong></div>
-        <div class="preview-row"><span>Status po operaci</span><strong id="mov-prev-status">—</strong></div>
+        <div class="preview-row"><span data-i18n="movement.preview.current">Aktuální stav na skladě</span><strong id="mov-prev-current">—</strong></div>
+        <div class="preview-row"><span data-i18n="movement.preview.after">Stav po operaci</span><strong id="mov-prev-after">—</strong></div>
+        <div class="preview-row"><span data-i18n="movement.preview.status">Status po operaci</span><strong id="mov-prev-status">—</strong></div>
       </div>
 
       <button id="mov-save-btn" class="btn-primary" disabled>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
-        Uložit pohyb
+        <span data-i18n="movement.save">Uložit pohyb</span>
       </button>
     </div>
   </main>
@@ -208,7 +211,7 @@
   <main id="screen-stock-items" class="screen">
     <div class="screen-header">
       <h1 data-i18n="header.stock-items">Správa položek</h1>
-      <button class="btn-sm" id="add-item-btn">+ Přidat položku</button>
+      <button class="btn-sm" id="add-item-btn" data-i18n="btn.add-item">+ Přidat položku</button>
     </div>
     <div id="items-mgmt-list" class="item-list"></div>
   </main>
@@ -217,7 +220,7 @@
   <main id="screen-stock-detail" class="screen">
     <div class="screen-header">
       <button class="back-btn" data-screen="stock-overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-      <h1 id="detail-title">Detail položky</h1>
+      <h1 id="detail-title" data-i18n="header.stock-detail">Detail položky</h1>
     </div>
     <div id="detail-content"></div>
   </main>
@@ -226,31 +229,31 @@
   <main id="screen-stock-log" class="screen">
     <div class="screen-header">
       <h1 data-i18n="header.stock-log">Historie pohybů</h1>
-      <button class="btn-sm" id="stock-log-export-btn">↓ Export CSV</button>
+      <button class="btn-sm" id="stock-log-export-btn" data-i18n="btn.export-csv">↓ Export CSV</button>
     </div>
     <div class="search-filter-row" style="margin-bottom:14px">
-      <input type="text" id="stock-log-search" placeholder="Hledat položku, typ…" autocomplete="off">
+      <input type="text" id="stock-log-search" placeholder="Hledat položku, typ…" autocomplete="off" data-i18n-placeholder="stock.log.search">
       <div class="pills">
-        <button class="pill active" data-logfilter="all">Vše</button>
-        <button class="pill" data-logfilter="receipt">Příjem</button>
-        <button class="pill" data-logfilter="issue">Výdej</button>
-        <button class="pill" data-logfilter="stocktake">Inventura</button>
+        <button class="pill active" data-logfilter="all" data-i18n="filter.all">Vše</button>
+        <button class="pill" data-logfilter="receipt" data-i18n="movement.type.receipt">Příjem</button>
+        <button class="pill" data-logfilter="issue" data-i18n="movement.type.issue">Výdej</button>
+        <button class="pill" data-logfilter="stocktake" data-i18n="movement.type.stocktake">Inventura</button>
       </div>
     </div>
     <div class="date-range-row">
       <div class="date-range-inputs">
-        <label class="dr-label">Od</label>
+        <label class="dr-label" data-i18n="date.from">Od</label>
         <input type="date" id="stock-log-from">
-        <label class="dr-label">Do</label>
+        <label class="dr-label" data-i18n="date.to">Do</label>
         <input type="date" id="stock-log-to">
-        <button class="dr-clear" id="stock-log-clear-dates" title="Zrušit filtr dat">✕</button>
+        <button class="dr-clear" id="stock-log-clear-dates" title="Zrušit filtr dat" data-i18n-title="date.clear">✕</button>
       </div>
       <div class="dr-presets">
-        <button class="dr-preset" data-range="7"  data-target="log">7 dní</button>
-        <button class="dr-preset" data-range="30" data-target="log">30 dní</button>
-        <button class="dr-preset" data-range="90" data-target="log">90 dní</button>
-        <button class="dr-preset" data-range="month" data-target="log">Tento měsíc</button>
-        <button class="dr-preset" data-range="year"  data-target="log">Tento rok</button>
+        <button class="dr-preset" data-range="7"  data-target="log" data-i18n="preset.7days">7 dní</button>
+        <button class="dr-preset" data-range="30" data-target="log" data-i18n="preset.30days">30 dní</button>
+        <button class="dr-preset" data-range="90" data-target="log" data-i18n="preset.90days">90 dní</button>
+        <button class="dr-preset" data-range="month" data-target="log" data-i18n="preset.month">Tento měsíc</button>
+        <button class="dr-preset" data-range="year"  data-target="log" data-i18n="preset.year">Tento rok</button>
       </div>
     </div>
     <div id="stock-log-wrap" class="table-wrap"></div>
@@ -269,7 +272,7 @@
     <div class="machine-card" id="card-colorado1"></div>
     <div class="machine-card" id="card-colorado2"></div>
     <div class="machine-card combined" id="card-combined"></div>
-    <div class="info-note">
+    <div class="info-note" data-i18n="colorado.info">
       Průměry jsou vypočítány z posledních N intervalů (nastavitelné). Čisticí / purge cykly způsobí vyšší L/m² pro daný interval — to je záměrné, auditní hodnota reálné spotřeby.
     </div>
     <button class="fab" id="fab-co-entry">
@@ -285,41 +288,44 @@
     </div>
     <div class="form-card">
       <div class="form-group">
-        <label>Tiskárna *</label>
+        <label data-i18n="colorado.entry.printer">Tiskárna *</label>
         <div class="machine-select-row">
           <button class="machine-btn active" data-machine="colorado1">Colorado 1</button>
           <button class="machine-btn" data-machine="colorado2">Colorado 2</button>
         </div>
       </div>
       <div class="form-group">
-        <label for="co-ink">Inkoust celkem — lifetime čítač (L) *</label>
+        <label for="co-ink" data-i18n="colorado.entry.ink.label">Inkoust celkem — lifetime čítač (L) *</label>
         <input type="number" id="co-ink" min="0" step="0.001" placeholder="1234.567" inputmode="decimal">
-        <div class="hint">Celoživotní hodnota z displeje tiskárny v litrech</div>
+        <div class="hint" data-i18n="colorado.entry.ink.hint">Celoživotní hodnota z displeje tiskárny v litrech</div>
       </div>
       <div class="form-group">
-        <label for="co-media">Médium celkem — lifetime čítač (m²) *</label>
+        <label for="co-media" data-i18n="colorado.entry.media.label">Médium celkem — lifetime čítač (m²) *</label>
         <input type="number" id="co-media" min="0" step="0.1" placeholder="56789.0" inputmode="decimal">
-        <div class="hint">Celoživotní hodnota z displeje tiskárny v m²</div>
+        <div class="hint" data-i18n="colorado.entry.media.hint">Celoživotní hodnota z displeje tiskárny v m²</div>
       </div>
       <div class="form-group">
-        <label for="co-timestamp">Datum a čas záznamu</label>
+        <label for="co-timestamp" data-i18n="colorado.entry.timestamp.label">Datum a čas záznamu</label>
         <input type="datetime-local" id="co-timestamp">
-        <div class="hint">Výchozí: aktuální čas. Lze upravit pro zpětné zadání.</div>
+        <div class="hint" data-i18n="colorado.entry.timestamp.hint">Výchozí: aktuální čas. Lze upravit pro zpětné zadání.</div>
       </div>
       <div class="form-group">
-        <label for="co-note">Poznámka <span class="opt">(volitelné)</span></label>
-        <textarea id="co-note" rows="2" placeholder="Např. po čisticím cyklu, po výměně cartridge…"></textarea>
+        <label for="co-note">
+          <span data-i18n="colorado.entry.note.label">Poznámka</span>
+          <span class="opt" data-i18n="common.optional">(volitelné)</span>
+        </label>
+        <textarea id="co-note" rows="2" placeholder="Např. po čisticím cyklu, po výměně cartridge…" data-i18n-placeholder="colorado.entry.note.placeholder"></textarea>
       </div>
       <div id="co-preview" class="preview-box hidden">
-        <div class="preview-title">Náhled výpočtu (oproti předchozímu záznamu)</div>
-        <div class="preview-row"><span>Spotřeba inkoustu</span><strong id="co-prev-ink">—</strong></div>
-        <div class="preview-row"><span>Spotřeba média</span><strong id="co-prev-media">—</strong></div>
-        <div class="preview-row"><span>Spotřeba inkoustu na m²</span><strong id="co-prev-ratio">—</strong></div>
-        <div class="preview-row"><span>Počet dní od posledního záznamu</span><strong id="co-prev-days">—</strong></div>
+        <div class="preview-title" data-i18n="colorado.entry.preview.title">Náhled výpočtu (oproti předchozímu záznamu)</div>
+        <div class="preview-row"><span data-i18n="colorado.entry.preview.ink">Spotřeba inkoustu</span><strong id="co-prev-ink">—</strong></div>
+        <div class="preview-row"><span data-i18n="colorado.entry.preview.media">Spotřeba média</span><strong id="co-prev-media">—</strong></div>
+        <div class="preview-row"><span data-i18n="colorado.entry.preview.ratio">Spotřeba inkoustu na m²</span><strong id="co-prev-ratio">—</strong></div>
+        <div class="preview-row"><span data-i18n="colorado.entry.preview.days">Počet dní od posledního záznamu</span><strong id="co-prev-days">—</strong></div>
       </div>
       <button id="co-save-btn" class="btn-primary">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
-        Uložit záznam Colorado
+        <span data-i18n="colorado.entry.save">Uložit záznam Colorado</span>
       </button>
     </div>
   </main>
@@ -328,7 +334,7 @@
   <main id="screen-co-history" class="screen">
     <div class="screen-header">
       <h1 data-i18n="header.co-history">Historie Colorado</h1>
-      <button class="btn-sm" id="co-history-export-btn">↓ Export CSV</button>
+      <button class="btn-sm" id="co-history-export-btn" data-i18n="btn.export-csv">↓ Export CSV</button>
     </div>
     <div class="hist-tabs">
       <button class="hist-tab active" data-machine="colorado1">Colorado 1</button>
@@ -336,18 +342,18 @@
     </div>
     <div class="date-range-row">
       <div class="date-range-inputs">
-        <label class="dr-label">Od</label>
+        <label class="dr-label" data-i18n="date.from">Od</label>
         <input type="date" id="co-hist-from">
-        <label class="dr-label">Do</label>
+        <label class="dr-label" data-i18n="date.to">Do</label>
         <input type="date" id="co-hist-to">
-        <button class="dr-clear" id="co-hist-clear-dates" title="Zrušit filtr dat">✕</button>
+        <button class="dr-clear" id="co-hist-clear-dates" title="Zrušit filtr dat" data-i18n-title="date.clear">✕</button>
       </div>
       <div class="dr-presets">
-        <button class="dr-preset" data-range="7"  data-target="co">7 dní</button>
-        <button class="dr-preset" data-range="30" data-target="co">30 dní</button>
-        <button class="dr-preset" data-range="90" data-target="co">90 dní</button>
-        <button class="dr-preset" data-range="month" data-target="co">Tento měsíc</button>
-        <button class="dr-preset" data-range="year"  data-target="co">Tento rok</button>
+        <button class="dr-preset" data-range="7"  data-target="co" data-i18n="preset.7days">7 dní</button>
+        <button class="dr-preset" data-range="30" data-target="co" data-i18n="preset.30days">30 dní</button>
+        <button class="dr-preset" data-range="90" data-target="co" data-i18n="preset.90days">90 dní</button>
+        <button class="dr-preset" data-range="month" data-target="co" data-i18n="preset.month">Tento měsíc</button>
+        <button class="dr-preset" data-range="year"  data-target="co" data-i18n="preset.year">Tento rok</button>
       </div>
     </div>
     <div id="co-history-wrap" class="table-wrap"></div>
@@ -358,85 +364,85 @@
   <main id="screen-print-log" class="screen">
     <div class="screen-header">
       <h1 data-i18n="header.print-log">Tiskový log</h1>
-      <div class="header-meta" id="print-log-status">Data ze serveru</div>
+      <div class="header-meta" id="print-log-status" data-i18n="print.status.default">Data ze serveru</div>
     </div>
 
     <div class="print-log-summary" id="print-log-summary-cards">
-      <div class="stat-chip"><span class="stat-num" id="pl-done-jobs">—</span><span class="stat-lbl">Hotové úlohy</span></div>
-      <div class="stat-chip warn"><span class="stat-num" id="pl-aborted-jobs">—</span><span class="stat-lbl">Přerušené úlohy</span></div>
-      <div class="stat-chip crit"><span class="stat-num" id="pl-deleted-jobs">—</span><span class="stat-lbl">Smazané úlohy</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-printed-area">—</span><span class="stat-lbl">Vytištěná plocha</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-media-length">—</span><span class="stat-lbl">Spotřeba média</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-duration">—</span><span class="stat-lbl">Celková doba</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-sla-total">—</span><span class="stat-lbl">Seskupené úlohy</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-sla-first-pass">—</span><span class="stat-lbl">Úspěch napoprvé</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-sla-first-rate">—</span><span class="stat-lbl">Úspěšnost napoprvé</span></div>
-      <div class="stat-chip warn"><span class="stat-num" id="pl-sla-resolved">—</span><span class="stat-lbl">Vyřešené opakování</span></div>
-      <div class="stat-chip crit"><span class="stat-num" id="pl-sla-open">—</span><span class="stat-lbl">Otevřené / nevyřešené</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts">—</span><span class="stat-lbl">Průměr pokusů / úloha</span></div>
-      <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts-success">—</span><span class="stat-lbl">Průměr pokusů / úspěch</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-done-jobs">—</span><span class="stat-lbl" data-i18n="print.stats.done">Hotové úlohy</span></div>
+      <div class="stat-chip warn"><span class="stat-num" id="pl-aborted-jobs">—</span><span class="stat-lbl" data-i18n="print.stats.aborted">Přerušené úlohy</span></div>
+      <div class="stat-chip crit"><span class="stat-num" id="pl-deleted-jobs">—</span><span class="stat-lbl" data-i18n="print.stats.deleted">Smazané úlohy</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-printed-area">—</span><span class="stat-lbl" data-i18n="print.stats.printed-area">Vytištěná plocha</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-media-length">—</span><span class="stat-lbl" data-i18n="print.stats.media">Spotřeba média</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-duration">—</span><span class="stat-lbl" data-i18n="print.stats.duration">Celková doba</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-total">—</span><span class="stat-lbl" data-i18n="print.stats.grouped">Seskupené úlohy</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-first-pass">—</span><span class="stat-lbl" data-i18n="print.stats.first-pass">Úspěch napoprvé</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-first-rate">—</span><span class="stat-lbl" data-i18n="print.stats.first-rate">Úspěšnost napoprvé</span></div>
+      <div class="stat-chip warn"><span class="stat-num" id="pl-sla-resolved">—</span><span class="stat-lbl" data-i18n="print.stats.resolved">Vyřešené opakování</span></div>
+      <div class="stat-chip crit"><span class="stat-num" id="pl-sla-open">—</span><span class="stat-lbl" data-i18n="print.stats.open">Otevřené / nevyřešené</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts">—</span><span class="stat-lbl" data-i18n="print.stats.attempts">Průměr pokusů / úloha</span></div>
+      <div class="stat-chip"><span class="stat-num" id="pl-sla-attempts-success">—</span><span class="stat-lbl" data-i18n="print.stats.attempts-success">Průměr pokusů / úspěch</span></div>
     </div>
 
     <div class="machine-card" style="margin-bottom:14px">
       <div class="mc-header">
-        <span class="mc-label">Colorado A vs Colorado B</span>
-        <span class="mc-badge" id="pl-compare-range">aktuální filtr</span>
+        <span class="mc-label" data-i18n="print.compare.title">Colorado A vs Colorado B</span>
+        <span class="mc-badge" id="pl-compare-range" data-i18n="print.compare.range">aktuální filtr</span>
       </div>
       <div class="print-compare-grid" id="pl-compare-grid">
         <div class="metric-block">
           <span class="metric-big">—</span>
           <span class="metric-unit">Colorado A</span>
-          <span class="metric-desc">Čekám na data</span>
+          <span class="metric-desc" data-i18n="print.waiting">Čekám na data</span>
         </div>
         <div class="metric-block">
           <span class="metric-big">—</span>
           <span class="metric-unit">Colorado B</span>
-          <span class="metric-desc">Čekám na data</span>
+          <span class="metric-desc" data-i18n="print.waiting">Čekám na data</span>
         </div>
       </div>
     </div>
 
     <div class="date-range-row print-log-filters">
       <div class="date-range-inputs">
-        <label class="dr-label">Od</label>
+        <label class="dr-label" data-i18n="date.from">Od</label>
         <input type="date" id="print-log-from">
-        <label class="dr-label">Do</label>
+        <label class="dr-label" data-i18n="date.to">Do</label>
         <input type="date" id="print-log-to">
-        <button class="dr-clear" id="print-log-clear-dates" title="Zrušit filtr dat">✕</button>
+        <button class="dr-clear" id="print-log-clear-dates" title="Zrušit filtr dat" data-i18n-title="date.clear">✕</button>
       </div>
       <div class="print-log-selects">
         <div class="form-group compact">
-          <label for="print-log-view-mode">Zobrazení</label>
+          <label for="print-log-view-mode" data-i18n="print.filter.view">Zobrazení</label>
           <select id="print-log-view-mode">
-            <option value="raw">Přehled aktivit</option>
-            <option value="grouped">Řešení problémů / SLA</option>
+            <option value="raw" data-i18n="print.view.raw">Přehled aktivit</option>
+            <option value="grouped" data-i18n="print.view.grouped">Řešení problémů / SLA</option>
           </select>
         </div>
         <div class="form-group compact">
-          <label for="print-log-printer">Tiskárna</label>
+          <label for="print-log-printer" data-i18n="print.filter.printer">Tiskárna</label>
           <select id="print-log-printer">
-            <option value="all">Vše</option>
+            <option value="all" data-i18n="filter.all">Vše</option>
             <option value="Colorado-91">Colorado A</option>
             <option value="Colorado-92">Colorado B</option>
           </select>
         </div>
         <div class="form-group compact">
-          <label for="print-log-result">Výsledek</label>
+          <label for="print-log-result" data-i18n="print.filter.result">Výsledek</label>
           <select id="print-log-result">
-            <option value="all">Vše</option>
-            <option value="Done">Hotovo</option>
+            <option value="all" data-i18n="filter.all">Vše</option>
+            <option value="Done" data-i18n="print.result.done">Hotovo</option>
             <option value="Abrt">Abrt</option>
-            <option value="Deleted">Smazáno</option>
+            <option value="Deleted" data-i18n="print.result.deleted">Smazáno</option>
           </select>
         </div>
         <div class="form-group compact hidden" id="print-log-group-filter-wrap">
-          <label for="print-log-group-filter">Filtr průběhu</label>
+          <label for="print-log-group-filter" data-i18n="print.filter.lifecycle">Filtr průběhu</label>
           <select id="print-log-group-filter">
-            <option value="all">Všechny skupiny průběhu</option>
-            <option value="open_issue">Jen otevřené problémy</option>
-            <option value="resolved_after_retry">Jen vyřešené opakováním</option>
-            <option value="multiple_attempts">Jen úlohy s více pokusy</option>
-            <option value="first_pass">Jen úspěšné napoprvé</option>
+            <option value="all" data-i18n="print.lifecycle.all">Všechny skupiny průběhu</option>
+            <option value="open_issue" data-i18n="print.lifecycle.open">Jen otevřené problémy</option>
+            <option value="resolved_after_retry" data-i18n="print.lifecycle.resolved">Jen vyřešené opakováním</option>
+            <option value="multiple_attempts" data-i18n="print.lifecycle.multi">Jen úlohy s více pokusy</option>
+            <option value="first_pass" data-i18n="print.lifecycle.first">Jen úspěšné napoprvé</option>
           </select>
         </div>
       </div>
@@ -444,14 +450,14 @@
 
     <div class="machine-card">
       <div class="mc-header">
-        <span class="mc-label" id="print-log-table-title">Poslední tiskové aktivity</span>
+        <span class="mc-label" id="print-log-table-title" data-i18n="print.table.title">Poslední tiskové aktivity</span>
         <button class="btn-sm" id="print-log-refresh-btn">↻ Obnovit</button>
       </div>
       <div id="print-log-table-wrap" class="table-wrap">
-        <div class="loading-state"><div class="spinner"></div><p>Načítám tiskový log…</p></div>
+        <div class="loading-state"><div class="spinner"></div><p data-i18n="loading.print-log">Načítám tiskový log…</p></div>
       </div>
       <div class="print-log-footer">
-        <span id="print-log-footnote">Posledních 50 řádků</span>
+        <span id="print-log-footnote" data-i18n="print.footnote">Posledních 50 řádků</span>
       </div>
     </div>
   </main>
