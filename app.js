@@ -1772,7 +1772,7 @@ function setupSettings() {
     renderStockOverview();
     renderCoDashboard();
     renderCoHistory();
-    showToast('Nastavení uloženo', 'success');
+    showToast(i18n('settings.toast.saved'), 'success');
   });
 
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
@@ -1784,12 +1784,12 @@ function setupSettings() {
   el('import-json-input').addEventListener('change',   handleImportJSON);
 
   el('clear-all-btn').addEventListener('click', () => {
-    showConfirm('Smazat VŠECHNA lokální data? Tato akce je nevratná.', async () => {
+    showConfirm(i18n('settings.clear.confirm'), async () => {
       await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
       S.items = []; S.movements = []; S.coRecords = [];
       renderStockOverview(); renderAlerts(); renderItemsMgmt();
       renderCoDashboard(); renderCoHistory();
-      showToast('Data smazána');
+      showToast(i18n('settings.clear.done'));
     });
   });
 }

@@ -488,51 +488,51 @@
       </section>
 
       <section class="settings-card">
-        <h3>Sklad — výpočet spotřeby</h3>
+        <h3 data-i18n="settings.stock.title">Sklad — výpočet spotřeby</h3>
         <div class="form-group">
-          <label for="cfg-weeks">Počet týdnů pro průměr spotřeby (N)</label>
+          <label for="cfg-weeks" data-i18n="settings.stock.weeks">Počet týdnů pro průměr spotřeby (N)</label>
           <input type="number" id="cfg-weeks" min="2" max="52" value="8">
         </div>
-        <div class="hint">Průměrná týdenní spotřeba = suma výdejů za posledních N týdnů ÷ N. Doporučeno 6–8.</div>
+        <div class="hint" data-i18n="settings.stock.hint">Průměrná týdenní spotřeba = suma výdejů za posledních N týdnů ÷ N. Doporučeno 6–8.</div>
       </section>
 
       <section class="settings-card">
-        <h3>Colorado — výpočet průměrů</h3>
+        <h3 data-i18n="settings.colorado.title">Colorado — výpočet průměrů</h3>
         <div class="form-group">
-          <label for="cfg-n">Počet intervalů pro klouzavý průměr (N)</label>
+          <label for="cfg-n" data-i18n="settings.colorado.n">Počet intervalů pro klouzavý průměr (N)</label>
           <input type="number" id="cfg-n" min="2" max="52" value="8">
         </div>
-        <div class="hint">Průměr z posledních N meziodečtů. Doporučeno 6–8.</div>
+        <div class="hint" data-i18n="settings.colorado.hint">Průměr z posledních N meziodečtů. Doporučeno 6–8.</div>
       </section>
 
       <section class="settings-card">
-        <h3>Nákladové sazby — Colorado (volitelné)</h3>
+        <h3 data-i18n="settings.cost.title">Nákladové sazby — Colorado (volitelné)</h3>
         <div class="form-group">
-          <label for="cfg-ink-cost">Náklad inkoustu (Kč/L)</label>
+          <label for="cfg-ink-cost" data-i18n="settings.cost.ink">Náklad inkoustu (SEK/L)</label>
           <input type="number" id="cfg-ink-cost" min="0" step="0.01" placeholder="0">
         </div>
         <div class="form-group">
-          <label for="cfg-media-cost">Náklad média (Kč/m²)</label>
+          <label for="cfg-media-cost" data-i18n="settings.cost.media">Náklad média (SEK/m²)</label>
           <input type="number" id="cfg-media-cost" min="0" step="0.01" placeholder="0">
         </div>
-        <div class="hint">Po vyplnění se zobrazí finanční metriky Kč/m² v přehledu Colorado.</div>
+        <div class="hint" data-i18n="settings.cost.hint">Po vyplnění se zobrazí finanční metriky SEK/m² v přehledu Colorado.</div>
       </section>
 
       <section class="settings-card" id="admin-card">
 
-  <h3>Admin access</h3>
+  <h3 data-i18n="settings.admin.title">Admin access</h3>
 
   <div class="form-group">
-    <label for="admin-pin">PIN</label>
+    <label for="admin-pin" data-i18n="settings.admin.pin">PIN</label>
     <input type="password" id="admin-pin" placeholder="••••" inputmode="numeric" autocomplete="off">
   </div>
 
   <div class="form-group">
-    <button class="btn-secondary" id="admin-unlock-btn">Unlock admin</button>
-    <button class="btn-secondary danger" id="admin-lock-btn">Lock (operator mode)</button>
+    <button class="btn-secondary" id="admin-unlock-btn" data-i18n="settings.admin.unlock">Unlock admin</button>
+    <button class="btn-secondary danger" id="admin-lock-btn" data-i18n="settings.admin.lock">Lock (operator mode)</button>
   </div>
 
-  <div class="hint">
+  <div class="hint" data-i18n="settings.admin.hint">
     Admin odemyká správu katalogu položek (Položky + Přidat/Upravit/Smazat).
     Operátor má jen zadávání záznamů.
   </div>
@@ -540,41 +540,41 @@
 
 
       <section class="settings-card">
-        <h3>Export CSV — Colorado (pro finance)</h3>
-        <button class="btn-secondary" id="export-csv-intervals">Export CSV — intervaly spotřeby</button>
-        <button class="btn-secondary" id="export-csv-raw-co">Export CSV — surové záznamy Colorado</button>
+        <h3 data-i18n="settings.export.colorado.title">Export CSV — Colorado (pro finance)</h3>
+        <button class="btn-secondary" id="export-csv-intervals" data-i18n="settings.export.colorado.intervals">Export CSV — intervaly spotřeby</button>
+        <button class="btn-secondary" id="export-csv-raw-co" data-i18n="settings.export.colorado.raw">Export CSV — surové záznamy Colorado</button>
         <div class="csv-info">
-          <strong>Sloupce intervalů:</strong>
+          <strong data-i18n="settings.export.colorado.columns">Sloupce intervalů:</strong>
           timestamp_from, timestamp_to, days_elapsed, machine, ink_total_l_to, media_total_m2_to, ink_used_l, media_used_m2, ink_per_m2, ink_cost, media_cost, total_cost, cost_per_m2
         </div>
       </section>
 
       <section class="settings-card">
-        <h3>Export CSV — Sklad</h3>
-        <button class="btn-secondary" id="export-csv-stock">Export CSV — pohyby skladu</button>
-        <button class="btn-secondary" id="export-csv-stock-levels">Export CSV — aktuální stav skladu</button>
+        <h3 data-i18n="settings.export.stock.title">Export CSV — Sklad</h3>
+        <button class="btn-secondary" id="export-csv-stock" data-i18n="settings.export.stock.movements">Export CSV — pohyby skladu</button>
+        <button class="btn-secondary" id="export-csv-stock-levels" data-i18n="settings.export.stock.levels">Export CSV — aktuální stav skladu</button>
         <div class="csv-info">
-          <strong>Sloupce:</strong>
+          <strong data-i18n="settings.export.stock.columns">Sloupce:</strong>
           timestamp, article_number, name, movement_type, qty, unit, stock_after, note
         </div>
       </section>
 
       <section class="settings-card">
-        <h3>Záloha JSON</h3>
-        <button class="btn-secondary" id="export-json">Export celé zálohy (JSON)</button>
+        <h3 data-i18n="settings.backup.title">Záloha JSON</h3>
+        <button class="btn-secondary" id="export-json" data-i18n="settings.backup.export">Export celé zálohy (JSON)</button>
         <input type="file" id="import-json-input" accept="application/json" style="display:none">
-        <button class="btn-secondary" id="import-json-btn">Import zálohy (JSON / StockGuard)</button>
-        <div class="hint">Import je kompatibilní se starým formátem StockGuard — snapshots se automaticky převedou jako inventurní záznamy.</div>
+        <button class="btn-secondary" id="import-json-btn" data-i18n="settings.backup.import">Import zálohy (JSON / StockGuard)</button>
+        <div class="hint" data-i18n="settings.backup.hint">Import je kompatibilní se starým formátem StockGuard — snapshots se automaticky převedou jako inventurní záznamy.</div>
       </section>
 
       <section class="settings-card">
-        <h3>Zařízení</h3>
-        <div class="param-row"><span>ID zařízení</span><code id="device-id-display">—</code></div>
-        <div class="param-row"><span>Verze aplikace</span><code id="app-version-display">—</code></div>
-        <button class="btn-secondary danger" id="clear-all-btn">Smazat všechna lokální data</button>
+        <h3 data-i18n="settings.device.title">Zařízení</h3>
+        <div class="param-row"><span data-i18n="settings.device.id">ID zařízení</span><code id="device-id-display">—</code></div>
+        <div class="param-row"><span data-i18n="settings.device.version">Verze aplikace</span><code id="app-version-display">—</code></div>
+        <button class="btn-secondary danger" id="clear-all-btn" data-i18n="settings.device.clear">Smazat všechna lokální data</button>
       </section>
 
-      <button class="btn-primary" id="save-settings-btn">Uložit nastavení</button>
+      <button class="btn-primary" id="save-settings-btn" data-i18n="settings.save">Uložit nastavení</button>
     </div>
   </main>
 
