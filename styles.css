@@ -791,20 +791,23 @@ textarea { resize: vertical; min-height: 58px; }
     min-width: 0;
   }
   .topbar-left {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
   }
   .topbar-center {
-    flex: 1 1 auto;
-    justify-content: flex-start;
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
   }
   .topbar-right {
     flex: 0 0 auto;
+    order: 2;
     margin-left: auto;
   }
   .brand-lockup {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
     gap: 6px;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
   .brand-name {
     font-size: 1rem;
@@ -825,11 +828,16 @@ textarea { resize: vertical; min-height: 58px; }
     font-size: .84rem;
     letter-spacing: .14em;
   }
+  .mode-toggle {
+    flex: 0 1 auto;
+    width: auto;
+    margin: 0 auto;
+  }
   .mode-btn {
     padding: 7px 8px;
     gap: 4px;
     font-size: .56rem;
-    flex: 1 1 0;
+    flex: 0 1 auto;
     justify-content: center;
     min-width: 0;
   }
@@ -839,18 +847,22 @@ textarea { resize: vertical; min-height: 58px; }
   }
   .icon-btn { width: 36px; height: 36px; }
   .bottom-nav {
-    justify-content: flex-start;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    justify-content: space-between;
+    align-items: center;
+    overflow: hidden;
   }
-  .bottom-nav::-webkit-scrollbar { display: none; }
   .nav-item {
-    flex: 0 0 72px;
-    min-width: 72px;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 8px 6px;
     gap: 4px;
+  }
+  .nav-item span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .screen {
     padding: 22px 14px 108px;
@@ -904,8 +916,6 @@ textarea { resize: vertical; min-height: 58px; }
     font-size: .52rem;
   }
   .nav-item {
-    flex-basis: 68px;
-    min-width: 68px;
     font-size: .5rem;
   }
   .fab {
