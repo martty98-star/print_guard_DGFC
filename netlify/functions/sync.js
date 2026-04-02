@@ -102,6 +102,34 @@ export async function handler(event) {
       });
     }
 
+    // ---------- DELETE = hard delete ----------
+    if (event.httpMethod === "DELETE") {
+      const query = event.queryStringParameters || {};
+      const kind = String(query.kind || "").trim();
+      const key = String(query.key || "").trim();
+
+      if (!kind || !key) {
+        return resp(400, { ok: false, error: "Missing delete kind/key" });
+      }
+
+      await client.query("begin");
+
+      if (kind === "movement") {
+        await client.query(`delete from public.pg_movements where id = $1`, [key]);
+      } else if (kind === "coRecord") {
+        await client.query(`delete from public.pg_co_records where id = $1`, [key]);
+      } else if (kind === "item") {
+        await client.query(`delete from public.pg_movements where article_number = $1`, [key]);
+        await client.query(`delete from public.pg_items where article_number = $1`, [key]);
+      } else {
+        await client.query("rollback");
+        return resp(400, { ok: false, error: `Unsupported delete kind: ${kind}` });
+      }
+
+      await client.query("commit");
+      return resp(200, { ok: true, deleted: { kind, key } });
+    }
+
     return resp(405, { ok: false, error: "Method not allowed" });
   } catch (e) {
     try { await client.query("rollback"); } catch {}

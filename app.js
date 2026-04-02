@@ -528,13 +528,18 @@ async function deleteMovement(id) {
 async function deleteMovementAdmin(id) {
   if (!isAdmin()) { showToast('Mazání pohybů — jen admin', 'error'); return; }
   showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
-    await idbDelete(ST_MOVES, id);
-    S.movements = S.movements.filter(m => m.id !== id);
-    renderStockOverview();
-    renderAlerts();
-    renderStockLog();
-    if (S.detailArticle) openStockDetail(S.detailArticle);
-    showToast('Pohyb smazán');
+    try {
+      await cloudDelete('movement', id);
+      await idbDelete(ST_MOVES, id);
+      S.movements = S.movements.filter(m => m.id !== id);
+      renderStockOverview();
+      renderAlerts();
+      renderStockLog();
+      if (S.detailArticle) openStockDetail(S.detailArticle);
+      showToast('Pohyb smazán');
+    } catch (err) {
+      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+    }
   });
 }
 
@@ -863,15 +868,20 @@ async function deleteItem(articleNumber) {
   if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
 
   showConfirm(`Smazat položku "${articleNumber}" včetně všech pohybů?`, async () => {
-    await idbDelete(ST_ITEMS, articleNumber);
-    const toDelete = S.movements.filter(m => m.articleNumber === articleNumber);
-    for (const m of toDelete) await idbDelete(ST_MOVES, m.id);
-    S.items     = S.items.filter(it => it.articleNumber !== articleNumber);
-    S.movements = S.movements.filter(m  => m.articleNumber !== articleNumber);
-    renderItemsMgmt();
-    renderStockOverview();
-    renderAlerts();
-    showToast('Položka smazána');
+    try {
+      await cloudDelete('item', articleNumber);
+      await idbDelete(ST_ITEMS, articleNumber);
+      const toDelete = S.movements.filter(m => m.articleNumber === articleNumber);
+      for (const m of toDelete) await idbDelete(ST_MOVES, m.id);
+      S.items     = S.items.filter(it => it.articleNumber !== articleNumber);
+      S.movements = S.movements.filter(m  => m.articleNumber !== articleNumber);
+      renderItemsMgmt();
+      renderStockOverview();
+      renderAlerts();
+      showToast('Položka smazána');
+    } catch (err) {
+      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+    }
   });
 }
 
@@ -883,6 +893,11 @@ const MACHINES = [
   { id: 'colorado1', label: 'Colorado 1' },
   { id: 'colorado2', label: 'Colorado 2' },
 ];
+
+function getLatestCoRecord(machineId) {
+  const recs = getCoRecs(machineId);
+  return recs.length ? recs[recs.length - 1] : null;
+}
 
 function getCoRecs(machineId) {
   return S.coRecords.filter(r => r.machineId === machineId)
@@ -1016,7 +1031,8 @@ function renderCombinedCard() {
   if (!wrap) return;
   const valid  = MACHINES.map(m => computeCoStats(m.id)).filter(s => s && s.intervalCount > 0);
   if (!valid.length) {
-    wrap.innerHTML = `<div class="mc-header"><span class="mc-label">${i18n('colorado.card.combined.title')}</span></div><div class="mc-empty">${i18n('colorado.card.no-data')}</div>`;
+    wrap.innerHTML = `<div class="mc-header"><span class="mc-label">${i18n('colorado.card.combined.title')}</span><button class="btn-sm" id="co-lifetime-export-btn">${i18n('colorado.export.lifetime-combined')}</button></div><div class="mc-empty">${i18n('colorado.card.no-data')}</div>`;
+    el('co-lifetime-export-btn')?.addEventListener('click', exportCSVCombinedLifetimeCo);
     return;
   }
   const sum = (fn) => valid.reduce((s, v) => s + fn(v), 0);
@@ -1029,6 +1045,7 @@ function renderCombinedCard() {
     <div class="mc-header">
       <span class="mc-label">${i18n('colorado.card.combined.title')}</span>
       <span class="mc-badge">${i18n('colorado.card.combined.badge')}</span>
+      <button class="btn-sm" id="co-lifetime-export-btn">${i18n('colorado.export.lifetime-combined')}</button>
     </div>
     <div class="metrics-grid">
       <div class="metric-block ink-bg">
@@ -1057,6 +1074,7 @@ function renderCombinedCard() {
         <span class="metric-desc">${i18n('colorado.card.combined.cost-month')}</span>
       </div>` : ''}
     </div>`;
+  el('co-lifetime-export-btn')?.addEventListener('click', exportCSVCombinedLifetimeCo);
 }
 
 // ── Colorado Entry ─────────────────────────────────────────
@@ -1203,11 +1221,16 @@ function renderCoHistory() {
 async function deleteCoRecord(id) {
   if (!isAdmin()) { showToast('Mazání záznamů Colorado — jen admin', 'error'); return; }
   showConfirm('Smazat tento záznam Colorado? (Admin)', async () => {
-    await idbDelete(ST_CORECS, id);
-    S.coRecords = S.coRecords.filter(r => r.id !== id);
-    renderCoDashboard();
-    renderCoHistory();
-    showToast('Záznam smazán');
+    try {
+      await cloudDelete('coRecord', id);
+      await idbDelete(ST_CORECS, id);
+      S.coRecords = S.coRecords.filter(r => r.id !== id);
+      renderCoDashboard();
+      renderCoHistory();
+      showToast('Záznam smazán');
+    } catch (err) {
+      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+    }
   });
 }
 
@@ -2128,6 +2151,92 @@ function exportCSVCurrentMonthCo() {
   showToast(i18n('colorado.export.monthly.done'), 'success');
 }
 
+function exportCSVCombinedLifetimeCo() {
+  const latestRows = MACHINES.map(machine => {
+    const latest = getLatestCoRecord(machine.id);
+    if (!latest) return null;
+    return {
+      rowType: 'printer',
+      printerId: machine.id,
+      printerLabel: machine.label,
+      lifetimePrintedAreaM2: null,
+      lifetimeMediaUsageM2: Number(latest.mediaTotalM2),
+      lifetimeInkUsageTotalL: Number(latest.inkTotalLiters),
+      lifetimeInkCyanL: null,
+      lifetimeInkMagentaL: null,
+      lifetimeInkYellowL: null,
+      lifetimeInkBlackL: null,
+      lifetimeInkWhiteL: null,
+      lastUpdatedTimestamp: latest.timestamp,
+    };
+  }).filter(Boolean);
+
+  if (!latestRows.length) {
+    showToast(i18n('colorado.export.lifetime-combined.none'), 'error');
+    return;
+  }
+
+  const header = [
+    'row_type',
+    'printer_id',
+    'printer_label',
+    'lifetime_printed_area_m2',
+    'lifetime_media_usage_m2',
+    'lifetime_ink_usage_total_l',
+    'lifetime_ink_cyan_l',
+    'lifetime_ink_magenta_l',
+    'lifetime_ink_yellow_l',
+    'lifetime_ink_black_l',
+    'lifetime_ink_white_l',
+    'last_updated_timestamp',
+  ];
+  const rows = [csvRow(header)];
+
+  latestRows.forEach(row => {
+    rows.push(csvRow([
+      row.rowType,
+      row.printerId,
+      row.printerLabel,
+      '',
+      fmtN(row.lifetimeMediaUsageM2, 1),
+      fmtN(row.lifetimeInkUsageTotalL, 3),
+      '',
+      '',
+      '',
+      '',
+      '',
+      fmtExportDateTime(row.lastUpdatedTimestamp),
+    ]));
+  });
+
+  const combinedInk = latestRows.reduce((sum, row) => sum + (row.lifetimeInkUsageTotalL || 0), 0);
+  const combinedMedia = latestRows.reduce((sum, row) => sum + (row.lifetimeMediaUsageM2 || 0), 0);
+  const combinedLastUpdated = latestRows.reduce((latest, row) => {
+    const ts = new Date(row.lastUpdatedTimestamp).getTime();
+    if (!Number.isFinite(ts)) return latest;
+    if (!latest || ts > latest.ms) return { ms: ts, iso: row.lastUpdatedTimestamp };
+    return latest;
+  }, null);
+
+  rows.push(csvRow([
+    'combined_total',
+    'combined',
+    'Colorado 1 + Colorado 2',
+    '',
+    fmtN(combinedMedia, 1),
+    fmtN(combinedInk, 3),
+    '',
+    '',
+    '',
+    '',
+    '',
+    fmtExportDateTime(combinedLastUpdated?.iso || ''),
+  ]));
+
+  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_lifetime_combined_${fmtFileDT()}.csv`);
+  showToast(i18n('colorado.export.lifetime-combined.done'), 'success');
+}
+
 function exportCSVRawCo() {
   const header = ['id','machine','timestamp','ink_total_l','media_total_m2','note','created_at'];
   const rows = [csvRow(header)];
@@ -2545,6 +2654,20 @@ async function cloudPush() {
   });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud push failed');
+  return j;
+}
+
+async function cloudDelete(kind, key) {
+  const params = new URLSearchParams({
+    kind: String(kind || ''),
+    key: String(key || ''),
+  });
+  const res = await fetch(`/.netlify/functions/sync?${params.toString()}`, {
+    method: 'DELETE',
+    cache: 'no-store',
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
   return j;
 }
 
