@@ -90,9 +90,16 @@ body {
   background: var(--bg4); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 18px; gap: 12px;
 }
-.topbar-left  { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
+.topbar-left  { display: flex; align-items: center; gap: 11px; flex-shrink: 1; min-width: 0; }
 .topbar-center { flex: 1; display: flex; justify-content: center; }
 .topbar-right  { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
 
 .brand-mark {
   width: 30px; height: 30px; background: var(--text); color: var(--bg4);
@@ -107,6 +114,37 @@ body {
   content: ''; display: inline-block; width: 5px; height: 5px;
   background: var(--accent); border-radius: 50%;
   margin-left: 4px; vertical-align: super;
+}
+
+.brand-partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 10px;
+  background: var(--text);
+  color: var(--bg4);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+
+.brand-partner-prefix {
+  font-size: .52rem;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(245, 242, 237, .68);
+}
+
+.dgfc-wordmark {
+  font-family: var(--font-d);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1;
+  transform: translateY(-.02em);
 }
 
 .mode-toggle {
@@ -732,9 +770,28 @@ textarea { resize: vertical; min-height: 58px; }
 }
 @media (max-width: 420px) {
   .topbar { padding: 0 10px; gap: 8px; }
-  .brand-name { display: none; }         /* “dej do řiti logo” = uvolni místo */
+  .brand-lockup { gap: 8px; }
+  .brand-name { display: none; }
+  .brand-partner { padding: 5px 8px; }
+  .brand-partner-prefix { display: none; }
+  .dgfc-wordmark { font-size: .92rem; letter-spacing: .18em; }
   .mode-btn { padding: 7px 10px; }       /* zmenši přepínač módů */
   .icon-btn { width: 36px; height: 36px; }
+}
+
+@media (max-width: 640px) {
+  .brand-name {
+    font-size: 1.05rem;
+    letter-spacing: .08em;
+  }
+  .brand-partner {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  .dgfc-wordmark {
+    font-size: .94rem;
+    letter-spacing: .18em;
+  }
 }
 
 /* ── Print Log ── */
