@@ -89,6 +89,7 @@ body {
   height: var(--topbar-h);
   background: var(--bg4); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 18px; gap: 12px;
+  max-width: 100%;
 }
 .topbar-left  { display: flex; align-items: center; gap: 0; flex: 0 1 auto; min-width: 0; }
 .topbar-center { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
@@ -146,6 +147,8 @@ body {
 
 .mode-toggle {
   display: flex; background: var(--bg3); border: 1px solid var(--border); overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
 }
 .mode-btn {
   background: none; border: none; cursor: pointer;
@@ -183,6 +186,7 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--bg4); border-top: 1px solid var(--border);
   display: flex; align-items: stretch;
+  max-width: 100%;
 }
 .bottom-nav.hidden { display: none; }
 .nav-item {
@@ -206,6 +210,7 @@ body {
   display: none; padding: 26px 20px;
   /* fix: min-height jen orientačně, ale hlavní je body padding-bottom */
   min-height: calc(100dvh - var(--topbar-h) - var(--nav-h));
+  max-width: 100%;
   animation: fadeIn .22s ease;
 }
 .screen.active { display: block; }
@@ -765,44 +770,52 @@ textarea { resize: vertical; min-height: 58px; }
   .screen { max-width: 900px; padding: 34px 40px; }
   .fab { bottom: calc(var(--nav-h) + 24px); right: max(24px, calc(50vw - 450px + 24px)); }
 }
-@media (max-width: 420px) {
-  .topbar { padding: 0 10px; gap: 8px; }
-  .topbar-left { min-width: 0; }
-  .topbar-center { justify-content: flex-end; }
-  .brand-lockup { gap: 6px; min-width: 0; }
-  .brand-name {
-    font-size: .9rem;
-    letter-spacing: .05em;
-  }
-  .brand-name::after {
-    width: 4px;
-    height: 4px;
-    margin-left: 3px;
-  }
-  .brand-partner {
-    gap: 4px;
-    padding: 4px 7px 4px 8px;
-  }
-  .brand-partner-prefix {
-    font-size: .45rem;
-    letter-spacing: .12em;
-  }
-  .dgfc-wordmark {
-    font-size: .78rem;
-    letter-spacing: .12em;
-  }
-  .mode-btn { padding: 7px 10px; }       /* zmenši přepínač módů */
-  .icon-btn { width: 36px; height: 36px; }
-}
-
 @media (max-width: 640px) {
+  :root {
+    --topbar-h: 106px;
+    --nav-h: 64px;
+  }
+  body { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 4px); }
+  .topbar {
+    height: auto;
+    min-height: var(--topbar-h);
+    padding: 8px 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .topbar-left,
+  .topbar-center,
+  .topbar-right,
+  .screen-header > * {
+    min-width: 0;
+  }
+  .topbar-left {
+    flex: 1 1 100%;
+  }
+  .topbar-center {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+  .topbar-right {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  .brand-lockup {
+    width: 100%;
+    gap: 6px;
+    justify-content: space-between;
+  }
   .brand-name {
     font-size: 1rem;
     letter-spacing: .06em;
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .brand-partner {
     gap: 5px;
     padding: 4px 7px 4px 8px;
+    max-width: 100%;
   }
   .brand-partner-prefix {
     font-size: .47rem;
@@ -816,6 +829,89 @@ textarea { resize: vertical; min-height: 58px; }
     padding: 7px 8px;
     gap: 4px;
     font-size: .56rem;
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 0;
+  }
+  .mode-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .icon-btn { width: 36px; height: 36px; }
+  .bottom-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .bottom-nav::-webkit-scrollbar { display: none; }
+  .nav-item {
+    flex: 0 0 72px;
+    min-width: 72px;
+    padding: 8px 6px;
+    gap: 4px;
+  }
+  .screen {
+    padding: 22px 14px 108px;
+  }
+  .screen-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .screen-header h1 {
+    min-width: 0;
+    font-size: 1.3rem;
+  }
+  .header-meta { white-space: normal; }
+  .fab {
+    width: 48px;
+    height: 48px;
+    right: 14px;
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --topbar-h: 112px;
+  }
+  .topbar { padding: 8px 10px; gap: 6px; }
+  .brand-name {
+    font-size: .88rem;
+    letter-spacing: .04em;
+  }
+  .brand-name::after {
+    width: 4px;
+    height: 4px;
+    margin-left: 3px;
+  }
+  .brand-partner {
+    gap: 4px;
+    padding: 4px 6px 4px 7px;
+  }
+  .brand-partner-prefix {
+    font-size: .42rem;
+    letter-spacing: .1em;
+  }
+  .dgfc-wordmark {
+    font-size: .74rem;
+    letter-spacing: .1em;
+  }
+  .mode-btn {
+    padding: 7px 6px;
+    font-size: .52rem;
+  }
+  .nav-item {
+    flex-basis: 68px;
+    min-width: 68px;
+    font-size: .5rem;
+  }
+  .fab {
+    width: 44px;
+    height: 44px;
+    right: 12px;
   }
 }
 
