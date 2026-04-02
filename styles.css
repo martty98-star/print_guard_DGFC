@@ -90,25 +90,21 @@ body {
   background: var(--bg4); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 18px; gap: 12px;
 }
-.topbar-left  { display: flex; align-items: center; gap: 11px; flex-shrink: 1; min-width: 0; }
-.topbar-center { flex: 1; display: flex; justify-content: center; }
+.topbar-left  { display: flex; align-items: center; gap: 0; flex: 0 1 auto; min-width: 0; }
+.topbar-center { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
 .topbar-right  { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
 
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-}
-
-.brand-mark {
-  width: 30px; height: 30px; background: var(--text); color: var(--bg4);
-  font-family: var(--font-ui); font-weight: 600; font-size: .65rem; letter-spacing: .06em;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .brand-name {
   font-family: var(--font-d); font-weight: 500; font-size: 1.25rem;
-  letter-spacing: .10em; text-transform: uppercase; color: var(--text);
+  letter-spacing: .08em; text-transform: uppercase; color: var(--text);
+  line-height: 1;
+  white-space: nowrap;
 }
 .brand-name::after {
   content: ''; display: inline-block; width: 5px; height: 5px;
@@ -119,28 +115,29 @@ body {
 .brand-partner {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px 5px 10px;
+  gap: 6px;
+  padding: 5px 8px 5px 9px;
   background: var(--text);
   color: var(--bg4);
   border-radius: 999px;
   box-shadow: var(--shadow-sm);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .brand-partner-prefix {
-  font-size: .52rem;
+  font-size: .5rem;
   font-weight: 600;
-  letter-spacing: .18em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: rgba(245, 242, 237, .68);
 }
 
 .dgfc-wordmark {
   font-family: var(--font-d);
-  font-size: 1rem;
+  font-size: .96rem;
   font-weight: 400;
-  letter-spacing: .22em;
+  letter-spacing: .18em;
   text-transform: uppercase;
   color: #fff;
   line-height: 1;
@@ -770,27 +767,55 @@ textarea { resize: vertical; min-height: 58px; }
 }
 @media (max-width: 420px) {
   .topbar { padding: 0 10px; gap: 8px; }
-  .brand-lockup { gap: 8px; }
-  .brand-name { display: none; }
-  .brand-partner { padding: 5px 8px; }
-  .brand-partner-prefix { display: none; }
-  .dgfc-wordmark { font-size: .92rem; letter-spacing: .18em; }
+  .topbar-left { min-width: 0; }
+  .topbar-center { justify-content: flex-end; }
+  .brand-lockup { gap: 6px; min-width: 0; }
+  .brand-name {
+    font-size: .9rem;
+    letter-spacing: .05em;
+  }
+  .brand-name::after {
+    width: 4px;
+    height: 4px;
+    margin-left: 3px;
+  }
+  .brand-partner {
+    gap: 4px;
+    padding: 4px 7px 4px 8px;
+  }
+  .brand-partner-prefix {
+    font-size: .45rem;
+    letter-spacing: .12em;
+  }
+  .dgfc-wordmark {
+    font-size: .78rem;
+    letter-spacing: .12em;
+  }
   .mode-btn { padding: 7px 10px; }       /* zmenši přepínač módů */
   .icon-btn { width: 36px; height: 36px; }
 }
 
 @media (max-width: 640px) {
   .brand-name {
-    font-size: 1.05rem;
-    letter-spacing: .08em;
+    font-size: 1rem;
+    letter-spacing: .06em;
   }
   .brand-partner {
-    gap: 6px;
-    padding: 5px 8px;
+    gap: 5px;
+    padding: 4px 7px 4px 8px;
+  }
+  .brand-partner-prefix {
+    font-size: .47rem;
+    letter-spacing: .14em;
   }
   .dgfc-wordmark {
-    font-size: .94rem;
-    letter-spacing: .18em;
+    font-size: .84rem;
+    letter-spacing: .14em;
+  }
+  .mode-btn {
+    padding: 7px 8px;
+    gap: 4px;
+    font-size: .56rem;
   }
 }
 
