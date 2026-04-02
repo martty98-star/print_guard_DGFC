@@ -5,7 +5,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'printguard-3.5';
+const APP_VERSION = 'printguard-4.0';
 const DB_NAME     = 'printguard-db';
 const DB_VERSION  = 2;
 const ST_ITEMS    = 'items';
@@ -894,9 +894,60 @@ const MACHINES = [
   { id: 'colorado2', label: 'Colorado 2' },
 ];
 
+const CO_FORMATS = [
+  { key: '21x30', widthCm: 21, heightCm: 30 },
+  { key: '30x40', widthCm: 30, heightCm: 40 },
+  { key: '40x50', widthCm: 40, heightCm: 50 },
+  { key: '50x50', widthCm: 50, heightCm: 50 },
+  { key: '50x70', widthCm: 50, heightCm: 70 },
+  { key: '70x100', widthCm: 70, heightCm: 100 },
+];
+
 function getLatestCoRecord(machineId) {
   const recs = getCoRecs(machineId);
   return recs.length ? recs[recs.length - 1] : null;
+}
+
+function getCombinedCoLifetimeInkBasis() {
+  const intervals = MACHINES
+    .flatMap(({ id }) => computeCoIntervals(id))
+    .filter(iv => Number(iv.mediaUsed) > 0 && Number(iv.inkUsed) >= 0);
+
+  if (!intervals.length) return null;
+
+  const inkUsed = intervals.reduce((sum, iv) => sum + (Number(iv.inkUsed) || 0), 0);
+  const mediaUsed = intervals.reduce((sum, iv) => sum + (Number(iv.mediaUsed) || 0), 0);
+  if (!(mediaUsed > 0)) return null;
+
+  return {
+    source: 'combined_lifetime',
+    intervalCount: intervals.length,
+    inkUsed,
+    mediaUsed,
+    inkPerM2: inkUsed / mediaUsed,
+  };
+}
+
+function getColoradoFormatEstimates() {
+  const basis = getCombinedCoLifetimeInkBasis();
+  if (!basis) return { basis: null, rows: [] };
+
+  const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
+  return {
+    basis,
+    rows: CO_FORMATS.map(format => {
+      const areaM2 = (format.widthCm / 100) * (format.heightCm / 100);
+      const inkL = areaM2 * basis.inkPerM2;
+      const cost = hasCosts ? (inkL * cfg.inkCost) + (areaM2 * cfg.mediaCost) : null;
+      return {
+        label: format.key,
+        areaM2,
+        inkL,
+        inkMl: inkL * 1000,
+        cost,
+      };
+    }),
+  };
 }
 
 function getCoRecs(machineId) {
@@ -1040,6 +1091,35 @@ function renderCombinedCard() {
   const mediaMonth = sum(v => v.avgMediaMonth);
   const hasCosts   = cfg.inkCost > 0 || cfg.mediaCost > 0;
   const costMonth  = hasCosts ? inkMonth * cfg.inkCost + mediaMonth * cfg.mediaCost : null;
+  const formatEstimates = getColoradoFormatEstimates();
+  const formatTable = formatEstimates.rows.length ? `
+    <div class="mc-last">
+      ${i18n('colorado.card.formats.note')}
+      <strong>${fmtN(formatEstimates.basis.inkPerM2, 4)} L / m²</strong> ·
+      ${i18n('colorado.card.formats.intervals')}
+      <strong>${fmtInt(formatEstimates.basis.intervalCount)}</strong>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>${i18n('colorado.card.formats.table.format')}</th>
+            <th>${i18n('colorado.card.formats.table.area')}</th>
+            <th>${i18n('colorado.card.formats.table.ink')}</th>
+            ${hasCosts ? `<th>${i18n('colorado.card.formats.table.cost')}</th>` : ''}
+          </tr>
+        </thead>
+        <tbody>
+          ${formatEstimates.rows.map(row => `<tr>
+            <td>${esc(row.label)}</td>
+            <td class="num">${fmtMeasure(row.areaM2, 'm²', 3)}</td>
+            <td class="num">${fmtN(row.inkMl, 1)} ml</td>
+            ${hasCosts ? `<td class="num">${row.cost === null ? '—' : `${fmtN(row.cost, 2)} ${esc(cfg.costCurrency)}`}</td>` : ''}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : '';
 
   wrap.innerHTML = `
     <div class="mc-header">
@@ -1073,7 +1153,8 @@ function renderCombinedCard() {
         <span class="metric-unit">${getCostUnitPerMonth()}</span>
         <span class="metric-desc">${i18n('colorado.card.combined.cost-month')}</span>
       </div>` : ''}
-    </div>`;
+    </div>
+    ${formatTable}`;
   el('co-lifetime-export-btn')?.addEventListener('click', exportCSVCombinedLifetimeCo);
 }
 
