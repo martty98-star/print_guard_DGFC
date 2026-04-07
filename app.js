@@ -59,6 +59,8 @@ function i18n(key) {
   return key;
 }
 
+const Reports = (typeof window !== 'undefined' && window.PrintGuardReports) || {};
+
 function getCostUnitPerM2() {
   return `${cfg.costCurrency} / m²`;
 }
@@ -237,48 +239,7 @@ function getMovements(articleNumber) {
  *   - weeklyConsumption = sum of issues in last N weeks / N
  */
 function computeStock(item) {
-  const moves = getMovements(item.articleNumber);
-
-  // Find the latest stocktake as baseline
-  let baseline = 0, baselineIdx = -1;
-  for (let i = moves.length - 1; i >= 0; i--) {
-    if (moves[i].movType === 'stocktake') { baseline = moves[i].qty; baselineIdx = i; break; }
-  }
-
-  // Compute current on-hand from baseline onwards
-  let onHand = baseline;
-  const relevantMoves = baselineIdx >= 0 ? moves.slice(baselineIdx + 1) : moves;
-  for (const m of relevantMoves) {
-    if (m.movType === 'receipt')  onHand += m.qty;
-    if (m.movType === 'issue')    onHand -= m.qty;
-    if (m.movType === 'stocktake') onHand = m.qty;
-  }
-  onHand = Math.max(0, onHand);
-
-  // Weekly consumption: sum issues in last N weeks
-  const N = cfg.weeksN;
-  const cutoff = new Date(Date.now() - N * 7 * 86400 * 1000);
-  const recentIssues = S.movements
-    .filter(m => m.articleNumber === item.articleNumber && m.movType === 'issue' && new Date(m.timestamp) >= cutoff);
-  const totalIssued = recentIssues.reduce((s, m) => s + m.qty, 0);
-  const avgWeekly   = totalIssued / N;
-
-  const daysLeft = avgWeekly > 0 ? (onHand / avgWeekly) * 7 : (onHand > 0 ? 999 : 0);
-
-  const leadTime = item.leadTimeDays || 0;
-  const safety   = item.safetyDays   || 7;
-  const minQty   = item.minQty       || 0;
-
-  let status;
-  if (minQty > 0) {
-    status = onHand <= 0 ? 'crit' : onHand <= minQty ? 'crit' : onHand <= minQty * 2 ? 'warn' : 'ok';
-  } else {
-    status = onHand <= 0 || daysLeft <= 7 ? 'crit'
-           : daysLeft <= (leadTime + safety)    ? 'warn'
-           : 'ok';
-  }
-
-  return { onHand, avgWeekly, daysLeft: Math.round(daysLeft), status, moveCount: moves.length };
+  return Reports.stock.buildStockSummary(item, S.movements, { weeksN: cfg.weeksN }, new Date());
 }
 
 // ══════════════════════════════════════════════════════════
@@ -956,52 +917,18 @@ function getCoRecs(machineId) {
 }
 
 function computeCoIntervals(machineId) {
-  const recs = getCoRecs(machineId);
-  return recs.slice(1).map((cur, i) => {
-    const prev = recs[i];
-    const ms   = new Date(cur.timestamp) - new Date(prev.timestamp);
-    const days = Math.max(ms / 86400000, 0.0001);
-    const inkUsed   = Math.max(0, cur.inkTotalLiters - prev.inkTotalLiters);
-    const mediaUsed = Math.max(0, cur.mediaTotalM2   - prev.mediaTotalM2);
-    const inkPerM2  = mediaUsed > 0 ? inkUsed / mediaUsed : null;
-    const inkCost   = inkUsed   * cfg.inkCost;
-    const mediaCost = mediaUsed * cfg.mediaCost;
-    const totalCost = inkCost + mediaCost;
-    const costPerM2 = mediaUsed > 0 ? totalCost / mediaUsed : null;
-    return {
-      from: prev.timestamp, to: cur.timestamp, days, machineId,
-      inkTotalTo: cur.inkTotalLiters, mediaTotalTo: cur.mediaTotalM2,
-      inkUsed, mediaUsed,
-      inkPerDay: inkUsed / days, mediaPerDay: mediaUsed / days,
-      inkPerM2, inkCost, mediaCost, totalCost, costPerM2,
-      recordId: cur.id,
-    };
+  return Reports.colorado.buildColoradoIntervals(getCoRecs(machineId), {
+    inkCost: cfg.inkCost,
+    mediaCost: cfg.mediaCost,
   });
 }
 
 function computeCoStats(machineId) {
-  const ivs = computeCoIntervals(machineId);
-  const N   = cfg.rollingN;
-  const recent = ivs.slice(-N);
-  if (!recent.length) return null;
-
-  const avg = arr => arr.reduce((s, v) => s + v, 0) / arr.length;
-  const avgInkDay   = avg(recent.map(r => r.inkPerDay));
-  const avgMediaDay = avg(recent.map(r => r.mediaPerDay));
-  const validPM2    = recent.filter(r => r.inkPerM2 !== null);
-  const avgInkPM2   = validPM2.length ? avg(validPM2.map(r => r.inkPerM2)) : null;
-  const hasCosts    = cfg.inkCost > 0 || cfg.mediaCost > 0;
-  const validCost   = recent.filter(r => r.costPerM2 !== null);
-  const avgCostPM2  = hasCosts && validCost.length ? avg(validCost.map(r => r.costPerM2)) : null;
-
-  const recs = getCoRecs(machineId);
-  return {
-    machineId, recordCount: recs.length, intervalCount: ivs.length,
-    avgInkDay, avgInkMonth: avgInkDay * 30,
-    avgMediaDay, avgMediaMonth: avgMediaDay * 30,
-    avgInkPM2, avgCostPM2, hasCosts,
-    last: recs[recs.length - 1],
-  };
+  return Reports.colorado.buildColoradoStats(getCoRecs(machineId), {
+    rollingN: cfg.rollingN,
+    inkCost: cfg.inkCost,
+    mediaCost: cfg.mediaCost,
+  });
 }
 
 function renderCoDashboard() {
@@ -1644,72 +1571,13 @@ function printLifecycleFinalResult(group) {
 }
 
 function buildPrintLifecycleGroups(rows) {
-  const sorted = [...rows].sort((a, b) => new Date(a.readyAt) - new Date(b.readyAt));
-  const groups = [];
-  const buckets = new Map();
-
-  for (const row of sorted) {
-    const jobKey = normalizePrintLogText(row.jobName);
-    const sourceKey = normalizePrintLogSourceFile(row.sourceFile);
-    const baseKey = [
-      row.printerName || '',
-      normalizePrintLogText(row.mediaType),
-      sourceKey || jobKey,
-      jobKey || sourceKey || 'unknown'
-    ].join('||');
-
-    const readyMs = new Date(row.readyAt).getTime();
-    const bucket = buckets.get(baseKey) || [];
-    let group = bucket[bucket.length - 1];
-    if (!group || !Number.isFinite(readyMs) || !Number.isFinite(group.lastReadyMs) || (readyMs - group.lastReadyMs) > PRINT_LOG_LIFECYCLE_GAP_MS) {
-      group = {
-        id: `${baseKey}__${readyMs || Date.now()}__${groups.length}`,
-        baseKey,
-        attempts: [],
-        firstReadyMs: readyMs,
-        lastReadyMs: readyMs,
-        printerName: row.printerName || '',
-        mediaType: row.mediaType || '',
-        sourceFile: row.sourceFile || '',
-        jobName: row.jobName || '',
-      };
-      groups.push(group);
-      bucket.push(group);
-      buckets.set(baseKey, bucket);
-    }
-
-    group.attempts.push(row);
-    group.lastReadyMs = readyMs;
-    group.jobName = group.jobName || row.jobName || '';
-    group.sourceFile = group.sourceFile || row.sourceFile || '';
-  }
-
-  return groups.map(group => {
-    const attempts = group.attempts.sort((a, b) => new Date(a.readyAt) - new Date(b.readyAt));
-    const latest = attempts[attempts.length - 1] || {};
-    const successfulAttempts = attempts.filter(a => normalizePrintLogResult(a.result) === 'done');
-    const lifecycleStatus = derivePrintLifecycleStatus(attempts);
-    const finalArea = successfulAttempts.length ? successfulAttempts[successfulAttempts.length - 1].printedAreaM2 : latest.printedAreaM2;
-    return {
-      id: group.id,
-      attempts,
-      attemptCount: attempts.length,
-      latestReadyAt: latest.readyAt || null,
-      printerName: latest.printerName || group.printerName,
-      jobName: latest.jobName || group.jobName,
-      mediaType: latest.mediaType || group.mediaType,
-      sourceFile: latest.sourceFile || group.sourceFile,
-      lifecycleStatus,
-      finalResult: printLifecycleFinalResult({ attempts }),
-      finalPrintedAreaM2: finalArea == null ? null : Number(finalArea),
-      totalPrintedAreaM2: attempts.reduce((sum, a) => sum + (Number(a.printedAreaM2) || 0), 0),
-      mediaLengthM: attempts.reduce((sum, a) => sum + (Number(a.mediaLengthM) || 0), 0),
-      totalDurationSec: attempts.reduce((sum, a) => sum + (Number(a.durationSec) || 0), 0),
-      explanation: '',
-      isSuccessful: normalizePrintLogResult(latest.result) === 'done',
-    };
-  }).map(group => ({ ...group, explanation: printLifecycleExplanation(group) }))
-    .sort((a, b) => new Date(b.latestReadyAt) - new Date(a.latestReadyAt));
+  return Reports.printLog.buildPrintLifecycleGroups(rows, {
+    gapMs: PRINT_LOG_LIFECYCLE_GAP_MS,
+  }).map(group => ({
+    ...group,
+    finalResult: printResultLabel(group.finalResultCode),
+    explanation: printLifecycleExplanation(group),
+  }));
 }
 
 function getPrintLogLifecycleGroups() {
@@ -1727,22 +1595,7 @@ function getFilteredLifecycleGroups() {
 }
 
 function getPrintLogLifecycleMetrics() {
-  const groups = getPrintLogLifecycleGroups();
-  const successful = groups.filter(g => g.isSuccessful);
-  const firstPass = groups.filter(g => g.lifecycleStatus === 'success_first_try');
-  const resolvedRetries = groups.filter(g => g.lifecycleStatus === 'resolved_after_retry');
-  const unresolved = groups.filter(g => ['open_issue', 'deleted_only', 'aborted_only', 'unresolved'].includes(g.lifecycleStatus));
-  const avgAttempts = groups.length ? groups.reduce((sum, g) => sum + g.attemptCount, 0) / groups.length : 0;
-  const avgAttemptsSuccess = successful.length ? successful.reduce((sum, g) => sum + g.attemptCount, 0) / successful.length : 0;
-  return {
-    totalGroups: groups.length,
-    firstPassCount: firstPass.length,
-    firstPassRate: groups.length ? (firstPass.length / groups.length) * 100 : 0,
-    resolvedAfterRetryCount: resolvedRetries.length,
-    unresolvedCount: unresolved.length,
-    avgAttempts,
-    avgAttemptsSuccess,
-  };
+  return Reports.printLog.buildPrintErrorSummary(getPrintLogLifecycleGroups());
 }
 
 async function loadPrintLog(force = false) {
@@ -2066,12 +1919,9 @@ function setupSettings() {
 
 // ── CSV helpers ──────────────────────────────────────────
 function csvEsc(v) {
-  const s = String(v === null || v === undefined ? '' : v);
-  if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r'))
-    return '"' + s.replace(/"/g, '""') + '"';
-  return s;
+  return Reports.csv.csvEsc(v);
 }
-function csvRow(arr) { return arr.map(csvEsc).join(','); }
+function csvRow(arr) { return Reports.csv.csvRow(arr); }
 function fmtFileDT() {
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
@@ -2092,229 +1942,88 @@ function fmtExportDateTime(iso) {
 }
 
 function getCurrentMonthExportRange() {
-  const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-  const p = n => String(n).padStart(2, '0');
-  return {
-    fromMs: from.getTime(),
-    toMs: to.getTime(),
-    fromIso: from.toISOString(),
-    toIso: to.toISOString(),
-    fromDate: `${from.getFullYear()}-${p(from.getMonth() + 1)}-${p(from.getDate())}`,
-    toDate: `${to.getFullYear()}-${p(to.getMonth() + 1)}-${p(to.getDate())}`,
-    fileMonth: `${from.getFullYear()}-${p(from.getMonth() + 1)}`,
-  };
+  return Reports.date.getCurrentMonthExportRange(new Date());
 }
 
 function exportCSVIntervals() {
   const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
-  const header = ['timestamp_from','timestamp_to','days_elapsed','machine',
-    'ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2',
-    'ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'];
-  const rows = [csvRow(header)];
-  MACHINES.forEach(({ id }) => {
-    computeCoIntervals(id).forEach(iv => {
-      rows.push(csvRow([
-        fmtExportDateTime(iv.from), fmtExportDateTime(iv.to), fmtN(iv.days,2), id,
-        fmtN(iv.inkTotalTo,3), fmtN(iv.mediaTotalTo,1),
-        fmtN(iv.inkUsed,3), fmtN(iv.mediaUsed,1),
-        iv.inkPerM2 !== null ? fmtN(iv.inkPerM2,6) : '',
-        hasCosts ? fmtN(iv.inkCost,2) : '',
-        hasCosts ? fmtN(iv.mediaCost,2) : '',
-        hasCosts ? fmtN(iv.totalCost,2) : '',
-        iv.costPerM2 !== null ? fmtN(iv.costPerM2,4) : '',
-      ]));
-    });
-  });
-  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_intervals_${fmtFileDT()}.csv`);
+  const rows = Reports.colorado.buildColoradoIntervalRows(S.coRecords, {
+    inkCost: cfg.inkCost,
+    mediaCost: cfg.mediaCost,
+  }, MACHINES);
+  const csv = Reports.csv.rowsToCsv(rows, [
+    { key: 'timestamp_from', header: 'timestamp_from', value: row => fmtExportDateTime(row.timestampFrom) },
+    { key: 'timestamp_to', header: 'timestamp_to', value: row => fmtExportDateTime(row.timestampTo) },
+    { key: 'days_elapsed', header: 'days_elapsed', value: row => fmtN(row.daysElapsed, 2) },
+    { key: 'machine', header: 'machine', value: row => row.machine },
+    { key: 'ink_total_l_to', header: 'ink_total_l_to', value: row => fmtN(row.inkTotalLTo, 3) },
+    { key: 'media_total_m2_to', header: 'media_total_m2_to', value: row => fmtN(row.mediaTotalM2To, 1) },
+    { key: 'ink_used_l', header: 'ink_used_l', value: row => fmtN(row.inkUsedL, 3) },
+    { key: 'media_used_m2', header: 'media_used_m2', value: row => fmtN(row.mediaUsedM2, 1) },
+    { key: 'ink_per_m2', header: 'ink_per_m2', value: row => row.inkPerM2 !== null ? fmtN(row.inkPerM2, 6) : '' },
+    { key: 'ink_cost', header: 'ink_cost', value: row => hasCosts ? fmtN(row.inkCost, 2) : '' },
+    { key: 'media_cost', header: 'media_cost', value: row => hasCosts ? fmtN(row.mediaCost, 2) : '' },
+    { key: 'total_cost', header: 'total_cost', value: row => hasCosts ? fmtN(row.totalCost, 2) : '' },
+    { key: 'cost_per_m2', header: 'cost_per_m2', value: row => row.costPerM2 !== null ? fmtN(row.costPerM2, 4) : '' },
+  ]);
+  dlBlob(csv, 'text/csv;charset=utf-8', `co_intervals_${fmtFileDT()}.csv`);
 }
 
 function exportCSVCurrentMonthCo() {
   const range = getCurrentMonthExportRange();
   const hasCosts = cfg.inkCost > 0 || cfg.mediaCost > 0;
-  const header = [
-    'row_type','report_month_from','report_month_to','machine',
-    'timestamp_from','timestamp_to','days_elapsed',
-    'ink_total_l_to','media_total_m2_to','ink_used_l','media_used_m2',
-    'ink_per_m2','ink_cost','media_cost','total_cost','cost_per_m2'
-  ];
-  const rows = [csvRow(header)];
-  const totals = [];
+  const rows = Reports.colorado.buildColoradoMonthlySummary(S.coRecords, {
+    inkCost: cfg.inkCost,
+    mediaCost: cfg.mediaCost,
+  }, range, MACHINES);
 
-  MACHINES.forEach(({ id }) => {
-    const intervals = computeCoIntervals(id).filter(iv => {
-      const toMs = new Date(iv.to).getTime();
-      return Number.isFinite(toMs) && toMs >= range.fromMs && toMs <= range.toMs;
-    });
-
-    if (!intervals.length) return;
-
-    intervals.forEach(iv => {
-      rows.push(csvRow([
-        'interval',
-        range.fromDate,
-        range.toDate,
-        id,
-        fmtExportDateTime(iv.from),
-        fmtExportDateTime(iv.to),
-        fmtN(iv.days, 2),
-        fmtN(iv.inkTotalTo, 3),
-        fmtN(iv.mediaTotalTo, 1),
-        fmtN(iv.inkUsed, 3),
-        fmtN(iv.mediaUsed, 1),
-        iv.inkPerM2 !== null ? fmtN(iv.inkPerM2, 6) : '',
-        hasCosts ? fmtN(iv.inkCost, 2) : '',
-        hasCosts ? fmtN(iv.mediaCost, 2) : '',
-        hasCosts ? fmtN(iv.totalCost, 2) : '',
-        iv.costPerM2 !== null ? fmtN(iv.costPerM2, 4) : '',
-      ]));
-    });
-
-    const inkUsed = intervals.reduce((sum, iv) => sum + (Number(iv.inkUsed) || 0), 0);
-    const mediaUsed = intervals.reduce((sum, iv) => sum + (Number(iv.mediaUsed) || 0), 0);
-    const inkCost = intervals.reduce((sum, iv) => sum + (Number(iv.inkCost) || 0), 0);
-    const mediaCost = intervals.reduce((sum, iv) => sum + (Number(iv.mediaCost) || 0), 0);
-    const totalCost = inkCost + mediaCost;
-    totals.push({ id, inkUsed, mediaUsed, inkCost, mediaCost, totalCost });
-
-    rows.push(csvRow([
-      'machine_total',
-      range.fromDate,
-      range.toDate,
-      id,
-      '',
-      '',
-      '',
-      '',
-      '',
-      fmtN(inkUsed, 3),
-      fmtN(mediaUsed, 1),
-      mediaUsed > 0 ? fmtN(inkUsed / mediaUsed, 6) : '',
-      hasCosts ? fmtN(inkCost, 2) : '',
-      hasCosts ? fmtN(mediaCost, 2) : '',
-      hasCosts ? fmtN(totalCost, 2) : '',
-      mediaUsed > 0 && hasCosts ? fmtN(totalCost / mediaUsed, 4) : '',
-    ]));
-  });
-
-  if (!totals.length) {
+  if (!rows.length) {
     showToast(i18n('colorado.export.monthly.none'), 'error');
     return;
   }
-
-  const totalInkUsed = totals.reduce((sum, rec) => sum + rec.inkUsed, 0);
-  const totalMediaUsed = totals.reduce((sum, rec) => sum + rec.mediaUsed, 0);
-  const totalInkCost = totals.reduce((sum, rec) => sum + rec.inkCost, 0);
-  const totalMediaCost = totals.reduce((sum, rec) => sum + rec.mediaCost, 0);
-  const totalCost = totalInkCost + totalMediaCost;
-
-  rows.push(csvRow([
-    'month_total',
-    range.fromDate,
-    range.toDate,
-    'all',
-    '',
-    '',
-    '',
-    '',
-    '',
-    fmtN(totalInkUsed, 3),
-    fmtN(totalMediaUsed, 1),
-    totalMediaUsed > 0 ? fmtN(totalInkUsed / totalMediaUsed, 6) : '',
-    hasCosts ? fmtN(totalInkCost, 2) : '',
-    hasCosts ? fmtN(totalMediaCost, 2) : '',
-    hasCosts ? fmtN(totalCost, 2) : '',
-    totalMediaUsed > 0 && hasCosts ? fmtN(totalCost / totalMediaUsed, 4) : '',
-  ]));
-
-  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_monthly_${range.fileMonth}_${fmtFileDT()}.csv`);
+  const csv = Reports.csv.rowsToCsv(rows, [
+    { key: 'row_type', header: 'row_type', value: row => row.rowType },
+    { key: 'report_month_from', header: 'report_month_from', value: row => row.reportMonthFrom },
+    { key: 'report_month_to', header: 'report_month_to', value: row => row.reportMonthTo },
+    { key: 'machine', header: 'machine', value: row => row.machine },
+    { key: 'timestamp_from', header: 'timestamp_from', value: row => fmtExportDateTime(row.timestampFrom) },
+    { key: 'timestamp_to', header: 'timestamp_to', value: row => fmtExportDateTime(row.timestampTo) },
+    { key: 'days_elapsed', header: 'days_elapsed', value: row => row.daysElapsed == null ? '' : fmtN(row.daysElapsed, 2) },
+    { key: 'ink_total_l_to', header: 'ink_total_l_to', value: row => row.inkTotalLTo == null ? '' : fmtN(row.inkTotalLTo, 3) },
+    { key: 'media_total_m2_to', header: 'media_total_m2_to', value: row => row.mediaTotalM2To == null ? '' : fmtN(row.mediaTotalM2To, 1) },
+    { key: 'ink_used_l', header: 'ink_used_l', value: row => row.inkUsedL == null ? '' : fmtN(row.inkUsedL, 3) },
+    { key: 'media_used_m2', header: 'media_used_m2', value: row => row.mediaUsedM2 == null ? '' : fmtN(row.mediaUsedM2, 1) },
+    { key: 'ink_per_m2', header: 'ink_per_m2', value: row => row.inkPerM2 !== null && row.inkPerM2 !== undefined ? fmtN(row.inkPerM2, 6) : '' },
+    { key: 'ink_cost', header: 'ink_cost', value: row => hasCosts && row.inkCost != null ? fmtN(row.inkCost, 2) : '' },
+    { key: 'media_cost', header: 'media_cost', value: row => hasCosts && row.mediaCost != null ? fmtN(row.mediaCost, 2) : '' },
+    { key: 'total_cost', header: 'total_cost', value: row => hasCosts && row.totalCost != null ? fmtN(row.totalCost, 2) : '' },
+    { key: 'cost_per_m2', header: 'cost_per_m2', value: row => row.costPerM2 !== null && row.costPerM2 !== undefined ? fmtN(row.costPerM2, 4) : '' },
+  ]);
+  dlBlob(csv, 'text/csv;charset=utf-8', `co_monthly_${range.fileMonth}_${fmtFileDT()}.csv`);
   showToast(i18n('colorado.export.monthly.done'), 'success');
 }
 
 function exportCSVCombinedLifetimeCo() {
-  const latestRows = MACHINES.map(machine => {
-    const latest = getLatestCoRecord(machine.id);
-    if (!latest) return null;
-    return {
-      rowType: 'printer',
-      printerId: machine.id,
-      printerLabel: machine.label,
-      lifetimePrintedAreaM2: null,
-      lifetimeMediaUsageM2: Number(latest.mediaTotalM2),
-      lifetimeInkUsageTotalL: Number(latest.inkTotalLiters),
-      lifetimeInkCyanL: null,
-      lifetimeInkMagentaL: null,
-      lifetimeInkYellowL: null,
-      lifetimeInkBlackL: null,
-      lifetimeInkWhiteL: null,
-      lastUpdatedTimestamp: latest.timestamp,
-    };
-  }).filter(Boolean);
-
-  if (!latestRows.length) {
+  const rows = Reports.colorado.buildColoradoLifetimeSummary(S.coRecords, MACHINES);
+  if (!rows.length) {
     showToast(i18n('colorado.export.lifetime-combined.none'), 'error');
     return;
   }
-
-  const header = [
-    'row_type',
-    'printer_id',
-    'printer_label',
-    'lifetime_printed_area_m2',
-    'lifetime_media_usage_m2',
-    'lifetime_ink_usage_total_l',
-    'lifetime_ink_cyan_l',
-    'lifetime_ink_magenta_l',
-    'lifetime_ink_yellow_l',
-    'lifetime_ink_black_l',
-    'lifetime_ink_white_l',
-    'last_updated_timestamp',
-  ];
-  const rows = [csvRow(header)];
-
-  latestRows.forEach(row => {
-    rows.push(csvRow([
-      row.rowType,
-      row.printerId,
-      row.printerLabel,
-      '',
-      fmtN(row.lifetimeMediaUsageM2, 1),
-      fmtN(row.lifetimeInkUsageTotalL, 3),
-      '',
-      '',
-      '',
-      '',
-      '',
-      fmtExportDateTime(row.lastUpdatedTimestamp),
-    ]));
-  });
-
-  const combinedInk = latestRows.reduce((sum, row) => sum + (row.lifetimeInkUsageTotalL || 0), 0);
-  const combinedMedia = latestRows.reduce((sum, row) => sum + (row.lifetimeMediaUsageM2 || 0), 0);
-  const combinedLastUpdated = latestRows.reduce((latest, row) => {
-    const ts = new Date(row.lastUpdatedTimestamp).getTime();
-    if (!Number.isFinite(ts)) return latest;
-    if (!latest || ts > latest.ms) return { ms: ts, iso: row.lastUpdatedTimestamp };
-    return latest;
-  }, null);
-
-  rows.push(csvRow([
-    'combined_total',
-    'combined',
-    'Colorado 1 + Colorado 2',
-    '',
-    fmtN(combinedMedia, 1),
-    fmtN(combinedInk, 3),
-    '',
-    '',
-    '',
-    '',
-    '',
-    fmtExportDateTime(combinedLastUpdated?.iso || ''),
-  ]));
-
-  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `co_lifetime_combined_${fmtFileDT()}.csv`);
+  const csv = Reports.csv.rowsToCsv(rows, [
+    { key: 'row_type', header: 'row_type', value: row => row.rowType },
+    { key: 'printer_id', header: 'printer_id', value: row => row.printerId },
+    { key: 'printer_label', header: 'printer_label', value: row => row.printerLabel },
+    { key: 'lifetime_printed_area_m2', header: 'lifetime_printed_area_m2', value: () => '' },
+    { key: 'lifetime_media_usage_m2', header: 'lifetime_media_usage_m2', value: row => row.lifetimeMediaUsageM2 == null ? '' : fmtN(row.lifetimeMediaUsageM2, 1) },
+    { key: 'lifetime_ink_usage_total_l', header: 'lifetime_ink_usage_total_l', value: row => row.lifetimeInkUsageTotalL == null ? '' : fmtN(row.lifetimeInkUsageTotalL, 3) },
+    { key: 'lifetime_ink_cyan_l', header: 'lifetime_ink_cyan_l', value: () => '' },
+    { key: 'lifetime_ink_magenta_l', header: 'lifetime_ink_magenta_l', value: () => '' },
+    { key: 'lifetime_ink_yellow_l', header: 'lifetime_ink_yellow_l', value: () => '' },
+    { key: 'lifetime_ink_black_l', header: 'lifetime_ink_black_l', value: () => '' },
+    { key: 'lifetime_ink_white_l', header: 'lifetime_ink_white_l', value: () => '' },
+    { key: 'last_updated_timestamp', header: 'last_updated_timestamp', value: row => fmtExportDateTime(row.lastUpdatedTimestamp) },
+  ]);
+  dlBlob(csv, 'text/csv;charset=utf-8', `co_lifetime_combined_${fmtFileDT()}.csv`);
   showToast(i18n('colorado.export.lifetime-combined.done'), 'success');
 }
 
@@ -2336,47 +2045,40 @@ function exportCSVRawCo() {
 }
 
 function exportCSVStock() {
-  const header = ['timestamp','article_number','name','movement_type','qty','unit','stock_after','note'];
-  const rows = [csvRow(header)];
-  // replay per item to get stock_after
-  const itemMap = {};
-  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
-  const byArticle = {};
-  S.movements.forEach(m => {
-    if (!byArticle[m.articleNumber]) byArticle[m.articleNumber] = [];
-    byArticle[m.articleNumber].push(m);
-  });
-  // build sorted output
-  [...S.movements].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp)).forEach(m => {
-    const it = itemMap[m.articleNumber] || {};
-    const artMoves = (byArticle[m.articleNumber] || []).sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
-    let running = 0;
-    for (const mm of artMoves) {
-      if (mm.movType === 'stocktake') running = mm.qty;
-      else if (mm.movType === 'receipt') running += mm.qty;
-      else if (mm.movType === 'issue') running = Math.max(0, running - mm.qty);
-      if (mm.id === m.id) break;
-    }
-    rows.push(csvRow([fmtExportDateTime(m.timestamp), m.articleNumber, it.name||'', m.movType, m.qty, it.unit||'ks', running, m.note||'']));
-  });
-  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_movements_${fmtFileDT()}.csv`);
+  const rows = Reports.stock.buildStockMovementLedger(S.items, S.movements);
+  const csv = Reports.csv.rowsToCsv(rows, [
+    { key: 'timestamp', header: 'timestamp', value: row => fmtExportDateTime(row.timestamp) },
+    { key: 'article_number', header: 'article_number', value: row => row.articleNumber },
+    { key: 'name', header: 'name', value: row => row.itemName || '' },
+    { key: 'movement_type', header: 'movement_type', value: row => row.movType },
+    { key: 'qty', header: 'qty', value: row => row.qty },
+    { key: 'unit', header: 'unit', value: row => row.unit || 'ks' },
+    { key: 'stock_after', header: 'stock_after', value: row => row.stockAfter },
+    { key: 'note', header: 'note', value: row => row.note || '' },
+  ]);
+  dlBlob(csv, 'text/csv;charset=utf-8', `stock_movements_${fmtFileDT()}.csv`);
 }
 
 function exportCSVStockLevels() {
   const exported_at = fmtExportDateTime(new Date().toISOString());
-  const header = ['exported_at','article_number','name','category','unit','on_hand',
-    'avg_weekly_issue','days_left','status','min_qty','lead_time_days','safety_days'];
-  const rows = [csvRow(header)];
-  S.items.filter(it => it.isActive !== false).forEach(it => {
-    const m = computeStock(it);
-    rows.push(csvRow([
-      exported_at, it.articleNumber, it.name||'', it.category||'', it.unit||'ks',
-      fmtN(m.onHand,0), m.avgWeekly > 0 ? fmtN(m.avgWeekly,3) : '0',
-      m.daysLeft >= 999 ? '' : m.daysLeft, m.status,
-      it.minQty||0, it.leadTimeDays||0, it.safetyDays||0,
-    ]));
-  });
-  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `stock_levels_${fmtFileDT()}.csv`);
+  const rows = Reports.stock.buildStockLevels(S.items, S.movements, {
+    weeksN: cfg.weeksN,
+  }, exported_at);
+  const csv = Reports.csv.rowsToCsv(rows, [
+    { key: 'exported_at', header: 'exported_at', value: row => row.exportedAt },
+    { key: 'article_number', header: 'article_number', value: row => row.articleNumber },
+    { key: 'name', header: 'name', value: row => row.name || '' },
+    { key: 'category', header: 'category', value: row => row.category || '' },
+    { key: 'unit', header: 'unit', value: row => row.unit || 'ks' },
+    { key: 'on_hand', header: 'on_hand', value: row => fmtN(row.onHand, 0) },
+    { key: 'avg_weekly_issue', header: 'avg_weekly_issue', value: row => row.avgWeeklyIssue > 0 ? fmtN(row.avgWeeklyIssue, 3) : '0' },
+    { key: 'days_left', header: 'days_left', value: row => row.daysLeft == null ? '' : row.daysLeft },
+    { key: 'status', header: 'status', value: row => row.status },
+    { key: 'min_qty', header: 'min_qty', value: row => row.minQty },
+    { key: 'lead_time_days', header: 'lead_time_days', value: row => row.leadTimeDays },
+    { key: 'safety_days', header: 'safety_days', value: row => row.safetyDays },
+  ]);
+  dlBlob(csv, 'text/csv;charset=utf-8', `stock_levels_${fmtFileDT()}.csv`);
 }
 
 async function exportCSVPrintLog() {
@@ -2532,11 +2234,7 @@ function dlBlob(content, type, filename) {
 
 // ── Date range helper ────────────────────────────────────
 function dateRangeFilter(timestamp, from, to) {
-  if (!from && !to) return true;
-  const t = new Date(timestamp);
-  if (from && t < new Date(from + 'T00:00:00')) return false;
-  if (to   && t > new Date(to   + 'T23:59:59')) return false;
-  return true;
+  return Reports.date.dateRangeFilter(timestamp, from, to);
 }
 function applyPreset(range, target) {
   const now = new Date();
@@ -2576,31 +2274,11 @@ function applyPreset(range, target) {
 // ══════════════════════════════════════════════════════════
 
 function renderStockLog() {
-  const itemMap = {};
-  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
-
-  // replay running stock per article
-  const runningMap = {};
-  const enriched = S.movements.map(m => {
-    const r = runningMap[m.articleNumber] ?? 0;
-    let after;
-    if (m.movType === 'stocktake') after = m.qty;
-    else if (m.movType === 'receipt') after = r + m.qty;
-    else after = Math.max(0, r - m.qty);
-    runningMap[m.articleNumber] = after;
-    return { ...m, stockAfter: after, itemName: itemMap[m.articleNumber]?.name || m.articleNumber, unit: itemMap[m.articleNumber]?.unit || 'ks' };
-  });
-
-  // filter
-  const q = S.logSearch.toLowerCase();
-  const filtered = enriched.filter(m => {
-    const matchType = S.logFilter === 'all' || m.movType === S.logFilter;
-    const matchQ = !q
-      || m.articleNumber.toLowerCase().includes(q)
-      || m.itemName.toLowerCase().includes(q)
-      || (m.note || '').toLowerCase().includes(q);
-    const matchDate = dateRangeFilter(m.timestamp, S.logDateFrom, S.logDateTo);
-    return matchType && matchQ && matchDate;
+  const filtered = Reports.stock.buildStockLogRows(S.items, S.movements, {
+    movType: S.logFilter,
+    search: S.logSearch,
+    from: S.logDateFrom,
+    to: S.logDateTo,
   });
 
   const wrap = el('stock-log-wrap');
@@ -2646,25 +2324,19 @@ function renderStockLog() {
 }
 
 function exportCSVStockLog() {
-  const itemMap = {};
-  S.items.forEach(it => { itemMap[it.articleNumber] = it; });
-  const runningMap = {};
-  const header = ['timestamp','article_number','name','category','unit','movement_type','qty','stock_after','note'];
-  const rows = [csvRow(header)];
-  S.movements.forEach(m => {
-    const it = itemMap[m.articleNumber] || {};
-    const r = runningMap[m.articleNumber] ?? 0;
-    let after;
-    if (m.movType === 'stocktake') after = m.qty;
-    else if (m.movType === 'receipt') after = r + m.qty;
-    else after = Math.max(0, r - m.qty);
-    runningMap[m.articleNumber] = after;
-    rows.push(csvRow([
-      fmtExportDateTime(m.timestamp), m.articleNumber, it.name||'', it.category||'', it.unit||'ks',
-      m.movType, m.qty, after, m.note||''
-    ]));
-  });
-  dlBlob(rows.join('\r\n'), 'text/csv;charset=utf-8', `pohyby_skladu_${fmtFileDT()}.csv`);
+  const rows = Reports.stock.buildStockMovementLedger(S.items, S.movements);
+  const csv = Reports.csv.rowsToCsv(rows, [
+    { key: 'timestamp', header: 'timestamp', value: row => fmtExportDateTime(row.timestamp) },
+    { key: 'article_number', header: 'article_number', value: row => row.articleNumber },
+    { key: 'name', header: 'name', value: row => row.itemName || '' },
+    { key: 'category', header: 'category', value: row => row.category || '' },
+    { key: 'unit', header: 'unit', value: row => row.unit || 'ks' },
+    { key: 'movement_type', header: 'movement_type', value: row => row.movType },
+    { key: 'qty', header: 'qty', value: row => row.qty },
+    { key: 'stock_after', header: 'stock_after', value: row => row.stockAfter },
+    { key: 'note', header: 'note', value: row => row.note || '' },
+  ]);
+  dlBlob(csv, 'text/csv;charset=utf-8', `pohyby_skladu_${fmtFileDT()}.csv`);
 }
 
 // ══════════════════════════════════════════════════════════

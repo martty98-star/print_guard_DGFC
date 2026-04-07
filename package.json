@@ -2,6 +2,9 @@
   "name": "print-guard-dgfc",
   "private": true,
   "version": "2.0.0",
+  "scripts": {
+    "export:colorado-monthly": "node scripts/export-colorado-monthly.js"
+  },
   "dependencies": {
     "pg": "^8.19.0"
   }
