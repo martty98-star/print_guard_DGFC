@@ -311,6 +311,20 @@ function metersExpr(metersColumn, rawMmColumn) {
   return "null";
 }
 
+function buildDurationValueExpr(durationExpr, activeTimeExpr) {
+  const candidates = [];
+
+  if (activeTimeExpr && activeTimeExpr !== "null") {
+    candidates.push(`case when ${activeTimeExpr} >= 0 and ${activeTimeExpr} <= 86400 then ${activeTimeExpr} end`);
+  }
+  if (durationExpr && durationExpr !== "null") {
+    candidates.push(`case when ${durationExpr} >= 0 and ${durationExpr} <= 86400 then ${durationExpr} end`);
+  }
+
+  if (!candidates.length) return "null";
+  return `coalesce(${candidates.join(", ")})`;
+}
+
 function buildLogicalJobExpr(map, readyExpr) {
   const candidates = [];
   if (map.jobId) candidates.push(`${map.jobId}::text`);
@@ -354,6 +368,7 @@ export async function handler(event) {
         printedAreaM2: pick(cols, ["printed_area_m2", "printedaream2", "printed_area", "printedAreaM2", "area_m2"], "printedAreaM2"),
         mediaLengthM:  pick(cols, ["media_length_m", "medialengthm", "media_length", "mediaLengthM", "length_m"], "mediaLengthM"),
         durationSec:   pick(cols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"], "durationSec"),
+        activeTimeSec: pickOptional(cols, ["active_time_sec", "activetime_sec", "activeTimeSec", "active_seconds"]),
         inkTotalL:     pickOptional(cols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
         inkTotalMl:    pickOptional(cols, ["ink_total_ml", "ink_total", "inkTotalMl", "total_ink_ml"]),
         inkCyanL:      pickOptional(cols, ["ink_cyan_l", "inkCyanL"]),
@@ -388,6 +403,7 @@ export async function handler(event) {
             mediaLengthM:    pickOptional(accountingCols, ["media_length_m", "medialengthm", "media_length_metric", "mediaLengthM"]),
             mediaLengthRaw:  pickOptional(accountingCols, ["media_length_used", "medialengthused"]),
             durationSec:     pickOptional(accountingCols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"]),
+            activeTimeSec:   pickOptional(accountingCols, ["active_time_sec", "activetime_sec", "activeTimeSec", "active_seconds"]),
             importedAt:      pickOptional(accountingCols, ["imported_at", "importedat", "importedAt"]),
             inkTotalL:       pickOptional(accountingCols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
             inkTotalMl:      pickOptional(accountingCols, ["ink_total_ml", "ink_total", "inkTotalMl", "total_ink_ml"]),
@@ -445,7 +461,14 @@ export async function handler(event) {
       const accountingLengthExpr = accountingMap
         ? metersExpr(accountingMap.mediaLengthM, accountingMap.mediaLengthRaw)
         : "null";
-      const accountingDurationExpr = accountingMap?.durationSec ? `${accountingMap.durationSec}` : "null";
+      const viewDurationExpr = buildDurationValueExpr(
+        map.durationSec ? `${map.durationSec}` : "null",
+        map.activeTimeSec ? `${map.activeTimeSec}` : "null"
+      );
+      const accountingDurationExpr = buildDurationValueExpr(
+        accountingMap?.durationSec ? `${accountingMap.durationSec}` : "null",
+        accountingMap?.activeTimeSec ? `${accountingMap.activeTimeSec}` : "null"
+      );
 
       const mergedSql = `
         with merged_rows as (
@@ -455,7 +478,7 @@ export async function handler(event) {
             ${map.result} as result,
             ${map.printedAreaM2}::float8 as printed_area_m2,
             ${map.mediaLengthM}::float8 as media_length_m,
-            ${map.durationSec}::float8 as duration_sec,
+            ${viewDurationExpr}::float8 as duration_sec,
             ${viewInk.inkTotalExpr === "null" ? "null" : `${viewInk.inkTotalExpr}`}::float8 as ink_total_l,
             ${(viewInk.inkCyanExpr || "null")}::float8 as ink_cyan_l,
             ${(viewInk.inkMagentaExpr || "null")}::float8 as ink_magenta_l,

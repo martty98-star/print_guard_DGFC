@@ -329,18 +329,21 @@ function New-AclJobRecord {
         rawRow          = $RowData
     }
 
-    if ($obj.startAt -and $obj.readyAt) {
+    if ($null -ne $activeTimeSec -and $activeTimeSec -ge 0) {
+        $obj.durationSec = $activeTimeSec
+    }
+    elseif ($obj.startAt -and $obj.readyAt) {
         try {
             $ts1 = [datetime]::Parse($obj.startAt)
             $ts2 = [datetime]::Parse($obj.readyAt)
-            $obj.durationSec = [int][math]::Round(($ts2 - $ts1).TotalSeconds)
+            $derivedDuration = [int][math]::Round(($ts2 - $ts1).TotalSeconds)
+            if ($derivedDuration -ge 0 -and $derivedDuration -le 86400) {
+                $obj.durationSec = $derivedDuration
+            }
         }
         catch {
             $obj.durationSec = $activeTimeSec
         }
-    }
-    elseif ($null -ne $activeTimeSec) {
-        $obj.durationSec = $activeTimeSec
     }
 
     $obj.dedupeKey = Get-DedupeKey -Row $obj
