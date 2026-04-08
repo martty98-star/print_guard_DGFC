@@ -6,13 +6,17 @@ echo START Colorado pipeline
 echo =====================================
 
 set ROOT=C:\PrintGuard
-set SCRIPT_DIR=%ROOT%\ColoradoAccounting
+set DATA_ROOT=%ROOT%\ColoradoAccounting
+set SCRIPT_DIR=%DATA_ROOT%
+if not exist "%SCRIPT_DIR%\ColoradoSync_server.ps1" set SCRIPT_DIR=%~dp0
+set COLORADO_ACCOUNTING_ROOT=%DATA_ROOT%
 set NODE_SCRIPT=%SCRIPT_DIR%\colorado-upsert\upsert-colorado-json.js
 set LOG_DIR=%ROOT%\logs
 set LOGFILE=%LOG_DIR%\run_latest.log
 
 echo ROOT=%ROOT%
 echo SCRIPT_DIR=%SCRIPT_DIR%
+echo DATA_ROOT=%DATA_ROOT%
 echo NODE_SCRIPT=%NODE_SCRIPT%
 echo LOG_DIR=%LOG_DIR%
 echo LOGFILE=%LOGFILE%
@@ -62,7 +66,7 @@ echo.
 echo ALL STEPS OK
 echo ===================== END (OK) ===================== >> "%LOGFILE%"
 echo Log: %LOGFILE%
-pause
+if /I "%COLORADO_PIPELINE_PAUSE%"=="1" pause
 exit /b 0
 
 :fail
@@ -70,5 +74,5 @@ echo ===================== END (FAIL) ===================== >> "%LOGFILE%"
 echo.
 echo PIPELINE FAILED
 echo Mrkni do logu: %LOGFILE%
-pause
+if /I "%COLORADO_PIPELINE_PAUSE%"=="1" pause
 exit /b 1

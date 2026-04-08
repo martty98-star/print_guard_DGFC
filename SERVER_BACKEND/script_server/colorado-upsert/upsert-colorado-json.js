@@ -2,18 +2,67 @@
 const path = require("path");
 const { Client } = require("pg");
 
-const DATABASE_URL = process.env.NEON_DATABASE_URL || null;
+function loadEnvFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return;
+
+  for (const rawLine of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match) continue;
+
+    const [, key, rawValue] = match;
+    if (process.env[key]) continue;
+
+    let value = rawValue.trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    process.env[key] = value;
+  }
+}
+
+function preloadEnv() {
+  const candidates = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), ".env.local"),
+    path.resolve("C:/PrintGuard/.env"),
+    path.resolve("C:/PrintGuard/.env.local"),
+    path.resolve("C:/PrintGuard/print_guard_DGFC/.env"),
+    path.resolve("C:/PrintGuard/print_guard_DGFC/.env.local"),
+    path.resolve(__dirname, ".env"),
+    path.resolve(__dirname, ".env.local"),
+  ];
+
+  for (const candidate of candidates) loadEnvFile(candidate);
+}
+
+preloadEnv();
+
+const DATABASE_URL =
+  process.env.NEON_DATABASE_URL ||
+  process.env.DATABASE_URL ||
+  process.env.NETLIFY_DATABASE_URL ||
+  null;
 
 if (!DATABASE_URL) {
-  console.error("Missing NEON_DATABASE_URL environment variable.");
+  console.error(
+    "Missing database connection string. Tried NEON_DATABASE_URL, DATABASE_URL, NETLIFY_DATABASE_URL."
+  );
   process.exit(1);
 }
 
-// Script leží v:
-// C:\PrintGuard\ColoradoAccounting\colorado-upsert\upsert-colorado-json.js
-// => ROOT bude:
-// C:\PrintGuard\ColoradoAccounting
-const ROOT = path.resolve(__dirname, "..");
+// Accounting data live outside the repo in C:\PrintGuard\ColoradoAccounting.
+// The script itself may run either from the repo checkout or from a deployed copy,
+// so the data root must not depend on __dirname.
+const ROOT = process.env.COLORADO_ACCOUNTING_ROOT
+  ? path.resolve(process.env.COLORADO_ACCOUNTING_ROOT)
+  : path.resolve("C:/PrintGuard/ColoradoAccounting");
 
 const PRINTERS = ["Colorado-91", "Colorado-92"];
 
@@ -144,7 +193,7 @@ function mapAclRow(row) {
     serial_prefix: row.serialPrefix || null,
     source_file: row.sourceFile || null,
     source_date: toNullableDate(row.sourceDate),
-    row_type: row.rowType || "acl",
+    row_type: row.rowType || "acl_file",
     content_hash: row.contentHash || null,
     file_size_bytes: toNullableInt(row.fileSizeBytes),
     line_count: toNullableInt(row.lineCount),
@@ -496,6 +545,7 @@ async function main() {
   let skippedFiles = 0;
   let totalAclFiles = 0;
   let totalAclRows = 0;
+  let totalAclPrintRows = 0;
   let skippedAclFiles = 0;
 
   for (const file of jsonFiles) {
@@ -550,8 +600,14 @@ async function main() {
         continue;
       }
 
-      await upsertAclRow(client, row);
-      totalAclRows += 1;
+      if (row.rowType === "print") {
+        await upsertRow(client, row);
+        totalAclPrintRows += 1;
+      } else {
+        await upsertAclRow(client, row);
+        totalAclRows += 1;
+      }
+
       fileRowsProcessed += 1;
     }
 
@@ -562,7 +618,7 @@ async function main() {
     `Finished. Files scanned: ${totalFiles}, files skipped: ${skippedFiles}, rows processed: ${totalRows}`
   );
   log(
-    `Finished ACL. Files scanned: ${totalAclFiles}, files skipped: ${skippedAclFiles}, rows processed: ${totalAclRows}`
+    `Finished ACL. Files scanned: ${totalAclFiles}, files skipped: ${skippedAclFiles}, metadata rows processed: ${totalAclRows}, print rows processed: ${totalAclPrintRows}`
   );
 
   await client.end();

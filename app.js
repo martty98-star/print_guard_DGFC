@@ -114,6 +114,7 @@ const S = {
   printLogOffset:   0,
   printLogHasMore:  true,
   printLogSummary:  null,
+  printLogTodayQueue: null,
   printLogLoading:  false,
   printLogLoaded:   false,
   printLogViewMode: 'raw',
@@ -1291,6 +1292,23 @@ async function fetchPrintLogRows(overrides = {}) {
   return j;
 }
 
+function getPrintLogTodayQueueParams() {
+  const params = new URLSearchParams();
+  const today = ds();
+  params.set('from', today);
+  params.set('to', today);
+  if (S.printLogPrinter !== 'all') params.set('printer', S.printLogPrinter);
+  if (S.printLogResult !== 'all')  params.set('result', S.printLogResult);
+  return params;
+}
+
+async function fetchPrintLogTodayQueue() {
+  const res = await fetch('/.netlify/functions/print-log-arrivals?' + getPrintLogTodayQueueParams().toString(), { cache: 'no-store' });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.ok) throw new Error(j.error || 'Print log arrivals failed');
+  return j;
+}
+
 function normalizePrintLogRow(row) {
   const sourceFile = row?.sourceFile ?? row?.source_file ?? '';
   return {
@@ -1627,8 +1645,19 @@ async function loadPrintLog(force = false) {
   }
 
   try {
-    const [summary, rows] = await Promise.all([fetchPrintLogSummary(), fetchPrintLogRows()]);
+    const [summaryRes, rowsRes, todayQueueRes] = await Promise.allSettled([
+      fetchPrintLogSummary(),
+      fetchPrintLogRows(),
+      fetchPrintLogTodayQueue(),
+    ]);
+
+    if (summaryRes.status !== 'fulfilled') throw summaryRes.reason;
+    if (rowsRes.status !== 'fulfilled') throw rowsRes.reason;
+
+    const summary = summaryRes.value;
+    const rows = rowsRes.value;
     S.printLogSummary = summary.summary || null;
+    S.printLogTodayQueue = todayQueueRes.status === 'fulfilled' ? (todayQueueRes.value || null) : null;
     const newRows = Array.isArray(rows.rows) ? rows.rows.map(normalizePrintLogRow) : [];
     S.printLogRows = [...S.printLogRows, ...newRows];
     S.printLogOffset += newRows.length;
@@ -1654,6 +1683,7 @@ async function loadPrintLog(force = false) {
 function renderPrintLog() {
   renderPrintLogSummary();
   renderPrintLogComparison();
+  renderPrintLogTodayQueue();
   renderPrintLogRows();
 }
 
@@ -1706,6 +1736,60 @@ function renderPrintLogComparison() {
       ${directInk !== null && breakdown ? `<span class="metric-desc">${esc(breakdown)}</span>` : ''}
     </div>`;
   }).join('');
+}
+
+function getPrintLogTodayQueueBasisLabel(basis) {
+  if (basis === 'reception_at_fallback_ready_at') return 'reception_at, fallback ready_at';
+  if (basis === 'ready_at') return 'ready_at';
+  return 'arrival';
+}
+
+function renderPrintLogTodayQueue() {
+  const grid = el('pl-today-queue-grid');
+  const note = el('pl-today-queue-note');
+  const badge = el('pl-today-queue-badge');
+  if (!grid) return;
+
+  const today = ds();
+  if (badge) badge.textContent = `příjem ${today}`;
+  const queue = S.printLogTodayQueue;
+  const selectedPrinters = S.printLogPrinter === 'all'
+    ? ['Colorado-91', 'Colorado-92']
+    : [S.printLogPrinter];
+
+  if (!queue) {
+    grid.innerHTML = `<div class="metric-block"><span class="metric-big">—</span><span class="metric-unit">Dnešní fronta</span><span class="metric-desc">Data se nepodařilo načíst</span></div>`;
+    if (note) note.textContent = `Datum ${today}`;
+    return;
+  }
+
+  const days = Array.isArray(queue.days) ? queue.days : [];
+  const byPrinter = new Map(days.map(row => [row.printerName, row]));
+  const totals = queue.totals || {};
+  const totalJobs = Number(totals.totalJobs || 0);
+  const uniqueJobs = Number(totals.uniqueJobs || 0);
+
+  const cards = [
+    `<div class="metric-block">
+      <span class="metric-big">${fmtInt(totalJobs)}</span>
+      <span class="metric-unit">Celkem dnes</span>
+      <span class="metric-desc">Unikátní úlohy ${fmtInt(uniqueJobs)} · Hotovo ${fmtInt(totals.doneJobs || 0)} · Abrt ${fmtInt(totals.abortedJobs || 0)} · Deleted ${fmtInt(totals.deletedJobs || 0)}</span>
+    </div>`
+  ];
+
+  selectedPrinters.forEach(printerName => {
+    const row = byPrinter.get(printerName);
+    cards.push(`<div class="metric-block">
+      <span class="metric-big">${fmtInt(row?.totalJobs || 0)}</span>
+      <span class="metric-unit">${esc(mapPrinterName(printerName))}</span>
+      <span class="metric-desc">Hotovo ${fmtInt(row?.doneJobs || 0)} · Abrt ${fmtInt(row?.abortedJobs || 0)} · Deleted ${fmtInt(row?.deletedJobs || 0)}</span>
+    </div>`);
+  });
+
+  grid.innerHTML = cards.join('');
+  if (note) {
+    note.textContent = `Datum ${today} · Basis ${getPrintLogTodayQueueBasisLabel(queue.basis)}${totalJobs === 0 ? ' · V DB dnes nejsou žádné přijaté tiskové úlohy' : ''}`;
+  }
 }
 
 function renderPrintLogRows() {

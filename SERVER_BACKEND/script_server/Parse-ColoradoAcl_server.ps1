@@ -43,6 +43,78 @@ function Ensure-Folder {
     }
 }
 
+function To-NullableInt {
+    param(
+        $Value
+    )
+
+    if ($null -eq $Value -or $Value -eq '') {
+        return $null
+    }
+
+    $n = 0
+    if ([int]::TryParse([string]$Value, [ref]$n)) {
+        return $n
+    }
+
+    return $null
+}
+
+function To-NullableDurationSeconds {
+    param(
+        $Value
+    )
+
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+        return $null
+    }
+
+    $text = [string]$Value
+    $direct = To-NullableInt -Value $text
+    if ($null -ne $direct) {
+        return $direct
+    }
+
+    try {
+        $span = [timespan]::Parse($text)
+        return [int][math]::Round($span.TotalSeconds)
+    }
+    catch {
+        return $null
+    }
+}
+
+function To-BoolFromResult {
+    param(
+        [string]$Result,
+        [string]$Expected
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Result)) {
+        return $false
+    }
+
+    return ($Result.Trim().ToLowerInvariant() -eq $Expected.Trim().ToLowerInvariant())
+}
+
+function Build-DateTime {
+    param(
+        [string]$DatePart,
+        [string]$TimePart
+    )
+
+    if ([string]::IsNullOrWhiteSpace($DatePart) -or [string]::IsNullOrWhiteSpace($TimePart)) {
+        return $null
+    }
+
+    try {
+        return ([datetime]::Parse("$DatePart $TimePart")).ToString("yyyy-MM-ddTHH:mm:ss")
+    }
+    catch {
+        return $null
+    }
+}
+
 function Get-SourceDateFromFileName {
     param(
         [string]$FileName
@@ -76,32 +148,7 @@ function Get-NormalizedFieldName {
     return $normalized
 }
 
-function Get-ParsedFields {
-    param(
-        [string[]]$Lines
-    )
-
-    $fields = [ordered]@{}
-
-    foreach ($line in $Lines) {
-        if ([string]::IsNullOrWhiteSpace($line)) {
-            continue
-        }
-
-        if ($line -match '^\s*([^:=;]+?)\s*[:=;]\s*(.+?)\s*$') {
-            $key = Get-NormalizedFieldName -Name $matches[1]
-            $value = $matches[2].Trim()
-
-            if ($key -and -not $fields.Contains($key)) {
-                $fields[$key] = $value
-            }
-        }
-    }
-
-    return $fields
-}
-
-function Get-SemicolonSchemaInfo {
+function Get-AclSchemaInfo {
     param(
         [string[]]$Lines
     )
@@ -111,8 +158,12 @@ function Get-SemicolonSchemaInfo {
         return $null
     }
 
-    $headerLine = $nonEmptyLines[0].Trim()
-    if ($headerLine -notmatch ';') {
+    $headerLine = $nonEmptyLines | Where-Object { $_ -match '^\s*4302(?:;|$)' } | Select-Object -First 1
+    if (-not $headerLine) {
+        $headerLine = $nonEmptyLines | Where-Object { $_ -match ';' } | Select-Object -First 1
+    }
+
+    if (-not $headerLine) {
         return $null
     }
 
@@ -121,28 +172,22 @@ function Get-SemicolonSchemaInfo {
         return $null
     }
 
-    $formatCode = $null
-    $columns = $tokens
-
-    if ($tokens[0] -match '^\d+$') {
-        $formatCode = $tokens[0]
-        $columns = if ($tokens.Count -gt 1) { $tokens[1..($tokens.Count - 1)] } else { @() }
-    }
-
+    $formatCode = $tokens[0]
+    $columns = if ($tokens.Count -gt 1) { $tokens[1..($tokens.Count - 1)] } else { @() }
     $normalizedColumns = @(
         $columns |
-        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
         ForEach-Object { Get-NormalizedFieldName -Name $_ }
-    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+    $dataLines = @($nonEmptyLines | Where-Object { $_ -match '^\s*4303(?:;|$)' })
 
     return [ordered]@{
-        format            = "semicolon-schema"
+        format            = "acl-4302-4303"
         formatCode        = $formatCode
         headerColumns     = $columns
         normalizedColumns = $normalizedColumns
         columnCount       = $columns.Count
-        dataRowCount      = [Math]::Max(0, $nonEmptyLines.Count - 1)
-        hasDataRows       = ($nonEmptyLines.Count -gt 1)
+        dataRowCount      = $dataLines.Count
+        hasDataRows       = ($dataLines.Count -gt 0)
     }
 }
 
@@ -151,13 +196,217 @@ function Get-DedupeKey {
         $Row
     )
 
-    $parts = @(
+    if ($Row.rowType -eq "acl_file") {
+        return (@(
+            $Row.printerName,
+            $Row.sourceFile,
+            $Row.rowType
+        ) -join "|")
+    }
+
+    $jobIdentity = if ($null -ne $Row.jobId -and [string]$Row.jobId -ne '') {
+        $Row.jobId
+    }
+    elseif ($Row.documentId) {
+        $Row.documentId
+    }
+    else {
+        "no-job-id"
+    }
+
+    $readyIdentity = if ($Row.readyAt) { $Row.readyAt } else { "no-ready-at" }
+
+    return (@(
         $Row.printerName,
         $Row.sourceFile,
-        $Row.rowType
+        $jobIdentity,
+        $Row.result,
+        $readyIdentity
+    ) -join "|")
+}
+
+function New-AclFileRecord {
+    param(
+        [string]$ImportedAt,
+        [string]$PrinterName,
+        [string]$PrinterIp,
+        [string]$SerialPrefix,
+        $File,
+        [string]$SourceDate,
+        [string[]]$Lines,
+        [string]$RawText,
+        [string]$ContentHash,
+        $SchemaInfo
     )
 
-    return ($parts -join "|")
+    $parsedFields = [ordered]@{}
+    if ($SchemaInfo) {
+        $parsedFields["detected_format"] = $SchemaInfo.format
+        $parsedFields["format_code"] = $SchemaInfo.formatCode
+        $parsedFields["header_columns"] = $SchemaInfo.headerColumns
+        $parsedFields["normalized_columns"] = $SchemaInfo.normalizedColumns
+        $parsedFields["column_count"] = $SchemaInfo.columnCount
+        $parsedFields["data_row_count"] = $SchemaInfo.dataRowCount
+        $parsedFields["has_data_rows"] = $SchemaInfo.hasDataRows
+    }
+
+    $obj = [ordered]@{
+        importedAt        = $ImportedAt
+        printerName       = $PrinterName
+        printerIp         = $PrinterIp
+        serialPrefix      = $SerialPrefix
+        sourceFile        = $File.Name
+        sourceDate        = $SourceDate
+        rowType           = "acl_file"
+        fileSizeBytes     = [int64]$File.Length
+        lineCount         = $Lines.Count
+        nonEmptyLineCount = @($Lines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count
+        detectedFormat    = if ($SchemaInfo) { $SchemaInfo.format } else { "raw-text" }
+        contentHash       = $ContentHash
+        parsedFields      = [pscustomobject]$parsedFields
+        rawLines          = $Lines
+        rawText           = $RawText
+    }
+
+    $obj.dedupeKey = Get-DedupeKey -Row $obj
+    return [pscustomobject]$obj
+}
+
+function New-AclJobRecord {
+    param(
+        [string]$ImportedAt,
+        [string]$PrinterName,
+        [string]$PrinterIp,
+        [string]$SerialPrefix,
+        [string]$SourceFile,
+        [string]$SourceDate,
+        $RowData
+    )
+
+    $readyAt = Build-DateTime -DatePart $RowData.readydate -TimePart $RowData.readytime
+    $startAt = Build-DateTime -DatePart $RowData.startdate -TimePart $RowData.starttime
+    $receptionAt = Build-DateTime -DatePart $RowData.receptiondate -TimePart $RowData.receptiontime
+    $activeTimeSec = To-NullableDurationSeconds -Value $RowData.activetime
+    $idleTimeSec = To-NullableDurationSeconds -Value $RowData.idletime
+
+    $obj = [ordered]@{
+        importedAt      = $ImportedAt
+        printerName     = $PrinterName
+        printerIp       = $PrinterIp
+        serialPrefix    = $SerialPrefix
+        sourceFile      = $SourceFile
+        sourceDate      = $SourceDate
+        rowType         = "print"
+        documentId      = $RowData.documentid
+        jobId           = To-NullableInt -Value $RowData.jobid
+        jobType         = $RowData.jobtype
+        jobName         = $RowData.jobname
+        printMode       = $RowData.printmode
+        startAt         = $startAt
+        readyAt         = $readyAt
+        receptionAt     = $receptionAt
+        activeTimeSec   = $activeTimeSec
+        idleTimeSec     = $idleTimeSec
+        durationSec     = $null
+        result          = $RowData.result
+        isPrinted       = To-BoolFromResult -Result $RowData.result -Expected "Done"
+        isDeleted       = To-BoolFromResult -Result $RowData.result -Expected "Deleted"
+        isAborted       = (To-BoolFromResult -Result $RowData.result -Expected "Abrt") -or (To-BoolFromResult -Result $RowData.result -Expected "Aborted")
+        finishedSets    = To-NullableInt -Value $RowData.noffinishedsets
+        copiesRequested = To-NullableInt -Value $RowData.copiesrequested
+        mediaTypeId     = $RowData.mediatypeid
+        mediaType       = $RowData.mediatype
+        mediaWidth      = To-NullableInt -Value $RowData.mediawidth
+        mediaLengthUsed = To-NullableInt -Value $RowData.medialengthused
+        printedArea     = To-NullableInt -Value $RowData.printedarea
+        inkCyan         = To-NullableInt -Value $RowData.inkcolorcyan
+        inkMagenta      = To-NullableInt -Value $RowData.inkcolormagenta
+        inkYellow       = To-NullableInt -Value $RowData.inkcoloryellow
+        inkBlack        = To-NullableInt -Value $RowData.inkcolorblack
+        inkWhite        = To-NullableInt -Value $RowData.inkcolorwhite
+        numberOfLayers  = To-NullableInt -Value $RowData.numberoflayers
+        layerStructure  = $RowData.layerstructure
+        rawRow          = $RowData
+    }
+
+    if ($obj.startAt -and $obj.readyAt) {
+        try {
+            $ts1 = [datetime]::Parse($obj.startAt)
+            $ts2 = [datetime]::Parse($obj.readyAt)
+            $obj.durationSec = [int][math]::Round(($ts2 - $ts1).TotalSeconds)
+        }
+        catch {
+            $obj.durationSec = $activeTimeSec
+        }
+    }
+    elseif ($null -ne $activeTimeSec) {
+        $obj.durationSec = $activeTimeSec
+    }
+
+    $obj.dedupeKey = Get-DedupeKey -Row $obj
+    return [pscustomobject]$obj
+}
+
+function Get-AclJobRows {
+    param(
+        [string[]]$Lines,
+        [string]$ImportedAt,
+        [string]$PrinterName,
+        [string]$PrinterIp,
+        [string]$SerialPrefix,
+        [string]$SourceFile,
+        [string]$SourceDate
+    )
+
+    $headerLine = $Lines | Where-Object { $_ -match '^\s*4302(?:;|$)' } | Select-Object -First 1
+    if (-not $headerLine) {
+        return @()
+    }
+
+    $headerTokens = @($headerLine.Split(';') | ForEach-Object { $_.Trim() })
+    if ($headerTokens.Count -lt 2) {
+        return @()
+    }
+
+    $columnNames = if ($headerTokens.Count -gt 1) { $headerTokens[1..($headerTokens.Count - 1)] } else { @() }
+    $normalizedColumns = @($columnNames | ForEach-Object { Get-NormalizedFieldName -Name $_ })
+    $dataLines = @($Lines | Where-Object { $_ -match '^\s*4303(?:;|$)' })
+    $rows = @()
+
+    foreach ($line in $dataLines) {
+        $tokens = @($line.Split(';'))
+        if ($tokens.Count -lt 2) {
+            continue
+        }
+
+        $valueTokens = if ($tokens.Count -gt 1) { $tokens[1..($tokens.Count - 1)] } else { @() }
+        $rowData = [ordered]@{}
+
+        for ($i = 0; $i -lt $normalizedColumns.Count; $i++) {
+            $key = $normalizedColumns[$i]
+            if (-not $key) {
+                continue
+            }
+
+            $value = if ($i -lt $valueTokens.Count) { $valueTokens[$i].Trim() } else { $null }
+            $rowData[$key] = $value
+        }
+
+        if ($valueTokens.Count -gt $normalizedColumns.Count) {
+            $rowData["_extra_tokens"] = @($valueTokens[$normalizedColumns.Count..($valueTokens.Count - 1)] | ForEach-Object { $_.Trim() })
+        }
+
+        $rows += New-AclJobRecord `
+            -ImportedAt $ImportedAt `
+            -PrinterName $PrinterName `
+            -PrinterIp $PrinterIp `
+            -SerialPrefix $SerialPrefix `
+            -SourceFile $SourceFile `
+            -SourceDate $SourceDate `
+            -RowData ([pscustomobject]$rowData)
+    }
+
+    return $rows
 }
 
 Ensure-Folder -Path $TargetRoot
@@ -190,47 +439,41 @@ foreach ($printer in $Printers) {
 
             $raw = $raw -replace "^\uFEFF", ""
             $lines = [regex]::Split($raw, "\r?\n")
-            $parsedFields = Get-ParsedFields -Lines $lines
-            $schemaInfo = Get-SemicolonSchemaInfo -Lines $lines
             $sourceDate = Get-SourceDateFromFileName -FileName $file.Name
             $contentHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+            $schemaInfo = Get-AclSchemaInfo -Lines $lines
+            $importedAt = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
 
-            if ($schemaInfo) {
-                $parsedFields["detected_format"] = $schemaInfo.format
-                if ($schemaInfo.formatCode) {
-                    $parsedFields["format_code"] = $schemaInfo.formatCode
-                }
-                $parsedFields["header_columns"] = $schemaInfo.headerColumns
-                $parsedFields["normalized_columns"] = $schemaInfo.normalizedColumns
-                $parsedFields["column_count"] = $schemaInfo.columnCount
-                $parsedFields["data_row_count"] = $schemaInfo.dataRowCount
-                $parsedFields["has_data_rows"] = $schemaInfo.hasDataRows
+            $normalized = @()
+            $normalized += New-AclFileRecord `
+                -ImportedAt $importedAt `
+                -PrinterName $printerName `
+                -PrinterIp $printerIp `
+                -SerialPrefix $serialPrefix `
+                -File $file `
+                -SourceDate $sourceDate `
+                -Lines $lines `
+                -RawText $raw `
+                -ContentHash $contentHash `
+                -SchemaInfo $schemaInfo
+
+            $jobRows = Get-AclJobRows `
+                -Lines $lines `
+                -ImportedAt $importedAt `
+                -PrinterName $printerName `
+                -PrinterIp $printerIp `
+                -SerialPrefix $serialPrefix `
+                -SourceFile $file.Name `
+                -SourceDate $sourceDate
+
+            if ($jobRows.Count -gt 0) {
+                $normalized += $jobRows
             }
-
-            $obj = [ordered]@{
-                importedAt        = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
-                printerName       = $printerName
-                printerIp         = $printerIp
-                serialPrefix      = $serialPrefix
-                sourceFile        = $file.Name
-                sourceDate        = $sourceDate
-                rowType           = "acl"
-                fileSizeBytes     = [int64]$file.Length
-                lineCount         = $lines.Count
-                nonEmptyLineCount = @($lines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count
-                detectedFormat    = if ($schemaInfo) { $schemaInfo.format } else { "raw-text" }
-                contentHash       = $contentHash
-                parsedFields      = [pscustomobject]$parsedFields
-                rawLines          = $lines
-                rawText           = $raw
-            }
-
-            $obj.dedupeKey = Get-DedupeKey -Row $obj
 
             $jsonPath = Join-Path $jsonFolder ($file.BaseName + ".json")
-            $obj | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonPath -Encoding UTF8
+            $normalized | ConvertTo-Json -Depth 10 | Set-Content -Path $jsonPath -Encoding UTF8
 
-            Write-Log "[$printerName] OK ACL: $($file.Name) -> $jsonPath"
+            Write-Log "[$printerName] OK ACL: $($file.Name) -> $jsonPath (jobs: $($jobRows.Count))"
         }
         catch {
             Write-Log "[$printerName] CHYBA pri parsovani ACL $($file.Name): $($_.Exception.Message)"

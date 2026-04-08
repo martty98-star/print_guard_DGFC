@@ -81,6 +81,28 @@ function buildFilters(query, map, values, arrivalExpr) {
   return where.length ? `where ${where.join(" and ")}` : "";
 }
 
+function buildLogicalJobExpr(map, arrivalExpr) {
+  const candidates = [];
+
+  if (map.jobId) candidates.push(`${map.jobId}::text`);
+  if (map.documentId) candidates.push(`${map.documentId}::text`);
+  if (map.jobName) candidates.push(`${map.jobName}::text`);
+
+  candidates.push(`coalesce(${arrivalExpr}::text, '')`);
+  return `coalesce(${candidates.join(", ")})`;
+}
+
+function buildSourcePriorityExpr(map) {
+  if (!map.sourceFile) return "0";
+  return `
+    case
+      when lower(${map.sourceFile}) like '%.csv' then 2
+      when lower(${map.sourceFile}) like '%.acl' then 1
+      else 0
+    end
+  `;
+}
+
 export async function handler(event) {
   if (event.httpMethod !== "GET") {
     return resp(405, { ok: false, error: "Method not allowed" });
@@ -98,51 +120,77 @@ export async function handler(event) {
         result: pick(cols, ["result", "status", "print_result"], "result"),
         rowType: pickOptional(cols, ["row_type", "rowtype", "rowType"]),
         jobId: pickOptional(cols, ["job_id", "jobid", "jobId"]),
+        documentId: pickOptional(cols, ["document_id", "documentid", "documentId"]),
         jobName: pickOptional(cols, ["job_name", "jobname", "jobName"]),
         sourceFile: pickOptional(cols, ["source_file", "sourcefile", "sourceFile"]),
+        importedAt: pickOptional(cols, ["imported_at", "importedat", "importedAt"]),
       };
 
       const arrivalExpr = map.receptionAt
         ? `coalesce(${map.receptionAt}, ${map.readyAt})`
         : map.readyAt;
-
-      const uniqueJobExpr = map.jobId
-        ? `count(distinct ${map.jobId})::int`
-        : `count(*)::int`;
+      const logicalJobExpr = buildLogicalJobExpr(map, arrivalExpr);
+      const sourcePriorityExpr = buildSourcePriorityExpr(map);
 
       const values = [];
       const where = buildFilters(query, map, values, arrivalExpr);
+      const baseSql = `
+        with ranked as (
+          select
+            ${arrivalExpr} as arrival_at,
+            ${map.printerName} as printer_name,
+            ${map.result} as result,
+            ${logicalJobExpr} as logical_job_key,
+            ${map.jobName ? `${map.jobName} as job_name,` : `null::text as job_name,`}
+            ${map.sourceFile ? `${map.sourceFile} as source_file,` : `null::text as source_file,`}
+            row_number() over (
+              partition by
+                ${map.printerName},
+                ${logicalJobExpr},
+                lower(${map.result}),
+                ${arrivalExpr}
+              order by
+                ${sourcePriorityExpr} desc,
+                ${map.importedAt ? `${map.importedAt} desc nulls last,` : ``}
+                ${arrivalExpr} desc nulls last
+            ) as source_rn
+          from public.print_accounting_rows
+          ${where}
+        )
+      `;
 
       const totalsSql = `
+        ${baseSql}
         select
           count(*)::int as total_jobs,
-          count(*) filter (where lower(${map.result}) = 'done')::int as done_jobs,
-          count(*) filter (where lower(${map.result}) in ('abrt', 'aborted'))::int as aborted_jobs,
-          count(*) filter (where lower(${map.result}) = 'deleted')::int as deleted_jobs,
-          ${uniqueJobExpr} as unique_jobs,
-          min(${arrivalExpr}) as first_arrival_at,
-          max(${arrivalExpr}) as last_arrival_at
-        from public.print_accounting_rows
-        ${where}
+          count(*) filter (where lower(result) = 'done')::int as done_jobs,
+          count(*) filter (where lower(result) in ('abrt', 'aborted'))::int as aborted_jobs,
+          count(*) filter (where lower(result) = 'deleted')::int as deleted_jobs,
+          count(distinct logical_job_key)::int as unique_jobs,
+          min(arrival_at) as first_arrival_at,
+          max(arrival_at) as last_arrival_at
+        from ranked
+        where source_rn = 1
       `;
 
       const dailySql = `
+        ${baseSql}
         select
-          (${arrivalExpr})::date as arrival_date,
-          ${map.printerName} as printer_name,
+          arrival_at::date as arrival_date,
+          printer_name,
           count(*)::int as total_jobs,
-          count(*) filter (where lower(${map.result}) = 'done')::int as done_jobs,
-          count(*) filter (where lower(${map.result}) in ('abrt', 'aborted'))::int as aborted_jobs,
-          count(*) filter (where lower(${map.result}) = 'deleted')::int as deleted_jobs,
-          ${uniqueJobExpr} as unique_jobs,
-          min(${arrivalExpr}) as first_arrival_at,
-          max(${arrivalExpr}) as last_arrival_at,
-          ${map.jobName ? `max(${map.jobName}) as sample_job_name,` : `null::text as sample_job_name,`}
-          ${map.sourceFile ? `max(${map.sourceFile}) as sample_source_file` : `null::text as sample_source_file`}
-        from public.print_accounting_rows
-        ${where}
-        group by (${arrivalExpr})::date, ${map.printerName}
-        order by (${arrivalExpr})::date desc, ${map.printerName} asc
+          count(*) filter (where lower(result) = 'done')::int as done_jobs,
+          count(*) filter (where lower(result) in ('abrt', 'aborted'))::int as aborted_jobs,
+          count(*) filter (where lower(result) = 'deleted')::int as deleted_jobs,
+          count(distinct logical_job_key)::int as unique_jobs,
+          min(arrival_at) as first_arrival_at,
+          max(arrival_at) as last_arrival_at,
+          max(job_name) as sample_job_name,
+          max(source_file) as sample_source_file
+        from ranked
+        where source_rn = 1
+        group by arrival_at::date, printer_name
+        order by arrival_at::date desc, printer_name asc
       `;
 
       const [totalsRes, dailyRes] = await Promise.all([
@@ -155,6 +203,7 @@ export async function handler(event) {
       return {
         ok: true,
         basis: map.receptionAt ? "reception_at_fallback_ready_at" : "ready_at",
+        dedupe: "logical_job_prefer_csv_over_acl",
         filters: {
           from: query.from || null,
           to: query.to || null,
