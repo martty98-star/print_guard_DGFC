@@ -23,7 +23,7 @@ echo ===================== START ===================== > "%LOGFILE%"
 echo %date% %time% >> "%LOGFILE%"
 
 echo.
-echo [1/3] SYNC
+echo [1/4] SYNC
 powershell -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\ColoradoSync_server.ps1" >> "%LOGFILE%" 2>&1
 if errorlevel 1 (
     echo SYNC FAILED
@@ -32,16 +32,25 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/3] PARSE
+echo [2/4] PARSE CSV
 powershell -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\Parse-ColoradoSync_server.ps1" >> "%LOGFILE%" 2>&1
 if errorlevel 1 (
-    echo PARSE FAILED
-    echo PARSE FAILED >> "%LOGFILE%"
+    echo PARSE CSV FAILED
+    echo PARSE CSV FAILED >> "%LOGFILE%"
     goto :fail
 )
 
 echo.
-echo [3/3] UPSERT
+echo [3/4] PARSE ACL
+powershell -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\Parse-ColoradoAcl_server.ps1" >> "%LOGFILE%" 2>&1
+if errorlevel 1 (
+    echo PARSE ACL FAILED
+    echo PARSE ACL FAILED >> "%LOGFILE%"
+    goto :fail
+)
+
+echo.
+echo [4/4] UPSERT
 node "%NODE_SCRIPT%" >> "%LOGFILE%" 2>&1
 if errorlevel 1 (
     echo UPSERT FAILED

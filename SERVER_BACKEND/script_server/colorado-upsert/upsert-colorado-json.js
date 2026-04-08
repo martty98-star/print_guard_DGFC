@@ -48,6 +48,32 @@ function getJsonFiles() {
   return files.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
 }
 
+function getAclJsonFiles() {
+  const files = [];
+
+  for (const printer of PRINTERS) {
+    const normalizedDir = path.join(ROOT, printer, "normalized-acl");
+
+    if (!fs.existsSync(normalizedDir)) {
+      log(`Skipping missing ACL folder: ${normalizedDir}`);
+      continue;
+    }
+
+    const dirFiles = fs
+      .readdirSync(normalizedDir)
+      .filter((f) => f.toLowerCase().endsWith(".json"))
+      .map((f) => ({
+        printer,
+        fullPath: path.join(normalizedDir, f),
+        fileName: f,
+      }));
+
+    files.push(...dirFiles);
+  }
+
+  return files.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
+}
+
 function toNullableTimestamp(value) {
   return value || null;
 }
@@ -107,6 +133,27 @@ function mapRow(row) {
     layer_structure: row.layerStructure || null,
     dedupe_key: row.dedupeKey,
     raw_row_json: row.rawRow || null,
+  };
+}
+
+function mapAclRow(row) {
+  return {
+    imported_at: toNullableTimestamp(row.importedAt),
+    printer_name: row.printerName || null,
+    printer_ip: row.printerIp || null,
+    serial_prefix: row.serialPrefix || null,
+    source_file: row.sourceFile || null,
+    source_date: toNullableDate(row.sourceDate),
+    row_type: row.rowType || "acl",
+    content_hash: row.contentHash || null,
+    file_size_bytes: toNullableInt(row.fileSizeBytes),
+    line_count: toNullableInt(row.lineCount),
+    non_empty_line_count: toNullableInt(row.nonEmptyLineCount),
+    parsed_fields_json: row.parsedFields || null,
+    raw_lines_json: Array.isArray(row.rawLines) ? row.rawLines : null,
+    raw_text: typeof row.rawText === "string" ? row.rawText : null,
+    dedupe_key: row.dedupeKey || null,
+    raw_row_json: row,
   };
 }
 
@@ -258,6 +305,71 @@ do update set
     updated_at = now();
 `;
 
+const ENSURE_ACL_TABLE_SQL = `
+create table if not exists print_accounting_acl_files (
+    dedupe_key text primary key,
+    imported_at timestamptz null,
+    printer_name text not null,
+    printer_ip text null,
+    serial_prefix text null,
+    source_file text not null,
+    source_date date null,
+    row_type text not null,
+    content_hash text null,
+    file_size_bytes integer null,
+    line_count integer null,
+    non_empty_line_count integer null,
+    parsed_fields_json jsonb null,
+    raw_lines_json jsonb null,
+    raw_text text null,
+    raw_row_json jsonb null,
+    updated_at timestamptz not null default now()
+);
+`;
+
+const UPSERT_ACL_SQL = `
+insert into print_accounting_acl_files (
+    dedupe_key,
+    imported_at,
+    printer_name,
+    printer_ip,
+    serial_prefix,
+    source_file,
+    source_date,
+    row_type,
+    content_hash,
+    file_size_bytes,
+    line_count,
+    non_empty_line_count,
+    parsed_fields_json,
+    raw_lines_json,
+    raw_text,
+    raw_row_json,
+    updated_at
+) values (
+    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+    $11,$12,$13::jsonb,$14::jsonb,$15,$16::jsonb, now()
+)
+on conflict (dedupe_key)
+do update set
+    imported_at = excluded.imported_at,
+    printer_name = excluded.printer_name,
+    printer_ip = excluded.printer_ip,
+    serial_prefix = excluded.serial_prefix,
+    source_file = excluded.source_file,
+    source_date = excluded.source_date,
+    row_type = excluded.row_type,
+    content_hash = excluded.content_hash,
+    file_size_bytes = excluded.file_size_bytes,
+    line_count = excluded.line_count,
+    non_empty_line_count = excluded.non_empty_line_count,
+    parsed_fields_json = excluded.parsed_fields_json,
+    raw_lines_json = excluded.raw_lines_json,
+    raw_text = excluded.raw_text,
+    raw_row_json = excluded.raw_row_json,
+    updated_at = now();
+`;
+
 async function upsertRow(client, row) {
   const mapped = mapRow(row);
 
@@ -305,6 +417,35 @@ async function upsertRow(client, row) {
   await client.query(UPSERT_SQL, values);
 }
 
+async function ensureAclTable(client) {
+  await client.query(ENSURE_ACL_TABLE_SQL);
+}
+
+async function upsertAclRow(client, row) {
+  const mapped = mapAclRow(row);
+
+  const values = [
+    mapped.dedupe_key,
+    mapped.imported_at,
+    mapped.printer_name,
+    mapped.printer_ip,
+    mapped.serial_prefix,
+    mapped.source_file,
+    mapped.source_date,
+    mapped.row_type,
+    mapped.content_hash,
+    mapped.file_size_bytes,
+    mapped.line_count,
+    mapped.non_empty_line_count,
+    mapped.parsed_fields_json ? JSON.stringify(mapped.parsed_fields_json) : null,
+    mapped.raw_lines_json ? JSON.stringify(mapped.raw_lines_json) : null,
+    mapped.raw_text,
+    mapped.raw_row_json ? JSON.stringify(mapped.raw_row_json) : null,
+  ];
+
+  await client.query(UPSERT_ACL_SQL, values);
+}
+
 async function main() {
   log(`ROOT = ${ROOT}`);
 
@@ -317,13 +458,19 @@ async function main() {
 
   await client.connect();
   log("Connected to Neon.");
+  await ensureAclTable(client);
 
   const jsonFiles = getJsonFiles();
+  const aclJsonFiles = getAclJsonFiles();
   log(`Found JSON files: ${jsonFiles.length}`);
+  log(`Found ACL JSON files: ${aclJsonFiles.length}`);
 
   let totalFiles = 0;
   let totalRows = 0;
   let skippedFiles = 0;
+  let totalAclFiles = 0;
+  let totalAclRows = 0;
+  let skippedAclFiles = 0;
 
   for (const file of jsonFiles) {
     totalFiles += 1;
@@ -355,8 +502,41 @@ async function main() {
     log(`Done file: ${file.fileName}, rows processed: ${fileRowsProcessed}`);
   }
 
+  for (const file of aclJsonFiles) {
+    totalAclFiles += 1;
+    log(`Processing ACL file: ${file.fullPath}`);
+
+    let rows;
+    try {
+      rows = parseJsonArrayFromFile(file.fullPath, file.fileName);
+    } catch (err) {
+      log(`SKIPPING ACL FILE: ${file.fileName}`);
+      log(err.message);
+      skippedAclFiles += 1;
+      continue;
+    }
+
+    let fileRowsProcessed = 0;
+
+    for (const row of rows) {
+      if (!row || !row.dedupeKey || !row.sourceFile || !row.printerName) {
+        log(`Skipping ACL row without required identifiers in ${file.fileName}`);
+        continue;
+      }
+
+      await upsertAclRow(client, row);
+      totalAclRows += 1;
+      fileRowsProcessed += 1;
+    }
+
+    log(`Done ACL file: ${file.fileName}, rows processed: ${fileRowsProcessed}`);
+  }
+
   log(
     `Finished. Files scanned: ${totalFiles}, files skipped: ${skippedFiles}, rows processed: ${totalRows}`
+  );
+  log(
+    `Finished ACL. Files scanned: ${totalAclFiles}, files skipped: ${skippedAclFiles}, rows processed: ${totalAclRows}`
   );
 
   await client.end();
