@@ -82,7 +82,10 @@ exports.handler = async function handler(event) {
     webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
   } catch (error) {
     console.error("Invalid VAPID configuration", error);
-    return json(500, { ok: false, error: "Invalid VAPID configuration" });
+    return json(500, {
+      ok: false,
+      error: error && error.message ? error.message : "Invalid VAPID configuration",
+    });
   }
 
   const client = new Client({
