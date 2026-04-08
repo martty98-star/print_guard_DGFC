@@ -31,6 +31,14 @@ function isValidVapidSubject(value) {
   return typeof value === "string" && /^(mailto:|https:\/\/)/i.test(value);
 }
 
+function getEndpointSuffix(endpoint) {
+  if (typeof endpoint !== "string" || endpoint.length === 0) {
+    return "";
+  }
+
+  return endpoint.slice(-24);
+}
+
 exports.handler = async function handler(event) {
   if (event.httpMethod !== "POST") {
     return json(
@@ -101,7 +109,7 @@ exports.handler = async function handler(event) {
 
     const result = await client.query(
       `
-        select endpoint, p256dh, auth
+        select id, endpoint, p256dh, auth, device_name
         from push_subscriptions
         where is_active = true
       `
@@ -114,6 +122,12 @@ exports.handler = async function handler(event) {
     });
 
     for (const row of result.rows) {
+      console.log("Sending test push", {
+        id: row.id,
+        deviceName: row.device_name || null,
+        endpointSuffix: getEndpointSuffix(row.endpoint),
+      });
+
       const subscription = {
         endpoint: row.endpoint,
         keys: {
@@ -125,6 +139,12 @@ exports.handler = async function handler(event) {
       try {
         await webPush.sendNotification(subscription, payload);
         sent += 1;
+
+        console.log("Test push sent", {
+          id: row.id,
+          deviceName: row.device_name || null,
+          endpointSuffix: getEndpointSuffix(row.endpoint),
+        });
 
         await client.query(
           `
@@ -158,7 +178,10 @@ exports.handler = async function handler(event) {
         }
 
         console.error("Failed to send push notification", {
+          id: row.id,
+          deviceName: row.device_name || null,
           endpoint: row.endpoint,
+          endpointSuffix: getEndpointSuffix(row.endpoint),
           statusCode,
           error: error && error.message ? error.message : String(error),
         });

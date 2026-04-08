@@ -83,12 +83,20 @@ self.addEventListener("push", (event) => {
     ? payload.url.trim()
     : "/";
 
+  console.log("[SW] push event received", {
+    hasData: Boolean(event.data),
+    title,
+    url,
+  });
+
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       data: { url },
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
+    }).then(() => {
+      console.log("[SW] notification shown", { title, url });
     })
   );
 });

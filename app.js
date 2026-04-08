@@ -1922,6 +1922,10 @@ function setupSettings() {
     }
   });
 
+  el('send-stock-alerts-btn').addEventListener('click', async () => {
+    await sendStockNotifications({ silent: false, trigger: 'manual-settings' });
+  });
+
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
   el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
   el('export-csv-stock').addEventListener('click',     exportCSVStock);
@@ -2556,6 +2560,8 @@ async function runSync(options = {}) {
 
     await loadAll();
 
+    await sendStockNotifications({ silent: true, trigger: 'sync' });
+
     const dropped = badItems.length + badMoves.length + badCo.length;
     if (!silent) {
       showToast(
@@ -2755,6 +2761,48 @@ async function enablePushNotifications() {
   } catch (error) {
     console.error('[Push] enable failed', error);
     showToast('Zapnutí push notifikací selhalo.', 'error');
+  }
+}
+
+async function sendStockNotifications(options = {}) {
+  const { silent = false, trigger = 'manual' } = options;
+
+  if (!Reports.notifications || typeof Reports.notifications.buildStockNotificationCandidates !== 'function') {
+    if (!silent) showToast('Chybí notification modul.', 'error');
+    return null;
+  }
+
+  try {
+    const res = await fetch('/.netlify/functions/send-stock-alerts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        weeksN: cfg.weeksN,
+        trigger,
+      }),
+    });
+
+    let result = null;
+    try { result = await res.json(); } catch (_) {}
+
+    if (!res.ok || !result?.ok) {
+      throw new Error(result?.error || 'Odeslání stock notifikací selhalo.');
+    }
+
+    if (!silent) {
+      showToast(
+        `Stock notifikace: nové ${result.sentAlerts || 0}, beze změny ${result.skippedAlerts || 0}.`,
+        'success'
+      );
+    }
+
+    return result;
+  } catch (error) {
+    console.error('[Push] stock notifications failed', error);
+    if (!silent) {
+      showToast(error?.message || 'Odeslání stock notifikací selhalo.', 'error');
+    }
+    return null;
   }
 }
 
