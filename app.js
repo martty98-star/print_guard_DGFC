@@ -2693,6 +2693,12 @@ function getPushDeviceName() {
   return 'Unknown device';
 }
 
+function getPushEndpointSuffix(endpoint) {
+  return typeof endpoint === 'string' && endpoint.length > 24
+    ? endpoint.slice(-24)
+    : (typeof endpoint === 'string' ? endpoint : '');
+}
+
 function buildPushSubscriptionPayload(subscription) {
   const subJson = subscription && typeof subscription.toJSON === 'function'
     ? subscription.toJSON()
@@ -2719,6 +2725,11 @@ function buildPushSubscriptionPayload(subscription) {
 }
 
 async function persistPushSubscription(payload) {
+  console.log('[Push] persist subscription', {
+    deviceName: payload?.deviceName || null,
+    endpointSuffix: getPushEndpointSuffix(payload?.endpoint),
+  });
+
   const res = await fetch('/.netlify/functions/save-subscription', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2779,17 +2790,34 @@ async function enablePushNotifications() {
 
     const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
+    const deviceName = getPushDeviceName();
+
+    console.log('[Push] subscribe start', {
+      deviceName,
+      hasExistingSubscription: Boolean(subscription),
+      endpointSuffix: getPushEndpointSuffix(
+        subscription && typeof subscription.endpoint === 'string' ? subscription.endpoint : ''
+      ),
+    });
 
     if (subscription) {
       const existingPayload = buildPushSubscriptionPayload(subscription);
 
       if (existingPayload) {
+        console.log('[Push] reusing existing subscription', {
+          deviceName,
+          endpointSuffix: getPushEndpointSuffix(existingPayload.endpoint),
+        });
         await persistPushSubscription(existingPayload);
         showToast('Push notifikace byly povoleny.', 'success');
         return;
       }
 
       try {
+        console.warn('[Push] unsubscribing stale subscription', {
+          deviceName,
+          endpointSuffix: getPushEndpointSuffix(subscription.endpoint),
+        });
         await subscription.unsubscribe();
       } catch (error) {
         console.warn('[Push] failed to unsubscribe stale subscription', error);
@@ -2808,6 +2836,11 @@ async function enablePushNotifications() {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey,
+      });
+
+      console.log('[Push] created new subscription', {
+        deviceName,
+        endpointSuffix: getPushEndpointSuffix(subscription.endpoint),
       });
     }
 

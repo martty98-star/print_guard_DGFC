@@ -37,6 +37,14 @@ function normalizeOptionalString(value) {
   return trimmed ? trimmed : null;
 }
 
+function getEndpointSuffix(endpoint) {
+  if (typeof endpoint !== "string" || endpoint.length === 0) {
+    return "";
+  }
+
+  return endpoint.slice(-24);
+}
+
 async function getAlertTypesBinding(client, alertTypes) {
   const result = await client.query(
     `
@@ -157,6 +165,32 @@ exports.handler = async function handler(event) {
       `,
       [endpoint, p256dh, auth, deviceName, userLabel, alertTypesBinding.value]
     );
+
+    let duplicateActiveCount = 0;
+    if (deviceName || userLabel) {
+      const duplicateResult = await client.query(
+        `
+          select count(*)::int as count
+          from push_subscriptions
+          where is_active = true
+            and endpoint <> $1
+            and (
+              ($2::text is not null and device_name = $2)
+              or ($3::text is not null and user_label = $3)
+            )
+        `,
+        [endpoint, deviceName, userLabel]
+      );
+
+      duplicateActiveCount = duplicateResult.rows[0]?.count || 0;
+    }
+
+    console.log("Push subscription saved", {
+      deviceName,
+      userLabel,
+      endpointSuffix: getEndpointSuffix(endpoint),
+      duplicateActiveCount,
+    });
 
     return json(200, { ok: true });
   } catch (error) {

@@ -39,6 +39,22 @@ function getEndpointSuffix(endpoint) {
   return endpoint.slice(-24);
 }
 
+function getErrorBody(error) {
+  if (!error || error.body == null) {
+    return null;
+  }
+
+  if (typeof error.body === "string") {
+    return error.body;
+  }
+
+  try {
+    return JSON.stringify(error.body);
+  } catch (stringifyError) {
+    return String(error.body);
+  }
+}
+
 exports.handler = async function handler(event) {
   if (event.httpMethod !== "POST") {
     return json(
@@ -103,6 +119,7 @@ exports.handler = async function handler(event) {
 
   let sent = 0;
   let failed = 0;
+  const failures = [];
 
   try {
     await client.connect();
@@ -126,6 +143,7 @@ exports.handler = async function handler(event) {
       console.log("Sending test push", {
         id: row.id,
         deviceName: row.device_name || null,
+        hasEndpoint: Boolean(row.endpoint),
         endpointSuffix: getEndpointSuffix(row.endpoint),
       });
 
@@ -159,6 +177,8 @@ exports.handler = async function handler(event) {
         failed += 1;
 
         const statusCode = getStatusCode(error);
+        const errorBody = getErrorBody(error);
+
         if (statusCode === 404 || statusCode === 410) {
           try {
             await client.query(
@@ -178,18 +198,34 @@ exports.handler = async function handler(event) {
           }
         }
 
+        failures.push({
+          id: row.id,
+          deviceName: row.device_name || null,
+          statusCode,
+          message: error && error.message ? error.message : String(error),
+          body: errorBody,
+        });
+
         console.error("Failed to send push notification", {
           id: row.id,
           deviceName: row.device_name || null,
+          hasEndpoint: Boolean(row.endpoint),
           endpoint: row.endpoint,
           endpointSuffix: getEndpointSuffix(row.endpoint),
           statusCode,
           error: error && error.message ? error.message : String(error),
+          body: errorBody,
         });
       }
     }
 
-    return json(200, { ok: true, activeSubscriptions, sent, failed });
+    return json(200, {
+      ok: true,
+      activeSubscriptions,
+      sent,
+      failed,
+      failures,
+    });
   } catch (error) {
     console.error("send-test-push failed", error);
     return json(500, {

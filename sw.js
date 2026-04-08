@@ -104,22 +104,68 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const targetPath = event.notification?.data?.url || "/";
-  const targetUrl = new URL(targetPath, self.location.origin).href;
+  const rawTargetPath = event.notification?.data?.url || "/";
+  let targetUrl = self.location.origin + "/";
 
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+  try {
+    targetUrl = new URL(rawTargetPath, self.location.origin).href;
+  } catch (error) {
+    console.warn("[SW] invalid notification target url", {
+      rawTargetPath,
+      error: error && error.message ? error.message : String(error),
+    });
+  }
+
+  console.log("[SW] notificationclick start", { targetUrl });
+
+  event.waitUntil((async () => {
+    try {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+
       for (const client of clients) {
-        if (!client || typeof client.focus !== "function") {
+        if (!client) {
           continue;
         }
 
-        return Promise.resolve(
-          typeof client.navigate === "function" ? client.navigate(targetUrl) : client
-        ).catch(() => client).then(() => client.focus());
+        try {
+          if (typeof client.navigate === "function") {
+            await client.navigate(targetUrl);
+          }
+        } catch (error) {
+          console.warn("[SW] client navigate failed", {
+            targetUrl,
+            error: error && error.message ? error.message : String(error),
+          });
+        }
+
+        if (typeof client.focus === "function") {
+          try {
+            await client.focus();
+            console.log("[SW] notificationclick reused existing client", { targetUrl });
+            return;
+          } catch (error) {
+            console.warn("[SW] client focus failed", {
+              targetUrl,
+              error: error && error.message ? error.message : String(error),
+            });
+          }
+        }
       }
 
-      return self.clients.openWindow(targetUrl);
-    })
-  );
+      try {
+        await self.clients.openWindow(targetUrl);
+        console.log("[SW] notificationclick opened new window", { targetUrl });
+      } catch (error) {
+        console.warn("[SW] openWindow failed", {
+          targetUrl,
+          error: error && error.message ? error.message : String(error),
+        });
+      }
+    } catch (error) {
+      console.warn("[SW] notificationclick handler failed", {
+        targetUrl,
+        error: error && error.message ? error.message : String(error),
+      });
+    }
+  })());
 });
