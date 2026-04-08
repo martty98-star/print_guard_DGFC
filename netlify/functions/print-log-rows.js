@@ -99,6 +99,33 @@ function buildInkExpressions(map) {
   };
 }
 
+function buildInkPresenceExpr(inkExprs) {
+  const candidates = [
+    inkExprs?.inkTotalExpr,
+    inkExprs?.inkCyanExpr,
+    inkExprs?.inkMagentaExpr,
+    inkExprs?.inkYellowExpr,
+    inkExprs?.inkBlackExpr,
+    inkExprs?.inkWhiteExpr,
+  ].filter(expr => expr && expr !== "null");
+
+  if (!candidates.length) return "0";
+  return `case when ${candidates.map(expr => `${expr} is not null`).join(" or ")} then 1 else 0 end`;
+}
+
+function buildInkChannelPresenceExpr(inkExprs) {
+  const candidates = [
+    inkExprs?.inkCyanExpr,
+    inkExprs?.inkMagentaExpr,
+    inkExprs?.inkYellowExpr,
+    inkExprs?.inkBlackExpr,
+    inkExprs?.inkWhiteExpr,
+  ].filter(expr => expr && expr !== "null");
+
+  if (!candidates.length) return "0";
+  return `case when ${candidates.map(expr => `${expr} is not null`).join(" or ")} then 1 else 0 end`;
+}
+
 function buildAccountingInkExpressions(map) {
   // print_accounting_rows stores raw CSV channel counters as printer micro-liter units.
   const inkCyanExpr = map.inkCyanL ? `${map.inkCyanL}` : microLitersExpr(map.inkCyan);
@@ -395,12 +422,16 @@ export async function handler(event) {
         : "where false";
 
       const viewInk = buildInkExpressions(map);
+      const viewHasInkExpr = buildInkPresenceExpr(viewInk);
+      const viewHasInkChannelsExpr = buildInkChannelPresenceExpr(viewInk);
       const viewSourceFileExpr = map.sourceFile ? `${map.sourceFile}` : "null::text";
       const viewLogicalJobExpr = buildLogicalJobExpr(map, map.readyAt);
 
       const accountingInk = accountingMap
         ? buildAccountingInkExpressions(accountingMap)
         : null;
+      const accountingHasInkExpr = buildInkPresenceExpr(accountingInk);
+      const accountingHasInkChannelsExpr = buildInkChannelPresenceExpr(accountingInk);
       const accountingSourceFileExpr = accountingMap?.sourceFile ? `${accountingMap.sourceFile}` : "null::text";
       const accountingLogicalJobExpr = accountingMap
         ? buildLogicalJobExpr(accountingMap, accountingMap.readyAt)
@@ -444,6 +475,8 @@ export async function handler(event) {
             ${(viewInk.inkYellowExpr || "null")}::float8 as ink_yellow_l,
             ${(viewInk.inkBlackExpr || "null")}::float8 as ink_black_l,
             ${(viewInk.inkWhiteExpr || "null")}::float8 as ink_white_l,
+            ${viewHasInkExpr} as has_ink_data,
+            ${viewHasInkChannelsExpr} as has_ink_channels,
             ${viewLogicalJobExpr} as logical_job_key,
             3 as source_rank,
             null::timestamptz as imported_at
@@ -467,6 +500,8 @@ export async function handler(event) {
             ${(accountingInk?.inkYellowExpr || "null")}::float8 as ink_yellow_l,
             ${(accountingInk?.inkBlackExpr || "null")}::float8 as ink_black_l,
             ${(accountingInk?.inkWhiteExpr || "null")}::float8 as ink_white_l,
+            ${accountingHasInkExpr} as has_ink_data,
+            ${accountingHasInkChannelsExpr} as has_ink_channels,
             ${accountingLogicalJobExpr} as logical_job_key,
             ${buildSourcePriorityExpr(accountingSourceFileExpr)} as source_rank,
             ${accountingMap.importedAt ? `${accountingMap.importedAt}` : "null::timestamptz"} as imported_at
@@ -478,7 +513,7 @@ export async function handler(event) {
             *,
             row_number() over (
               partition by printer_name, logical_job_key, lower(result), ready_at
-              order by source_rank desc, imported_at desc nulls last, ready_at desc nulls last
+              order by has_ink_channels desc, has_ink_data desc, source_rank desc, imported_at desc nulls last, ready_at desc nulls last
             ) as source_rn
           from merged_rows
         )
