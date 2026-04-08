@@ -5,7 +5,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'printguard-4.0';
+const APP_VERSION = 'printguard-4.2';
 const DB_NAME     = 'printguard-db';
 const DB_VERSION  = 2;
 const ST_ITEMS    = 'items';
@@ -2703,6 +2703,8 @@ async function enablePushNotifications() {
       showToast('Chybí VAPID public key.', 'error');
       return;
     }
+
+    console.log('[Push] VAPID_PUBLIC_KEY', vapidPublicKey);
 
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {

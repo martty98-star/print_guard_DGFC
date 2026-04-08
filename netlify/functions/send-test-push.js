@@ -36,10 +36,27 @@ exports.handler = async function handler(event) {
     );
   }
 
-  const connectionString = process.env.NEON_DATABASE_URL;
-  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-  const vapidSubject = process.env.VAPID_SUBJECT;
+  const connectionString = typeof process.env.NEON_DATABASE_URL === "string"
+    ? process.env.NEON_DATABASE_URL.trim()
+    : "";
+  const vapidPublicKey = typeof process.env.VAPID_PUBLIC_KEY === "string"
+    ? process.env.VAPID_PUBLIC_KEY.trim()
+    : "";
+  const vapidPrivateKey = typeof process.env.VAPID_PRIVATE_KEY === "string"
+    ? process.env.VAPID_PRIVATE_KEY.trim()
+    : "";
+  const vapidSubject = typeof process.env.VAPID_SUBJECT === "string"
+    ? process.env.VAPID_SUBJECT.trim()
+    : "";
+
+  console.log("Push config presence", {
+    hasDatabaseUrl: Boolean(connectionString),
+    hasVapidPublicKey: Boolean(vapidPublicKey),
+    hasVapidPrivateKey: Boolean(vapidPrivateKey),
+    hasVapidSubject: Boolean(vapidSubject),
+    vapidPublicKey,
+    vapidSubject,
+  });
 
   if (!connectionString || !vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
     console.error("Missing push configuration");
