@@ -2689,6 +2689,48 @@ function getPushDeviceName() {
   return 'Unknown device';
 }
 
+function buildPushSubscriptionPayload(subscription) {
+  const subJson = subscription && typeof subscription.toJSON === 'function'
+    ? subscription.toJSON()
+    : null;
+
+  const endpoint = typeof subJson?.endpoint === 'string' ? subJson.endpoint.trim() : '';
+  const p256dh = typeof subJson?.keys?.p256dh === 'string' ? subJson.keys.p256dh.trim() : '';
+  const auth = typeof subJson?.keys?.auth === 'string' ? subJson.keys.auth.trim() : '';
+
+  if (!endpoint || !p256dh || !auth) {
+    return null;
+  }
+
+  return {
+    endpoint,
+    keys: {
+      p256dh,
+      auth,
+    },
+    deviceName: getPushDeviceName(),
+    userLabel: 'Martin',
+    alertTypes: ['all'],
+  };
+}
+
+async function persistPushSubscription(payload) {
+  const res = await fetch('/.netlify/functions/save-subscription', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  let result = null;
+  try { result = await res.json(); } catch (_) {}
+
+  if (!res.ok || !result?.ok) {
+    throw new Error(result?.error || 'Uložení odběru selhalo.');
+  }
+
+  return result;
+}
+
 async function enablePushNotifications() {
   try {
     if (!('serviceWorker' in navigator)) {
@@ -2724,6 +2766,24 @@ async function enablePushNotifications() {
     const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
 
+    if (subscription) {
+      const existingPayload = buildPushSubscriptionPayload(subscription);
+
+      if (existingPayload) {
+        await persistPushSubscription(existingPayload);
+        showToast('Push notifikace byly povoleny.', 'success');
+        return;
+      }
+
+      try {
+        await subscription.unsubscribe();
+      } catch (error) {
+        console.warn('[Push] failed to unsubscribe stale subscription', error);
+      }
+
+      subscription = null;
+    }
+
     if (!subscription) {
       const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 
@@ -2737,26 +2797,12 @@ async function enablePushNotifications() {
       });
     }
 
-    const subJson = subscription.toJSON();
-    const res = await fetch('/.netlify/functions/save-subscription', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        endpoint: subJson.endpoint,
-        keys: subJson.keys,
-        deviceName: getPushDeviceName(),
-        userLabel: 'Martin',
-        alertTypes: ['all'],
-      }),
-    });
-
-    let result = null;
-    try { result = await res.json(); } catch (_) {}
-
-    if (!res.ok || !result?.ok) {
-      throw new Error(result?.error || 'Uložení odběru selhalo.');
+    const payload = buildPushSubscriptionPayload(subscription);
+    if (!payload) {
+      throw new Error('Neplatná push subscription.');
     }
 
+    await persistPushSubscription(payload);
     showToast('Push notifikace byly povoleny.', 'success');
   } catch (error) {
     console.error('[Push] enable failed', error);

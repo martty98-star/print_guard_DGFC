@@ -114,6 +114,7 @@ exports.handler = async function handler(event) {
         where is_active = true
       `
     );
+    const activeSubscriptions = result.rows.length;
 
     const payload = JSON.stringify({
       title: "PrintGuard test",
@@ -188,7 +189,7 @@ exports.handler = async function handler(event) {
       }
     }
 
-    return json(200, { ok: true, sent, failed });
+    return json(200, { ok: true, activeSubscriptions, sent, failed });
   } catch (error) {
     console.error("send-test-push failed", error);
     return json(500, {

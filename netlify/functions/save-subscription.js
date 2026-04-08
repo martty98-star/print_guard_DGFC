@@ -148,8 +148,8 @@ exports.handler = async function handler(event) {
         set
           p256dh = excluded.p256dh,
           auth = excluded.auth,
-          device_name = coalesce(excluded.device_name, push_subscriptions.device_name),
-          user_label = coalesce(excluded.user_label, push_subscriptions.user_label),
+          device_name = excluded.device_name,
+          user_label = excluded.user_label,
           alert_types = excluded.alert_types,
           is_active = true,
           updated_at = now(),

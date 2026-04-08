@@ -93,10 +93,13 @@ async function ensureNotificationStateTable(client) {
 }
 
 async function sendAlertToSubscriptions(client, subscriptions, payload) {
+  let attemptedNotifications = 0;
   let deliveriesSent = 0;
   let deliveriesFailed = 0;
 
   for (const subscription of subscriptions) {
+    attemptedNotifications += 1;
+
     try {
       await webPush.sendNotification(
         {
@@ -151,7 +154,7 @@ async function sendAlertToSubscriptions(client, subscriptions, payload) {
     }
   }
 
-  return { deliveriesSent, deliveriesFailed };
+  return { attemptedNotifications, deliveriesSent, deliveriesFailed };
 }
 
 exports.handler = async function handler(event) {
@@ -228,6 +231,15 @@ exports.handler = async function handler(event) {
       new Date()
     );
 
+    console.log("Stock notification candidates loaded", {
+      loadedItems: items.length,
+      loadedMovements: movements.length,
+      candidates: candidates.length,
+    });
+    candidates.forEach((candidate) => {
+      console.log("Stock notification candidate", { eventKey: candidate.eventKey });
+    });
+
     const activeStateRows = (await client.query(
       `
         select event_key, is_active
@@ -268,8 +280,13 @@ exports.handler = async function handler(event) {
       subscriptionMatchesAlertType(subscription, "stock")
     );
 
+    console.log("Stock notification subscriptions matched", {
+      matchedSubscriptions: stockSubscriptions.length,
+    });
+
     let sentAlerts = 0;
     let skippedAlerts = 0;
+    let attemptedNotifications = 0;
     let deliveriesSent = 0;
     let deliveriesFailed = 0;
 
@@ -278,6 +295,10 @@ exports.handler = async function handler(event) {
 
       if (existing && existing.is_active) {
         skippedAlerts += 1;
+        console.log("Skipping active stock notification state", {
+          eventKey: candidate.eventKey,
+          reason: "already_active",
+        });
         await client.query(
           `
             update push_notification_state
@@ -290,15 +311,44 @@ exports.handler = async function handler(event) {
         continue;
       }
 
+      console.log("Attempting stock notification delivery", {
+        eventKey: candidate.eventKey,
+        matchedSubscriptions: stockSubscriptions.length,
+        stateWrite: "pending_until_success",
+      });
+
       const deliveryResult = await sendAlertToSubscriptions(client, stockSubscriptions, {
         title: candidate.title,
         body: candidate.body,
         url: candidate.url,
       });
 
+      attemptedNotifications += deliveryResult.attemptedNotifications;
       deliveriesSent += deliveryResult.deliveriesSent;
       deliveriesFailed += deliveryResult.deliveriesFailed;
+
+      console.log("Stock notification delivery result", {
+        eventKey: candidate.eventKey,
+        attemptedNotifications: deliveryResult.attemptedNotifications,
+        sent: deliveryResult.deliveriesSent,
+        failed: deliveryResult.deliveriesFailed,
+      });
+
+      if (deliveryResult.deliveriesSent <= 0) {
+        console.log("Stock notification state not marked as sent", {
+          eventKey: candidate.eventKey,
+          reason: stockSubscriptions.length === 0 ? "no_matched_subscriptions" : "no_successful_delivery",
+          stateWrite: "skipped",
+        });
+        continue;
+      }
+
       sentAlerts += 1;
+
+      console.log("Writing stock notification state after successful delivery", {
+        eventKey: candidate.eventKey,
+        stateWrite: "insert_or_update_after_success",
+      });
 
       await client.query(
         `
@@ -348,21 +398,28 @@ exports.handler = async function handler(event) {
     }
 
     console.log("Stock notifications evaluated", {
-      trigger,
-      weeksN,
+      loadedItems: items.length,
+      loadedMovements: movements.length,
       candidates: candidates.length,
-      sentAlerts,
-      skippedAlerts,
-      resolvedAlerts,
+      matchedSubscriptions: stockSubscriptions.length,
+      attemptedNotifications,
+      sent: deliveriesSent,
+      failed: deliveriesFailed,
+      skippedActive: skippedAlerts,
       deliveriesSent,
       deliveriesFailed,
     });
 
     return json(200, {
       ok: true,
-      trigger,
-      weeksN,
-      evaluated: candidates.length,
+      loadedItems: items.length,
+      loadedMovements: movements.length,
+      candidates: candidates.length,
+      matchedSubscriptions: stockSubscriptions.length,
+      attemptedNotifications,
+      sent: deliveriesSent,
+      failed: deliveriesFailed,
+      skippedActive: skippedAlerts,
       sentAlerts,
       skippedAlerts,
       resolvedAlerts,
