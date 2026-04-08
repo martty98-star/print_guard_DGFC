@@ -164,11 +164,45 @@ function sanitizeJsonText(raw, fileName) {
 
   raw = raw.replace(/^\uFEFF/, "").trim();
 
-  const firstArrayStart = raw.indexOf("[");
-  const lastArrayEnd = raw.lastIndexOf("]");
-
   const firstObjectStart = raw.indexOf("{");
   const lastObjectEnd = raw.lastIndexOf("}");
+  const firstArrayStart = raw.indexOf("[");
+  const lastArrayEnd = raw.lastIndexOf("]");
+  const firstChar = raw[0];
+
+  if (firstChar === "{") {
+    if (
+      firstObjectStart !== -1 &&
+      lastObjectEnd !== -1 &&
+      lastObjectEnd > firstObjectStart
+    ) {
+      return raw.slice(firstObjectStart, lastObjectEnd + 1).trim();
+    }
+
+    throw new Error(`No valid JSON object bounds found in ${fileName}`);
+  }
+
+  if (firstChar === "[") {
+    if (
+      firstArrayStart !== -1 &&
+      lastArrayEnd !== -1 &&
+      lastArrayEnd > firstArrayStart
+    ) {
+      return raw.slice(firstArrayStart, lastArrayEnd + 1).trim();
+    }
+
+    throw new Error(`No valid JSON array bounds found in ${fileName}`);
+  }
+
+  // Legacy fallback for files with log noise before the JSON payload.
+  if (
+    firstObjectStart !== -1 &&
+    (firstArrayStart === -1 || firstObjectStart < firstArrayStart) &&
+    lastObjectEnd !== -1 &&
+    lastObjectEnd > firstObjectStart
+  ) {
+    return raw.slice(firstObjectStart, lastObjectEnd + 1).trim();
+  }
 
   if (
     firstArrayStart !== -1 &&
@@ -176,14 +210,6 @@ function sanitizeJsonText(raw, fileName) {
     lastArrayEnd > firstArrayStart
   ) {
     return raw.slice(firstArrayStart, lastArrayEnd + 1).trim();
-  }
-
-  if (
-    firstObjectStart !== -1 &&
-    lastObjectEnd !== -1 &&
-    lastObjectEnd > firstObjectStart
-  ) {
-    return raw.slice(firstObjectStart, lastObjectEnd + 1).trim();
   }
 
   throw new Error(`No valid JSON array/object bounds found in ${fileName}`);
