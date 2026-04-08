@@ -27,6 +27,10 @@ function getStatusCode(error) {
   return Number.isFinite(code) ? code : null;
 }
 
+function isValidVapidSubject(value) {
+  return typeof value === "string" && /^(mailto:|https:\/\/)/i.test(value);
+}
+
 exports.handler = async function handler(event) {
   if (event.httpMethod !== "POST") {
     return json(
@@ -54,13 +58,19 @@ exports.handler = async function handler(event) {
     hasVapidPublicKey: Boolean(vapidPublicKey),
     hasVapidPrivateKey: Boolean(vapidPrivateKey),
     hasVapidSubject: Boolean(vapidSubject),
-    vapidPublicKey,
+    vapidPublicKeyPrefix: vapidPublicKey ? vapidPublicKey.slice(0, 12) : "",
+    vapidPublicKeyLength: vapidPublicKey.length,
     vapidSubject,
   });
 
   if (!connectionString || !vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
     console.error("Missing push configuration");
-    return json(500, { ok: false, error: "Internal server error" });
+    return json(500, { ok: false, error: "Missing push configuration" });
+  }
+
+  if (!isValidVapidSubject(vapidSubject)) {
+    console.error("Invalid VAPID_SUBJECT", { vapidSubject });
+    return json(500, { ok: false, error: "Invalid VAPID_SUBJECT" });
   }
 
   const webPush = loadWebPush();
@@ -72,7 +82,7 @@ exports.handler = async function handler(event) {
     webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
   } catch (error) {
     console.error("Invalid VAPID configuration", error);
-    return json(500, { ok: false, error: "Internal server error" });
+    return json(500, { ok: false, error: "Invalid VAPID configuration" });
   }
 
   const client = new Client({
@@ -88,7 +98,7 @@ exports.handler = async function handler(event) {
 
     const result = await client.query(
       `
-        select id, endpoint, p256dh, auth
+        select endpoint, p256dh, auth
         from push_subscriptions
         where is_active = true
       `
@@ -117,9 +127,9 @@ exports.handler = async function handler(event) {
           `
             update push_subscriptions
             set last_push_at = now()
-            where id = $1
+            where endpoint = $1
           `,
-          [row.id]
+          [row.endpoint]
         );
       } catch (error) {
         failed += 1;
@@ -132,17 +142,20 @@ exports.handler = async function handler(event) {
                 update push_subscriptions
                 set is_active = false,
                     updated_at = now()
-                where id = $1
+                where endpoint = $1
               `,
-              [row.id]
+              [row.endpoint]
             );
           } catch (updateError) {
-            console.error("Failed to deactivate subscription", { id: row.id, error: updateError });
+            console.error("Failed to deactivate subscription", {
+              endpoint: row.endpoint,
+              error: updateError,
+            });
           }
         }
 
         console.error("Failed to send push notification", {
-          id: row.id,
+          endpoint: row.endpoint,
           statusCode,
           error: error && error.message ? error.message : String(error),
         });
@@ -152,7 +165,10 @@ exports.handler = async function handler(event) {
     return json(200, { ok: true, sent, failed });
   } catch (error) {
     console.error("send-test-push failed", error);
-    return json(500, { ok: false, error: "Internal server error" });
+    return json(500, {
+      ok: false,
+      error: error && error.message ? error.message : "send-test-push failed",
+    });
   } finally {
     try {
       await client.end();
