@@ -101,6 +101,51 @@ function Get-ParsedFields {
     return $fields
 }
 
+function Get-SemicolonSchemaInfo {
+    param(
+        [string[]]$Lines
+    )
+
+    $nonEmptyLines = @($Lines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($nonEmptyLines.Count -eq 0) {
+        return $null
+    }
+
+    $headerLine = $nonEmptyLines[0].Trim()
+    if ($headerLine -notmatch ';') {
+        return $null
+    }
+
+    $tokens = @($headerLine.Split(';') | ForEach-Object { $_.Trim() })
+    if ($tokens.Count -lt 2) {
+        return $null
+    }
+
+    $formatCode = $null
+    $columns = $tokens
+
+    if ($tokens[0] -match '^\d+$') {
+        $formatCode = $tokens[0]
+        $columns = if ($tokens.Count -gt 1) { $tokens[1..($tokens.Count - 1)] } else { @() }
+    }
+
+    $normalizedColumns = @(
+        $columns |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        ForEach-Object { Get-NormalizedFieldName -Name $_ }
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+
+    return [ordered]@{
+        format            = "semicolon-schema"
+        formatCode        = $formatCode
+        headerColumns     = $columns
+        normalizedColumns = $normalizedColumns
+        columnCount       = $columns.Count
+        dataRowCount      = [Math]::Max(0, $nonEmptyLines.Count - 1)
+        hasDataRows       = ($nonEmptyLines.Count -gt 1)
+    }
+}
+
 function Get-DedupeKey {
     param(
         $Row
@@ -146,8 +191,21 @@ foreach ($printer in $Printers) {
             $raw = $raw -replace "^\uFEFF", ""
             $lines = [regex]::Split($raw, "\r?\n")
             $parsedFields = Get-ParsedFields -Lines $lines
+            $schemaInfo = Get-SemicolonSchemaInfo -Lines $lines
             $sourceDate = Get-SourceDateFromFileName -FileName $file.Name
             $contentHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+
+            if ($schemaInfo) {
+                $parsedFields["detected_format"] = $schemaInfo.format
+                if ($schemaInfo.formatCode) {
+                    $parsedFields["format_code"] = $schemaInfo.formatCode
+                }
+                $parsedFields["header_columns"] = $schemaInfo.headerColumns
+                $parsedFields["normalized_columns"] = $schemaInfo.normalizedColumns
+                $parsedFields["column_count"] = $schemaInfo.columnCount
+                $parsedFields["data_row_count"] = $schemaInfo.dataRowCount
+                $parsedFields["has_data_rows"] = $schemaInfo.hasDataRows
+            }
 
             $obj = [ordered]@{
                 importedAt        = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
@@ -160,6 +218,7 @@ foreach ($printer in $Printers) {
                 fileSizeBytes     = [int64]$file.Length
                 lineCount         = $lines.Count
                 nonEmptyLineCount = @($lines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count
+                detectedFormat    = if ($schemaInfo) { $schemaInfo.format } else { "raw-text" }
                 contentHash       = $contentHash
                 parsedFields      = [pscustomobject]$parsedFields
                 rawLines          = $lines
