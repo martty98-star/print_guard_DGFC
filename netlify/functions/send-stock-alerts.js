@@ -1,6 +1,6 @@
 const { Client } = require("pg");
 const webPush = require("web-push");
-const notifications = require("../../reports/notifications.js");
+const notificationRules = require("../../reports/notification-rules.js");
 
 function json(statusCode, body, extraHeaders) {
   return {
@@ -224,7 +224,7 @@ exports.handler = async function handler(event) {
       .map((row) => row.data)
       .filter(Boolean);
 
-    const candidates = notifications.buildStockNotificationCandidates(
+    const candidates = notificationRules.buildStockNotificationCandidates(
       items,
       movements,
       { weeksN },
@@ -237,7 +237,7 @@ exports.handler = async function handler(event) {
       candidates: candidates.length,
     });
     candidates.forEach((candidate) => {
-      console.log("Stock notification candidate", { eventKey: candidate.eventKey });
+      console.log("Stock notification candidate", { eventKey: candidate.dedupeKey, type: candidate.type });
     });
 
     const activeStateRows = (await client.query(
@@ -249,7 +249,9 @@ exports.handler = async function handler(event) {
     )).rows;
 
     const activeStateByKey = new Map(activeStateRows.map((row) => [row.event_key, row]));
-    const candidateKeys = new Set(candidates.map((candidate) => candidate.eventKey));
+    const candidateKeys = new Set(
+      candidates.map((candidate) => candidate && candidate.dedupeKey).filter(Boolean)
+    );
 
     let resolvedAlerts = 0;
     for (const row of activeStateRows) {
@@ -291,12 +293,21 @@ exports.handler = async function handler(event) {
     let deliveriesFailed = 0;
 
     for (const candidate of candidates) {
-      const existing = activeStateByKey.get(candidate.eventKey);
+      const eventKey = candidate.dedupeKey;
+      const articleNumber = candidate.metadata && candidate.metadata.articleNumber
+        ? candidate.metadata.articleNumber
+        : null;
+
+      if (!eventKey) {
+        continue;
+      }
+
+      const existing = activeStateByKey.get(eventKey);
 
       if (existing && existing.is_active) {
         skippedAlerts += 1;
         console.log("Skipping active stock notification state", {
-          eventKey: candidate.eventKey,
+          eventKey,
           reason: "already_active",
         });
         await client.query(
@@ -306,13 +317,13 @@ exports.handler = async function handler(event) {
                 updated_at = now()
             where event_key = $1
           `,
-          [candidate.eventKey, JSON.stringify(candidate)]
+          [eventKey, JSON.stringify(candidate)]
         );
         continue;
       }
 
       console.log("Attempting stock notification delivery", {
-        eventKey: candidate.eventKey,
+        eventKey,
         matchedSubscriptions: stockSubscriptions.length,
         stateWrite: "pending_until_success",
       });
@@ -328,7 +339,7 @@ exports.handler = async function handler(event) {
       deliveriesFailed += deliveryResult.deliveriesFailed;
 
       console.log("Stock notification delivery result", {
-        eventKey: candidate.eventKey,
+        eventKey,
         attemptedNotifications: deliveryResult.attemptedNotifications,
         sent: deliveryResult.deliveriesSent,
         failed: deliveryResult.deliveriesFailed,
@@ -336,7 +347,7 @@ exports.handler = async function handler(event) {
 
       if (deliveryResult.deliveriesSent <= 0) {
         console.log("Stock notification state not marked as sent", {
-          eventKey: candidate.eventKey,
+          eventKey,
           reason: stockSubscriptions.length === 0 ? "no_matched_subscriptions" : "no_successful_delivery",
           stateWrite: "skipped",
         });
@@ -346,7 +357,7 @@ exports.handler = async function handler(event) {
       sentAlerts += 1;
 
       console.log("Writing stock notification state after successful delivery", {
-        eventKey: candidate.eventKey,
+        eventKey,
         stateWrite: "insert_or_update_after_success",
       });
 
@@ -388,10 +399,10 @@ exports.handler = async function handler(event) {
             updated_at = now()
         `,
         [
-          candidate.eventKey,
+          eventKey,
           candidate.category,
-          candidate.eventType,
-          candidate.articleNumber,
+          candidate.type,
+          articleNumber,
           JSON.stringify(candidate),
         ]
       );

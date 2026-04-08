@@ -122,6 +122,12 @@ exports.handler = async function handler(event) {
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
   const body = typeof payload.body === "string" ? payload.body.trim() : "";
   const url = typeof payload.url === "string" && payload.url.trim() ? payload.url.trim() : "/";
+  const metadata = payload && typeof payload.metadata === "object" && !Array.isArray(payload.metadata)
+    ? payload.metadata
+    : {};
+  const dedupeKey = typeof payload.dedupeKey === "string" && payload.dedupeKey.trim()
+    ? payload.dedupeKey.trim()
+    : null;
 
   if (!type || !category || !title || !body) {
     return json(400, { ok: false, error: "Missing notification event fields" });
@@ -201,6 +207,8 @@ exports.handler = async function handler(event) {
         console.error("Failed to send app notification", {
           type,
           category,
+          dedupeKey,
+          metadata,
           subscriptionId: subscription.id,
           statusCode,
           error: error && error.message ? error.message : String(error),
@@ -210,6 +218,9 @@ exports.handler = async function handler(event) {
 
     return json(200, {
       ok: true,
+      type,
+      category,
+      dedupeKey,
       matchedSubscriptions: matchedSubscriptions.length,
       sent,
       failed,

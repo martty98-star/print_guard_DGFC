@@ -716,7 +716,10 @@ async function saveMovement() {
     renderStockOverview();
     renderAlerts();
     navigate('stock-overview');
-    notifyAppEvent(Reports.notificationEvents?.buildStockMovementNotification?.(move, notifyItem) || null);
+    runNotificationDispatch(
+      Reports.notificationDispatch?.emitStockMovementCreated?.(move, notifyItem),
+      'stock movement event'
+    );
   } catch (err) {
     showToast('Chyba: ' + err.message, 'error');
   } finally {
@@ -1163,7 +1166,10 @@ async function saveCoEntry() {
     renderCoDashboard();
     renderCoHistory();
     navigate('co-dashboard');
-    notifyAppEvent(Reports.notificationEvents?.buildColoradoRecordNotification?.(rec, machineLabel) || null);
+    runNotificationDispatch(
+      Reports.notificationDispatch?.emitColoradoRecordCreated?.(rec, machineLabel),
+      'colorado record event'
+    );
   } catch (err) {
     showToast('Chyba: ' + err.message, 'error');
   } finally {
@@ -2746,13 +2752,13 @@ async function persistPushSubscription(payload) {
   return result;
 }
 
-function notifyAppEvent(event) {
-  if (!event || !Reports.notificationEvents || typeof Reports.notificationEvents.sendAppNotificationEvent !== 'function') {
+function runNotificationDispatch(task, label) {
+  if (!task || typeof task.then !== 'function') {
     return;
   }
 
-  Reports.notificationEvents.sendAppNotificationEvent(event).catch((error) => {
-    console.error('[Push] app event notification failed', error);
+  task.catch((error) => {
+    console.error(`[Push] ${label || 'notification dispatch'} failed`, error);
   });
 }
 
@@ -2860,27 +2866,16 @@ async function enablePushNotifications() {
 async function sendStockNotifications(options = {}) {
   const { silent = false, trigger = 'manual' } = options;
 
-  if (!Reports.notifications || typeof Reports.notifications.buildStockNotificationCandidates !== 'function') {
-    if (!silent) showToast('Chybí notification modul.', 'error');
+  if (!Reports.notificationDispatch || typeof Reports.notificationDispatch.evaluateStockAlerts !== 'function') {
+    if (!silent) showToast('Chybí notification dispatch modul.', 'error');
     return null;
   }
 
   try {
-    const res = await fetch('/.netlify/functions/send-stock-alerts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        weeksN: cfg.weeksN,
-        trigger,
-      }),
+    const result = await Reports.notificationDispatch.evaluateStockAlerts({
+      weeksN: cfg.weeksN,
+      trigger,
     });
-
-    let result = null;
-    try { result = await res.json(); } catch (_) {}
-
-    if (!res.ok || !result?.ok) {
-      throw new Error(result?.error || 'Odeslání stock notifikací selhalo.');
-    }
 
     if (!silent) {
       showToast(
