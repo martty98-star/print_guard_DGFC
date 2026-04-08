@@ -5,7 +5,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'printguard-4.2';
+const APP_VERSION = 'printguard-5.0';
 const DB_NAME     = 'printguard-db';
 const DB_VERSION  = 2;
 const ST_ITEMS    = 'items';
@@ -704,6 +704,7 @@ async function saveMovement() {
 
   el('mov-save-btn').disabled = true;
   try {
+    const notifyItem = S.movItem;
     await idbPut(ST_MOVES, move);
     S.movements.push(move);
     S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -715,6 +716,7 @@ async function saveMovement() {
     renderStockOverview();
     renderAlerts();
     navigate('stock-overview');
+    notifyAppEvent(Reports.notificationEvents?.buildStockMovementNotification?.(move, notifyItem) || null);
   } catch (err) {
     showToast('Chyba: ' + err.message, 'error');
   } finally {
@@ -1151,6 +1153,7 @@ async function saveCoEntry() {
     await idbPut(ST_CORECS, rec);
     S.coRecords.push(rec);
     S.coRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const machineLabel = MACHINES.find(machine => machine.id === machineId)?.label || machineId;
     showToast('Záznam Colorado uložen', 'success');
     el('co-ink').value        = '';
     el('co-media').value      = '';
@@ -1160,6 +1163,7 @@ async function saveCoEntry() {
     renderCoDashboard();
     renderCoHistory();
     navigate('co-dashboard');
+    notifyAppEvent(Reports.notificationEvents?.buildColoradoRecordNotification?.(rec, machineLabel) || null);
   } catch (err) {
     showToast('Chyba: ' + err.message, 'error');
   } finally {
@@ -2729,6 +2733,16 @@ async function persistPushSubscription(payload) {
   }
 
   return result;
+}
+
+function notifyAppEvent(event) {
+  if (!event || !Reports.notificationEvents || typeof Reports.notificationEvents.sendAppNotificationEvent !== 'function') {
+    return;
+  }
+
+  Reports.notificationEvents.sendAppNotificationEvent(event).catch((error) => {
+    console.error('[Push] app event notification failed', error);
+  });
 }
 
 async function enablePushNotifications() {
