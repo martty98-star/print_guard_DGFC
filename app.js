@@ -2704,7 +2704,10 @@ async function enablePushNotifications() {
       return;
     }
 
-    console.log('[Push] VAPID_PUBLIC_KEY', vapidPublicKey);
+    console.log('[Push] VAPID_PUBLIC_KEY presence', {
+      exists: Boolean(window.VAPID_PUBLIC_KEY),
+      length: vapidPublicKey.length,
+    });
 
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
@@ -2716,9 +2719,15 @@ async function enablePushNotifications() {
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
+      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+
+      if (applicationServerKey.length !== 65) {
+        throw new Error('VAPID public key has invalid length.');
+      }
+
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey,
       });
     }
 

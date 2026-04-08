@@ -772,17 +772,18 @@ textarea { resize: vertical; min-height: 58px; }
 }
 @media (max-width: 640px) {
   :root {
-    --topbar-h: 106px;
+    --topbar-h: 96px;
     --nav-h: 64px;
   }
   body { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 4px); }
   .topbar {
     height: auto;
     min-height: var(--topbar-h);
-    padding: 8px 12px;
+    padding: 6px 10px;
     align-items: flex-start;
     flex-wrap: wrap;
-    row-gap: 8px;
+    gap: 8px;
+    row-gap: 6px;
   }
   .topbar-left,
   .topbar-center,
@@ -791,7 +792,8 @@ textarea { resize: vertical; min-height: 58px; }
     min-width: 0;
   }
   .topbar-left {
-    flex: 1 1 auto;
+    flex: 1 1 0;
+    overflow: hidden;
   }
   .topbar-center {
     order: 3;
@@ -808,17 +810,19 @@ textarea { resize: vertical; min-height: 58px; }
     max-width: 100%;
     gap: 6px;
     justify-content: flex-start;
+    overflow: hidden;
   }
   .brand-name {
+    display: block;
     font-size: 1rem;
     letter-spacing: .06em;
     flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .brand-partner {
-    gap: 5px;
-    padding: 4px 7px 4px 8px;
-    max-width: 100%;
+    display: none;
   }
   .brand-partner-prefix {
     font-size: .47rem;
@@ -887,9 +891,9 @@ textarea { resize: vertical; min-height: 58px; }
 
 @media (max-width: 420px) {
   :root {
-    --topbar-h: 112px;
+    --topbar-h: 92px;
   }
-  .topbar { padding: 8px 10px; gap: 6px; }
+  .topbar { padding: 6px 8px; gap: 6px; }
   .brand-name {
     font-size: .88rem;
     letter-spacing: .04em;
