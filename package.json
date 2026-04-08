@@ -6,6 +6,7 @@
     "export:colorado-monthly": "node scripts/export-colorado-monthly.js"
   },
   "dependencies": {
-    "pg": "^8.19.0"
+    "pg": "^8.19.0",
+    "web-push": "^3.6.7"
   }
 }

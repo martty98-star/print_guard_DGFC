@@ -1898,6 +1898,30 @@ function setupSettings() {
     showToast(i18n('settings.toast.saved'), 'success');
   });
 
+  el('enable-push-btn').addEventListener('click', () => {
+    enablePushNotifications();
+  });
+
+  el('send-test-push-btn').addEventListener('click', async () => {
+    try {
+      const res = await fetch('/.netlify/functions/send-test-push', {
+        method: 'POST',
+      });
+
+      let result = null;
+      try { result = await res.json(); } catch (_) {}
+
+      if (!res.ok || !result?.ok) {
+        throw new Error(result?.error || 'Odeslání test notifikace selhalo.');
+      }
+
+      showToast(`Test notifikace: odesláno ${result.sent || 0}, selhalo ${result.failed || 0}.`, 'success');
+    } catch (error) {
+      console.error('[Push] send test failed', error);
+      showToast(error?.message || 'Odeslání test notifikace selhalo.', 'error');
+    }
+  });
+
   el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
   el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
   el('export-csv-stock').addEventListener('click',     exportCSVStock);
@@ -2633,6 +2657,97 @@ function showToast(msg, type = '') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.add('hidden'), 3000);
 }
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; i += 1) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
+function getPushDeviceName() {
+  const ua = navigator.userAgent || '';
+
+  if (/android/i.test(ua)) return 'Android';
+  if (/iphone|ipad|ipod/i.test(ua)) return 'iPhone';
+  if (/windows/i.test(ua)) return 'Windows';
+  if (/mac os x/i.test(ua)) return 'Mac';
+  if (/linux/i.test(ua)) return 'Linux';
+
+  return 'Unknown device';
+}
+
+async function enablePushNotifications() {
+  try {
+    if (!('serviceWorker' in navigator)) {
+      showToast('Service Worker není podporován.', 'error');
+      return;
+    }
+
+    if (!('PushManager' in window) || !('Notification' in window)) {
+      showToast('Push notifikace nejsou podporovány.', 'error');
+      return;
+    }
+
+    const vapidPublicKey = typeof window.VAPID_PUBLIC_KEY === 'string'
+      ? window.VAPID_PUBLIC_KEY.trim()
+      : '';
+
+    if (!vapidPublicKey) {
+      showToast('Chybí VAPID public key.', 'error');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      showToast('Push notifikace nebyly povoleny.', 'error');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+    }
+
+    const subJson = subscription.toJSON();
+    const res = await fetch('/.netlify/functions/save-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        endpoint: subJson.endpoint,
+        keys: subJson.keys,
+        deviceName: getPushDeviceName(),
+        userLabel: 'Martin',
+        alertTypes: ['all'],
+      }),
+    });
+
+    let result = null;
+    try { result = await res.json(); } catch (_) {}
+
+    if (!res.ok || !result?.ok) {
+      throw new Error(result?.error || 'Uložení odběru selhalo.');
+    }
+
+    showToast('Push notifikace byly povoleny.', 'success');
+  } catch (error) {
+    console.error('[Push] enable failed', error);
+    showToast('Zapnutí push notifikací selhalo.', 'error');
+  }
+}
+
+window.enablePushNotifications = enablePushNotifications;
 
 function showConfirm(text, onOk) {
   el('confirm-text').textContent = text;
