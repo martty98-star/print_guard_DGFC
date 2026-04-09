@@ -66,6 +66,10 @@ const DomUtils = (typeof window !== 'undefined' && window.PrintGuardDomUtils) ||
 if (!DomUtils) throw new Error('Missing PrintGuardDomUtils');
 const PushUtils = (typeof window !== 'undefined' && window.PrintGuardPushUtils) || null;
 if (!PushUtils) throw new Error('Missing PrintGuardPushUtils');
+const SettingsUI = (typeof window !== 'undefined' && window.PrintGuardSettingsUI) || null;
+if (!SettingsUI) throw new Error('Missing PrintGuardSettingsUI');
+const ExportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUtils) || null;
+if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
 const {
   ds,
   esc,
@@ -93,6 +97,17 @@ const {
   runNotificationDispatch,
   urlBase64ToUint8Array,
 } = PushUtils;
+const {
+  loadSettingsUI: loadSettingsUIScreen,
+  setupSettings: setupSettingsUI,
+} = SettingsUI;
+const {
+  csvEsc,
+  csvRow,
+  dlBlob,
+  fmtExportDateTime,
+  fmtFileDT,
+} = ExportUtils;
 
 function getCostUnitPerM2() {
   return `${cfg.costCurrency} / m²`;
@@ -100,6 +115,10 @@ function getCostUnitPerM2() {
 
 function getCostUnitPerMonth() {
   return `${cfg.costCurrency} / ${i18n('unit.month-word')}`;
+}
+
+function loadSettingsUI() {
+  return loadSettingsUIScreen({ APP_VERSION, cfg, el });
 }
 
 function statusLabel(status) {
@@ -1967,100 +1986,8 @@ function printResultLabel(result) {
 //  SETTINGS + EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════
 
-function loadSettingsUI() {
-  el('cfg-weeks').value      = cfg.weeksN;
-  el('cfg-n').value          = cfg.rollingN;
-  el('cfg-ink-cost').value   = cfg.inkCost   || '';
-  el('cfg-media-cost').value = cfg.mediaCost || '';
-  el('cfg-cost-currency').value = cfg.costCurrency;
-  el('device-id-display').textContent  = cfg.deviceId;
-  el('app-version-display').textContent = APP_VERSION;
-}
-
-function setupSettings() {
-  el('save-settings-btn').addEventListener('click', async () => {
-    cfg.weeksN    = parseInt(el('cfg-weeks').value, 10)      || 8;
-    cfg.rollingN  = parseInt(el('cfg-n').value,     10)      || 8;
-    cfg.inkCost   = parseFloat(el('cfg-ink-cost').value)   || 0;
-    cfg.mediaCost = parseFloat(el('cfg-media-cost').value) || 0;
-    cfg.costCurrency = el('cfg-cost-currency').value || cfg.costCurrency;
-    await saveSettingsToIDB();
-    renderStockOverview();
-    renderCoDashboard();
-    renderCoHistory();
-    showToast(i18n('settings.toast.saved'), 'success');
-  });
-
-  el('enable-push-btn').addEventListener('click', () => {
-    enablePushNotifications();
-  });
-
-  el('send-test-push-btn').addEventListener('click', async () => {
-    try {
-      const res = await fetch('/.netlify/functions/send-test-push', {
-        method: 'POST',
-      });
-
-      let result = null;
-      try { result = await res.json(); } catch (_) {}
-
-      if (!res.ok || !result?.ok) {
-        throw new Error(result?.error || 'Odeslání test notifikace selhalo.');
-      }
-
-      showToast(`Test notifikace: odesláno ${result.sent || 0}, selhalo ${result.failed || 0}.`, 'success');
-    } catch (error) {
-      console.error('[Push] send test failed', error);
-      showToast(error?.message || 'Odeslání test notifikace selhalo.', 'error');
-    }
-  });
-
-  el('send-stock-alerts-btn').addEventListener('click', async () => {
-    await sendStockNotifications({ silent: false, trigger: 'manual-settings' });
-  });
-
-  el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
-  el('export-csv-raw-co').addEventListener('click',    exportCSVRawCo);
-  el('export-csv-stock').addEventListener('click',     exportCSVStock);
-  el('export-csv-stock-levels').addEventListener('click', exportCSVStockLevels);
-  el('export-json').addEventListener('click',          exportJSON);
-  el('import-json-btn').addEventListener('click', ()  => el('import-json-input').click());
-  el('import-json-input').addEventListener('change',   handleImportJSON);
-
-  el('clear-all-btn').addEventListener('click', () => {
-    showConfirm(i18n('settings.clear.confirm'), async () => {
-      await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
-      S.items = []; S.movements = []; S.coRecords = [];
-      renderStockOverview(); renderAlerts(); renderItemsMgmt();
-      renderCoDashboard(); renderCoHistory();
-      showToast(i18n('settings.clear.done'));
-    });
-  });
-}
 
 // ── CSV helpers ──────────────────────────────────────────
-function csvEsc(v) {
-  return Reports.csv.csvEsc(v);
-}
-function csvRow(arr) { return Reports.csv.csvRow(arr); }
-function fmtFileDT() {
-  const d = new Date();
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
-}
-
-function fmtExportDateTime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return String(iso);
-  return d.toLocaleString('cs-CZ', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function getCurrentMonthExportRange() {
   return Reports.date.getCurrentMonthExportRange(new Date());
@@ -2344,14 +2271,6 @@ async function handleImportJSON(e) {
   });
 }
 
-function dlBlob(content, type, filename) {
-  const blob = new Blob(['\ufeff' + content], { type });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
-}
 
 // ── Date range helper ────────────────────────────────────
 function dateRangeFilter(timestamp, from, to) {
@@ -2924,7 +2843,34 @@ el('sync-btn').addEventListener('click', async () => {
 
   setupMovementEntry();
   setupCoEntry();
-  setupSettings();
+  setupSettingsUI({
+    ST_CORECS,
+    ST_ITEMS,
+    ST_MOVES,
+    ST_SETTINGS,
+    S,
+    cfg,
+    el,
+    enablePushNotifications,
+    exportCSVIntervals,
+    exportCSVRawCo,
+    exportCSVStock,
+    exportCSVStockLevels,
+    exportJSON,
+    fetchImpl: fetch,
+    handleImportJSON,
+    i18n,
+    idbClear,
+    renderAlerts,
+    renderCoDashboard,
+    renderCoHistory,
+    renderItemsMgmt,
+    renderStockOverview,
+    saveSettingsToIDB,
+    sendStockNotifications,
+    showConfirm,
+    showToast,
+  });
 
   const langSelect = el('lang-select');
   if (langSelect) {
