@@ -302,7 +302,8 @@ function squareMetersExpr(squareMetersColumn, rawMm2Column) {
 
 function metersExpr(metersColumn, rawMmColumn) {
   if (metersColumn) return `${metersColumn}`;
-  if (rawMmColumn) return `(${rawMmColumn} / 1000.0)`;
+  // Colorado accounting raw media_length_used is stored in 1e-5 meters.
+  if (rawMmColumn) return `(${rawMmColumn} / 100000.0)`;
   return "null";
 }
 
