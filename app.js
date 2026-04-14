@@ -136,6 +136,12 @@ function loadSettingsUI() {
   return loadSettingsUIScreen({ APP_VERSION, cfg, el });
 }
 
+function getPushEndpointSuffix(endpoint) {
+  return typeof endpoint === 'string' && endpoint.length > 24
+    ? endpoint.slice(-24)
+    : (typeof endpoint === 'string' ? endpoint : '');
+}
+
 function showPendingUpdateToast() {
   if (sessionStorage.getItem('pg_sw_updated') === '1') {
     sessionStorage.removeItem('pg_sw_updated');
