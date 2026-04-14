@@ -619,7 +619,14 @@ async function deleteMovementAdmin(id) {
   if (!isAdmin()) { showToast('Mazání pohybů — jen admin', 'error'); return; }
   showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
     try {
-      await cloudDelete('movement', id);
+      const res = await fetch('/.netlify/functions/delete-stock-movement', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ id }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
       await idbDelete(ST_MOVES, id);
       S.movements = S.movements.filter(m => m.id !== id);
       renderStockOverview();
