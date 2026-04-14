@@ -1,4 +1,4 @@
-const CACHE_NAME = "printguard-v5.0";
+const CACHE_NAME = "printguard-v5.1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

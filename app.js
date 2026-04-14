@@ -134,6 +134,51 @@ function loadSettingsUI() {
   return loadSettingsUIScreen({ APP_VERSION, cfg, el });
 }
 
+function showPendingUpdateToast() {
+  if (sessionStorage.getItem('pg_sw_updated') === '1') {
+    sessionStorage.removeItem('pg_sw_updated');
+    const message = `Nová verze aplikace byla načtena (${APP_VERSION})`;
+    showToast(message, 'success');
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification('PrintGuard update', {
+          body: message,
+          icon: '/icons/icon-192.png',
+        });
+      } catch (_) {}
+    }
+  }
+}
+
+function setupAppUpdateChecks() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    sessionStorage.setItem('pg_sw_updated', '1');
+    window.location.reload();
+  });
+
+  const requestUpdate = () => {
+    navigator.serviceWorker.getRegistration().then((registration) => {
+      if (registration) {
+        registration.update().catch(() => {});
+      }
+    }).catch(() => {});
+  };
+
+  window.addEventListener('focus', requestUpdate);
+  window.addEventListener('online', requestUpdate);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      requestUpdate();
+    }
+  });
+
+  requestUpdate();
+}
+
 function printLogRangeLabel() {
   return printLogRangeLabelUI(S, i18n);
 }
@@ -2950,10 +2995,16 @@ el('sync-btn').addEventListener('click', async () => {
   await loadAll();
   applyRoleUI(); // ✅ IMPORTANT
   setupBackgroundSync();
+  showPendingUpdateToast();
 
   // Service Worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(e => console.warn('[SW]', e));
+    navigator.serviceWorker.register('sw.js')
+      .then((registration) => {
+        registration.update().catch(() => {});
+      })
+      .catch(e => console.warn('[SW]', e));
+    setupAppUpdateChecks();
   }
 
   // URL params
