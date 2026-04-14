@@ -71,6 +71,10 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
       <span id="alerts-nav-label" data-i18n="nav.alerts">Upozornění</span>
     </button>
+    <button class="nav-item" data-screen="checklist">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <span>Checklist</span>
+    </button>
     <button class="nav-item" data-screen="stock-log">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       <span data-i18n="nav.history">Historie</span>
@@ -213,6 +217,71 @@
   </main>
 
   <!-- Správa položek -->
+  <main id="screen-checklist" class="screen">
+    <div class="screen-header">
+      <h1>Checklist reminders</h1>
+      <div class="header-meta" id="checklist-status-text">Checklist pripraven.</div>
+    </div>
+
+    <section class="settings-card">
+      <div id="checklist-summary"></div>
+      <div class="checklist-toolbar">
+        <div class="hint">Opakovane operacni ukoly s push reminderem.</div>
+        <div class="checklist-toolbar-actions">
+          <button class="btn-sm" id="checklist-refresh-btn">Obnovit</button>
+          <button class="btn-sm admin-only" id="checklist-run-btn">Vyhodnotit ted</button>
+          <button class="btn-sm admin-only" id="checklist-new-btn">+ Novy ukol</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-card hidden admin-only" id="checklist-form-card">
+      <div class="screen-header checklist-form-head">
+        <h2 id="checklist-form-title">Novy checklist ukol</h2>
+      </div>
+      <div class="checklist-form-grid">
+        <div class="form-group">
+          <label for="checklist-title">Nazev *</label>
+          <input type="text" id="checklist-title" placeholder="napr. Wipe cutter">
+        </div>
+        <div class="form-group">
+          <label for="checklist-category">Kategorie</label>
+          <input type="text" id="checklist-category" placeholder="maintenance">
+        </div>
+        <div class="form-group checklist-form-span2">
+          <label for="checklist-description">Popis</label>
+          <textarea id="checklist-description" rows="2" placeholder="napr. Wipe cutter pred smenou."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="checklist-time">Cas reminderu *</label>
+          <input type="time" id="checklist-time">
+        </div>
+        <div class="form-group checklist-toggle-row">
+          <label for="checklist-enabled">Aktivni</label>
+          <input type="checkbox" id="checklist-enabled" checked>
+        </div>
+        <div class="form-group checklist-form-span2">
+          <label>Dny *</label>
+          <div class="checklist-days">
+            <label><input type="checkbox" id="checklist-day-mon">Po</label>
+            <label><input type="checkbox" id="checklist-day-tue">Ut</label>
+            <label><input type="checkbox" id="checklist-day-wed">St</label>
+            <label><input type="checkbox" id="checklist-day-thu">Ct</label>
+            <label><input type="checkbox" id="checklist-day-fri">Pa</label>
+            <label><input type="checkbox" id="checklist-day-sat">So</label>
+            <label><input type="checkbox" id="checklist-day-sun">Ne</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer checklist-form-actions">
+        <button class="btn-secondary" id="checklist-cancel-btn">Zrusit</button>
+        <button class="btn-primary" id="checklist-save-btn">Ulozit</button>
+      </div>
+    </section>
+
+    <div id="checklist-list" class="item-list"></div>
+  </main>
+
   <main id="screen-stock-items" class="screen">
     <div class="screen-header">
       <h1 data-i18n="header.stock-items">Správa položek</h1>
@@ -693,12 +762,15 @@
   <script src="reports/notification-rules.js"></script>
   <script src="reports/notification-dispatch.js"></script>
   <script src="reports/printLog.js"></script>
+  <script src="reports/checklist-domain.js"></script>
   <script src="scripts/core-utils.js"></script>
   <script src="scripts/dom-utils.js"></script>
   <script src="scripts/push-utils.js"></script>
   <script src="scripts/settings-ui.js"></script>
   <script src="scripts/export-utils.js"></script>
   <script src="scripts/print-log-ui.js"></script>
+  <script src="scripts/checklist-api.js"></script>
+  <script src="scripts/checklist-ui.js"></script>
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
   </script>

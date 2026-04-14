@@ -1,0 +1,418 @@
+(function attachChecklistUi(root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+    return;
+  }
+  root.PrintGuardChecklistUI = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function createChecklistUi() {
+  'use strict';
+
+  const ChecklistApi = (typeof window !== 'undefined' && window.PrintGuardChecklistApi) || null;
+  const ChecklistDomain = (typeof window !== 'undefined' && window.checklistDomain) || null;
+
+  if (!ChecklistApi) throw new Error('Missing PrintGuardChecklistApi');
+  if (!ChecklistDomain) throw new Error('Missing checklistDomain');
+
+  const WEEKDAY_OPTIONS = [
+    { key: 'mon', label: 'Po' },
+    { key: 'tue', label: 'Ut' },
+    { key: 'wed', label: 'St' },
+    { key: 'thu', label: 'Ct' },
+    { key: 'fri', label: 'Pa' },
+    { key: 'sat', label: 'So' },
+    { key: 'sun', label: 'Ne' },
+  ];
+
+  const state = {
+    applyRoleUI: null,
+    cfg: null,
+    el: null,
+    fetchImpl: null,
+    initialized: false,
+    items: [],
+    loaded: false,
+    loading: false,
+    editingItemId: null,
+    showConfirm: null,
+    showToast: null,
+  };
+
+  function isAdmin() {
+    return Boolean(state.cfg && state.cfg.role === 'admin');
+  }
+
+  function getActor() {
+    const deviceId = state.cfg && state.cfg.deviceId ? state.cfg.deviceId : 'device';
+    const role = state.cfg && state.cfg.role ? state.cfg.role : 'operator';
+    return role + ':' + deviceId;
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getDefaultItem() {
+    return {
+      title: '',
+      description: '',
+      enabled: true,
+      daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      timeOfDay: '08:00',
+      category: 'maintenance',
+      timeZone: 'Europe/Prague',
+    };
+  }
+
+  function findItemById(id) {
+    return state.items.find((item) => item.id === id) || null;
+  }
+
+  function getEditingItem() {
+    return findItemById(state.editingItemId) || null;
+  }
+
+  function setStatus(text) {
+    const node = state.el('checklist-status-text');
+    if (node) {
+      node.textContent = text;
+    }
+  }
+
+  function getFormPayload() {
+    const daysOfWeek = WEEKDAY_OPTIONS
+      .filter((day) => {
+        const input = state.el('checklist-day-' + day.key);
+        return Boolean(input && input.checked);
+      })
+      .map((day) => day.key);
+
+    return {
+      id: state.editingItemId || undefined,
+      title: state.el('checklist-title')?.value || '',
+      description: state.el('checklist-description')?.value || '',
+      enabled: Boolean(state.el('checklist-enabled')?.checked),
+      daysOfWeek,
+      timeOfDay: state.el('checklist-time')?.value || '',
+      category: state.el('checklist-category')?.value || '',
+      timeZone: 'Europe/Prague',
+      actor: getActor(),
+    };
+  }
+
+  function fillForm(item) {
+    const normalized = item || getDefaultItem();
+
+    if (state.el('checklist-title')) state.el('checklist-title').value = normalized.title || '';
+    if (state.el('checklist-description')) state.el('checklist-description').value = normalized.description || '';
+    if (state.el('checklist-enabled')) state.el('checklist-enabled').checked = normalized.enabled !== false;
+    if (state.el('checklist-time')) state.el('checklist-time').value = normalized.timeOfDay || '08:00';
+    if (state.el('checklist-category')) state.el('checklist-category').value = normalized.category || '';
+
+    const days = Array.isArray(normalized.daysOfWeek) ? normalized.daysOfWeek : [];
+    WEEKDAY_OPTIONS.forEach((day) => {
+      const input = state.el('checklist-day-' + day.key);
+      if (input) {
+        input.checked = days.includes(day.key);
+      }
+    });
+  }
+
+  function openForm(item) {
+    if (!isAdmin()) {
+      return;
+    }
+
+    state.editingItemId = item && item.id ? item.id : null;
+    fillForm(item || getDefaultItem());
+    state.el('checklist-form-card')?.classList.remove('hidden');
+    state.el('checklist-form-title') && (state.el('checklist-form-title').textContent = item ? 'Upravit checklist ukol' : 'Novy checklist ukol');
+  }
+
+  function closeForm() {
+    state.editingItemId = null;
+    state.el('checklist-form-card')?.classList.add('hidden');
+    fillForm(getDefaultItem());
+  }
+
+  function renderChecklistList() {
+    const host = state.el('checklist-list');
+    if (!host) {
+      return;
+    }
+
+    if (state.loading && !state.loaded) {
+      host.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Nacitam checklist...</p></div>';
+      return;
+    }
+
+    if (!state.items.length) {
+      host.innerHTML = '<div class="empty-state"><h3>Zatim zadny checklist ukol</h3><p>Admin muze pridat prvni opakovany reminder.</p></div>';
+      return;
+    }
+
+    host.innerHTML = state.items.map((item) => {
+      const nextOccurrence = ChecklistDomain.getNextChecklistOccurrence(item);
+      const scheduleLabel = ChecklistDomain.formatChecklistScheduleLabel(item);
+      const enabledLabel = item.enabled ? 'Aktivni' : 'Vypnuto';
+      const nextLabel = nextOccurrence
+        ? (nextOccurrence.localDate + ' ' + nextOccurrence.localTime)
+        : 'neni';
+
+      return `
+        <article class="checklist-item-card ${item.enabled ? '' : 'is-disabled'}">
+          <div class="checklist-item-head">
+            <div>
+              <h3>${escapeHtml(item.title)}</h3>
+              <div class="checklist-meta-row">
+                <span class="checklist-pill">${escapeHtml(enabledLabel)}</span>
+                ${item.category ? `<span class="checklist-pill">${escapeHtml(item.category)}</span>` : ''}
+                <span class="checklist-pill">${escapeHtml(scheduleLabel)}</span>
+              </div>
+            </div>
+            <div class="checklist-item-actions">
+              <button class="btn-sm admin-only" data-action="toggle" data-id="${escapeHtml(item.id)}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>
+              <button class="btn-sm admin-only" data-action="edit" data-id="${escapeHtml(item.id)}">Upravit</button>
+              <button class="btn-sm admin-only danger" data-action="delete" data-id="${escapeHtml(item.id)}">Smazat</button>
+            </div>
+          </div>
+          ${item.description ? `<p class="checklist-description">${escapeHtml(item.description)}</p>` : ''}
+          <div class="checklist-detail-row">
+            <span>Dalsi occurrence</span>
+            <strong>${escapeHtml(nextLabel)}</strong>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderSummary() {
+    const total = state.items.length;
+    const enabled = state.items.filter((item) => item.enabled).length;
+    const disabled = total - enabled;
+    const summaryNode = state.el('checklist-summary');
+    if (!summaryNode) {
+      return;
+    }
+
+    summaryNode.innerHTML = `
+      <div class="checklist-summary-row">
+        <div class="checklist-summary-stat">
+          <strong>${total}</strong>
+          <span>ukolu</span>
+        </div>
+        <div class="checklist-summary-stat">
+          <strong>${enabled}</strong>
+          <span>aktivnich</span>
+        </div>
+        <div class="checklist-summary-stat">
+          <strong>${disabled}</strong>
+          <span>vypnutych</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function applyUiAccessState() {
+    if (typeof state.applyRoleUI === 'function') {
+      state.applyRoleUI();
+    }
+  }
+
+  async function refreshChecklist(force) {
+    if (state.loading) {
+      return;
+    }
+
+    if (state.loaded && !force) {
+      renderChecklistScreen();
+      return;
+    }
+
+    state.loading = true;
+    setStatus('Nacitam checklist...');
+    renderChecklistList();
+
+    try {
+      const response = await ChecklistApi.listChecklistItems({
+        fetchImpl: state.fetchImpl,
+      });
+      state.items = Array.isArray(response.items) ? response.items : [];
+      state.loaded = true;
+      setStatus('Checklist pripraven.');
+    } catch (error) {
+      setStatus('Checklist se nepodarilo nacist.');
+      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist load failed', 'error');
+    } finally {
+      state.loading = false;
+      renderChecklistScreen();
+    }
+  }
+
+  async function saveChecklist() {
+    try {
+      const payload = getFormPayload();
+      const requestBody = {
+        ...payload,
+        actor: getActor(),
+      };
+
+      if (payload.id) {
+        await ChecklistApi.updateChecklistItem(requestBody, { fetchImpl: state.fetchImpl });
+      } else {
+        await ChecklistApi.createChecklistItem(requestBody, { fetchImpl: state.fetchImpl });
+      }
+
+      closeForm();
+      state.showToast && state.showToast('Checklist ulozen.', 'success');
+      await refreshChecklist(true);
+    } catch (error) {
+      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist save failed', 'error');
+    }
+  }
+
+  async function toggleChecklist(id) {
+    const item = findItemById(id);
+    if (!item) {
+      return;
+    }
+
+    try {
+      await ChecklistApi.updateChecklistItem(
+        {
+          ...item,
+          enabled: !item.enabled,
+          actor: getActor(),
+        },
+        { fetchImpl: state.fetchImpl }
+      );
+      state.showToast && state.showToast('Checklist aktualizovan.', 'success');
+      await refreshChecklist(true);
+    } catch (error) {
+      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist update failed', 'error');
+    }
+  }
+
+  async function deleteChecklist(id) {
+    const runDelete = async function runDelete() {
+      try {
+        await ChecklistApi.deleteChecklistItem(id, { fetchImpl: state.fetchImpl });
+        state.showToast && state.showToast('Checklist smazan.', 'success');
+        await refreshChecklist(true);
+      } catch (error) {
+        state.showToast && state.showToast(error && error.message ? error.message : 'Checklist delete failed', 'error');
+      }
+    };
+
+    if (typeof state.showConfirm === 'function') {
+      state.showConfirm('Opravdu smazat checklist ukol?', runDelete);
+      return;
+    }
+
+    if (window.confirm('Opravdu smazat checklist ukol?')) {
+      await runDelete();
+    }
+  }
+
+  async function runManualEvaluation() {
+    try {
+      const result = await ChecklistApi.evaluateChecklistReminders(
+        { lookbackMinutes: 15 },
+        { fetchImpl: state.fetchImpl }
+      );
+
+      const summary = [
+        'due ' + (result.dueOccurrences || 0),
+        'reserved ' + (result.reservedOccurrences || 0),
+        'duplicate ' + (result.duplicateOccurrences || 0),
+        'sent ' + (result.sent || 0),
+      ].join(' | ');
+
+      state.showToast && state.showToast('Checklist evaluator: ' + summary, 'success');
+    } catch (error) {
+      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist evaluate failed', 'error');
+    }
+  }
+
+  function handleListClick(event) {
+    const button = event.target && event.target.closest ? event.target.closest('[data-action][data-id]') : null;
+    if (!button) {
+      return;
+    }
+
+    const id = button.getAttribute('data-id');
+    const action = button.getAttribute('data-action');
+    const item = findItemById(id);
+
+    if (!item) {
+      return;
+    }
+
+    if (action === 'edit') {
+      openForm(item);
+      return;
+    }
+
+    if (action === 'toggle') {
+      toggleChecklist(id);
+      return;
+    }
+
+    if (action === 'delete') {
+      deleteChecklist(id);
+    }
+  }
+
+  function renderChecklistScreen(force) {
+    renderSummary();
+    renderChecklistList();
+    applyUiAccessState();
+
+    if (!state.loaded || force) {
+      refreshChecklist(Boolean(force));
+    }
+  }
+
+  function initChecklistUI(options) {
+    if (state.initialized) {
+      return;
+    }
+
+    state.applyRoleUI = options.applyRoleUI || null;
+    state.cfg = options.cfg;
+    state.el = options.el;
+    state.fetchImpl = options.fetchImpl || fetch;
+    state.showConfirm = options.showConfirm || null;
+    state.showToast = options.showToast || null;
+    state.initialized = true;
+
+    state.el('checklist-refresh-btn')?.addEventListener('click', function onRefresh() {
+      refreshChecklist(true);
+    });
+    state.el('checklist-run-btn')?.addEventListener('click', function onRun() {
+      runManualEvaluation();
+    });
+    state.el('checklist-new-btn')?.addEventListener('click', function onNew() {
+      openForm(null);
+    });
+    state.el('checklist-cancel-btn')?.addEventListener('click', function onCancel() {
+      closeForm();
+    });
+    state.el('checklist-save-btn')?.addEventListener('click', function onSave() {
+      saveChecklist();
+    });
+    state.el('checklist-list')?.addEventListener('click', handleListClick);
+
+    fillForm(getDefaultItem());
+  }
+
+  return {
+    initChecklistUI,
+    renderChecklistScreen,
+    refreshChecklist,
+  };
+});

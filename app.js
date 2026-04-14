@@ -72,6 +72,8 @@ const ExportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUti
 if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
 const PrintLogUI = (typeof window !== 'undefined' && window.PrintGuardPrintLogUI) || null;
 if (!PrintLogUI) throw new Error('Missing PrintGuardPrintLogUI');
+const ChecklistUI = (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
+if (!ChecklistUI) throw new Error('Missing PrintGuardChecklistUI');
 const {
   ds,
   esc,
@@ -192,6 +194,10 @@ function renderPrintLogTodayQueue() {
     getPrintLogTodayQueueBasisLabel,
     mapPrinterName,
   });
+}
+
+function renderChecklistScreen(force = false) {
+  return ChecklistUI.renderChecklistScreen(force);
 }
 
 function statusLabel(status) {
@@ -1331,8 +1337,8 @@ function renderCoHistory() {
       <td>${fmtDT(rec.timestamp)}</td>
       <td class="num">${fmtN(rec.inkTotalLiters, 3)}</td>
       <td class="num">${fmtN(rec.mediaTotalM2, 1)}</td>
-      <td class="num delta">${iv ? '+' + fmtN(iv.inkUsed, 3) : '—'}</td>
       <td class="num delta">${iv ? '+' + fmtN(iv.mediaUsed, 1) : '—'}</td>
+      <td class="num delta">${iv ? '+' + fmtN(iv.inkUsed, 3) : '—'}</td>
       <td class="num">${iv && iv.inkPerM2 !== null ? fmtN(iv.inkPerM2, 4) : '—'}</td>
       ${hasCosts ? `<td class="num">${iv && iv.costPerM2 !== null ? fmtN(iv.costPerM2, 2) : '—'}</td>` : ''}
       <td class="note-td">${esc(rec.note || '—')}</td>
@@ -1345,8 +1351,8 @@ function renderCoHistory() {
       <th>${i18n('colorado.table.datetime')}</th>
       <th>${i18n('colorado.table.ink-total')}</th>
       <th>${i18n('colorado.table.media-total')}</th>
-      <th>${i18n('colorado.table.ink-delta')}</th>
       <th>${i18n('colorado.table.media-delta')}</th>
+      <th>${i18n('colorado.table.ink-delta')}</th>
       <th>${i18n('unit.l-per-m2')}</th>
       ${hasCosts ? `<th>${getCostUnitPerM2()}</th>` : ''}
       <th>${i18n('table.note')}</th>
@@ -2339,6 +2345,7 @@ function navigate(screenId) {
   );
 
   if (screenId === 'stock-alerts')  renderAlerts();
+  if (screenId === 'checklist')     renderChecklistScreen();
   if (screenId === 'stock-items')   renderItemsMgmt();
   if (screenId === 'stock-log')     renderStockLog();
   if (screenId === 'co-history')    renderCoHistory();
@@ -2789,6 +2796,14 @@ el('sync-btn').addEventListener('click', async () => {
 
   setupMovementEntry();
   setupCoEntry();
+  ChecklistUI.initChecklistUI({
+    applyRoleUI,
+    cfg,
+    el,
+    fetchImpl: fetch,
+    showConfirm,
+    showToast,
+  });
   setupSettingsUI({
     ST_CORECS,
     ST_ITEMS,
@@ -2952,6 +2967,7 @@ window.addEventListener('i18n:changed', () => {
   try { renderCoDashboard(); } catch (_) {}
   try { renderCoHistory(); } catch (_) {}
   try { renderPrintLogRows(); } catch (_) {}
+  try { renderChecklistScreen(false); } catch (_) {}
 });
 
 function updateOfflineBanner() {
