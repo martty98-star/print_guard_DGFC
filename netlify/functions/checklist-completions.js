@@ -1,7 +1,10 @@
 'use strict';
 
 const { json, parseRequestBody, withClient } = require('./_lib/db');
-const { completeChecklistOccurrence } = require('./_lib/checklist-store');
+const {
+  completeChecklistOccurrence,
+  listChecklistCompletions,
+} = require('./_lib/checklist-store');
 
 function getActor(event, body) {
   const headerValue = event && event.headers
@@ -18,8 +21,18 @@ exports.handler = async function handler(event) {
   }
 
   try {
+    if (event.httpMethod === 'GET') {
+      const query = event.queryStringParameters || {};
+      const limit = Math.max(1, Number(query.limit) || 50);
+      const body = await withClient(async (client) => {
+        const completions = await listChecklistCompletions(client, limit);
+        return { ok: true, completions };
+      });
+      return json(200, body);
+    }
+
     if (event.httpMethod !== 'POST') {
-      return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'POST,OPTIONS' });
+      return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,OPTIONS' });
     }
 
     const requestBody = parseRequestBody(event);
@@ -28,6 +41,7 @@ exports.handler = async function handler(event) {
     const deviceId = String(requestBody.device_id || requestBody.deviceId || '').trim();
     const completedAt = String(requestBody.completed_at || requestBody.completedAt || new Date().toISOString()).trim();
     const completedBy = getActor(event, requestBody);
+    const checklistTitle = String(requestBody.checklist_title || requestBody.checklistTitle || '').trim();
 
     if (!checklistId || !occurrenceKey || !deviceId) {
       return json(400, { ok: false, error: 'Missing checklist completion fields' });
@@ -36,6 +50,7 @@ exports.handler = async function handler(event) {
     const body = await withClient(async (client) => {
       const completed = await completeChecklistOccurrence(client, {
         checklistId,
+        checklistTitle,
         occurrenceKey,
         completedAt,
         completedBy,
@@ -50,6 +65,7 @@ exports.handler = async function handler(event) {
         ok: true,
         completion: {
           checklist_id: checklistId,
+          checklist_title: checklistTitle,
           occurrence_key: occurrenceKey,
           completed_at: completedAt,
           completed_by: completedBy,

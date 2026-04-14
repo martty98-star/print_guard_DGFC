@@ -47,6 +47,10 @@
     return request('POST', '/.netlify/functions/checklist-completions', payload, options);
   }
 
+  function listChecklistCompletions(options) {
+    return request('GET', '/.netlify/functions/checklist-completions', null, options);
+  }
+
   function evaluateChecklistReminders(payload, options) {
     return request('POST', '/.netlify/functions/checklist-evaluate', payload || {}, options);
   }
@@ -57,6 +61,7 @@
     evaluateChecklistReminders,
     completeChecklistOccurrence,
     listChecklistItems,
+    listChecklistCompletions,
     updateChecklistItem,
   };
 });

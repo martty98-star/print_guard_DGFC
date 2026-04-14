@@ -87,12 +87,17 @@ async function ensureChecklistTables(client) {
       create table if not exists checklist_occurrence_completion (
         occurrence_key text primary key,
         checklist_id text not null references checklist_tasks(id) on delete cascade,
+        checklist_title text null,
         completed_at timestamptz not null,
         completed_by text null,
         device_id text null,
         created_at timestamptz not null default now()
       )
     `
+  );
+
+  await client.query(
+    `alter table if exists checklist_occurrence_completion add column if not exists checklist_title text null`
   );
 }
 
@@ -347,6 +352,7 @@ async function completeChecklistOccurrence(client, completion) {
       insert into checklist_occurrence_completion (
         occurrence_key,
         checklist_id,
+        checklist_title,
         completed_at,
         completed_by,
         device_id,
@@ -355,9 +361,10 @@ async function completeChecklistOccurrence(client, completion) {
       values (
         $1,
         $2,
-        $3::timestamptz,
-        $4,
+        $3,
+        $4::timestamptz,
         $5,
+        $6,
         now()
       )
       on conflict (occurrence_key) do nothing
@@ -366,6 +373,7 @@ async function completeChecklistOccurrence(client, completion) {
     [
       completion.occurrenceKey,
       completion.checklistId,
+      cleanOptionalString(completion.checklistTitle),
       completion.completedAt,
       completion.completedBy,
       completion.deviceId,
@@ -375,12 +383,44 @@ async function completeChecklistOccurrence(client, completion) {
   return result.rowCount > 0;
 }
 
+async function listChecklistCompletions(client, limit = 50) {
+  await ensureChecklistTables(client);
+  const result = await client.query(
+    `
+      select
+        c.occurrence_key,
+        c.checklist_id,
+        coalesce(c.checklist_title, t.title) as checklist_title,
+        c.completed_at,
+        c.completed_by,
+        c.device_id,
+        c.created_at
+      from checklist_occurrence_completion c
+      left join checklist_tasks t on t.id = c.checklist_id
+      order by c.completed_at desc, c.created_at desc
+      limit $1
+    `,
+    [Math.max(1, Number(limit) || 50)]
+  );
+
+  return result.rows.map((row) => ({
+    occurrenceKey: row.occurrence_key,
+    checklistId: row.checklist_id,
+    checklistTitle: row.checklist_title,
+    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at || ''),
+    completedBy: row.completed_by,
+    deviceId: row.device_id,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+  }));
+}
+
 module.exports = {
   completeChecklistOccurrence,
   deleteChecklistItem,
   ensureChecklistTables,
   finalizeChecklistOccurrence,
   listChecklistItems,
+  listChecklistCompletions,
   reserveChecklistOccurrence,
   saveChecklistItem,
 };

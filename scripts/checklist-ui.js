@@ -31,6 +31,7 @@
     i18n: null,
     initialized: false,
     items: [],
+    completions: [],
     loaded: false,
     loading: false,
     editingItemId: null,
@@ -235,6 +236,31 @@
     `;
   }
 
+  function renderChecklistLog() {
+    const host = state.el('checklist-log');
+    if (!host || !isAdmin()) {
+      return;
+    }
+
+    if (!state.completions.length) {
+      host.innerHTML = `<div class="empty-state"><h3>No checklist completions yet</h3><p>Completed occurrences will appear here.</p></div>`;
+      return;
+    }
+
+    host.innerHTML = `<table class="data-table">
+      <thead><tr><th>Task</th><th>Occurrence</th><th>Completed at</th><th>By</th><th>Device</th></tr></thead>
+      <tbody>${state.completions.map((row) => `
+        <tr>
+          <td>${escapeHtml(row.checklistTitle || row.checklistId || '')}</td>
+          <td>${escapeHtml(row.occurrenceKey || '')}</td>
+          <td>${escapeHtml(row.completedAt || '')}</td>
+          <td>${escapeHtml(row.completedBy || '')}</td>
+          <td>${escapeHtml(row.deviceId || '')}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  }
+
   function applyUiAccessState() {
     if (typeof state.applyRoleUI === 'function') {
       state.applyRoleUI();
@@ -259,7 +285,11 @@
       const response = await ChecklistApi.listChecklistItems({
         fetchImpl: state.fetchImpl,
       });
+      const logResponse = await ChecklistApi.listChecklistCompletions({
+        fetchImpl: state.fetchImpl,
+      });
       state.items = Array.isArray(response.items) ? response.items : [];
+      state.completions = Array.isArray(logResponse.completions) ? logResponse.completions : [];
       state.loaded = true;
       setStatus(t('checklist.status.ready'));
     } catch (error) {
@@ -323,6 +353,7 @@
       await ChecklistApi.completeChecklistOccurrence(
         {
           checklist_id: item.id,
+          checklist_title: item.title,
           occurrence_key: nextOccurrence.occurrenceKey,
           completed_at: new Date().toISOString(),
           completed_by: getActor(),
@@ -415,6 +446,7 @@
   function renderChecklistScreen(force) {
     renderSummary();
     renderChecklistList();
+    renderChecklistLog();
     applyUiAccessState();
 
     if (!state.loaded || force) {

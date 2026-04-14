@@ -40,6 +40,7 @@ on checklist_reminder_state (checklist_id, scheduled_local_date desc);
 create table if not exists checklist_occurrence_completion (
   occurrence_key text primary key,
   checklist_id text not null references checklist_tasks(id) on delete cascade,
+  checklist_title text null,
   completed_at timestamptz not null,
   completed_by text null,
   device_id text null,
