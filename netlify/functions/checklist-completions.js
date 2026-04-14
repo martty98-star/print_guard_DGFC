@@ -1,0 +1,69 @@
+'use strict';
+
+const { json, parseRequestBody, withClient } = require('./_lib/db');
+const { completeChecklistOccurrence } = require('./_lib/checklist-store');
+
+function getActor(event, body) {
+  const headerValue = event && event.headers
+    ? event.headers['x-printguard-actor'] || event.headers['X-PrintGuard-Actor']
+    : null;
+  const bodyValue = body && typeof body.actor === 'string' ? body.actor : null;
+  const actor = bodyValue || headerValue || 'printguard-user';
+  return typeof actor === 'string' && actor.trim() ? actor.trim() : 'printguard-user';
+}
+
+exports.handler = async function handler(event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return json(204, {});
+  }
+
+  try {
+    if (event.httpMethod !== 'POST') {
+      return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'POST,OPTIONS' });
+    }
+
+    const requestBody = parseRequestBody(event);
+    const checklistId = String(requestBody.checklist_id || requestBody.checklistId || '').trim();
+    const occurrenceKey = String(requestBody.occurrence_key || requestBody.occurrenceKey || '').trim();
+    const deviceId = String(requestBody.device_id || requestBody.deviceId || '').trim();
+    const completedAt = String(requestBody.completed_at || requestBody.completedAt || new Date().toISOString()).trim();
+    const completedBy = getActor(event, requestBody);
+
+    if (!checklistId || !occurrenceKey || !deviceId) {
+      return json(400, { ok: false, error: 'Missing checklist completion fields' });
+    }
+
+    const body = await withClient(async (client) => {
+      const completed = await completeChecklistOccurrence(client, {
+        checklistId,
+        occurrenceKey,
+        completedAt,
+        completedBy,
+        deviceId,
+      });
+
+      if (!completed) {
+        return { ok: false, error: 'Checklist occurrence already completed' };
+      }
+
+      return {
+        ok: true,
+        completion: {
+          checklist_id: checklistId,
+          occurrence_key: occurrenceKey,
+          completed_at: completedAt,
+          completed_by: completedBy,
+          device_id: deviceId,
+        },
+      };
+    });
+
+    return body.ok ? json(200, body) : json(409, body);
+  } catch (error) {
+    console.error('checklist-completions failed', error);
+    return json(500, {
+      ok: false,
+      error: error && error.message ? error.message : 'checklist-completions failed',
+    });
+  }
+};

@@ -43,6 +43,10 @@
     return request('DELETE', '/.netlify/functions/checklist-items', { id }, options);
   }
 
+  function completeChecklistOccurrence(payload, options) {
+    return request('POST', '/.netlify/functions/checklist-completions', payload, options);
+  }
+
   function evaluateChecklistReminders(payload, options) {
     return request('POST', '/.netlify/functions/checklist-evaluate', payload || {}, options);
   }
@@ -51,6 +55,7 @@
     createChecklistItem,
     deleteChecklistItem,
     evaluateChecklistReminders,
+    completeChecklistOccurrence,
     listChecklistItems,
     updateChecklistItem,
   };

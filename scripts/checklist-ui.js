@@ -193,6 +193,7 @@
             </div>
             <div class="checklist-item-actions">
               <button class="btn-sm admin-only" data-action="toggle" data-id="${escapeHtml(item.id)}">${item.enabled ? escapeHtml(t('checklist.action.disable')) : escapeHtml(t('checklist.action.enable'))}</button>
+              <button class="btn-sm" data-action="complete" data-id="${escapeHtml(item.id)}">Complete</button>
               <button class="btn-sm admin-only" data-action="edit" data-id="${escapeHtml(item.id)}">${escapeHtml(t('btn.edit'))}</button>
               <button class="btn-sm admin-only danger" data-action="delete" data-id="${escapeHtml(item.id)}">${escapeHtml(t('btn.delete'))}</button>
             </div>
@@ -314,6 +315,28 @@
     }
   }
 
+  async function completeChecklist(item) {
+    const nextOccurrence = ChecklistDomain.getNextChecklistOccurrence(item);
+    if (!nextOccurrence) return;
+
+    try {
+      await ChecklistApi.completeChecklistOccurrence(
+        {
+          checklist_id: item.id,
+          occurrence_key: nextOccurrence.occurrenceKey,
+          completed_at: new Date().toISOString(),
+          completed_by: getActor(),
+          device_id: state.cfg && state.cfg.deviceId ? state.cfg.deviceId : 'device',
+        },
+        { fetchImpl: state.fetchImpl }
+      );
+      state.showToast && state.showToast('Checklist occurrence completed', 'success');
+      await refreshChecklist(true);
+    } catch (error) {
+      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist completion failed', 'error');
+    }
+  }
+
   async function deleteChecklist(id) {
     const runDelete = async function runDelete() {
       try {
@@ -376,6 +399,11 @@
 
     if (action === 'toggle') {
       toggleChecklist(id);
+      return;
+    }
+
+    if (action === 'complete') {
+      completeChecklist(item);
       return;
     }
 

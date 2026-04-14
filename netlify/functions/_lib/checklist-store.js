@@ -81,6 +81,19 @@ async function ensureChecklistTables(client) {
       on checklist_reminder_state (checklist_id, scheduled_local_date desc)
     `
   );
+
+  await client.query(
+    `
+      create table if not exists checklist_occurrence_completion (
+        occurrence_key text primary key,
+        checklist_id text not null references checklist_tasks(id) on delete cascade,
+        completed_at timestamptz not null,
+        completed_by text null,
+        device_id text null,
+        created_at timestamptz not null default now()
+      )
+    `
+  );
 }
 
 async function listChecklistItems(client) {
@@ -327,7 +340,43 @@ async function finalizeChecklistOccurrence(client, occurrenceKey, result) {
   );
 }
 
+async function completeChecklistOccurrence(client, completion) {
+  await ensureChecklistTables(client);
+  const result = await client.query(
+    `
+      insert into checklist_occurrence_completion (
+        occurrence_key,
+        checklist_id,
+        completed_at,
+        completed_by,
+        device_id,
+        created_at
+      )
+      values (
+        $1,
+        $2,
+        $3::timestamptz,
+        $4,
+        $5,
+        now()
+      )
+      on conflict (occurrence_key) do nothing
+      returning occurrence_key
+    `,
+    [
+      completion.occurrenceKey,
+      completion.checklistId,
+      completion.completedAt,
+      completion.completedBy,
+      completion.deviceId,
+    ]
+  );
+
+  return result.rowCount > 0;
+}
+
 module.exports = {
+  completeChecklistOccurrence,
   deleteChecklistItem,
   ensureChecklistTables,
   finalizeChecklistOccurrence,
