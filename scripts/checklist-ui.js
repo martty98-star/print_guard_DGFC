@@ -44,9 +44,26 @@
   }
 
   function getActor() {
+    const userName = state.cfg && state.cfg.userName ? String(state.cfg.userName).trim() : '';
+    if (userName) {
+      return userName;
+    }
     const deviceId = state.cfg && state.cfg.deviceId ? state.cfg.deviceId : 'device';
     const role = state.cfg && state.cfg.role ? state.cfg.role : 'operator';
     return role + ':' + deviceId;
+  }
+
+  function formatDate(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('cs-CZ', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
   }
 
   function escapeHtml(value) {
@@ -253,7 +270,7 @@
         <tr>
           <td>${escapeHtml(row.checklistTitle || row.checklistId || '')}</td>
           <td>${escapeHtml(row.occurrenceKey || '')}</td>
-          <td>${escapeHtml(row.completedAt || '')}</td>
+          <td>${escapeHtml(formatDate(row.completedAt || ''))}</td>
           <td>${escapeHtml(row.completedBy || '')}</td>
           <td>${escapeHtml(row.deviceId || '')}</td>
         </tr>

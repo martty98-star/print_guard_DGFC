@@ -8,6 +8,7 @@
     el('cfg-ink-cost').value = cfg.inkCost || '';
     el('cfg-media-cost').value = cfg.mediaCost || '';
     el('cfg-cost-currency').value = cfg.costCurrency;
+    if (el('cfg-user-name')) el('cfg-user-name').value = cfg.userName || '';
     el('device-id-display').textContent = cfg.deviceId;
     el('app-version-display').textContent = APP_VERSION;
   }
@@ -48,6 +49,7 @@
       cfg.inkCost = parseFloat(el('cfg-ink-cost').value) || 0;
       cfg.mediaCost = parseFloat(el('cfg-media-cost').value) || 0;
       cfg.costCurrency = el('cfg-cost-currency').value || cfg.costCurrency;
+      cfg.userName = (el('cfg-user-name').value || '').trim();
       await saveSettingsToIDB();
       renderStockOverview();
       renderCoDashboard();

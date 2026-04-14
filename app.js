@@ -42,6 +42,8 @@ const cfg = {
     if (!id) { id = 'pg-' + Math.random().toString(36).slice(2, 10); ls('pg_device_id', id); }
     return id;
   },
+  get userName() { return ls('pg_user_name') || ''; },
+  set userName(v) { ls('pg_user_name', v); },
   get role() { return ls('pg_role') || 'operator'; },          // operator | admin
   set role(v) { ls('pg_role', v); },
   get adminPin() { return ls('pg_admin_pin') || '2026'; },    // default PIN (změň si)
