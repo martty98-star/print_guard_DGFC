@@ -73,7 +73,7 @@
     </button>
     <button class="nav-item" data-screen="checklist">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-      <span>Checklist</span>
+      <span data-i18n="nav.checklist">Checklist</span>
     </button>
     <button class="nav-item" data-screen="stock-log">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -219,63 +219,63 @@
   <!-- Správa položek -->
   <main id="screen-checklist" class="screen">
     <div class="screen-header">
-      <h1>Checklist reminders</h1>
-      <div class="header-meta" id="checklist-status-text">Checklist pripraven.</div>
+      <h1 data-i18n="header.checklist">Checklist reminders</h1>
+      <div class="header-meta" id="checklist-status-text" data-i18n="checklist.status.ready">Checklist připraven.</div>
     </div>
 
     <section class="settings-card">
       <div id="checklist-summary"></div>
       <div class="checklist-toolbar">
-        <div class="hint">Opakovane operacni ukoly s push reminderem.</div>
+        <div class="hint" data-i18n="checklist.hint">Opakované operační úkoly s push reminderem.</div>
         <div class="checklist-toolbar-actions">
-          <button class="btn-sm" id="checklist-refresh-btn">Obnovit</button>
-          <button class="btn-sm admin-only" id="checklist-run-btn">Vyhodnotit ted</button>
-          <button class="btn-sm admin-only" id="checklist-new-btn">+ Novy ukol</button>
+          <button class="btn-sm" id="checklist-refresh-btn" data-i18n="btn.refresh">Obnovit</button>
+          <button class="btn-sm admin-only" id="checklist-run-btn" data-i18n="checklist.action.evaluate-now">Vyhodnotit teď</button>
+          <button class="btn-sm admin-only" id="checklist-new-btn" data-i18n="checklist.action.new">+ Nový úkol</button>
         </div>
       </div>
     </section>
 
     <section class="settings-card hidden admin-only" id="checklist-form-card">
       <div class="screen-header checklist-form-head">
-        <h2 id="checklist-form-title">Novy checklist ukol</h2>
+        <h2 id="checklist-form-title" data-i18n="checklist.form.new">Nový checklist úkol</h2>
       </div>
       <div class="checklist-form-grid">
         <div class="form-group">
-          <label for="checklist-title">Nazev *</label>
-          <input type="text" id="checklist-title" placeholder="napr. Wipe cutter">
+          <label for="checklist-title" data-i18n="checklist.form.title">Název *</label>
+          <input type="text" id="checklist-title" placeholder="např. Wipe cutter" data-i18n-placeholder="checklist.form.title.placeholder">
         </div>
         <div class="form-group">
-          <label for="checklist-category">Kategorie</label>
-          <input type="text" id="checklist-category" placeholder="maintenance">
+          <label for="checklist-category" data-i18n="checklist.form.category">Kategorie</label>
+          <input type="text" id="checklist-category" placeholder="maintenance" data-i18n-placeholder="checklist.form.category.placeholder">
         </div>
         <div class="form-group checklist-form-span2">
-          <label for="checklist-description">Popis</label>
-          <textarea id="checklist-description" rows="2" placeholder="napr. Wipe cutter pred smenou."></textarea>
+          <label for="checklist-description" data-i18n="checklist.form.description">Popis</label>
+          <textarea id="checklist-description" rows="2" placeholder="např. Wipe cutter před směnou." data-i18n-placeholder="checklist.form.description.placeholder"></textarea>
         </div>
         <div class="form-group">
-          <label for="checklist-time">Cas reminderu *</label>
+          <label for="checklist-time" data-i18n="checklist.form.time">Čas reminderu *</label>
           <input type="time" id="checklist-time">
         </div>
         <div class="form-group checklist-toggle-row">
-          <label for="checklist-enabled">Aktivni</label>
+          <label for="checklist-enabled" data-i18n="checklist.form.enabled">Aktivní</label>
           <input type="checkbox" id="checklist-enabled" checked>
         </div>
         <div class="form-group checklist-form-span2">
-          <label>Dny *</label>
+          <label data-i18n="checklist.form.days">Dny *</label>
           <div class="checklist-days">
-            <label><input type="checkbox" id="checklist-day-mon">Po</label>
-            <label><input type="checkbox" id="checklist-day-tue">Ut</label>
-            <label><input type="checkbox" id="checklist-day-wed">St</label>
-            <label><input type="checkbox" id="checklist-day-thu">Ct</label>
-            <label><input type="checkbox" id="checklist-day-fri">Pa</label>
-            <label><input type="checkbox" id="checklist-day-sat">So</label>
-            <label><input type="checkbox" id="checklist-day-sun">Ne</label>
+            <label><input type="checkbox" id="checklist-day-mon"><span data-i18n="checklist.day.mon">Po</span></label>
+            <label><input type="checkbox" id="checklist-day-tue"><span data-i18n="checklist.day.tue">Út</span></label>
+            <label><input type="checkbox" id="checklist-day-wed"><span data-i18n="checklist.day.wed">St</span></label>
+            <label><input type="checkbox" id="checklist-day-thu"><span data-i18n="checklist.day.thu">Čt</span></label>
+            <label><input type="checkbox" id="checklist-day-fri"><span data-i18n="checklist.day.fri">Pá</span></label>
+            <label><input type="checkbox" id="checklist-day-sat"><span data-i18n="checklist.day.sat">So</span></label>
+            <label><input type="checkbox" id="checklist-day-sun"><span data-i18n="checklist.day.sun">Ne</span></label>
           </div>
         </div>
       </div>
       <div class="modal-footer checklist-form-actions">
-        <button class="btn-secondary" id="checklist-cancel-btn">Zrusit</button>
-        <button class="btn-primary" id="checklist-save-btn">Ulozit</button>
+        <button class="btn-secondary" id="checklist-cancel-btn" data-i18n="btn.cancel">Zrušit</button>
+        <button class="btn-primary" id="checklist-save-btn" data-i18n="btn.save">Uložit</button>
       </div>
     </section>
 

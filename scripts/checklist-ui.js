@@ -28,6 +28,7 @@
     cfg: null,
     el: null,
     fetchImpl: null,
+    i18n: null,
     initialized: false,
     items: [],
     loaded: false,
@@ -56,6 +57,13 @@
       .replace(/'/g, '&#39;');
   }
 
+  function t(key) {
+    if (typeof state.i18n === 'function') {
+      return state.i18n(key);
+    }
+    return key;
+  }
+
   function getDefaultItem() {
     return {
       title: '',
@@ -81,6 +89,15 @@
     if (node) {
       node.textContent = text;
     }
+  }
+
+  function getWeekdayLabel(dayKey) {
+    return t('checklist.day.' + dayKey);
+  }
+
+  function getScheduleLabel(item) {
+    const normalizedDays = Array.isArray(item.daysOfWeek) ? item.daysOfWeek : [];
+    return normalizedDays.map(getWeekdayLabel).join(', ') + ' · ' + (item.timeOfDay || '');
   }
 
   function getFormPayload() {
@@ -130,7 +147,7 @@
     state.editingItemId = item && item.id ? item.id : null;
     fillForm(item || getDefaultItem());
     state.el('checklist-form-card')?.classList.remove('hidden');
-    state.el('checklist-form-title') && (state.el('checklist-form-title').textContent = item ? 'Upravit checklist ukol' : 'Novy checklist ukol');
+    state.el('checklist-form-title') && (state.el('checklist-form-title').textContent = item ? t('checklist.form.edit') : t('checklist.form.new'));
   }
 
   function closeForm() {
@@ -146,22 +163,22 @@
     }
 
     if (state.loading && !state.loaded) {
-      host.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Nacitam checklist...</p></div>';
+      host.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>${escapeHtml(t('checklist.loading'))}</p></div>`;
       return;
     }
 
     if (!state.items.length) {
-      host.innerHTML = '<div class="empty-state"><h3>Zatim zadny checklist ukol</h3><p>Admin muze pridat prvni opakovany reminder.</p></div>';
+      host.innerHTML = `<div class="empty-state"><h3>${escapeHtml(t('checklist.empty.title'))}</h3><p>${escapeHtml(t('checklist.empty.body'))}</p></div>`;
       return;
     }
 
     host.innerHTML = state.items.map((item) => {
       const nextOccurrence = ChecklistDomain.getNextChecklistOccurrence(item);
-      const scheduleLabel = ChecklistDomain.formatChecklistScheduleLabel(item);
-      const enabledLabel = item.enabled ? 'Aktivni' : 'Vypnuto';
+      const scheduleLabel = getScheduleLabel(item);
+      const enabledLabel = item.enabled ? t('checklist.status.enabled') : t('checklist.status.disabled');
       const nextLabel = nextOccurrence
         ? (nextOccurrence.localDate + ' ' + nextOccurrence.localTime)
-        : 'neni';
+        : t('checklist.next.none');
 
       return `
         <article class="checklist-item-card ${item.enabled ? '' : 'is-disabled'}">
@@ -175,14 +192,14 @@
               </div>
             </div>
             <div class="checklist-item-actions">
-              <button class="btn-sm admin-only" data-action="toggle" data-id="${escapeHtml(item.id)}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>
-              <button class="btn-sm admin-only" data-action="edit" data-id="${escapeHtml(item.id)}">Upravit</button>
-              <button class="btn-sm admin-only danger" data-action="delete" data-id="${escapeHtml(item.id)}">Smazat</button>
+              <button class="btn-sm admin-only" data-action="toggle" data-id="${escapeHtml(item.id)}">${item.enabled ? escapeHtml(t('checklist.action.disable')) : escapeHtml(t('checklist.action.enable'))}</button>
+              <button class="btn-sm admin-only" data-action="edit" data-id="${escapeHtml(item.id)}">${escapeHtml(t('btn.edit'))}</button>
+              <button class="btn-sm admin-only danger" data-action="delete" data-id="${escapeHtml(item.id)}">${escapeHtml(t('btn.delete'))}</button>
             </div>
           </div>
           ${item.description ? `<p class="checklist-description">${escapeHtml(item.description)}</p>` : ''}
           <div class="checklist-detail-row">
-            <span>Dalsi occurrence</span>
+            <span>${escapeHtml(t('checklist.next.label'))}</span>
             <strong>${escapeHtml(nextLabel)}</strong>
           </div>
         </article>
@@ -203,15 +220,15 @@
       <div class="checklist-summary-row">
         <div class="checklist-summary-stat">
           <strong>${total}</strong>
-          <span>ukolu</span>
+          <span>${escapeHtml(t('checklist.summary.total'))}</span>
         </div>
         <div class="checklist-summary-stat">
           <strong>${enabled}</strong>
-          <span>aktivnich</span>
+          <span>${escapeHtml(t('checklist.summary.enabled'))}</span>
         </div>
         <div class="checklist-summary-stat">
           <strong>${disabled}</strong>
-          <span>vypnutych</span>
+          <span>${escapeHtml(t('checklist.summary.disabled'))}</span>
         </div>
       </div>
     `;
@@ -234,7 +251,7 @@
     }
 
     state.loading = true;
-    setStatus('Nacitam checklist...');
+    setStatus(t('checklist.loading'));
     renderChecklistList();
 
     try {
@@ -243,10 +260,10 @@
       });
       state.items = Array.isArray(response.items) ? response.items : [];
       state.loaded = true;
-      setStatus('Checklist pripraven.');
+      setStatus(t('checklist.status.ready'));
     } catch (error) {
-      setStatus('Checklist se nepodarilo nacist.');
-      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist load failed', 'error');
+      setStatus(t('checklist.status.load-error'));
+      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.load'), 'error');
     } finally {
       state.loading = false;
       renderChecklistScreen();
@@ -268,10 +285,10 @@
       }
 
       closeForm();
-      state.showToast && state.showToast('Checklist ulozen.', 'success');
+      state.showToast && state.showToast(t('checklist.toast.saved'), 'success');
       await refreshChecklist(true);
     } catch (error) {
-      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist save failed', 'error');
+      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.save'), 'error');
     }
   }
 
@@ -290,10 +307,10 @@
         },
         { fetchImpl: state.fetchImpl }
       );
-      state.showToast && state.showToast('Checklist aktualizovan.', 'success');
+      state.showToast && state.showToast(t('checklist.toast.updated'), 'success');
       await refreshChecklist(true);
     } catch (error) {
-      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist update failed', 'error');
+      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.update'), 'error');
     }
   }
 
@@ -301,19 +318,19 @@
     const runDelete = async function runDelete() {
       try {
         await ChecklistApi.deleteChecklistItem(id, { fetchImpl: state.fetchImpl });
-        state.showToast && state.showToast('Checklist smazan.', 'success');
+        state.showToast && state.showToast(t('checklist.toast.deleted'), 'success');
         await refreshChecklist(true);
       } catch (error) {
-        state.showToast && state.showToast(error && error.message ? error.message : 'Checklist delete failed', 'error');
+        state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.delete'), 'error');
       }
     };
 
     if (typeof state.showConfirm === 'function') {
-      state.showConfirm('Opravdu smazat checklist ukol?', runDelete);
+      state.showConfirm(t('checklist.confirm.delete'), runDelete);
       return;
     }
 
-    if (window.confirm('Opravdu smazat checklist ukol?')) {
+    if (window.confirm(t('checklist.confirm.delete'))) {
       await runDelete();
     }
   }
@@ -332,9 +349,9 @@
         'sent ' + (result.sent || 0),
       ].join(' | ');
 
-      state.showToast && state.showToast('Checklist evaluator: ' + summary, 'success');
+      state.showToast && state.showToast(t('checklist.toast.evaluate') + ': ' + summary, 'success');
     } catch (error) {
-      state.showToast && state.showToast(error && error.message ? error.message : 'Checklist evaluate failed', 'error');
+      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.evaluate'), 'error');
     }
   }
 
@@ -386,6 +403,7 @@
     state.cfg = options.cfg;
     state.el = options.el;
     state.fetchImpl = options.fetchImpl || fetch;
+    state.i18n = options.i18n || null;
     state.showConfirm = options.showConfirm || null;
     state.showToast = options.showToast || null;
     state.initialized = true;

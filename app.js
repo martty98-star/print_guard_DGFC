@@ -2801,6 +2801,7 @@ el('sync-btn').addEventListener('click', async () => {
     cfg,
     el,
     fetchImpl: fetch,
+    i18n,
     showConfirm,
     showToast,
   });
