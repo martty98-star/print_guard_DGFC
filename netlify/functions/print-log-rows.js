@@ -330,16 +330,6 @@ function buildLogicalJobExpr(map, readyExpr) {
   return `coalesce(${candidates.join(", ")})`;
 }
 
-function buildJobSignatureExpr(map, readyExpr) {
-  const parts = [];
-  if (map.jobId) parts.push(`'job_id=' || ${map.jobId}::text`);
-  if (map.documentId) parts.push(`'document_id=' || ${map.documentId}::text`);
-  if (map.sourceFile) parts.push(`'source_file=' || ${map.sourceFile}::text`);
-  if (map.jobName) parts.push(`'job_name=' || ${map.jobName}::text`);
-  parts.push(`'ready_at=' || coalesce(${readyExpr}::text, '')`);
-  return `array_to_string(array[${parts.join(", ")}], ' | ')`;
-}
-
 function buildSourcePriorityExpr(sourceFileExpr, preferredRank) {
   if (preferredRank) return `${preferredRank}`;
   if (!sourceFileExpr) return "0";
@@ -453,8 +443,6 @@ export async function handler(event) {
       const viewHasInkChannelsExpr = buildInkChannelPresenceExpr(viewInk);
       const viewSourceFileExpr = map.sourceFile ? `${map.sourceFile}` : "null::text";
       const viewLogicalJobExpr = buildLogicalJobExpr(map, map.readyAt);
-      const viewJobSignatureExpr = buildJobSignatureExpr(map, map.readyAt);
-
       const accountingInk = accountingMap
         ? buildAccountingInkExpressions(accountingMap)
         : null;
@@ -463,9 +451,6 @@ export async function handler(event) {
       const accountingSourceFileExpr = accountingMap?.sourceFile ? `${accountingMap.sourceFile}` : "null::text";
       const accountingLogicalJobExpr = accountingMap
         ? buildLogicalJobExpr(accountingMap, accountingMap.readyAt)
-        : "null::text";
-      const accountingJobSignatureExpr = accountingMap
-        ? buildJobSignatureExpr(accountingMap, accountingMap.readyAt)
         : "null::text";
       const accountingAreaExpr = accountingMap
         ? squareMetersExpr(accountingMap.printedAreaM2, accountingMap.printedAreaRaw)
@@ -516,7 +501,6 @@ export async function handler(event) {
             ${viewHasInkExpr} as has_ink_data,
             ${viewHasInkChannelsExpr} as has_ink_channels,
             ${viewLogicalJobExpr} as logical_job_key,
-            ${viewJobSignatureExpr} as job_signature,
             3 as source_rank,
             null::timestamptz as imported_at
           from public.v_print_log_rows
@@ -542,7 +526,6 @@ export async function handler(event) {
             ${accountingHasInkExpr} as has_ink_data,
             ${accountingHasInkChannelsExpr} as has_ink_channels,
             ${accountingLogicalJobExpr} as logical_job_key,
-            ${accountingJobSignatureExpr} as job_signature,
             ${buildSourcePriorityExpr(accountingSourceFileExpr)} as source_rank,
             ${accountingMap.importedAt ? `${accountingMap.importedAt}` : "null::timestamptz"} as imported_at
           from public.print_accounting_rows
@@ -561,9 +544,6 @@ export async function handler(event) {
           ready_at as "readyAt",
           printer_name as "printerName",
           job_name as "jobName",
-          job_signature as "jobSignature",
-          ${map.jobId ? `${map.jobId}` : "null::text"} as "jobId",
-          ${map.documentId ? `${map.documentId}` : "null::text"} as "documentId",
           result as "result",
           media_type as "mediaType",
           printed_area_m2 as "printedAreaM2",
@@ -593,9 +573,6 @@ export async function handler(event) {
           readyAt: row.readyAt,
           printerName: row.printerName,
           jobName: row.jobName,
-          jobSignature: row.jobSignature || null,
-          jobId: row.jobId || null,
-          documentId: row.documentId || null,
           result: row.result,
           mediaType: row.mediaType,
           printedAreaM2: row.printedAreaM2 == null ? null : Number(row.printedAreaM2),

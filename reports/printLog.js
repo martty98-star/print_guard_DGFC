@@ -60,8 +60,6 @@
         jobKey || sourceKey || 'unknown',
       ].join('||');
       const jobSignature = [
-        row.jobId ? `job_id=${row.jobId}` : '',
-        row.documentId ? `document_id=${row.documentId}` : '',
         row.sourceFile ? `source_file=${row.sourceFile}` : '',
         row.jobName ? `job_name=${row.jobName}` : '',
       ].filter(Boolean).join(' | ');
@@ -78,8 +76,6 @@
           printerName: row.printerName || '',
           mediaType: row.mediaType || '',
           sourceFile: row.sourceFile || '',
-          jobId: row.jobId || '',
-          documentId: row.documentId || '',
           jobSignature,
           jobName: row.jobName || '',
         };
@@ -92,8 +88,6 @@
       group.lastReadyMs = readyMs;
       group.jobName = group.jobName || row.jobName || '';
       group.sourceFile = group.sourceFile || row.sourceFile || '';
-      group.jobId = group.jobId || row.jobId || '';
-      group.documentId = group.documentId || row.documentId || '';
     });
 
     return groups.map(group => {
@@ -113,8 +107,6 @@
         latestReadyAt: latest.readyAt || null,
         printerName: latest.printerName || group.printerName,
         jobName: latest.jobName || group.jobName,
-        jobId: latest.jobId || group.jobId || '',
-        documentId: latest.documentId || group.documentId || '',
         jobSignature: latest.jobSignature || group.jobSignature || '',
         mediaType: latest.mediaType || group.mediaType,
         sourceFile: latest.sourceFile || group.sourceFile,
