@@ -1509,7 +1509,6 @@ function normalizePrintLogRow(row) {
 function printLogJobLabel(row) {
   const parts = [];
   if (row?.jobName) parts.push(row.jobName);
-  if (row?.sourceFile) parts.push(`src:${row.sourceFile}`);
   return parts.join(' · ') || '—';
 }
 
@@ -2486,6 +2485,29 @@ async function cloudDelete(kind, key) {
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
   return j;
+}
+
+async function deleteMovement(id) {
+  showConfirm('Smazat tento pohyb skladu?', async () => {
+    try {
+      const res = await fetch('/.netlify/functions/delete-stock-movement', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ id }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
+      await idbDelete(ST_MOVES, id);
+      S.movements = S.movements.filter(m => m.id !== id);
+      renderStockOverview();
+      renderAlerts();
+      if (S.detailArticle) openStockDetail(S.detailArticle);
+      showToast('Pohyb smazán');
+    } catch (err) {
+      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+    }
+  });
 }
 
 async function runSync(options = {}) {
