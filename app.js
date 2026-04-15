@@ -674,7 +674,10 @@ async function deleteMovementAdmin(id) {
     try {
       const res = await fetch('/.netlify/functions/delete-stock-movement', {
         method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'x-printguard-admin-pin': cfg.adminPin,
+        },
         cache: 'no-store',
         body: JSON.stringify({ id }),
       });
@@ -2480,6 +2483,9 @@ async function cloudDelete(kind, key) {
   });
   const res = await fetch(`/.netlify/functions/sync?${params.toString()}`, {
     method: 'DELETE',
+    headers: {
+      'x-printguard-admin-pin': cfg.adminPin,
+    },
     cache: 'no-store',
   });
   const j = await res.json().catch(() => ({}));
@@ -2492,7 +2498,10 @@ async function deleteMovement(id) {
     try {
       const res = await fetch('/.netlify/functions/delete-stock-movement', {
         method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'x-printguard-admin-pin': cfg.adminPin,
+        },
         cache: 'no-store',
         body: JSON.stringify({ id }),
       });

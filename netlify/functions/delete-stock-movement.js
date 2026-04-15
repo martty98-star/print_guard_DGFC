@@ -1,6 +1,6 @@
 'use strict';
 
-const { json, parseRequestBody, withClient } = require('./_lib/db');
+const { json, parseRequestBody, requireAdminPin, withClient } = require('./_lib/db');
 
 exports.handler = async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -11,6 +11,8 @@ exports.handler = async function handler(event) {
     if (event.httpMethod !== 'DELETE') {
       return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'DELETE,OPTIONS' });
     }
+
+    requireAdminPin(event);
 
     const requestBody = parseRequestBody(event);
     const id = String(requestBody.id || event.queryStringParameters?.id || '').trim();

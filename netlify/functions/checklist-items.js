@@ -1,6 +1,6 @@
 'use strict';
 
-const { json, parseRequestBody, withClient } = require('./_lib/db');
+const { json, parseRequestBody, requireAdminPin, withClient } = require('./_lib/db');
 const {
   deleteChecklistItem,
   listChecklistItems,
@@ -41,6 +41,8 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod === 'DELETE') {
+      requireAdminPin(event);
+
       const requestBody = parseRequestBody(event);
       const id = String(
         requestBody.id ||
@@ -62,6 +64,9 @@ exports.handler = async function handler(event) {
     return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,PUT,DELETE,OPTIONS' });
   } catch (error) {
     console.error('checklist-items failed', error);
+    if (error && error.statusCode === 403) {
+      return json(403, { ok: false, error: error.message || 'Forbidden' });
+    }
     return json(500, {
       ok: false,
       error: error && error.message ? error.message : 'checklist-items failed',

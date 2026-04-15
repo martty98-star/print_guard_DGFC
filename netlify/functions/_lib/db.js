@@ -40,6 +40,43 @@ function getConnectionString() {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function getAdminPin() {
+  const value =
+    process.env.PRINTGUARD_ADMIN_PIN ||
+    process.env.NETLIFY_PRINTGUARD_ADMIN_PIN ||
+    process.env.PG_ADMIN_PIN ||
+    '';
+
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getHeader(event, name) {
+  if (!event || !event.headers) return '';
+  const lower = String(name || '').toLowerCase();
+  for (const [key, value] of Object.entries(event.headers)) {
+    if (String(key).toLowerCase() === lower) {
+      return typeof value === 'string' ? value.trim() : '';
+    }
+  }
+  return '';
+}
+
+function requireAdminPin(event) {
+  const expected = getAdminPin();
+  if (!expected) {
+    throw new Error('Missing admin PIN configuration');
+  }
+
+  const provided = getHeader(event, 'x-printguard-admin-pin');
+  if (!provided || provided !== expected) {
+    const error = new Error('Forbidden');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return true;
+}
+
 async function withClient(run) {
   const connectionString = getConnectionString();
   if (!connectionString) {
@@ -61,7 +98,9 @@ async function withClient(run) {
 }
 
 module.exports = {
+  getAdminPin,
   getConnectionString,
+  requireAdminPin,
   json,
   parseRequestBody,
   withClient,

@@ -2,6 +2,26 @@
 import pg from "pg";
 const { Client } = pg;
 
+function getAdminPin() {
+  const value =
+    process.env.PRINTGUARD_ADMIN_PIN ||
+    process.env.NETLIFY_PRINTGUARD_ADMIN_PIN ||
+    process.env.PG_ADMIN_PIN ||
+    "";
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function getHeader(event, name) {
+  if (!event || !event.headers) return "";
+  const lower = String(name || "").toLowerCase();
+  for (const [key, value] of Object.entries(event.headers)) {
+    if (String(key).toLowerCase() === lower) {
+      return typeof value === "string" ? value.trim() : "";
+    }
+  }
+  return "";
+}
+
 function resp(statusCode, body) {
   return {
     statusCode,
@@ -104,6 +124,13 @@ export async function handler(event) {
 
     // ---------- DELETE = hard delete ----------
     if (event.httpMethod === "DELETE") {
+      const expectedPin = getAdminPin();
+      const providedPin = getHeader(event, "x-printguard-admin-pin");
+      if (!expectedPin) return resp(500, { ok: false, error: "Missing admin PIN configuration" });
+      if (!providedPin || providedPin !== expectedPin) {
+        return resp(403, { ok: false, error: "Forbidden" });
+      }
+
       const query = event.queryStringParameters || {};
       const kind = String(query.kind || "").trim();
       const key = String(query.key || "").trim();
