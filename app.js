@@ -1503,7 +1503,19 @@ function normalizePrintLogRow(row) {
     ...row,
     sourceFile: sourceFile || '',
     source_file: sourceFile || '',
+    jobSignature: row?.jobSignature || row?.job_signature || '',
+    jobId: row?.jobId || row?.job_id || '',
+    documentId: row?.documentId || row?.document_id || '',
   };
+}
+
+function printLogJobLabel(row) {
+  const parts = [];
+  if (row?.jobName) parts.push(row.jobName);
+  if (row?.jobId) parts.push(`jobId:${row.jobId}`);
+  if (row?.documentId) parts.push(`doc:${row.documentId}`);
+  if (row?.sourceFile) parts.push(`src:${row.sourceFile}`);
+  return parts.join(' · ') || '—';
 }
 
 function getPrintLogMachineId(printerName) {
@@ -1636,6 +1648,9 @@ function logPrintLogInkDiagnostics() {
         readyAt: row.readyAt || '',
         printerName: row.printerName || '',
         jobName: row.jobName || '',
+        jobId: row.jobId || '',
+        documentId: row.documentId || '',
+        sourceFile: row.sourceFile || '',
         result: row.result || '',
         printedAreaM2: getNullableNumber(row.printedAreaM2),
         inkSource: display.source || '',
@@ -1894,7 +1909,7 @@ function renderPrintLogRows() {
     return `<tr>
     <td>${fmtDT(row.readyAt)}</td>
     <td>${esc(mapPrinterName(row.printerName))}</td>
-    <td>${esc(row.jobName || '—')}</td>
+    <td>${esc(printLogJobLabel(row))}<div class="pl-subline">${esc(row.jobSignature || '')}</div></td>
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(printResultLabel(row.result))}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
@@ -1955,7 +1970,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
       <tr class="pl-group-row" data-group-id="${esc(group.id)}">
         <td>${fmtDT(group.latestReadyAt)}</td>
         <td>${esc(mapPrinterName(group.printerName))}</td>
-        <td>${esc(group.jobName || '—')}<div class="pl-subline">${esc(group.explanation)}</div></td>
+        <td>${esc(printLogJobLabel(group))}<div class="pl-subline">${esc(group.jobSignature || '')}</div><div class="pl-subline">${esc(group.explanation)}</div></td>
         <td><span class="result-badge lifecycle ${group.lifecycleStatus}">${esc(printLifecycleBadgeLabel(group.lifecycleStatus))}</span></td>
         <td class="num">${fmtInt(group.attemptCount)}</td>
         <td>${esc(group.finalResult)}</td>
