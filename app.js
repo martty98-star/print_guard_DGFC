@@ -1905,7 +1905,6 @@ function renderPrintLogRows() {
     <td>${fmtDT(row.readyAt)}</td>
     <td>${esc(mapPrinterName(row.printerName))}</td>
     <td>${esc(printLogJobLabel(row))}</td>
-    <td>${esc(row.sourceFile || '—')}</td>
     <td><span class="result-badge ${printResultClass(row.result)}">${esc(printResultLabel(row.result))}</span></td>
     <td>${esc(row.mediaType || '—')}</td>
     <td class="num">${fmtMeasure(row.printedAreaM2, 'm²', 2)}</td>
@@ -1923,7 +1922,6 @@ function renderPrintLogRows() {
       <th>${thReady}</th>
       <th>${thMachine}</th>
       <th>${thJob}</th>
-      <th>Source file</th>
       <th>${thResult}</th>
       <th>${thMedia}</th>
       <th>${thArea}</th>
@@ -1968,7 +1966,6 @@ function renderPrintLifecycleGroups(wrap, foot) {
         <td>${fmtDT(group.latestReadyAt)}</td>
         <td>${esc(mapPrinterName(group.printerName))}</td>
         <td>${esc(printLogJobLabel(group))}<div class="pl-subline">${esc(group.explanation)}</div></td>
-        <td>${esc(group.sourceFile || '—')}</td>
         <td><span class="result-badge lifecycle ${group.lifecycleStatus}">${esc(printLifecycleBadgeLabel(group.lifecycleStatus))}</span></td>
         <td class="num">${fmtInt(group.attemptCount)}</td>
         <td>${esc(group.finalResult)}</td>
