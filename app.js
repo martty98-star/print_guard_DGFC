@@ -1163,16 +1163,6 @@ function renderMachineCard(machineId, label) {
       <span class="mc-badge">${s.recordCount} ${recordWord} · ${s.intervalCount} ${intervalWord}</span>
     </div>
     <div class="metrics-grid">
-      <div class="metric-block ink-bg">
-        <span class="metric-big">${fmtN(s.avgInkDay, 3)}</span>
-        <span class="metric-unit">${i18n('unit.l-per-day')}</span>
-        <span class="metric-desc">${i18n('colorado.card.metrics.ink-day')}</span>
-      </div>
-      <div class="metric-block ink-bg">
-        <span class="metric-big">${fmtN(s.avgInkMonth, 2)}</span>
-        <span class="metric-unit">${i18n('unit.l-per-month')}</span>
-        <span class="metric-desc">${i18n('colorado.card.metrics.ink-month')}</span>
-      </div>
       <div class="metric-block">
         <span class="metric-big">${fmtN(s.avgMediaDay, 1)}</span>
         <span class="metric-unit">${i18n('unit.m2-per-day')}</span>
@@ -1182,6 +1172,16 @@ function renderMachineCard(machineId, label) {
         <span class="metric-big">${fmtN(s.avgMediaMonth, 0)}</span>
         <span class="metric-unit">${i18n('unit.m2-per-month')}</span>
         <span class="metric-desc">${i18n('colorado.card.metrics.media-month')}</span>
+      </div>
+      <div class="metric-block ink-bg">
+        <span class="metric-big">${fmtN(s.avgInkDay, 3)}</span>
+        <span class="metric-unit">${i18n('unit.l-per-day')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.ink-day')}</span>
+      </div>
+      <div class="metric-block ink-bg">
+        <span class="metric-big">${fmtN(s.avgInkMonth, 2)}</span>
+        <span class="metric-unit">${i18n('unit.l-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.metrics.ink-month')}</span>
       </div>
       <div class="metric-block ink-bg">
         <span class="metric-big">${s.avgInkPM2 !== null ? fmtN(s.avgInkPM2, 4) : '—'}</span>
@@ -1252,16 +1252,6 @@ function renderCombinedCard() {
       <button class="btn-sm" id="co-lifetime-export-btn">${i18n('colorado.export.lifetime-combined')}</button>
     </div>
     <div class="metrics-grid">
-      <div class="metric-block ink-bg">
-        <span class="metric-big">${fmtN(sum(v => v.avgInkDay), 3)}</span>
-        <span class="metric-unit">${i18n('unit.l-per-day')}</span>
-        <span class="metric-desc">${i18n('colorado.card.combined.ink-total')}</span>
-      </div>
-      <div class="metric-block ink-bg">
-        <span class="metric-big">${fmtN(inkMonth, 2)}</span>
-        <span class="metric-unit">${i18n('unit.l-per-month')}</span>
-        <span class="metric-desc">${i18n('colorado.card.combined.ink-month')}</span>
-      </div>
       <div class="metric-block">
         <span class="metric-big">${fmtN(sum(v => v.avgMediaDay), 1)}</span>
         <span class="metric-unit">${i18n('unit.m2-per-day')}</span>
@@ -1271,6 +1261,16 @@ function renderCombinedCard() {
         <span class="metric-big">${fmtN(mediaMonth, 0)}</span>
         <span class="metric-unit">${i18n('unit.m2-per-month')}</span>
         <span class="metric-desc">${i18n('colorado.card.combined.media-month')}</span>
+      </div>
+      <div class="metric-block ink-bg">
+        <span class="metric-big">${fmtN(sum(v => v.avgInkDay), 3)}</span>
+        <span class="metric-unit">${i18n('unit.l-per-day')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.ink-total')}</span>
+      </div>
+      <div class="metric-block ink-bg">
+        <span class="metric-big">${fmtN(inkMonth, 2)}</span>
+        <span class="metric-unit">${i18n('unit.l-per-month')}</span>
+        <span class="metric-desc">${i18n('colorado.card.combined.ink-month')}</span>
       </div>
       ${hasCosts && costMonth !== null ? `<div class="metric-block cost-bg">
         <span class="metric-big">${fmtN(costMonth, 0)}</span>
