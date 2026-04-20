@@ -66,6 +66,34 @@
     }).format(date);
   }
 
+  function formatOccurrenceLabel(occurrenceKey) {
+    const raw = String(occurrenceKey || '').trim();
+    if (!raw) return '';
+
+    const parts = raw.split(':');
+    const scheduleType = parts[0] || '';
+    const checklistId = parts[1] || '';
+    const localDate = parts[2] || '';
+    const localTime = parts.slice(3).join(':') || '';
+    const item = findItemById(checklistId);
+
+    const scheduleLabel = scheduleType === 'weekly'
+      ? 'Weekly'
+      : scheduleType ? scheduleType : 'Occurrence';
+    const title = item && item.title ? item.title : checklistId;
+    const datePart = localDate ? localDate.split('-').reverse().join('.') : '';
+    const timePart = localTime || '';
+    const fragments = [scheduleLabel, title];
+    if (datePart && timePart) {
+      fragments.push(datePart + ' ' + timePart);
+    } else if (datePart) {
+      fragments.push(datePart);
+    } else if (localDate || timePart) {
+      fragments.push([localDate, timePart].filter(Boolean).join(' '));
+    }
+    return fragments.filter(Boolean).join(' · ');
+  }
+
   function escapeHtml(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;')
@@ -255,7 +283,7 @@
 
   function renderChecklistLog() {
     const host = state.el('checklist-log');
-    if (!host || !isAdmin()) {
+    if (!host) {
       return;
     }
 
@@ -269,7 +297,7 @@
       <tbody>${state.completions.map((row) => `
         <tr>
           <td>${escapeHtml(row.checklistTitle || row.checklistId || '')}</td>
-          <td>${escapeHtml(row.occurrenceKey || '')}</td>
+          <td>${escapeHtml(formatOccurrenceLabel(row.occurrenceKey || ''))}</td>
           <td>${escapeHtml(formatDate(row.completedAt || ''))}</td>
           <td>${escapeHtml(row.completedBy || '')}</td>
           <td>${escapeHtml(row.deviceId || '')}</td>
