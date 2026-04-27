@@ -22,7 +22,7 @@ node scripts/sync-postpurchase-orders.js
 ```
 
 Optional flags:
-- --fromid 0
+- --fromId 0
 - --limit 100
 - --updated-from 2026-04-01T00:00:00Z
 - --created-from 2026-04-01T00:00:00Z
@@ -40,7 +40,8 @@ Example action:
 API assumptions
 
 The current implementation assumes the Post Purchase orders endpoint supports:
-- fromid: send 0 on the first run, then the highest API order id already stored in PrintGuard
+- endpoint: /api/purchase-order/get
+- fromId: send 0 on the first run, then the highest API order id already stored in PrintGuard
 - limit: required, clamped to 1-100
 - supplierSystemCode: defaults to desenio_dgfc_printer
 

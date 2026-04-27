@@ -15,6 +15,47 @@ function toIsoOrNull(value) {
   return date.toISOString();
 }
 
+function firstCleanString(values) {
+  for (const value of values) {
+    const cleaned = cleanString(value);
+    if (cleaned) return cleaned;
+  }
+  return null;
+}
+
+function resolveOrderNumber(order) {
+  if (!order || typeof order !== 'object') return null;
+  return firstCleanString([
+    order.order_number,
+    order.orderNumber,
+    order.order_no,
+    order.orderNo,
+    order.number,
+    order.name,
+    order.reference,
+    order.order_reference,
+    order.orderReference,
+    order.purchase_order_number,
+    order.purchaseOrderNumber,
+    order.purchase_order_no,
+    order.purchaseOrderNo,
+    order.customer_order_number,
+    order.customerOrderNumber,
+    order.customer_reference,
+    order.customerReference,
+    order.client_order_number,
+    order.clientOrderNumber,
+    order.po_number,
+    order.poNumber,
+    order.order && order.order.number,
+    order.order && order.order.orderNumber,
+    order.order && order.order.reference,
+    order.purchaseOrder && order.purchaseOrder.number,
+    order.purchaseOrder && order.purchaseOrder.orderNumber,
+    order.purchaseOrder && order.purchaseOrder.reference,
+  ]);
+}
+
 function chunkArray(values, size) {
   const chunks = [];
   for (let index = 0; index < values.length; index += size) {
@@ -43,8 +84,23 @@ function assertPostPurchaseConfig(config) {
   if (!config.baseUrl) {
     throw new Error('Missing POST_PURCHASE_API_BASE_URL');
   }
+  let parsedBaseUrl;
+  try {
+    parsedBaseUrl = new URL(config.baseUrl);
+  } catch (error) {
+    throw new Error('Invalid POST_PURCHASE_API_BASE_URL');
+  }
+  if (!/^https?:$/.test(parsedBaseUrl.protocol)) {
+    throw new Error('POST_PURCHASE_API_BASE_URL must start with http:// or https://');
+  }
+  if (!parsedBaseUrl.hostname || /^base$/i.test(parsedBaseUrl.hostname)) {
+    throw new Error('POST_PURCHASE_API_BASE_URL must be https://post-purchase.desen.io');
+  }
   if (!config.token) {
     throw new Error('Missing POST_PURCHASE_API_TOKEN');
+  }
+  if (/^REPLACE_WITH_/i.test(config.token)) {
+    throw new Error('POST_PURCHASE_API_TOKEN still contains the placeholder value');
   }
 }
 
@@ -69,6 +125,7 @@ function buildCandidateUrls(baseUrl, ordersPath) {
     }
 
     [
+      '/api/purchase-order/get',
       '/print-orders',
       '/orders',
       '/api/print-orders',
@@ -106,7 +163,7 @@ function applyFilterParams(targetUrl, options, pageState) {
   }
 
   params.set('limit', String(limit));
-  if (!params.has('fromid')) params.set('fromid', String(fromId));
+  if (!params.has('fromId') && !params.has('fromid')) params.set('fromId', String(fromId));
   if (supplierSystemCode && !params.has('supplierSystemCode')) {
     params.set('supplierSystemCode', supplierSystemCode);
   }
@@ -124,8 +181,9 @@ async function fetchJsonOrThrow(url, token, fetchImpl) {
   const response = await fetchImpl(url.toString(), {
     method: 'GET',
     headers: {
-      accept: 'application/json',
-      authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -163,6 +221,13 @@ function extractOrdersArray(payload) {
     payload.items,
     payload.results,
     payload.orders,
+    payload.order,
+    payload.purchase_orders,
+    payload.purchaseOrders,
+    payload.purchase_order,
+    payload.purchaseOrder,
+    payload.purchaseOrderList,
+    payload.purchase_order_list,
     payload.print_orders,
     payload.printOrders,
     payload.records,
@@ -178,10 +243,34 @@ function extractOrdersArray(payload) {
       if (Array.isArray(candidate.data)) return candidate.data;
       if (Array.isArray(candidate.orders)) return candidate.orders;
       if (Array.isArray(candidate.results)) return candidate.results;
+      if (Array.isArray(candidate.purchase_orders)) return candidate.purchase_orders;
+      if (Array.isArray(candidate.purchaseOrders)) return candidate.purchaseOrders;
+      if (Array.isArray(candidate.purchaseOrderList)) return candidate.purchaseOrderList;
+      if (Array.isArray(candidate.purchase_order_list)) return candidate.purchase_order_list;
+      if (Array.isArray(candidate.records)) return candidate.records;
+      if (Array.isArray(candidate.payload)) return candidate.payload;
     }
   }
 
   return null;
+}
+
+function describePayloadShape(payload) {
+  if (Array.isArray(payload)) return `array(${payload.length})`;
+  if (!payload || typeof payload !== 'object') return typeof payload;
+  const keys = Object.keys(payload).slice(0, 20);
+  const summary = {};
+  keys.forEach((key) => {
+    const value = payload[key];
+    if (Array.isArray(value)) {
+      summary[key] = `array(${value.length})`;
+    } else if (value && typeof value === 'object') {
+      summary[key] = `object(${Object.keys(value).slice(0, 12).join(',')})`;
+    } else {
+      summary[key] = typeof value;
+    }
+  });
+  return JSON.stringify(summary).slice(0, 500);
 }
 
 function resolveNextPage(payload, currentUrl, pageState, itemCount) {
@@ -268,7 +357,7 @@ function normalizeOrder(order) {
 
   return {
     external_order_id: externalOrderId,
-    order_number: cleanString(order.order_number || order.orderNumber || order.number),
+    order_number: resolveOrderNumber(order),
     customer_order_id: cleanString(order.customer_order_id || order.customerOrderId || order.customer_id || order.customerId),
     status: cleanString(order.status || order.order_status || order.orderStatus),
     received_at: toIsoOrNull(
@@ -297,6 +386,10 @@ async function fetchPostPurchaseOrders(options) {
   const log = options && typeof options.log === 'function' ? options.log : console.log;
   const urlsToTry = buildCandidateUrls(config.baseUrl, config.ordersPath);
   const maxPages = Math.max(1, Number(options && options.maxPages) || 100);
+  const requestOptions = {
+    ...(options || {}),
+    supplierSystemCode: config.supplierSystemCode,
+  };
   let lastDiscoveryError = null;
 
   for (const candidate of urlsToTry) {
@@ -309,7 +402,7 @@ async function fetchPostPurchaseOrders(options) {
       for (let pageIndex = 0; pageIndex < maxPages; pageIndex += 1) {
         const requestUrl = pageState.absoluteUrl
           ? new URL(pageState.absoluteUrl)
-          : applyFilterParams(currentUrl, options || {}, pageState);
+          : applyFilterParams(currentUrl, requestOptions, pageState);
 
         const requestKey = requestUrl.toString();
         if (seenUrls.has(requestKey)) {
@@ -321,7 +414,7 @@ async function fetchPostPurchaseOrders(options) {
         const payload = await fetchJsonOrThrow(requestUrl, config.token, fetchImpl);
         const items = extractOrdersArray(payload);
         if (!Array.isArray(items)) {
-          throw new Error(`Unsupported Post Purchase API response shape for ${requestKey}`);
+          throw new Error(`Unsupported Post Purchase API response shape for ${requestKey}: ${describePayloadShape(payload)}`);
         }
 
         pages.push(...items);
@@ -511,7 +604,8 @@ async function listPrintOrdersReceived(client, options) {
         api_seen_at,
         submit_tool_processed_at,
         onyx_seen_at,
-        colorado_printed_at
+        colorado_printed_at,
+        source_payload
       from print_orders_received
       order by coalesce(received_at, api_seen_at) desc, id desc
       limit $1
@@ -520,29 +614,95 @@ async function listPrintOrdersReceived(client, options) {
     [limit, offset]
   );
 
-  return result.rows.map((row) => {
-    const submitToolProcessed = row.submit_tool_processed_at != null;
-    const onyxSeen = row.onyx_seen_at != null;
-    const coloradoPrinted = row.colorado_printed_at != null;
+  return result.rows.map(mapPrintOrderRow);
+}
 
-    return {
-      external_order_id: row.external_order_id,
-      order_number: row.order_number,
-      customer_order_id: row.customer_order_id,
-      status: row.status,
-      received_at: row.received_at instanceof Date ? row.received_at.toISOString() : row.received_at,
-      api_seen_at: row.api_seen_at instanceof Date ? row.api_seen_at.toISOString() : row.api_seen_at,
-      submit_tool_processed_at: row.submit_tool_processed_at instanceof Date ? row.submit_tool_processed_at.toISOString() : row.submit_tool_processed_at,
-      onyx_seen_at: row.onyx_seen_at instanceof Date ? row.onyx_seen_at.toISOString() : row.onyx_seen_at,
-      colorado_printed_at: row.colorado_printed_at instanceof Date ? row.colorado_printed_at.toISOString() : row.colorado_printed_at,
-      statuses: {
-        RECEIVED_FROM_API: true,
-        SUBMIT_TOOL_PROCESSED: submitToolProcessed,
-        ONYX_SEEN: onyxSeen,
-        COLORADO_PRINTED: coloradoPrinted,
-      },
-    };
-  });
+function mapPrintOrderRow(row) {
+  const submitToolProcessed = row.submit_tool_processed_at != null;
+  const onyxSeen = row.onyx_seen_at != null;
+  const coloradoPrinted = row.colorado_printed_at != null;
+
+  return {
+    external_order_id: row.external_order_id,
+    order_number: row.order_number || resolveOrderNumber(row.source_payload),
+    customer_order_id: row.customer_order_id,
+    status: row.status,
+    received_at: row.received_at instanceof Date ? row.received_at.toISOString() : row.received_at,
+    api_seen_at: row.api_seen_at instanceof Date ? row.api_seen_at.toISOString() : row.api_seen_at,
+    submit_tool_processed_at: row.submit_tool_processed_at instanceof Date ? row.submit_tool_processed_at.toISOString() : row.submit_tool_processed_at,
+    onyx_seen_at: row.onyx_seen_at instanceof Date ? row.onyx_seen_at.toISOString() : row.onyx_seen_at,
+    colorado_printed_at: row.colorado_printed_at instanceof Date ? row.colorado_printed_at.toISOString() : row.colorado_printed_at,
+    statuses: {
+      RECEIVED_FROM_API: true,
+      SUBMIT_TOOL_PROCESSED: submitToolProcessed,
+      ONYX_SEEN: onyxSeen,
+      COLORADO_PRINTED: coloradoPrinted,
+    },
+  };
+}
+
+async function updatePrintOrderLifecycleStatus(client, options) {
+  await ensurePrintOrdersTable(client);
+
+  const externalOrderId = cleanString(options && (options.externalOrderId || options.external_order_id));
+  const requestedStage = cleanString(options && options.stage);
+  const completed = Boolean(options && options.completed);
+  const completedAt = toIsoOrNull(options && (options.completedAt || options.completed_at));
+  const stageMap = {
+    SUBMIT_TOOL_PROCESSED: 'submit_tool_processed_at',
+    SUBMIT_TOOL_PROCESSED_AT: 'submit_tool_processed_at',
+    ONYX_SEEN: 'onyx_seen_at',
+    ONYX_SEEN_AT: 'onyx_seen_at',
+    COLORADO_PRINTED: 'colorado_printed_at',
+    COLORADO_PRINTED_AT: 'colorado_printed_at',
+  };
+  const stageKey = requestedStage ? requestedStage.toUpperCase() : '';
+  const columnName = stageMap[stageKey];
+
+  if (!externalOrderId) {
+    const error = new Error('Missing externalOrderId');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!columnName) {
+    const error = new Error('Invalid lifecycle stage');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = await client.query(
+    `
+      update print_orders_received
+      set
+        ${columnName} = case
+          when $2::boolean then coalesce($3::timestamptz, now())
+          else null
+        end,
+        updated_at = now()
+      where external_order_id = $1
+      returning
+        external_order_id,
+        order_number,
+        customer_order_id,
+        status,
+        received_at,
+        api_seen_at,
+        submit_tool_processed_at,
+        onyx_seen_at,
+        colorado_printed_at,
+        source_payload
+    `,
+    [externalOrderId, completed, completedAt]
+  );
+
+  if (!result.rows.length) {
+    const error = new Error('Order not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return mapPrintOrderRow(result.rows[0]);
 }
 
 async function syncPostPurchaseOrders(client, options) {
@@ -576,4 +736,5 @@ module.exports = {
   fetchPostPurchaseOrders,
   listPrintOrdersReceived,
   syncPostPurchaseOrders,
+  updatePrintOrderLifecycleStatus,
 };

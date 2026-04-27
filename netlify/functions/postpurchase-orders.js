@@ -4,6 +4,7 @@ const { json, parseRequestBody, requireAdminPin, withClient } = require('./_lib/
 const {
   listPrintOrdersReceived,
   syncPostPurchaseOrders,
+  updatePrintOrderLifecycleStatus,
 } = require('./_lib/postpurchase-orders');
 
 function parseListOptions(event) {
@@ -24,6 +25,16 @@ function parseSyncOptions(event) {
     limit: body.limit ?? query.limit ?? 100,
     supplierSystemCode: body.supplierSystemCode ?? query.supplierSystemCode,
     log: console.log,
+  };
+}
+
+function parseUpdateOptions(event) {
+  const body = parseRequestBody(event);
+  return {
+    externalOrderId: body.externalOrderId ?? body.external_order_id,
+    stage: body.stage,
+    completed: body.completed,
+    completedAt: body.completedAt ?? body.completed_at,
   };
 }
 
@@ -51,11 +62,19 @@ exports.handler = async function handler(event) {
       return json(200, body);
     }
 
-    return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,OPTIONS' });
+    if (event.httpMethod === 'PUT') {
+      const body = await withClient(async (client) => {
+        const row = await updatePrintOrderLifecycleStatus(client, parseUpdateOptions(event));
+        return { ok: true, row };
+      });
+      return json(200, body);
+    }
+
+    return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,PUT,OPTIONS' });
   } catch (error) {
     console.error('postpurchase-orders failed', error);
-    if (error && error.statusCode === 403) {
-      return json(403, { ok: false, error: error.message || 'Forbidden' });
+    if (error && (error.statusCode === 400 || error.statusCode === 403 || error.statusCode === 404)) {
+      return json(error.statusCode, { ok: false, error: error.message || 'Request failed' });
     }
     return json(500, {
       ok: false,

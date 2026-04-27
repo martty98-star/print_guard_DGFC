@@ -53,5 +53,11 @@ async function main() {
 main().catch((error) => {
   console.error('[postpurchase] sync failed');
   console.error(error && error.stack ? error.stack : error);
+  if (error && error.statusCode) {
+    console.error(`[postpurchase] api status=${error.statusCode}`);
+  }
+  if (error && error.responseText) {
+    console.error(`[postpurchase] api response=${error.responseText}`);
+  }
   process.exit(1);
 });

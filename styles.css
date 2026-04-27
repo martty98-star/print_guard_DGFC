@@ -521,6 +521,10 @@ textarea { resize: vertical; min-height: 58px; }
 .data-table td.delta { color: var(--ok); }
 .data-table td.note-td { color: var(--text-dim); font-size: .72rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 .pp-status-row { display: flex; flex-wrap: wrap; gap: 4px; min-width: 180px; }
+.pp-admin-controls { display: flex; flex-direction: column; gap: 8px; min-width: 150px; }
+.pp-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: .72rem; color: var(--text-dim); }
+.pp-toggle input { margin: 0; accent-color: var(--accent); cursor: pointer; }
+.pp-toggle span { white-space: nowrap; }
 .btn-del { background: none; border: none; cursor: pointer; color: var(--text-faint); padding: 3px 7px; font-size: .8rem; transition: color var(--tr); }
 .btn-del:hover { color: var(--crit); }
 

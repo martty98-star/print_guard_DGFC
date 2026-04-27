@@ -2038,6 +2038,28 @@ function postPurchaseStatusBadge(label, isActive) {
   return `<span class="badge ${isActive ? 'ok' : 'warn'}">${esc(label)}</span>`;
 }
 
+function getPostPurchaseUpdateKey(externalOrderId, stage) {
+  return `${externalOrderId || ''}::${stage || ''}`;
+}
+
+function postPurchaseToggleControl(label, row, stage) {
+  const checked = Boolean(row && row.statuses && row.statuses[stage]);
+  const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
+  const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
+  const disabled = Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
+  return `<label class="pp-toggle">
+    <input
+      type="checkbox"
+      class="pp-stage-toggle"
+      data-external-order-id="${esc(externalOrderId)}"
+      data-stage="${esc(stage)}"
+      ${checked ? 'checked' : ''}
+      ${disabled ? 'disabled' : ''}
+    >
+    <span>${esc(label)}</span>
+  </label>`;
+}
+
 async function loadPostPurchaseOrders(force = false) {
   if (S.postPurchaseLoading) return;
   if (S.postPurchaseLoaded && !force) {
@@ -2088,17 +2110,23 @@ function renderPostPurchaseOrders() {
       postPurchaseStatusBadge('ONYX', statuses.ONYX_SEEN),
       postPurchaseStatusBadge('Colorado', statuses.COLORADO_PRINTED),
     ].join(' ');
+    const adminControls = [
+      postPurchaseToggleControl('Submit Tool', row, 'SUBMIT_TOOL_PROCESSED'),
+      postPurchaseToggleControl('ONYX', row, 'ONYX_SEEN'),
+      postPurchaseToggleControl('Colorado', row, 'COLORADO_PRINTED'),
+    ].join('');
 
     return `<tr>
-      <td>${esc(row.external_order_id || 'â€”')}</td>
-      <td>${esc(row.order_number || 'â€”')}</td>
-      <td>${esc(row.status || 'â€”')}</td>
-      <td>${row.received_at ? fmtDT(row.received_at) : 'â€”'}</td>
-      <td>${row.api_seen_at ? fmtDT(row.api_seen_at) : 'â€”'}</td>
-      <td>${row.submit_tool_processed_at ? fmtDT(row.submit_tool_processed_at) : 'â€”'}</td>
-      <td>${row.onyx_seen_at ? fmtDT(row.onyx_seen_at) : 'â€”'}</td>
-      <td>${row.colorado_printed_at ? fmtDT(row.colorado_printed_at) : 'â€”'}</td>
+      <td>${esc(row.external_order_id || '-')}</td>
+      <td>${esc(row.order_number || '-')}</td>
+      <td>${esc(row.status || '-')}</td>
+      <td>${row.received_at ? fmtDT(row.received_at) : '-'}</td>
+      <td>${row.api_seen_at ? fmtDT(row.api_seen_at) : '-'}</td>
+      <td>${row.submit_tool_processed_at ? fmtDT(row.submit_tool_processed_at) : '-'}</td>
+      <td>${row.onyx_seen_at ? fmtDT(row.onyx_seen_at) : '-'}</td>
+      <td>${row.colorado_printed_at ? fmtDT(row.colorado_printed_at) : '-'}</td>
       <td><div class="pp-status-row">${lifecycle}</div></td>
+      <td><div class="pp-admin-controls">${adminControls}</div></td>
     </tr>`;
   }).join('');
 
@@ -2113,9 +2141,22 @@ function renderPostPurchaseOrders() {
       <th>ONYX</th>
       <th>Colorado</th>
       <th>Lifecycle</th>
+      <th>Mark printed</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+
+  wrap.querySelectorAll('.pp-stage-toggle').forEach((input) => {
+    input.addEventListener('change', () => {
+      setPostPurchaseStage(
+        input.dataset.externalOrderId,
+        input.dataset.stage,
+        input.checked
+      );
+    });
+  });
+
+  applyRoleUI();
 }
 
 async function syncPostPurchaseOrdersManual() {
@@ -2139,6 +2180,47 @@ async function syncPostPurchaseOrdersManual() {
     elSet('postpurchase-status', 'Sync failed');
     showToast(error.message || String(error), 'error');
   }
+}
+
+async function setPostPurchaseStage(externalOrderId, stage, completed) {
+  const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
+  S.postPurchaseUpdating = S.postPurchaseUpdating || {};
+  S.postPurchaseUpdating[updateKey] = true;
+  renderPostPurchaseOrders();
+  elSet('postpurchase-status', 'Saving...');
+
+  try {
+    const res = await fetch('/.netlify/functions/postpurchase-orders', {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+      },
+      cache: 'no-store',
+      body: JSON.stringify({
+        externalOrderId,
+        stage,
+        completed,
+      }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to update Post Purchase order');
+
+    const updatedRow = payload.row || null;
+    S.postPurchaseOrders = (S.postPurchaseOrders || []).map((row) =>
+      row.external_order_id === externalOrderId && updatedRow ? updatedRow : row
+    );
+    showToast('Order status updated.', 'success');
+    elSet('postpurchase-status', `${S.postPurchaseOrders.length} orders loaded`);
+  } catch (error) {
+    showToast(error.message || String(error), 'error');
+    elSet('postpurchase-status', 'Update failed');
+    await loadPostPurchaseOrders(true);
+    return;
+  } finally {
+    delete S.postPurchaseUpdating[updateKey];
+  }
+
+  renderPostPurchaseOrders();
 }
 
 function getCurrentMonthExportRange() {

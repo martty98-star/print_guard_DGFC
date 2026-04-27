@@ -24,7 +24,6 @@ npm install
 4. Edit `run-postpurchase-sync.bat` and fill in:
    - `POST_PURCHASE_API_TOKEN`
    - `NEON_DATABASE_URL`
-   - optionally `POST_PURCHASE_API_ORDERS_PATH`
 
 5. Run a manual test:
 
@@ -41,5 +40,5 @@ Windows Task Scheduler:
 ## Notes
 
 - `POST_PURCHASE_API_BASE_URL` should stay as `https://post-purchase.desen.io`
+- `POST_PURCHASE_API_ORDERS_PATH` should stay as `/api/purchase-order/get`
 - `POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE` should stay as `desenio_dgfc_printer`
-- Leave `POST_PURCHASE_API_ORDERS_PATH` commented out unless autodiscovery fails
