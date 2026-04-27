@@ -1,5 +1,6 @@
 import pg from "pg";
 const { Client } = pg;
+const columnCache = new Map();
 
 function resp(statusCode, body) {
   return {
@@ -31,8 +32,13 @@ async function withClient(run) {
 }
 
 async function getColumns(client, tableName) {
+  if (columnCache.has(tableName)) {
+    return columnCache.get(tableName);
+  }
   const q = await client.query(`select * from public.${tableName} limit 0`);
-  return new Set(q.fields.map(f => f.name));
+  const columns = new Set(q.fields.map(f => f.name));
+  columnCache.set(tableName, columns);
+  return columns;
 }
 
 async function getColumnsSafe(client, tableName) {

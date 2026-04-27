@@ -10,10 +10,10 @@
   const WEEKDAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   const WEEKDAY_LABELS_CS = {
     mon: 'Po',
-    tue: 'Út',
+    tue: 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡t',
     wed: 'St',
-    thu: 'Čt',
-    fri: 'Pá',
+    thu: 'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢t',
+    fri: 'PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡',
     sat: 'So',
     sun: 'Ne',
   };
@@ -22,6 +22,12 @@
     if (typeof value !== 'string') return null;
     const trimmed = value.trim();
     return trimmed ? trimmed : null;
+  }
+
+  function normalizeChecklistDayOfMonth(value) {
+    const raw = Number(value);
+    if (!Number.isInteger(raw) || raw < 1 || raw > 31) return null;
+    return raw;
   }
 
   function createChecklistId(prefix) {
@@ -36,34 +42,34 @@
       monday: 'mon',
       mo: 'mon',
       pondeli: 'mon',
-      'pondělí': 'mon',
+      'pondÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºlÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­': 'mon',
       tue: 'tue',
       tuesday: 'tue',
       tu: 'tue',
       ut: 'tue',
-      'út': 'tue',
+      'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºt': 'tue',
       utery: 'tue',
-      'úterý': 'tue',
+      'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºterÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½': 'tue',
       wed: 'wed',
       wednesday: 'wed',
       we: 'wed',
       st: 'wed',
       streda: 'wed',
-      'středa': 'wed',
+      'stÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢eda': 'wed',
       thu: 'thu',
       thursday: 'thu',
       th: 'thu',
       ct: 'thu',
-      'čt': 'thu',
+      'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Ât': 'thu',
       ctvrtek: 'thu',
-      'čtvrtek': 'thu',
+      'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âtvrtek': 'thu',
       fri: 'fri',
       friday: 'fri',
       fr: 'fri',
       pa: 'fri',
-      'pá': 'fri',
+      'pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡': 'fri',
       patek: 'fri',
-      'pátek': 'fri',
+      'pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡tek': 'fri',
       sat: 'sat',
       saturday: 'sat',
       sa: 'sat',
@@ -74,7 +80,7 @@
       su: 'sun',
       ne: 'sun',
       nedele: 'sun',
-      'neděle': 'sun',
+      'nedÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Âºle': 'sun',
     };
     return aliases[raw] || null;
   }
@@ -111,8 +117,11 @@
     const title = cleanOptionalString(input && input.title);
     if (!title) throw new Error('Checklist title is required');
 
+    const scheduleType = String(input && input.scheduleType || '').trim().toLowerCase() === 'monthly' ? 'monthly' : 'weekly';
     const daysOfWeek = normalizeChecklistDaysOfWeek(input && input.daysOfWeek);
-    if (!daysOfWeek.length) throw new Error('Checklist requires at least one day of week');
+    const dayOfMonth = normalizeChecklistDayOfMonth(input && input.dayOfMonth);
+    if (scheduleType === 'weekly' && !daysOfWeek.length) throw new Error('Checklist requires at least one day of week');
+    if (scheduleType === 'monthly' && !dayOfMonth) throw new Error('Checklist requires a valid day of month');
 
     const timeOfDay = normalizeChecklistTimeOfDay(input && input.timeOfDay);
     if (!timeOfDay) throw new Error('Checklist requires a valid time of day');
@@ -123,13 +132,14 @@
       description: cleanOptionalString(input && input.description),
       enabled: input && input.enabled !== false,
       daysOfWeek,
+      dayOfMonth,
       timeOfDay,
       category: cleanOptionalString(input && input.category),
       createdAt: cleanOptionalString(input && input.createdAt) || current.toISOString(),
       updatedAt: cleanOptionalString(input && input.updatedAt) || current.toISOString(),
       createdBy: cleanOptionalString(input && input.createdBy),
       updatedBy: cleanOptionalString(input && input.updatedBy),
-      scheduleType: 'weekly',
+      scheduleType,
       timeZone: cleanOptionalString(input && input.timeZone) || 'Europe/Prague',
     };
   }
@@ -186,7 +196,8 @@
 
   function buildChecklistOccurrenceKey(item, localDate, timeOfDay) {
     const id = typeof item === 'string' ? item : item.id;
-    return `weekly:${id}:${localDate}:${timeOfDay}`;
+    const scheduleType = typeof item === 'string' ? 'weekly' : item.scheduleType || 'weekly';
+    return `${scheduleType}:${id}:${localDate}:${timeOfDay}`;
   }
 
   function getNextChecklistOccurrence(item, options) {
@@ -200,7 +211,9 @@
     for (let offset = 0; offset < 8; offset += 1) {
       const candidateDate = addChecklistLocalDays(nowDateKey, offset);
       const weekday = getChecklistLocalWeekday(candidateDate);
-      if (!normalized.daysOfWeek.includes(weekday)) continue;
+      const dayOfMonth = Number(candidateDate.split('-')[2]);
+      if (normalized.scheduleType === 'weekly' && !normalized.daysOfWeek.includes(weekday)) continue;
+      if (normalized.scheduleType === 'monthly' && normalized.dayOfMonth !== dayOfMonth) continue;
       const candidatePseudo = getChecklistPseudoEpochMs(candidateDate, normalized.timeOfDay);
       if (candidatePseudo < nowPseudo) continue;
       return {
@@ -224,18 +237,22 @@
 
     for (const rawItem of items || []) {
       const item = validateChecklistItemInput(rawItem, now);
-      if (!item.enabled || item.scheduleType !== 'weekly') continue;
+      if (!item.enabled || (item.scheduleType !== 'weekly' && item.scheduleType !== 'monthly')) continue;
 
       const itemTimeZone = item.timeZone || (options && options.timeZone) || 'Europe/Prague';
       const nowParts = getChecklistZonedParts(now, itemTimeZone);
       const nowDateKey = getChecklistLocalDateKey(now, itemTimeZone);
       const nowPseudo = Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day, nowParts.hour, nowParts.minute, nowParts.second, 0);
       const windowStartPseudo = nowPseudo - lookbackMinutes * 60 * 1000;
-      const candidateDates = [addChecklistLocalDays(nowDateKey, -1), nowDateKey];
+      const candidateDates = item.scheduleType === 'monthly'
+        ? [nowDateKey, addChecklistLocalDays(nowDateKey, -1)]
+        : [addChecklistLocalDays(nowDateKey, -1), nowDateKey];
 
       for (const localDate of candidateDates) {
         const weekday = getChecklistLocalWeekday(localDate);
-        if (!item.daysOfWeek.includes(weekday)) continue;
+        const dayOfMonth = Number(localDate.split('-')[2]);
+        if (item.scheduleType === 'weekly' && !item.daysOfWeek.includes(weekday)) continue;
+        if (item.scheduleType === 'monthly' && item.dayOfMonth !== dayOfMonth) continue;
         const occurrencePseudo = getChecklistPseudoEpochMs(localDate, item.timeOfDay);
         if (occurrencePseudo > nowPseudo || occurrencePseudo < windowStartPseudo) continue;
         occurrences.push({
@@ -256,10 +273,10 @@
 
   function buildChecklistReminderEvent(occurrence, url) {
     const targetUrl = url || '/?mode=stock&screen=checklist';
-    const title = `Checklist · ${occurrence.item.title}`;
+    const title = `Checklist ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${occurrence.item.title}`;
     const body = occurrence.item.description
       ? occurrence.item.description
-      : `Je čas na úkol "${occurrence.item.title}" (${occurrence.localTime}).`;
+      : `Je ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âas na ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºkol "${occurrence.item.title}" (${occurrence.localTime}).`;
 
     return {
       type: 'checklist.reminder.due',
@@ -280,8 +297,11 @@
 
   function formatChecklistScheduleLabel(item) {
     const normalized = validateChecklistItemInput(item, new Date());
+    if (normalized.scheduleType === 'monthly') {
+      return 'Každý měsíc dne ' + (normalized.dayOfMonth || '?') + ' · ' + normalized.timeOfDay;
+    }
     const dayLabel = normalized.daysOfWeek.map((day) => WEEKDAY_LABELS_CS[day]).join(', ');
-    return `${dayLabel} · ${normalized.timeOfDay}`;
+    return dayLabel + ' · ' + normalized.timeOfDay;
   }
 
   return {

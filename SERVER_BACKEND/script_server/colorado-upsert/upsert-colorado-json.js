@@ -71,6 +71,14 @@ function log(message) {
   console.log(line);
 }
 
+function chunkArray(values, size) {
+  const chunks = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function getJsonFiles() {
   const files = [];
 
@@ -445,10 +453,10 @@ do update set
     updated_at = now();
 `;
 
-async function upsertRow(client, row) {
+function getRowValues(row) {
   const mapped = mapRow(row);
 
-  const values = [
+  return [
     mapped.imported_at,
     mapped.printer_name,
     mapped.printer_ip,
@@ -488,18 +496,42 @@ async function upsertRow(client, row) {
     mapped.dedupe_key,
     mapped.raw_row_json ? JSON.stringify(mapped.raw_row_json) : null,
   ];
+}
 
-  await client.query(UPSERT_SQL, values);
+async function upsertRow(client, row) {
+  await client.query(UPSERT_SQL, getRowValues(row));
+}
+
+async function upsertRowsBatch(client, rows) {
+  const validRows = rows.filter((row) => row && row.dedupeKey);
+  for (const chunk of chunkArray(validRows, 500)) {
+    const params = [];
+    const valuesSql = chunk.map((row, rowIndex) => {
+      const rowValues = getRowValues(row);
+      const base = rowIndex * rowValues.length;
+      params.push(...rowValues);
+      return `(${rowValues.map((_, valueIndex) => `$${base + valueIndex + 1}`).join(",")}, now())`;
+    }).join(",\n");
+
+    await client.query(
+      UPSERT_SQL.replace(
+        /\) values \(\s*\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\s*\$11,\$12,\$13,\$14,\$15,\$16,\$17,\$18,\$19,\$20,\s*\$21,\$22,\$23,\$24,\$25,\$26,\$27,\$28,\$29,\$30,\s*\$31,\$32,\$33,\$34,\$35,\$36,\$37,\$38, now\(\)\s*\)/,
+        `) values ${valuesSql}`
+      ),
+      params
+    );
+  }
+  return validRows.length;
 }
 
 async function ensureAclTable(client) {
   await client.query(ENSURE_ACL_TABLE_SQL);
 }
 
-async function upsertAclRow(client, row) {
+function getAclRowValues(row) {
   const mapped = mapAclRow(row);
 
-  const values = [
+  return [
     mapped.dedupe_key,
     mapped.imported_at,
     mapped.printer_name,
@@ -517,8 +549,36 @@ async function upsertAclRow(client, row) {
     mapped.raw_text,
     mapped.raw_row_json ? JSON.stringify(mapped.raw_row_json) : null,
   ];
+}
 
-  await client.query(UPSERT_ACL_SQL, values);
+async function upsertAclRow(client, row) {
+  await client.query(UPSERT_ACL_SQL, getAclRowValues(row));
+}
+
+async function upsertAclRowsBatch(client, rows) {
+  const validRows = rows.filter((row) => row && row.dedupeKey && row.sourceFile && row.printerName);
+  for (const chunk of chunkArray(validRows, 500)) {
+    const params = [];
+    const valuesSql = chunk.map((row, rowIndex) => {
+      const rowValues = getAclRowValues(row);
+      const base = rowIndex * rowValues.length;
+      params.push(...rowValues);
+      return `(${rowValues.map((_, valueIndex) => {
+        const placeholder = `$${base + valueIndex + 1}`;
+        if (valueIndex === 12 || valueIndex === 13 || valueIndex === 15) return `${placeholder}::jsonb`;
+        return placeholder;
+      }).join(",")}, now())`;
+    }).join(",\n");
+
+    await client.query(
+      UPSERT_ACL_SQL.replace(
+        /\) values \(\s*\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\s*\$11,\$12,\$13::jsonb,\$14::jsonb,\$15,\$16::jsonb, now\(\)\s*\)/,
+        `) values ${valuesSql}`
+      ),
+      params
+    );
+  }
+  return validRows.length;
 }
 
 async function main() {
@@ -533,95 +593,88 @@ async function main() {
 
   await client.connect();
   log("Connected to Neon.");
-  await ensureAclTable(client);
+  try {
+    await ensureAclTable(client);
 
-  const jsonFiles = getJsonFiles();
-  const aclJsonFiles = getAclJsonFiles();
-  log(`Found JSON files: ${jsonFiles.length}`);
-  log(`Found ACL JSON files: ${aclJsonFiles.length}`);
+    const jsonFiles = getJsonFiles();
+    const aclJsonFiles = getAclJsonFiles();
+    log(`Found JSON files: ${jsonFiles.length}`);
+    log(`Found ACL JSON files: ${aclJsonFiles.length}`);
 
-  let totalFiles = 0;
-  let totalRows = 0;
-  let skippedFiles = 0;
-  let totalAclFiles = 0;
-  let totalAclRows = 0;
-  let totalAclPrintRows = 0;
-  let skippedAclFiles = 0;
+    let totalFiles = 0;
+    let totalRows = 0;
+    let skippedFiles = 0;
+    let totalAclFiles = 0;
+    let totalAclRows = 0;
+    let totalAclPrintRows = 0;
+    let skippedAclFiles = 0;
 
-  for (const file of jsonFiles) {
-    totalFiles += 1;
-    log(`Processing file: ${file.fullPath}`);
+    for (const file of jsonFiles) {
+      totalFiles += 1;
+      log(`Processing file: ${file.fullPath}`);
 
-    let rows;
-    try {
-      rows = parseJsonArrayFromFile(file.fullPath, file.fileName);
-    } catch (err) {
-      log(`SKIPPING FILE: ${file.fileName}`);
-      log(err.message);
-      skippedFiles += 1;
-      continue;
-    }
-
-    let fileRowsProcessed = 0;
-
-    for (const row of rows) {
-      if (!row || !row.dedupeKey) {
-        log(`Skipping row without dedupeKey in ${file.fileName}`);
+      let rows;
+      try {
+        rows = parseJsonArrayFromFile(file.fullPath, file.fileName);
+      } catch (err) {
+        log(`SKIPPING FILE: ${file.fileName}`);
+        log(err.message);
+        skippedFiles += 1;
         continue;
       }
 
-      await upsertRow(client, row);
-      totalRows += 1;
-      fileRowsProcessed += 1;
+      for (const row of rows) {
+        if (!row || !row.dedupeKey) {
+          log(`Skipping row without dedupeKey in ${file.fileName}`);
+        }
+      }
+
+      const fileRowsProcessed = await upsertRowsBatch(client, rows);
+      totalRows += fileRowsProcessed;
+
+      log(`Done file: ${file.fileName}, rows processed: ${fileRowsProcessed}`);
     }
 
-    log(`Done file: ${file.fileName}, rows processed: ${fileRowsProcessed}`);
-  }
+    for (const file of aclJsonFiles) {
+      totalAclFiles += 1;
+      log(`Processing ACL file: ${file.fullPath}`);
 
-  for (const file of aclJsonFiles) {
-    totalAclFiles += 1;
-    log(`Processing ACL file: ${file.fullPath}`);
-
-    let rows;
-    try {
-      rows = parseJsonArrayFromFile(file.fullPath, file.fileName);
-    } catch (err) {
-      log(`SKIPPING ACL FILE: ${file.fileName}`);
-      log(err.message);
-      skippedAclFiles += 1;
-      continue;
-    }
-
-    let fileRowsProcessed = 0;
-
-    for (const row of rows) {
-      if (!row || !row.dedupeKey || !row.sourceFile || !row.printerName) {
-        log(`Skipping ACL row without required identifiers in ${file.fileName}`);
+      let rows;
+      try {
+        rows = parseJsonArrayFromFile(file.fullPath, file.fileName);
+      } catch (err) {
+        log(`SKIPPING ACL FILE: ${file.fileName}`);
+        log(err.message);
+        skippedAclFiles += 1;
         continue;
       }
 
-      if (row.rowType === "print") {
-        await upsertRow(client, row);
-        totalAclPrintRows += 1;
-      } else {
-        await upsertAclRow(client, row);
-        totalAclRows += 1;
+      for (const row of rows) {
+        if (!row || !row.dedupeKey || !row.sourceFile || !row.printerName) {
+          log(`Skipping ACL row without required identifiers in ${file.fileName}`);
+        }
       }
 
-      fileRowsProcessed += 1;
+      const printRows = rows.filter((row) => row && row.rowType === "print");
+      const metadataRows = rows.filter((row) => row && row.rowType !== "print");
+      const fileAclPrintRows = await upsertRowsBatch(client, printRows);
+      const fileAclRows = await upsertAclRowsBatch(client, metadataRows);
+
+      totalAclPrintRows += fileAclPrintRows;
+      totalAclRows += fileAclRows;
+
+      log(`Done ACL file: ${file.fileName}, rows processed: ${fileAclPrintRows + fileAclRows}`);
     }
 
-    log(`Done ACL file: ${file.fileName}, rows processed: ${fileRowsProcessed}`);
+    log(
+      `Finished. Files scanned: ${totalFiles}, files skipped: ${skippedFiles}, rows processed: ${totalRows}`
+    );
+    log(
+      `Finished ACL. Files scanned: ${totalAclFiles}, files skipped: ${skippedAclFiles}, metadata rows processed: ${totalAclRows}, print rows processed: ${totalAclPrintRows}`
+    );
+  } finally {
+    await client.end().catch(() => {});
   }
-
-  log(
-    `Finished. Files scanned: ${totalFiles}, files skipped: ${skippedFiles}, rows processed: ${totalRows}`
-  );
-  log(
-    `Finished ACL. Files scanned: ${totalAclFiles}, files skipped: ${skippedAclFiles}, metadata rows processed: ${totalAclRows}, print rows processed: ${totalAclPrintRows}`
-  );
-
-  await client.end();
 }
 
 main().catch((err) => {

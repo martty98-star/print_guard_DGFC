@@ -33,6 +33,87 @@ function resp(statusCode, body) {
   };
 }
 
+function chunkArray(values, size) {
+  const chunks = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
+
+async function batchUpsertItems(client, items) {
+  const valid = items.filter((item) => item?.articleNumber);
+  for (const chunk of chunkArray(valid, 500)) {
+    const params = [];
+    const valuesSql = chunk.map((item, index) => {
+      const base = index * 2;
+      params.push(item.articleNumber, JSON.stringify(item));
+      return `($${base + 1}, $${base + 2}::jsonb, now())`;
+    }).join(",");
+
+    await client.query(
+      `insert into public.pg_items(article_number, data, updated_at)
+       values ${valuesSql}
+       on conflict (article_number) do update
+       set data = excluded.data, updated_at = now()`,
+      params
+    );
+  }
+  return valid.length;
+}
+
+async function batchUpsertMovements(client, movements) {
+  const valid = movements.filter((movement) => movement?.id);
+  for (const chunk of chunkArray(valid, 300)) {
+    const params = [];
+    const valuesSql = chunk.map((movement, index) => {
+      const base = index * 4;
+      params.push(
+        movement.id,
+        movement.articleNumber || "",
+        movement.timestamp || new Date().toISOString(),
+        JSON.stringify(movement)
+      );
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::jsonb, now())`;
+    }).join(",");
+
+    await client.query(
+      `insert into public.pg_movements(id, article_number, timestamp, data, updated_at)
+       values ${valuesSql}
+       on conflict (id) do update
+       set data = excluded.data, updated_at = now()`,
+      params
+    );
+  }
+  return valid.length;
+}
+
+async function batchUpsertCoRecords(client, coRecords) {
+  const valid = coRecords.filter((record) => record?.id);
+  for (const chunk of chunkArray(valid, 300)) {
+    const params = [];
+    const valuesSql = chunk.map((record, index) => {
+      const base = index * 4;
+      params.push(
+        record.id,
+        record.machineId || "",
+        record.timestamp || new Date().toISOString(),
+        JSON.stringify(record)
+      );
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::jsonb, now())`;
+    }).join(",");
+
+    await client.query(
+      `insert into public.pg_co_records(id, machine_id, timestamp, data, updated_at)
+       values ${valuesSql}
+       on conflict (id) do update
+       set data = excluded.data, updated_at = now()`,
+      params
+    );
+  }
+  return valid.length;
+}
+
 export async function handler(event) {
   const conn = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
   if (!conn) return resp(500, { ok: false, error: "Missing NETLIFY_DATABASE_URL" });
@@ -63,62 +144,14 @@ export async function handler(event) {
 
       await client.query("begin");
 
-      // items: key = articleNumber
-      for (const it of items) {
-        const article = it?.articleNumber;
-        if (!article) continue;
-
-        await client.query(
-          `insert into public.pg_items(article_number, data, updated_at)
-           values ($1, $2::jsonb, now())
-           on conflict (article_number) do update
-           set data = excluded.data, updated_at = now()`,
-          [article, JSON.stringify(it)]
-        );
-      }
-
-      // movements: key = id
-      for (const m of movements) {
-        const id = m?.id;
-        if (!id) continue;
-
-        await client.query(
-          `insert into public.pg_movements(id, article_number, timestamp, data, updated_at)
-           values ($1, $2, $3, $4::jsonb, now())
-           on conflict (id) do update
-           set data = excluded.data, updated_at = now()`,
-          [
-            id,
-            m.articleNumber || "",
-            m.timestamp || new Date().toISOString(),
-            JSON.stringify(m),
-          ]
-        );
-      }
-
-      // coRecords: key = id
-      for (const r of coRecords) {
-        const id = r?.id;
-        if (!id) continue;
-
-        await client.query(
-          `insert into public.pg_co_records(id, machine_id, timestamp, data, updated_at)
-           values ($1, $2, $3, $4::jsonb, now())
-           on conflict (id) do update
-           set data = excluded.data, updated_at = now()`,
-          [
-            id,
-            r.machineId || "",
-            r.timestamp || new Date().toISOString(),
-            JSON.stringify(r),
-          ]
-        );
-      }
+      const upsertedItems = await batchUpsertItems(client, items);
+      const upsertedMovements = await batchUpsertMovements(client, movements);
+      const upsertedCoRecords = await batchUpsertCoRecords(client, coRecords);
 
       await client.query("commit");
       return resp(200, {
         ok: true,
-        upserted: { items: items.length, movements: movements.length, coRecords: coRecords.length },
+        upserted: { items: upsertedItems, movements: upsertedMovements, coRecords: upsertedCoRecords },
       });
     }
 

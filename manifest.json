@@ -1,5 +1,5 @@
-{
-  "name": "PrintGuard — Sklad & Colorado",
+﻿{
+  "name": "PrintGuard — Sklad & Colorado v5.1.0",
   "short_name": "PrintGuard",
   "description": "Správa skladu tiskového oddělení + audit spotřeby Canon Colorado",
   "start_url": "/",
@@ -9,14 +9,12 @@
   "background_color": "#f5f2ed",
   "theme_color": "#f5f2ed",
   "lang": "cs",
-
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-
   "shortcuts": [
     { "name": "Nový pohyb skladu", "url": "/?screen=stock-movement" },
     { "name": "Colorado záznam", "url": "/?mode=colorado&screen=co-entry" }

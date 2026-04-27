@@ -520,6 +520,7 @@ textarea { resize: vertical; min-height: 58px; }
 .data-table td.stocktake-c { color: var(--stocktake); }
 .data-table td.delta { color: var(--ok); }
 .data-table td.note-td { color: var(--text-dim); font-size: .72rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.pp-status-row { display: flex; flex-wrap: wrap; gap: 4px; min-width: 180px; }
 .btn-del { background: none; border: none; cursor: pointer; color: var(--text-faint); padding: 3px 7px; font-size: .8rem; transition: color var(--tr); }
 .btn-del:hover { color: var(--crit); }
 

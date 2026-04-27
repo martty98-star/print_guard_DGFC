@@ -78,8 +78,10 @@
     const item = findItemById(checklistId);
 
     const scheduleLabel = scheduleType === 'weekly'
-      ? 'Weekly'
-      : scheduleType ? scheduleType : 'Occurrence';
+      ? t('checklist.schedule.weekly')
+      : scheduleType === 'monthly'
+        ? t('checklist.schedule.monthly')
+        : t('checklist.occurrence.label');
     const title = item && item.title ? item.title : checklistId;
     const datePart = localDate ? localDate.split('-').reverse().join('.') : '';
     const timePart = localTime || '';
@@ -115,7 +117,9 @@
       title: '',
       description: '',
       enabled: true,
+      scheduleType: 'weekly',
       daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      dayOfMonth: null,
       timeOfDay: '08:00',
       category: 'maintenance',
       timeZone: 'Europe/Prague',
@@ -142,8 +146,11 @@
   }
 
   function getScheduleLabel(item) {
+    if ((item.scheduleType || 'weekly') === 'monthly') {
+      return `${t('checklist.schedule.monthly')} ${t('checklist.schedule.day-prefix')} ${item.dayOfMonth || '?'} Â· ${item.timeOfDay || ''}`;
+    }
     const normalizedDays = Array.isArray(item.daysOfWeek) ? item.daysOfWeek : [];
-    return normalizedDays.map(getWeekdayLabel).join(', ') + ' · ' + (item.timeOfDay || '');
+    return `${t('checklist.schedule.weekly')} ${normalizedDays.map(getWeekdayLabel).join(', ')} Â· ${item.timeOfDay || ''}`;
   }
 
   function getFormPayload() {
@@ -159,7 +166,9 @@
       title: state.el('checklist-title')?.value || '',
       description: state.el('checklist-description')?.value || '',
       enabled: Boolean(state.el('checklist-enabled')?.checked),
+      scheduleType: state.el('checklist-schedule-type')?.value || 'weekly',
       daysOfWeek,
+      dayOfMonth: state.el('checklist-day-of-month')?.value ? Number(state.el('checklist-day-of-month').value) : null,
       timeOfDay: state.el('checklist-time')?.value || '',
       category: state.el('checklist-category')?.value || '',
       timeZone: 'Europe/Prague',
@@ -173,8 +182,14 @@
     if (state.el('checklist-title')) state.el('checklist-title').value = normalized.title || '';
     if (state.el('checklist-description')) state.el('checklist-description').value = normalized.description || '';
     if (state.el('checklist-enabled')) state.el('checklist-enabled').checked = normalized.enabled !== false;
+    if (state.el('checklist-schedule-type')) state.el('checklist-schedule-type').value = normalized.scheduleType || 'weekly';
     if (state.el('checklist-time')) state.el('checklist-time').value = normalized.timeOfDay || '08:00';
     if (state.el('checklist-category')) state.el('checklist-category').value = normalized.category || '';
+    if (state.el('checklist-day-of-month')) state.el('checklist-day-of-month').value = normalized.dayOfMonth || '';
+    const dayWrap = state.el('checklist-day-of-month-wrap');
+    if (dayWrap) dayWrap.classList.toggle('hidden', (normalized.scheduleType || 'weekly') !== 'monthly');
+    const daysWrap = state.el('checklist-days-wrap');
+    if (daysWrap) daysWrap.classList.toggle('hidden', (normalized.scheduleType || 'weekly') === 'monthly');
 
     const days = Array.isArray(normalized.daysOfWeek) ? normalized.daysOfWeek : [];
     WEEKDAY_OPTIONS.forEach((day) => {
@@ -402,6 +417,7 @@
           occurrence_key: nextOccurrence.occurrenceKey,
           completed_at: new Date().toISOString(),
           completed_by: getActor(),
+          actor: getActor(),
           device_id: state.cfg && state.cfg.deviceId ? state.cfg.deviceId : 'device',
         },
         { fetchImpl: state.fetchImpl }
@@ -529,6 +545,19 @@
       saveChecklist();
     });
     state.el('checklist-list')?.addEventListener('click', handleListClick);
+    state.el('checklist-schedule-type')?.addEventListener('change', function onScheduleTypeChange() {
+      fillForm(getEditingItem() || getDefaultItem());
+    });
+
+    const scheduleGroupLabel = state.el('checklist-schedule-type')?.closest('.form-group')?.querySelector('label');
+    if (scheduleGroupLabel) scheduleGroupLabel.textContent = t('checklist.form.schedule');
+    const scheduleSelect = state.el('checklist-schedule-type');
+    if (scheduleSelect && scheduleSelect.options.length >= 2) {
+      scheduleSelect.options[0].textContent = t('checklist.form.schedule.weekly');
+      scheduleSelect.options[1].textContent = t('checklist.form.schedule.monthly');
+    }
+    const dayOfMonthLabel = state.el('checklist-day-of-month')?.closest('.form-group')?.querySelector('label');
+    if (dayOfMonthLabel) dayOfMonthLabel.textContent = t('checklist.form.day-of-month');
 
     fillForm(getDefaultItem());
   }
@@ -539,3 +568,4 @@
     refreshChecklist,
   };
 });
+

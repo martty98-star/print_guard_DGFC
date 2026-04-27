@@ -11,7 +11,8 @@ function getActor(event, body) {
     ? event.headers['x-printguard-actor'] || event.headers['X-PrintGuard-Actor']
     : null;
   const bodyValue = body && typeof body.actor === 'string' ? body.actor : null;
-  const actor = bodyValue || headerValue || 'printguard-user';
+  const completedByValue = body && typeof body.completed_by === 'string' ? body.completed_by : null;
+  const actor = bodyValue || completedByValue || headerValue || 'printguard-user';
   return typeof actor === 'string' && actor.trim() ? actor.trim() : 'printguard-user';
 }
 

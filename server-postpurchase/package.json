@@ -1,0 +1,11 @@
+{
+  "name": "printguard-postpurchase-server-sync",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "sync": "node sync-postpurchase-orders.js"
+  },
+  "dependencies": {
+    "pg": "^8.19.0"
+  }
+}

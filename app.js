@@ -5,7 +5,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'printguard-5.0';
+const APP_VERSION = 'printguard-5.1.0';
 const DB_NAME     = 'printguard-db';
 const DB_VERSION  = 2;
 const ST_ITEMS    = 'items';
@@ -304,9 +304,32 @@ const S = {
   printLogViewMode: 'raw',
   printLogGroupFilter: 'all',
   printLogExpandedGroups: {},
+  postPurchaseOrders: [],
+  postPurchaseLoading: false,
+  postPurchaseLoaded: false,
   syncRunning:      false,
   syncIntervalId:   null,
 };
+
+const SYNC_MIN_INTERVAL_MS = 30 * 60 * 1000;
+const SYNC_ONLINE_RETRY_DELAY_MS = 15 * 1000;
+
+function getLastCloudSyncMs() {
+  const value = Number(ls('pg_last_cloud_sync_ms') || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function markCloudSyncComplete() {
+  ls('pg_last_cloud_sync_ms', String(Date.now()));
+}
+
+function shouldRunBackgroundSync() {
+  return (
+    navigator.onLine &&
+    document.visibilityState === 'visible' &&
+    Date.now() - getLastCloudSyncMs() >= SYNC_MIN_INTERVAL_MS
+  );
+}
 
 // ── IndexedDB ──────────────────────────────────────────────
 let db;
@@ -2011,6 +2034,113 @@ function renderPrintLifecycleGroups(wrap, foot) {
 
 // ── CSV helpers ──────────────────────────────────────────
 
+function postPurchaseStatusBadge(label, isActive) {
+  return `<span class="badge ${isActive ? 'ok' : 'warn'}">${esc(label)}</span>`;
+}
+
+async function loadPostPurchaseOrders(force = false) {
+  if (S.postPurchaseLoading) return;
+  if (S.postPurchaseLoaded && !force) {
+    renderPostPurchaseOrders();
+    return;
+  }
+
+  S.postPurchaseLoading = true;
+  elSet('postpurchase-status', 'Loading...');
+  const wrap = el('postpurchase-orders-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading Post Purchase orders...</p></div>`;
+  }
+
+  try {
+    const res = await fetch('/.netlify/functions/postpurchase-orders?limit=200', { cache: 'no-store' });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to load Post Purchase orders');
+    S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
+    S.postPurchaseLoaded = true;
+    renderPostPurchaseOrders();
+    elSet('postpurchase-status', `${S.postPurchaseOrders.length} orders loaded`);
+  } catch (error) {
+    if (wrap) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">âš </div><p>Failed to load Post Purchase orders.</p><div class="table-empty-note">${esc(error.message || error)}</div></div>`;
+    }
+    elSet('postpurchase-status', 'Load failed');
+    showToast('Failed to load Post Purchase orders.', 'error');
+  } finally {
+    S.postPurchaseLoading = false;
+  }
+}
+
+function renderPostPurchaseOrders() {
+  const wrap = el('postpurchase-orders-wrap');
+  if (!wrap) return;
+
+  if (!S.postPurchaseOrders.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">â”€</div><p>No Post Purchase orders stored yet.</p></div>`;
+    return;
+  }
+
+  const rows = S.postPurchaseOrders.map((row) => {
+    const statuses = row.statuses || {};
+    const lifecycle = [
+      postPurchaseStatusBadge('API', statuses.RECEIVED_FROM_API),
+      postPurchaseStatusBadge('Submit Tool', statuses.SUBMIT_TOOL_PROCESSED),
+      postPurchaseStatusBadge('ONYX', statuses.ONYX_SEEN),
+      postPurchaseStatusBadge('Colorado', statuses.COLORADO_PRINTED),
+    ].join(' ');
+
+    return `<tr>
+      <td>${esc(row.external_order_id || 'â€”')}</td>
+      <td>${esc(row.order_number || 'â€”')}</td>
+      <td>${esc(row.status || 'â€”')}</td>
+      <td>${row.received_at ? fmtDT(row.received_at) : 'â€”'}</td>
+      <td>${row.api_seen_at ? fmtDT(row.api_seen_at) : 'â€”'}</td>
+      <td>${row.submit_tool_processed_at ? fmtDT(row.submit_tool_processed_at) : 'â€”'}</td>
+      <td>${row.onyx_seen_at ? fmtDT(row.onyx_seen_at) : 'â€”'}</td>
+      <td>${row.colorado_printed_at ? fmtDT(row.colorado_printed_at) : 'â€”'}</td>
+      <td><div class="pp-status-row">${lifecycle}</div></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>External order ID</th>
+      <th>Order number</th>
+      <th>${i18n('table.status')}</th>
+      <th>Received at</th>
+      <th>API seen at</th>
+      <th>Submit Tool</th>
+      <th>ONYX</th>
+      <th>Colorado</th>
+      <th>Lifecycle</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+async function syncPostPurchaseOrdersManual() {
+  try {
+    elSet('postpurchase-status', 'Syncing...');
+    const res = await fetch('/.netlify/functions/postpurchase-orders', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-printguard-admin-pin': cfg.adminPin,
+      },
+      cache: 'no-store',
+      body: JSON.stringify({ limit: 100 }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to sync Post Purchase orders');
+    showToast(`Orders sync OK Â· +${payload.inserted || 0} / ~${payload.updated || 0}`, 'success');
+    S.postPurchaseLoaded = false;
+    await loadPostPurchaseOrders(true);
+  } catch (error) {
+    elSet('postpurchase-status', 'Sync failed');
+    showToast(error.message || String(error), 'error');
+  }
+}
+
 function getCurrentMonthExportRange() {
   return Reports.date.getCurrentMonthExportRange(new Date());
 }
@@ -2420,6 +2550,7 @@ function navigate(screenId) {
   if (screenId === 'stock-log')     renderStockLog();
   if (screenId === 'co-history')    renderCoHistory();
   if (screenId === 'print-log')     loadPrintLog();
+  if (screenId === 'postpurchase-orders') loadPostPurchaseOrders();
   if (screenId === 'settings')      loadSettingsUI();
 
   window.scrollTo(0, 0);
@@ -2634,6 +2765,7 @@ async function runSync(options = {}) {
         dropped ? 'warn' : 'success'
       );
     }
+    markCloudSyncComplete();
     return true;
   } catch (e) {
     console.error('[SYNC] Error:', e);
@@ -2647,20 +2779,21 @@ async function runSync(options = {}) {
 }
 
 function setupBackgroundSync() {
-  if (navigator.onLine) {
-    runSync({ silent: true });
-  }
-
   window.addEventListener('online', () => {
     updateOfflineBanner();
-    runSync({ silent: true });
+    window.setTimeout(() => {
+      if (shouldRunBackgroundSync()) runSync({ silent: true });
+    }, SYNC_ONLINE_RETRY_DELAY_MS);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (shouldRunBackgroundSync()) runSync({ silent: true });
   });
 
   if (S.syncIntervalId) clearInterval(S.syncIntervalId);
   S.syncIntervalId = setInterval(() => {
-    if (!navigator.onLine || document.visibilityState !== 'visible') return;
-    runSync({ silent: true });
-  }, 5 * 60 * 1000);
+    if (shouldRunBackgroundSync()) runSync({ silent: true });
+  }, SYNC_MIN_INTERVAL_MS);
 }
 
 function applyRoleUI() {
@@ -3001,6 +3134,12 @@ el('sync-btn').addEventListener('click', async () => {
     loadPrintLog(true);
   });
   el('print-log-export-btn').addEventListener('click', exportCSVPrintLog);
+  el('postpurchase-refresh-btn')?.addEventListener('click', () => {
+    loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-sync-btn')?.addEventListener('click', () => {
+    syncPostPurchaseOrdersManual();
+  });
   document.addEventListener('click', e => {
     const groupRow = e.target?.closest?.('.pl-group-row[data-group-id]');
     if (groupRow) {
@@ -3073,6 +3212,7 @@ window.addEventListener('i18n:changed', () => {
   try { renderCoDashboard(); } catch (_) {}
   try { renderCoHistory(); } catch (_) {}
   try { renderPrintLogRows(); } catch (_) {}
+  try { renderPostPurchaseOrders(); } catch (_) {}
   try { renderChecklistScreen(false); } catch (_) {}
 });
 

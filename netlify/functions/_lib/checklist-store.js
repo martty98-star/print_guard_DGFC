@@ -1,6 +1,7 @@
 'use strict';
 
 const checklistDomain = require('../../../reports/checklist-domain.js');
+let checklistSchemaReady = false;
 
 function cleanOptionalString(value) {
   if (typeof value !== 'string') return null;
@@ -15,6 +16,7 @@ function mapChecklistRow(row) {
     description: row.description,
     enabled: row.enabled !== false,
     daysOfWeek: Array.isArray(row.days_of_week) ? row.days_of_week : [],
+    dayOfMonth: row.day_of_month == null ? null : Number(row.day_of_month),
     timeOfDay: row.time_of_day,
     category: row.category,
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
@@ -27,6 +29,8 @@ function mapChecklistRow(row) {
 }
 
 async function ensureChecklistTables(client) {
+  if (checklistSchemaReady) return;
+
   await client.query(
     `
       create table if not exists checklist_tasks (
@@ -36,6 +40,7 @@ async function ensureChecklistTables(client) {
         enabled boolean not null default true,
         schedule_type text not null default 'weekly',
         days_of_week jsonb not null default '[]'::jsonb,
+        day_of_month integer null,
         time_of_day text not null,
         category text null,
         time_zone text not null default 'Europe/Prague',
@@ -99,6 +104,20 @@ async function ensureChecklistTables(client) {
   await client.query(
     `alter table if exists checklist_occurrence_completion add column if not exists checklist_title text null`
   );
+
+  await client.query(
+    `alter table if exists checklist_tasks add column if not exists day_of_month integer null`
+  );
+
+  await client.query(
+    `update checklist_tasks set schedule_type = 'weekly' where schedule_type is null or schedule_type = ''`
+  );
+
+  await client.query(
+    `update checklist_tasks set day_of_month = null where schedule_type <> 'monthly'`
+  );
+
+  checklistSchemaReady = true;
 }
 
 async function listChecklistItems(client) {
@@ -112,6 +131,7 @@ async function listChecklistItems(client) {
         enabled,
         schedule_type,
         days_of_week,
+        day_of_month,
         time_of_day,
         category,
         time_zone,
@@ -141,6 +161,7 @@ async function saveChecklistItem(client, input, actor) {
           enabled,
           schedule_type,
           days_of_week,
+          day_of_month,
           time_of_day,
           category,
           time_zone,
@@ -174,6 +195,7 @@ async function saveChecklistItem(client, input, actor) {
         enabled,
         schedule_type,
         days_of_week,
+        day_of_month,
         time_of_day,
         category,
         time_zone,
@@ -192,10 +214,11 @@ async function saveChecklistItem(client, input, actor) {
         $7,
         $8,
         $9,
-        $10::timestamptz,
+        $10,
         $11::timestamptz,
-        $12,
-        $13
+        $12::timestamptz,
+        $13,
+        $14
       )
       on conflict (id) do update
       set
@@ -217,6 +240,7 @@ async function saveChecklistItem(client, input, actor) {
       normalized.enabled,
       normalized.scheduleType || 'weekly',
       JSON.stringify(normalized.daysOfWeek || []),
+      normalized.dayOfMonth || null,
       normalized.timeOfDay,
       normalized.category,
       normalized.timeZone || 'Europe/Prague',
@@ -236,6 +260,7 @@ async function saveChecklistItem(client, input, actor) {
         enabled,
         schedule_type,
         days_of_week,
+        day_of_month,
         time_of_day,
         category,
         time_zone,
