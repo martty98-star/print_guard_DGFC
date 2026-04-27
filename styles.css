@@ -553,6 +553,12 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-filter-tab.active span { color: var(--bg3); }
 .pp-queue-table { min-width: 720px; }
 .pp-queue-table td { vertical-align: middle; padding-top: 18px; padding-bottom: 18px; }
+.pp-queue-table tr.pp-issue-row td {
+  background: rgba(155, 58, 47, .045);
+}
+.pp-queue-table tr.pp-issue-row:hover td {
+  background: rgba(155, 58, 47, .07);
+}
 .pp-order-main {
   font-family: var(--font-d);
   font-size: 1rem;
@@ -576,7 +582,13 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   gap: 8px;
 }
-.pp-step-toggle {
+.pp-progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.pp-step-toggle,
+.pp-reprint-toggle {
   align-items: center;
   border: 1px solid var(--border);
   color: var(--text-dim);
@@ -592,11 +604,18 @@ textarea { resize: vertical; min-height: 58px; }
   background: var(--ok-dim);
   color: var(--ok);
 }
-.pp-step-toggle.disabled {
+.pp-reprint-toggle.checked {
+  border-color: var(--crit);
+  background: var(--crit-dim);
+  color: var(--crit);
+}
+.pp-step-toggle.disabled,
+.pp-reprint-toggle.disabled {
   cursor: wait;
   opacity: .65;
 }
-.pp-step-toggle input {
+.pp-step-toggle input,
+.pp-reprint-toggle input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -640,6 +659,43 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-state-badge.new { border-color: var(--warn); color: var(--warn); background: var(--warn-dim); }
 .pp-state-badge.progress { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .pp-state-badge.done { border-color: var(--ok); color: var(--ok); background: var(--ok-dim); }
+.pp-state-badge.issue { border-color: var(--crit); color: var(--crit); background: var(--crit-dim); }
+.pp-issue-box {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-start;
+}
+.pp-issue-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.pp-issue-fields select,
+.pp-issue-fields input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: .72rem;
+  padding: 7px 9px;
+  outline: none;
+}
+.pp-issue-fields select { min-width: 145px; }
+.pp-issue-fields input { min-width: 180px; }
+.pp-issue-badge {
+  border: 1px solid var(--crit);
+  color: var(--crit);
+  background: var(--crit-dim);
+  display: inline-block;
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  margin-left: 6px;
+  padding: 5px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 .btn-del { background: none; border: none; cursor: pointer; color: var(--text-faint); padding: 3px 7px; font-size: .8rem; transition: color var(--tr); }
 .btn-del:hover { color: var(--crit); }
 

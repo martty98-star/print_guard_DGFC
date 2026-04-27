@@ -10,6 +10,9 @@ create table if not exists print_orders_received (
   submit_tool_processed_at timestamptz null,
   onyx_seen_at timestamptz null,
   colorado_printed_at timestamptz null,
+  reprint_needed boolean not null default false,
+  issue_reason text null,
+  issue_note text null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

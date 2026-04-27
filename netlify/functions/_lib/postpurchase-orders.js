@@ -545,6 +545,9 @@ async function ensurePrintOrdersTable(client) {
         submit_tool_processed_at timestamptz null,
         onyx_seen_at timestamptz null,
         colorado_printed_at timestamptz null,
+        reprint_needed boolean not null default false,
+        issue_reason text null,
+        issue_note text null,
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       )
@@ -558,6 +561,10 @@ async function ensurePrintOrdersTable(client) {
   await client.query(
     `create index if not exists print_orders_received_received_at_idx on print_orders_received (received_at desc nulls last)`
   );
+
+  await client.query(`alter table print_orders_received add column if not exists reprint_needed boolean not null default false`);
+  await client.query(`alter table print_orders_received add column if not exists issue_reason text null`);
+  await client.query(`alter table print_orders_received add column if not exists issue_note text null`);
 
   printOrdersSchemaReady = true;
 }
@@ -686,6 +693,9 @@ async function listPrintOrdersReceived(client, options) {
         submit_tool_processed_at,
         onyx_seen_at,
         colorado_printed_at,
+        reprint_needed,
+        issue_reason,
+        issue_note,
         source_payload
       from print_orders_received
       order by coalesce(received_at, api_seen_at) desc, id desc
@@ -713,6 +723,9 @@ function mapPrintOrderRow(row) {
     submit_tool_processed_at: row.submit_tool_processed_at instanceof Date ? row.submit_tool_processed_at.toISOString() : row.submit_tool_processed_at,
     onyx_seen_at: row.onyx_seen_at instanceof Date ? row.onyx_seen_at.toISOString() : row.onyx_seen_at,
     colorado_printed_at: row.colorado_printed_at instanceof Date ? row.colorado_printed_at.toISOString() : row.colorado_printed_at,
+    reprint_needed: Boolean(row.reprint_needed),
+    issue_reason: row.issue_reason || '',
+    issue_note: row.issue_note || '',
     statuses: {
       RECEIVED_FROM_API: true,
       SUBMIT_TOOL_PROCESSED: submitToolProcessed,
@@ -727,6 +740,14 @@ async function updatePrintOrderLifecycleStatus(client, options) {
 
   const externalOrderId = cleanString(options && (options.externalOrderId || options.external_order_id));
   const requestedStage = cleanString(options && options.stage);
+  const hasIssueUpdate = options && (
+    Object.prototype.hasOwnProperty.call(options, 'reprintNeeded') ||
+    Object.prototype.hasOwnProperty.call(options, 'reprint_needed') ||
+    Object.prototype.hasOwnProperty.call(options, 'issueReason') ||
+    Object.prototype.hasOwnProperty.call(options, 'issue_reason') ||
+    Object.prototype.hasOwnProperty.call(options, 'note') ||
+    Object.prototype.hasOwnProperty.call(options, 'issue_note')
+  );
   const completed = Boolean(options && options.completed);
   const completedAt = toIsoOrNull(options && (options.completedAt || options.completed_at));
   const stageMap = {
@@ -746,10 +767,82 @@ async function updatePrintOrderLifecycleStatus(client, options) {
     throw error;
   }
 
-  if (!columnName) {
+  if (!columnName && !hasIssueUpdate) {
     const error = new Error('Invalid lifecycle stage');
     error.statusCode = 400;
     throw error;
+  }
+
+  const currentResult = await client.query(
+    `
+      select reprint_needed, issue_reason, issue_note
+      from print_orders_received
+      where external_order_id = $1
+    `,
+    [externalOrderId]
+  );
+
+  if (!currentResult.rows.length) {
+    const error = new Error('Order not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const current = currentResult.rows[0] || {};
+  const nextReprintNeeded = hasIssueUpdate && (
+    Object.prototype.hasOwnProperty.call(options, 'reprintNeeded') ||
+    Object.prototype.hasOwnProperty.call(options, 'reprint_needed')
+  )
+    ? Boolean(options.reprintNeeded ?? options.reprint_needed)
+    : Boolean(current.reprint_needed);
+  const nextIssueReason = hasIssueUpdate && (
+    Object.prototype.hasOwnProperty.call(options, 'issueReason') ||
+    Object.prototype.hasOwnProperty.call(options, 'issue_reason')
+  )
+    ? cleanString(options.issueReason ?? options.issue_reason)
+    : cleanString(current.issue_reason);
+  const nextIssueNote = hasIssueUpdate && (
+    Object.prototype.hasOwnProperty.call(options, 'note') ||
+    Object.prototype.hasOwnProperty.call(options, 'issue_note')
+  )
+    ? cleanString(options.note ?? options.issue_note)
+    : cleanString(current.issue_note);
+
+  if (nextReprintNeeded && !nextIssueReason) {
+    const error = new Error('Issue reason is required when reprint is enabled');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!columnName && hasIssueUpdate) {
+    const result = await client.query(
+      `
+        update print_orders_received
+        set
+          reprint_needed = $2::boolean,
+          issue_reason = case when $2::boolean then $3 else null end,
+          issue_note = case when $2::boolean then nullif($4, '') else null end,
+          updated_at = now()
+        where external_order_id = $1
+        returning
+          external_order_id,
+          order_number,
+          customer_order_id,
+          status,
+          received_at,
+          api_seen_at,
+          submit_tool_processed_at,
+          onyx_seen_at,
+          colorado_printed_at,
+          reprint_needed,
+          issue_reason,
+          issue_note,
+          source_payload
+      `,
+      [externalOrderId, nextReprintNeeded, nextIssueReason, nextIssueNote]
+    );
+
+    return mapPrintOrderRow(result.rows[0]);
   }
 
   const result = await client.query(
@@ -760,6 +853,9 @@ async function updatePrintOrderLifecycleStatus(client, options) {
           when $2::boolean then coalesce($3::timestamptz, now())
           else null
         end,
+        reprint_needed = $4::boolean,
+        issue_reason = case when $4::boolean then $5 else null end,
+        issue_note = case when $4::boolean then nullif($6, '') else null end,
         updated_at = now()
       where external_order_id = $1
       returning
@@ -772,9 +868,12 @@ async function updatePrintOrderLifecycleStatus(client, options) {
         submit_tool_processed_at,
         onyx_seen_at,
         colorado_printed_at,
+        reprint_needed,
+        issue_reason,
+        issue_note,
         source_payload
     `,
-    [externalOrderId, completed, completedAt]
+    [externalOrderId, completed, completedAt, nextReprintNeeded, nextIssueReason, nextIssueNote]
   );
 
   if (!result.rows.length) {

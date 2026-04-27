@@ -37,12 +37,22 @@ function parseSyncOptions(event) {
 
 function parseUpdateOptions(event) {
   const body = parseRequestBody(event);
-  return {
+  const options = {
     externalOrderId: body.externalOrderId ?? body.external_order_id,
     stage: body.stage,
     completed: body.completed,
     completedAt: body.completedAt ?? body.completed_at,
   };
+  if (Object.prototype.hasOwnProperty.call(body, 'reprintNeeded') || Object.prototype.hasOwnProperty.call(body, 'reprint_needed')) {
+    options.reprintNeeded = body.reprintNeeded ?? body.reprint_needed;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'issueReason') || Object.prototype.hasOwnProperty.call(body, 'issue_reason')) {
+    options.issueReason = body.issueReason ?? body.issue_reason;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'note') || Object.prototype.hasOwnProperty.call(body, 'issue_note')) {
+    options.note = body.note ?? body.issue_note;
+  }
+  return options;
 }
 
 exports.handler = async function handler(event) {

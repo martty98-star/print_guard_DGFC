@@ -2136,6 +2136,15 @@ const POST_PURCHASE_STEPS = [
   { stage: 'COLORADO_PRINTED', label: 'Colorado', field: 'colorado_printed_at' },
 ];
 
+const POST_PURCHASE_ISSUE_REASONS = [
+  'Oil drop',
+  'Bent paper',
+  'Color issue',
+  'Cut issue',
+  'Printer error',
+  'Other',
+];
+
 function isPostPurchaseStepDone(row, step) {
   const statuses = row && row.statuses ? row.statuses : {};
   return Boolean(statuses[step.stage] || row?.[step.field]);
@@ -2146,10 +2155,11 @@ function getPostPurchaseStepCount(row) {
 }
 
 function isPostPurchaseDone(row) {
-  return getPostPurchaseStepCount(row) === POST_PURCHASE_STEPS.length;
+  return getPostPurchaseStepCount(row) === POST_PURCHASE_STEPS.length && !row?.reprint_needed;
 }
 
 function getPostPurchaseState(row) {
+  if (row?.reprint_needed) return { key: 'issue', label: 'Issue' };
   const count = getPostPurchaseStepCount(row);
   if (count === 0) return { key: 'new', label: 'New' };
   if (count === POST_PURCHASE_STEPS.length) return { key: 'done', label: 'Done' };
@@ -2195,6 +2205,39 @@ function postPurchaseToggleControl(label, row, stage) {
     <span class="pp-step-box"></span>
     <span class="pp-step-label">${esc(label)}</span>
   </label>`;
+}
+
+function postPurchaseIssueControls(row) {
+  const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
+  const updateKey = getPostPurchaseUpdateKey(externalOrderId, 'ISSUE');
+  const disabled = Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
+  const enabled = Boolean(row && row.reprint_needed);
+  const reason = row && row.issue_reason ? row.issue_reason : '';
+  const note = row && row.issue_note ? row.issue_note : '';
+  const options = [''].concat(POST_PURCHASE_ISSUE_REASONS).map(value => {
+    const label = value || 'Reason...';
+    return `<option value="${esc(value)}" ${value === reason ? 'selected' : ''}>${esc(label)}</option>`;
+  }).join('');
+
+  return `<div class="pp-issue-box ${enabled ? 'active' : ''}">
+    <label class="pp-reprint-toggle ${enabled ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
+      <input
+        type="checkbox"
+        class="pp-reprint-needed"
+        data-external-order-id="${esc(externalOrderId)}"
+        ${enabled ? 'checked' : ''}
+        ${disabled ? 'disabled' : ''}
+      >
+      <span class="pp-step-box"></span>
+      <span class="pp-step-label">Reprint needed</span>
+    </label>
+    ${enabled ? `<div class="pp-issue-fields">
+      <select class="pp-issue-reason" data-external-order-id="${esc(externalOrderId)}" ${disabled ? 'disabled' : ''}>
+        ${options}
+      </select>
+      <input type="text" class="pp-issue-note" data-external-order-id="${esc(externalOrderId)}" value="${esc(note)}" placeholder="Optional note" ${disabled ? 'disabled' : ''}>
+    </div>` : ''}
+  </div>`;
 }
 
 async function loadPostPurchaseOrders(force = false) {
@@ -2278,17 +2321,19 @@ function renderPostPurchaseOrders() {
     const controls = POST_PURCHASE_STEPS.map(step =>
       postPurchaseToggleControl(step.label, row, step.stage)
     ).join('');
+    const issueControls = postPurchaseIssueControls(row);
     const secondary = row.status && row.status !== '-' ? row.status : '';
     const detailTitle = row.external_order_id ? `External ID ${row.external_order_id}` : '';
+    const issueBadge = row.reprint_needed ? '<span class="pp-issue-badge">Issue</span>' : '';
 
-    return `<tr>
+    return `<tr class="${row.reprint_needed ? 'pp-issue-row' : ''}">
       <td>
         <div class="pp-order-main" title="${esc(detailTitle)}">${esc(row.order_number || '-')}</div>
         ${secondary ? `<div class="pp-order-sub" title="${esc(secondary)}">${esc(secondary)}</div>` : ''}
       </td>
       <td class="pp-received">${formatPostPurchaseTime(row.received_at || row.api_seen_at)}</td>
-      <td><div class="pp-step-row">${controls}</div></td>
-      <td><span class="pp-state-badge ${state.key}">${esc(state.label)}</span></td>
+      <td><div class="pp-progress-cell"><div class="pp-step-row">${controls}</div>${issueControls}</div></td>
+      <td><span class="pp-state-badge ${state.key}">${esc(state.label)}</span>${issueBadge}</td>
     </tr>`;
   }).join('');
 
@@ -2311,6 +2356,39 @@ function renderPostPurchaseOrders() {
         input.dataset.stage,
         input.checked
       );
+    });
+  });
+  wrap.querySelectorAll('.pp-reprint-needed').forEach((input) => {
+    input.addEventListener('change', () => {
+      const externalOrderId = input.dataset.externalOrderId;
+      const row = (S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
+      setPostPurchaseIssue(externalOrderId, {
+        reprintNeeded: input.checked,
+        issueReason: input.checked ? (row?.issue_reason || 'Other') : '',
+        note: input.checked ? (row?.issue_note || '') : '',
+      });
+    });
+  });
+  wrap.querySelectorAll('.pp-issue-reason').forEach((select) => {
+    select.addEventListener('change', () => {
+      const externalOrderId = select.dataset.externalOrderId;
+      const row = (S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
+      setPostPurchaseIssue(externalOrderId, {
+        reprintNeeded: true,
+        issueReason: select.value,
+        note: row?.issue_note || '',
+      });
+    });
+  });
+  wrap.querySelectorAll('.pp-issue-note').forEach((input) => {
+    input.addEventListener('change', () => {
+      const externalOrderId = input.dataset.externalOrderId;
+      const row = (S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
+      setPostPurchaseIssue(externalOrderId, {
+        reprintNeeded: true,
+        issueReason: row?.issue_reason || 'Other',
+        note: input.value,
+      });
     });
   });
 
@@ -2396,6 +2474,70 @@ async function setPostPurchaseStage(externalOrderId, stage, completed) {
     S.postPurchaseOrders = previousOrders;
     showToast(postPurchaseErrorMessage(error), 'error');
     elSet('postpurchase-status', 'Update failed');
+    renderPostPurchaseOrders();
+    return;
+  } finally {
+    delete S.postPurchaseUpdating[updateKey];
+    renderPostPurchaseOrders();
+  }
+}
+
+async function setPostPurchaseIssue(externalOrderId, patch) {
+  const updateKey = getPostPurchaseUpdateKey(externalOrderId, 'ISSUE');
+  const previousOrders = (S.postPurchaseOrders || []).map(row => ({
+    ...row,
+    statuses: { ...(row.statuses || {}) },
+  }));
+  const reprintNeeded = Boolean(patch && patch.reprintNeeded);
+  const issueReason = reprintNeeded ? String((patch && patch.issueReason) || 'Other').trim() : '';
+  const note = reprintNeeded ? String((patch && patch.note) || '').trim() : '';
+
+  if (reprintNeeded && !issueReason) {
+    showToast('Issue reason is required.', 'error');
+    renderPostPurchaseOrders();
+    return;
+  }
+
+  S.postPurchaseUpdating = S.postPurchaseUpdating || {};
+  S.postPurchaseUpdating[updateKey] = true;
+  S.postPurchaseOrders = (S.postPurchaseOrders || []).map(row => {
+    if (row.external_order_id !== externalOrderId) return row;
+    return {
+      ...row,
+      reprint_needed: reprintNeeded,
+      issue_reason: issueReason,
+      issue_note: note,
+    };
+  });
+  renderPostPurchaseOrders();
+  elSet('postpurchase-status', 'Saving issue...');
+
+  try {
+    const res = await fetch('/.netlify/functions/postpurchase-orders', {
+      method: 'PUT',
+      headers: {
+        ...postPurchaseJsonHeaders(),
+      },
+      cache: 'no-store',
+      body: JSON.stringify({
+        externalOrderId,
+        reprintNeeded,
+        issueReason,
+        note,
+      }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to update issue');
+
+    const updatedRow = payload.row || null;
+    S.postPurchaseOrders = (S.postPurchaseOrders || []).map(row =>
+      row.external_order_id === externalOrderId && updatedRow ? updatedRow : row
+    );
+    showToast(reprintNeeded ? 'Issue marked.' : 'Issue cleared.', 'success');
+  } catch (error) {
+    S.postPurchaseOrders = previousOrders;
+    showToast(postPurchaseErrorMessage(error), 'error');
+    elSet('postpurchase-status', 'Issue update failed');
     renderPostPurchaseOrders();
     return;
   } finally {
