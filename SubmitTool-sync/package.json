@@ -1,0 +1,12 @@
+{
+  "name": "printguard-submit-tool-sync",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PrintGuard Submit Tool JobQueue log sync",
+  "scripts": {
+    "sync": "node sync-submit-tool-logs.js"
+  },
+  "dependencies": {
+    "pg": "^8.19.0"
+  }
+}
