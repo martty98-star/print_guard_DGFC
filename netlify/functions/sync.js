@@ -1,5 +1,6 @@
 // netlify/functions/sync.js
 import pg from "pg";
+import crypto from "crypto";
 const { Client } = pg;
 
 const rateLimitBuckets = new Map();
@@ -9,6 +10,13 @@ function getAdminApiKey() {
   const key = typeof value === "string" ? value.trim() : "";
   if (!key) throw new Error("ADMIN_API_KEY is not configured");
   return key;
+}
+
+function getAdminPin() {
+  const value = process.env.ADMIN_PIN || "";
+  const pin = typeof value === "string" ? value.trim() : "";
+  if (!pin) throw new Error("ADMIN_PIN is not configured");
+  return pin;
 }
 
 function getHeader(event, name) {
@@ -56,9 +64,28 @@ function checkRateLimit(event, name, maxRequests = 30, windowMs = 60 * 1000) {
   }
 }
 
-function requireAdminApiKey(event) {
+function timingSafeEqualString(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""), "utf8");
+  const rightBuffer = Buffer.from(String(right || ""), "utf8");
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function checkAdminApiKey(event) {
   const providedKey = getHeader(event, "x-api-key");
-  if (!providedKey || providedKey !== getAdminApiKey()) {
+  if (!providedKey) return false;
+  return timingSafeEqualString(providedKey, getAdminApiKey());
+}
+
+function checkAdminPin(event) {
+  const providedPin = getHeader(event, "x-admin-pin");
+  if (!providedPin) return false;
+  return timingSafeEqualString(providedPin, getAdminPin());
+}
+
+function requireAdminAccess(event) {
+  if (checkAdminApiKey(event) || checkAdminPin(event)) return;
+  {
     const error = new Error("Unauthorized");
     error.statusCode = 401;
     throw error;
@@ -153,7 +180,7 @@ export async function handler(event) {
   if (event.httpMethod === "DELETE") {
     try {
       checkRateLimit(event, "sync-delete", 20);
-      requireAdminApiKey(event);
+      requireAdminAccess(event);
     } catch (e) {
       if (e && (e.statusCode === 401 || e.statusCode === 429)) {
         return resp(e.statusCode, { ok: false, error: e.message });

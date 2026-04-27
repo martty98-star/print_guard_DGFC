@@ -31,6 +31,8 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod === 'POST' || event.httpMethod === 'PUT') {
+      requireAdminPin(event);
+
       const requestBody = parseRequestBody(event);
       const actor = getActor(event, requestBody);
       const body = await withClient(async (client) => {

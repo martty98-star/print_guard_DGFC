@@ -5,7 +5,8 @@ const {
   getHeader,
   json,
   parseRequestBody,
-  requireAdminApiKey,
+  requireAdminAccess,
+  requirePostPurchaseAccess,
   withClient,
 } = require('./_lib/db');
 const {
@@ -53,7 +54,7 @@ exports.handler = async function handler(event) {
     checkRateLimit(event, { name: 'postpurchase-orders', maxRequests: 30, windowMs: 60 * 1000 });
 
     if (event.httpMethod === 'GET') {
-      requireAdminApiKey(event);
+      requirePostPurchaseAccess(event);
 
       const body = await withClient(async (client) => {
         const rows = await listPrintOrdersReceived(client, parseListOptions(event));
@@ -63,7 +64,7 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod === 'POST') {
-      requireAdminApiKey(event);
+      requireAdminAccess(event);
       if (getHeader(event, 'x-internal-sync').toLowerCase() !== 'true') {
         return json(403, { ok: false, error: 'Internal sync header required' });
       }
@@ -76,7 +77,7 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod === 'PUT') {
-      requireAdminApiKey(event);
+      requirePostPurchaseAccess(event);
 
       const body = await withClient(async (client) => {
         const row = await updatePrintOrderLifecycleStatus(client, parseUpdateOptions(event));

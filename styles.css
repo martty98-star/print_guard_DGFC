@@ -474,6 +474,12 @@ textarea { resize: vertical; min-height: 58px; }
   padding: 5px 13px; transition: all var(--tr); white-space: nowrap;
 }
 .btn-sm:hover { background: var(--accent-bg); border-color: var(--accent-light); }
+.input-sm {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--font-ui); font-size: .72rem;
+  padding: 6px 9px; outline: none; width: 150px;
+}
+.input-sm:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow); }
 
 /* ── Machine select (Colorado) ── */
 .machine-select-row { display: flex; gap: 8px; }

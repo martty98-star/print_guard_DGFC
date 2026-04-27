@@ -363,6 +363,7 @@
 
   async function saveChecklist() {
     try {
+      const authHeaders = typeof state.adminHeaders === 'function' ? state.adminHeaders() : {};
       const payload = getFormPayload();
       const requestBody = {
         ...payload,
@@ -370,16 +371,17 @@
       };
 
       if (payload.id) {
-        await ChecklistApi.updateChecklistItem(requestBody, { fetchImpl: state.fetchImpl });
+        await ChecklistApi.updateChecklistItem(requestBody, { fetchImpl: state.fetchImpl, headers: authHeaders });
       } else {
-        await ChecklistApi.createChecklistItem(requestBody, { fetchImpl: state.fetchImpl });
+        await ChecklistApi.createChecklistItem(requestBody, { fetchImpl: state.fetchImpl, headers: authHeaders });
       }
 
       closeForm();
       state.showToast && state.showToast(t('checklist.toast.saved'), 'success');
       await refreshChecklist(true);
     } catch (error) {
-      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.save'), 'error');
+      const message = typeof state.adminErrorMessage === 'function' ? state.adminErrorMessage(error) : (error && error.message ? error.message : t('checklist.error.save'));
+      state.showToast && state.showToast(message, 'error');
     }
   }
 
@@ -390,18 +392,20 @@
     }
 
     try {
+      const authHeaders = typeof state.adminHeaders === 'function' ? state.adminHeaders() : {};
       await ChecklistApi.updateChecklistItem(
         {
           ...item,
           enabled: !item.enabled,
           actor: getActor(),
         },
-        { fetchImpl: state.fetchImpl }
+        { fetchImpl: state.fetchImpl, headers: authHeaders }
       );
       state.showToast && state.showToast(t('checklist.toast.updated'), 'success');
       await refreshChecklist(true);
     } catch (error) {
-      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.update'), 'error');
+      const message = typeof state.adminErrorMessage === 'function' ? state.adminErrorMessage(error) : (error && error.message ? error.message : t('checklist.error.update'));
+      state.showToast && state.showToast(message, 'error');
     }
   }
 
@@ -432,11 +436,13 @@
   async function deleteChecklist(id) {
     const runDelete = async function runDelete() {
       try {
-        await ChecklistApi.deleteChecklistItem(id, { fetchImpl: state.fetchImpl });
+        const authHeaders = typeof state.adminHeaders === 'function' ? state.adminHeaders() : {};
+        await ChecklistApi.deleteChecklistItem(id, { fetchImpl: state.fetchImpl, headers: authHeaders });
         state.showToast && state.showToast(t('checklist.toast.deleted'), 'success');
         await refreshChecklist(true);
       } catch (error) {
-        state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.delete'), 'error');
+        const message = typeof state.adminErrorMessage === 'function' ? state.adminErrorMessage(error) : (error && error.message ? error.message : t('checklist.error.delete'));
+        state.showToast && state.showToast(message, 'error');
       }
     };
 
@@ -452,9 +458,10 @@
 
   async function runManualEvaluation() {
     try {
+      const authHeaders = typeof state.adminHeaders === 'function' ? state.adminHeaders() : {};
       const result = await ChecklistApi.evaluateChecklistReminders(
         { lookbackMinutes: 15 },
-        { fetchImpl: state.fetchImpl }
+        { fetchImpl: state.fetchImpl, headers: authHeaders }
       );
 
       const summary = [
@@ -466,7 +473,8 @@
 
       state.showToast && state.showToast(t('checklist.toast.evaluate') + ': ' + summary, 'success');
     } catch (error) {
-      state.showToast && state.showToast(error && error.message ? error.message : t('checklist.error.evaluate'), 'error');
+      const message = typeof state.adminErrorMessage === 'function' ? state.adminErrorMessage(error) : (error && error.message ? error.message : t('checklist.error.evaluate'));
+      state.showToast && state.showToast(message, 'error');
     }
   }
 

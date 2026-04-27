@@ -46,8 +46,18 @@ const cfg = {
   set userName(v) { ls('pg_user_name', v); },
   get role() { return ls('pg_role') || 'operator'; },          // operator | admin
   set role(v) { ls('pg_role', v); },
-  get adminPin() { return ls('pg_admin_pin') || ''; },
-  set adminPin(v) { ls('pg_admin_pin', v); },
+  get adminPin() { return sessionStorage.getItem('pg_admin_pin') || ''; },
+  set adminPin(v) {
+    const value = String(v || '').trim();
+    if (value) sessionStorage.setItem('pg_admin_pin', value);
+    else sessionStorage.removeItem('pg_admin_pin');
+  },
+  get postPurchasePin() { return sessionStorage.getItem('pg_postpurchase_pin') || ''; },
+  set postPurchasePin(v) {
+    const value = String(v || '').trim();
+    if (value) sessionStorage.setItem('pg_postpurchase_pin', value);
+    else sessionStorage.removeItem('pg_postpurchase_pin');
+  },
 };
 function ls(k, v) {
   if (v !== undefined) { localStorage.setItem(k, String(v)); return v; }
@@ -134,6 +144,90 @@ function getCostUnitPerMonth() {
 
 function loadSettingsUI() {
   return loadSettingsUIScreen({ APP_VERSION, cfg, el });
+}
+
+function getAdminPinForRequest() {
+  const pin = String(cfg.adminPin || '').trim();
+  if (!pin) {
+    throw new Error('Admin PIN is required for this action.');
+  }
+  return pin;
+}
+
+function adminHeaders(extra = {}) {
+  return {
+    ...extra,
+    'x-admin-pin': getAdminPinForRequest(),
+  };
+}
+
+function adminJsonHeaders(extra = {}) {
+  return adminHeaders({
+    'content-type': 'application/json',
+    ...extra,
+  });
+}
+
+function adminErrorMessage(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  return message === 'Unauthorized' ? 'Invalid or expired admin PIN.' : message;
+}
+
+function getPostPurchasePinForRequest() {
+  const pin = String(cfg.postPurchasePin || cfg.adminPin || '').trim();
+  if (!pin) {
+    throw new Error('Post Purchase PIN is required for this action.');
+  }
+  return pin;
+}
+
+function postPurchaseHeaders(extra = {}) {
+  if (cfg.postPurchasePin) {
+    return {
+      ...extra,
+      'x-postpurchase-pin': getPostPurchasePinForRequest(),
+    };
+  }
+  return adminHeaders(extra);
+}
+
+function postPurchaseJsonHeaders(extra = {}) {
+  return postPurchaseHeaders({
+    'content-type': 'application/json',
+    ...extra,
+  });
+}
+
+function postPurchaseErrorMessage(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  return message === 'Unauthorized' ? 'Invalid or expired Post Purchase PIN.' : message;
+}
+
+function requireAdminPinForScreen(statusId, wrapId) {
+  if (cfg.adminPin) return true;
+
+  if (statusId) elSet(statusId, 'Admin PIN required');
+  const wrap = wrapId ? el(wrapId) : null;
+  if (wrap) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Admin PIN is required for this action.</p><div class="table-empty-note">Open Settings, enter the admin PIN, and unlock admin mode.</div></div>`;
+  }
+  showToast('Admin PIN is required for this action.', 'error');
+  return false;
+}
+
+function renderPostPurchaseAccessRequired() {
+  elSet('postpurchase-status', 'Operator PIN required');
+  const wrap = el('postpurchase-orders-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Post Purchase PIN is required.</p><div class="table-empty-note">Enter the operator PIN above and unlock the orders table.</div></div>`;
+  }
+}
+
+function requirePostPurchasePinForScreen() {
+  if (cfg.postPurchasePin || cfg.adminPin) return true;
+  renderPostPurchaseAccessRequired();
+  showToast('Post Purchase PIN is required.', 'error');
+  return false;
 }
 
 function getPushEndpointSuffix(endpoint) {
@@ -697,9 +791,7 @@ async function deleteMovementAdmin(id) {
     try {
       const res = await fetch('/.netlify/functions/delete-stock-movement', {
         method: 'DELETE',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: adminJsonHeaders(),
         cache: 'no-store',
         body: JSON.stringify({ id }),
       });
@@ -713,7 +805,7 @@ async function deleteMovementAdmin(id) {
       if (S.detailArticle) openStockDetail(S.detailArticle);
       showToast('Pohyb smazán');
     } catch (err) {
-      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
     }
   });
 }
@@ -1060,7 +1152,7 @@ async function deleteItem(articleNumber) {
       renderAlerts();
       showToast('Položka smazána');
     } catch (err) {
-      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
     }
   });
 }
@@ -1461,7 +1553,7 @@ async function deleteCoRecord(id) {
       renderCoHistory();
       showToast('Záznam smazán');
     } catch (err) {
-      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
     }
   });
 }
@@ -2065,6 +2157,7 @@ async function loadPostPurchaseOrders(force = false) {
     renderPostPurchaseOrders();
     return;
   }
+  if (!requirePostPurchasePinForScreen()) return;
 
   S.postPurchaseLoading = true;
   elSet('postpurchase-status', 'Loading...');
@@ -2074,7 +2167,10 @@ async function loadPostPurchaseOrders(force = false) {
   }
 
   try {
-    const res = await fetch('/.netlify/functions/postpurchase-orders?limit=200', { cache: 'no-store' });
+    const res = await fetch('/.netlify/functions/postpurchase-orders?limit=200', {
+      headers: postPurchaseHeaders(),
+      cache: 'no-store',
+    });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to load Post Purchase orders');
     S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
@@ -2083,10 +2179,10 @@ async function loadPostPurchaseOrders(force = false) {
     elSet('postpurchase-status', `${S.postPurchaseOrders.length} orders loaded`);
   } catch (error) {
     if (wrap) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">âš </div><p>Failed to load Post Purchase orders.</p><div class="table-empty-note">${esc(error.message || error)}</div></div>`;
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">âš </div><p>Failed to load Post Purchase orders.</p><div class="table-empty-note">${esc(postPurchaseErrorMessage(error))}</div></div>`;
     }
     elSet('postpurchase-status', 'Load failed');
-    showToast('Failed to load Post Purchase orders.', 'error');
+    showToast(postPurchaseErrorMessage(error) || 'Failed to load Post Purchase orders.', 'error');
   } finally {
     S.postPurchaseLoading = false;
   }
@@ -2164,7 +2260,8 @@ async function syncPostPurchaseOrdersManual() {
     const res = await fetch('/.netlify/functions/postpurchase-orders', {
       method: 'POST',
       headers: {
-        'content-type': 'application/json',
+        ...adminJsonHeaders(),
+        'x-internal-sync': 'true',
       },
       cache: 'no-store',
       body: JSON.stringify({ limit: 100 }),
@@ -2176,7 +2273,7 @@ async function syncPostPurchaseOrdersManual() {
     await loadPostPurchaseOrders(true);
   } catch (error) {
     elSet('postpurchase-status', 'Sync failed');
-    showToast(error.message || String(error), 'error');
+    showToast(adminErrorMessage(error), 'error');
   }
 }
 
@@ -2191,7 +2288,7 @@ async function setPostPurchaseStage(externalOrderId, stage, completed) {
     const res = await fetch('/.netlify/functions/postpurchase-orders', {
       method: 'PUT',
       headers: {
-        'content-type': 'application/json',
+        ...postPurchaseJsonHeaders(),
       },
       cache: 'no-store',
       body: JSON.stringify({
@@ -2210,7 +2307,7 @@ async function setPostPurchaseStage(externalOrderId, stage, completed) {
     showToast('Order status updated.', 'success');
     elSet('postpurchase-status', `${S.postPurchaseOrders.length} orders loaded`);
   } catch (error) {
-    showToast(error.message || String(error), 'error');
+    showToast(postPurchaseErrorMessage(error), 'error');
     elSet('postpurchase-status', 'Update failed');
     await loadPostPurchaseOrders(true);
     return;
@@ -2650,7 +2747,7 @@ function setMode(mode) {
 //  UTILITIES
 // ══════════════════════════════════════════════════════════
 
-function isAdmin() { return cfg.role === 'admin'; }
+function isAdmin() { return cfg.role === 'admin' && Boolean(cfg.adminPin); }
 
 async function cloudPull() {
   const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
@@ -2691,6 +2788,7 @@ async function cloudDelete(kind, key) {
   });
   const res = await fetch(`/.netlify/functions/sync?${params.toString()}`, {
     method: 'DELETE',
+    headers: adminHeaders(),
     cache: 'no-store',
   });
   const j = await res.json().catch(() => ({}));
@@ -2703,9 +2801,7 @@ async function deleteMovement(id) {
     try {
       const res = await fetch('/.netlify/functions/delete-stock-movement', {
         method: 'DELETE',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: adminJsonHeaders(),
         cache: 'no-store',
         body: JSON.stringify({ id }),
       });
@@ -2718,7 +2814,7 @@ async function deleteMovement(id) {
       if (S.detailArticle) openStockDetail(S.detailArticle);
       showToast('Pohyb smazán');
     } catch (err) {
-      showToast(`Mazání selhalo: ${err.message || err}`, 'error');
+      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
     }
   });
 }
@@ -3106,6 +3202,8 @@ el('sync-btn').addEventListener('click', async () => {
   setupCoEntry();
   ChecklistUI.initChecklistUI({
     applyRoleUI,
+    adminErrorMessage,
+    adminHeaders,
     cfg,
     el,
     fetchImpl: fetch,
@@ -3213,6 +3311,22 @@ el('sync-btn').addEventListener('click', async () => {
   el('postpurchase-refresh-btn')?.addEventListener('click', () => {
     loadPostPurchaseOrders(true);
   });
+  el('postpurchase-unlock-btn')?.addEventListener('click', () => {
+    const pin = (el('postpurchase-pin')?.value || '').trim();
+    if (!pin) { showToast('Zadejte Post Purchase PIN', 'error'); return; }
+    cfg.postPurchasePin = pin;
+    if (el('postpurchase-pin')) el('postpurchase-pin').value = '';
+    S.postPurchaseLoaded = false;
+    showToast('Post Purchase tabulka odemčena', 'success');
+    loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-lock-btn')?.addEventListener('click', () => {
+    cfg.postPurchasePin = '';
+    S.postPurchaseLoaded = false;
+    S.postPurchaseOrders = [];
+    renderPostPurchaseAccessRequired();
+    showToast('Post Purchase tabulka zamčena', 'success');
+  });
   el('postpurchase-sync-btn')?.addEventListener('click', () => {
     syncPostPurchaseOrdersManual();
   });
@@ -3237,8 +3351,7 @@ el('sync-btn').addEventListener('click', async () => {
   el('admin-unlock-btn')?.addEventListener('click', () => {
     const pin = (el('admin-pin')?.value || '').trim();
     if (!pin) { showToast('Zadejte PIN', 'error'); return; }
-    if (!cfg.adminPin) { showToast('Admin PIN není nastavený', 'error'); return; }
-    if (pin !== cfg.adminPin) { showToast('Špatný PIN', 'error'); return; }
+    cfg.adminPin = pin;
     cfg.role = 'admin';
     if (el('admin-pin')) el('admin-pin').value = '';
     applyRoleUI();
@@ -3246,6 +3359,7 @@ el('sync-btn').addEventListener('click', async () => {
   });
 
   el('admin-lock-btn')?.addEventListener('click', () => {
+    cfg.adminPin = '';
     cfg.role = 'operator';
     applyRoleUI();
     showToast('Operator režim aktivní', 'success');

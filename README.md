@@ -9,6 +9,8 @@ Required environment variables:
 - POST_PURCHASE_API_TOKEN
 - NEON_DATABASE_URL
 - ADMIN_API_KEY
+- ADMIN_PIN
+- POSTPURCHASE_OPERATOR_PIN
 
 Optional environment variables:
 - POST_PURCHASE_API_ORDERS_PATH
@@ -19,15 +21,27 @@ Admin API authentication
 Sensitive Netlify Functions require a server-side API key. Configure it only in Netlify environment variables or local `.env` files used by Netlify tooling:
 
 ```bash
-ADMIN_API_KEY=super_long_random_string_here
+ADMIN_API_KEY=long_random_server_key
+ADMIN_PIN=human_admin_pin_or_password
+POSTPURCHASE_OPERATOR_PIN=operator_orders_pin
 ```
 
-Do not put `ADMIN_API_KEY` in frontend JavaScript, HTML, or any bundled asset.
+`ADMIN_API_KEY` is for server-to-server/internal automation only. Never put it in frontend JavaScript, HTML, localStorage, or any bundled asset.
+
+`ADMIN_PIN` is for browser admin mode. The browser sends the entered PIN as `x-admin-pin`; the Netlify Function validates it server-side. Do not commit either value to Git.
+
+`POSTPURCHASE_OPERATOR_PIN` is for operators who only need to view and update Post Purchase order lifecycle states. The browser sends it as `x-postpurchase-pin`; it does not unlock admin-only destructive actions.
 
 Post Purchase API examples:
 
 ```bash
 curl -H "x-api-key: YOUR_KEY" \
+  "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
+
+curl -H "x-admin-pin: YOUR_PIN" \
+  "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
+
+curl -H "x-postpurchase-pin: YOUR_OPERATOR_PIN" \
   "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
 
 curl -X POST \
@@ -38,7 +52,7 @@ curl -X POST \
   "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
 
 curl -X PUT \
-  -H "x-api-key: YOUR_KEY" \
+  -H "x-postpurchase-pin: YOUR_OPERATOR_PIN" \
   -H "content-type: application/json" \
   -d "{\"externalOrderId\":\"PS123\",\"stage\":\"COLORADO_PRINTED\",\"completed\":true}" \
   "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"

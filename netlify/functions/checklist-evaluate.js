@@ -1,6 +1,6 @@
 'use strict';
 
-const { json, parseRequestBody, withClient } = require('./_lib/db');
+const { json, parseRequestBody, requireAdminAccess, withClient } = require('./_lib/db');
 const { evaluateChecklistReminders } = require('./_lib/checklist-reminders');
 
 exports.handler = async function handler(event) {
@@ -13,6 +13,10 @@ exports.handler = async function handler(event) {
   }
 
   try {
+    if (event.httpMethod === 'POST') {
+      requireAdminAccess(event);
+    }
+
     const bodyInput = event.httpMethod === 'POST' ? parseRequestBody(event) : {};
     const query = event.queryStringParameters || {};
     const lookbackRaw = bodyInput.lookbackMinutes ?? query.lookbackMinutes;
@@ -31,6 +35,9 @@ exports.handler = async function handler(event) {
 
     return json(200, body);
   } catch (error) {
+    if (error && (error.statusCode === 401 || error.statusCode === 429)) {
+      return json(error.statusCode, { ok: false, error: error.message || 'Unauthorized' });
+    }
     console.error('checklist-evaluate failed', error);
     return json(500, {
       ok: false,

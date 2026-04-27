@@ -1,6 +1,7 @@
 'use strict';
 
 const { Client } = require('pg');
+const crypto = require('crypto');
 
 function json(statusCode, body, extraHeaders) {
   return {
@@ -51,6 +52,24 @@ function getAdminApiKey() {
   return key;
 }
 
+function getAdminPin() {
+  const value = process.env.ADMIN_PIN || '';
+  const pin = typeof value === 'string' ? value.trim() : '';
+  if (!pin) {
+    throw new Error('ADMIN_PIN is not configured');
+  }
+  return pin;
+}
+
+function getPostPurchaseOperatorPin() {
+  const value = process.env.POSTPURCHASE_OPERATOR_PIN || process.env.POSTPURCHASE_PIN || '';
+  const pin = typeof value === 'string' ? value.trim() : '';
+  if (!pin) {
+    throw new Error('POSTPURCHASE_OPERATOR_PIN is not configured');
+  }
+  return pin;
+}
+
 function getHeader(event, name) {
   if (!event || !event.headers) return '';
   const lower = String(name || '').toLowerCase();
@@ -91,20 +110,90 @@ function checkRateLimit(event, options = {}) {
   return true;
 }
 
-function requireAdminApiKey(event) {
-  const expected = getAdminApiKey();
+function timingSafeEqualString(left, right) {
+  const leftBuffer = Buffer.from(String(left || ''), 'utf8');
+  const rightBuffer = Buffer.from(String(right || ''), 'utf8');
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function createAuthError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function checkAdminApiKey(event) {
   const provided = getHeader(event, 'x-api-key');
-  if (!provided || provided !== expected) {
-    const error = new Error('Unauthorized');
-    error.statusCode = 401;
-    throw error;
+  if (!provided) {
+    return { ok: false };
   }
 
-  return true;
+  const expected = getAdminApiKey();
+  return timingSafeEqualString(provided, expected)
+    ? { ok: true, method: 'api-key' }
+    : { ok: false };
+}
+
+function checkAdminPin(event) {
+  const provided = getHeader(event, 'x-admin-pin');
+  if (!provided) {
+    return { ok: false };
+  }
+
+  const expected = getAdminPin();
+  return timingSafeEqualString(provided, expected)
+    ? { ok: true, method: 'pin' }
+    : { ok: false };
+}
+
+function checkPostPurchaseOperatorPin(event) {
+  const provided = getHeader(event, 'x-postpurchase-pin');
+  if (!provided) {
+    return { ok: false };
+  }
+
+  const expected = getPostPurchaseOperatorPin();
+  return timingSafeEqualString(provided, expected)
+    ? { ok: true, method: 'postpurchase-pin' }
+    : { ok: false };
+}
+
+function requireAdminApiKey(event) {
+  const result = checkAdminApiKey(event);
+  if (!result.ok) {
+    throw createAuthError('Unauthorized', 401);
+  }
+  return result;
+}
+
+function requireAdminAccess(event) {
+  const apiKeyResult = checkAdminApiKey(event);
+  if (apiKeyResult.ok) return apiKeyResult;
+
+  const pinResult = checkAdminPin(event);
+  if (pinResult.ok) return pinResult;
+
+  throw createAuthError('Unauthorized', 401);
+}
+
+function requirePostPurchaseAccess(event) {
+  const apiKeyResult = checkAdminApiKey(event);
+  if (apiKeyResult.ok) return apiKeyResult;
+
+  const adminPinResult = checkAdminPin(event);
+  if (adminPinResult.ok) return adminPinResult;
+
+  const operatorPinResult = checkPostPurchaseOperatorPin(event);
+  if (operatorPinResult.ok) return operatorPinResult;
+
+  throw createAuthError('Unauthorized', 401);
 }
 
 function requireAdminPin(event) {
-  return requireAdminApiKey(event);
+  return requireAdminAccess(event);
 }
 
 async function withClient(run) {
@@ -129,11 +218,18 @@ async function withClient(run) {
 
 module.exports = {
   checkRateLimit,
+  checkAdminApiKey,
+  checkAdminPin,
+  checkPostPurchaseOperatorPin,
   getAdminApiKey,
+  getAdminPin,
   getConnectionString,
   getHeader,
+  getPostPurchaseOperatorPin,
+  requireAdminAccess,
   requireAdminApiKey,
   requireAdminPin,
+  requirePostPurchaseAccess,
   json,
   parseRequestBody,
   withClient,
