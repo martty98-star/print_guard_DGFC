@@ -7,6 +7,8 @@ create table if not exists print_orders_received (
   source_payload jsonb not null,
   received_at timestamptz null,
   api_seen_at timestamptz not null default now(),
+  submit_tool_at timestamptz null,
+  submit_tool_status text null,
   submit_tool_processed_at timestamptz null,
   onyx_seen_at timestamptz null,
   colorado_printed_at timestamptz null,

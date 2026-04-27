@@ -662,6 +662,24 @@ textarea { resize: vertical; min-height: 58px; }
   letter-spacing: .04em;
   text-transform: uppercase;
 }
+.pp-step-text {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.15;
+}
+.pp-step-meta {
+  color: var(--text-faint);
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pp-step-toggle.checked .pp-step-meta {
+  color: inherit;
+  opacity: .72;
+}
 .pp-state-badge {
   border: 1px solid var(--border);
   color: var(--text-dim);

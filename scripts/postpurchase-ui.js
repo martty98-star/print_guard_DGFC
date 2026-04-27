@@ -115,6 +115,9 @@
     const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
     const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
     const disabled = !canEditPostPurchaseOrders() || Boolean(state.S.postPurchaseUpdating && state.S.postPurchaseUpdating[updateKey]);
+    const meta = stage === 'SUBMIT_TOOL_PROCESSED' && checked
+      ? getSubmitToolMeta(row)
+      : '';
     return `<label class="pp-step-toggle ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
       <input
         type="checkbox"
@@ -125,8 +128,19 @@
         ${disabled ? 'disabled' : ''}
       >
       <span class="pp-step-box"></span>
-      <span class="pp-step-label">${state.esc(label)}</span>
+      <span class="pp-step-text">
+        <span class="pp-step-label">${state.esc(label)}</span>
+        ${meta ? `<span class="pp-step-meta">${state.esc(meta)}</span>` : ''}
+      </span>
     </label>`;
+  }
+
+  function getSubmitToolMeta(row) {
+    const status = row && row.submit_tool_status ? row.submit_tool_status : 'manual';
+    const value = row && (row.submit_tool_at || row.submit_tool_processed_at);
+    const time = value ? formatPostPurchaseTime(value) : '';
+    if (status === 'confirmed') return time ? `confirmed ${time}` : 'confirmed';
+    return time ? `manual ${time}` : 'manual';
   }
 
   function postPurchaseIssueControls(row) {

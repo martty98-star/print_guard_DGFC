@@ -11,10 +11,12 @@ Required environment variables:
 - ADMIN_API_KEY
 - ADMIN_PIN
 - POSTPURCHASE_OPERATOR_PIN
+- SUBMIT_TOOL_LOG_ROOT
 
 Optional environment variables:
 - POST_PURCHASE_API_ORDERS_PATH
 - POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE
+- SUBMIT_TOOL_LOG_DAYS
 
 Admin API authentication
 
@@ -91,3 +93,38 @@ The current implementation assumes the Post Purchase orders endpoint supports:
 - supplierSystemCode: defaults to desenio_dgfc_printer
 
 Order numbers are derived from order.ecommerce_id. PS orders are stored with a PS prefix, for example PS4746094; DS orders keep the numeric ecommerce id. The sync stores the full source API object in print_orders_received.source_payload and upserts by external_order_id, so reruns do not create duplicates.
+
+Submit Tool JobQueue log sync
+
+Submit Tool lifecycle confirmation is read from JobQueue logs on NAS. Configure the root folder on the machine running the scheduled script:
+
+```bash
+SUBMIT_TOOL_LOG_ROOT=\\10.25.0.20\Data\ST_logs\JobQueue
+NEON_DATABASE_URL=postgresql://...
+```
+
+Run manually:
+
+```bash
+node scripts/sync-submit-tool-logs.js --days=2
+```
+
+The script scans date folders like `2026-04-27`, parses `.txt` files, stores parsed rows in `print_lifecycle_events`, and marks matching received orders as Submit Tool confirmed using the first `PrintJob <ORDER>, status=WorkflowRun` event. It is idempotent: repeated runs do not duplicate lifecycle events.
+
+Windows Task Scheduler example:
+
+```bat
+@echo off
+cd /d C:\PrintGuard\print_guard_DGFC
+node scripts\sync-submit-tool-logs.js --days=2 >> C:\PrintGuard\logs\submit-tool-sync.log 2>&1
+```
+
+Submit Tool event storage:
+
+- `print_lifecycle_events.source` = `submit_tool`
+- `print_lifecycle_events.source_module` = Submit Tool module from the line, for example `JobQueue`
+- `print_lifecycle_events.event_type` = `PrintJob` or `OpenPrintJob`
+- `print_lifecycle_events.order_identifier` = the PS or numeric job id from the log
+- `print_lifecycle_events.event_status` = `WorkflowRun`, `Opened`, or `runWF=True`
+- `print_orders_received.submit_tool_at` / `submit_tool_processed_at` = first matched `WorkflowRun` timestamp
+- `print_orders_received.submit_tool_status` = `confirmed` for log sync, `manual` for UI override

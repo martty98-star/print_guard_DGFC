@@ -542,6 +542,8 @@ async function ensurePrintOrdersTable(client) {
         source_payload jsonb not null,
         received_at timestamptz null,
         api_seen_at timestamptz not null default now(),
+        submit_tool_at timestamptz null,
+        submit_tool_status text null,
         submit_tool_processed_at timestamptz null,
         onyx_seen_at timestamptz null,
         colorado_printed_at timestamptz null,
@@ -567,6 +569,8 @@ async function ensurePrintOrdersTable(client) {
   await client.query(`alter table print_orders_received add column if not exists issue_reason text null`);
   await client.query(`alter table print_orders_received add column if not exists issue_note text null`);
   await client.query(`alter table print_orders_received add column if not exists reprinted_at timestamptz null`);
+  await client.query(`alter table print_orders_received add column if not exists submit_tool_at timestamptz null`);
+  await client.query(`alter table print_orders_received add column if not exists submit_tool_status text null`);
 
   printOrdersSchemaReady = true;
 }
@@ -692,6 +696,8 @@ async function listPrintOrdersReceived(client, options) {
         status,
         received_at,
         api_seen_at,
+        submit_tool_at,
+        submit_tool_status,
         submit_tool_processed_at,
         onyx_seen_at,
         colorado_printed_at,
@@ -712,7 +718,7 @@ async function listPrintOrdersReceived(client, options) {
 }
 
 function mapPrintOrderRow(row) {
-  const submitToolProcessed = row.submit_tool_processed_at != null;
+  const submitToolProcessed = row.submit_tool_processed_at != null || row.submit_tool_at != null;
   const onyxSeen = row.onyx_seen_at != null;
   const coloradoPrinted = row.colorado_printed_at != null;
 
@@ -723,6 +729,8 @@ function mapPrintOrderRow(row) {
     status: row.status,
     received_at: row.received_at instanceof Date ? row.received_at.toISOString() : row.received_at,
     api_seen_at: row.api_seen_at instanceof Date ? row.api_seen_at.toISOString() : row.api_seen_at,
+    submit_tool_at: row.submit_tool_at instanceof Date ? row.submit_tool_at.toISOString() : row.submit_tool_at,
+    submit_tool_status: row.submit_tool_status || '',
     submit_tool_processed_at: row.submit_tool_processed_at instanceof Date ? row.submit_tool_processed_at.toISOString() : row.submit_tool_processed_at,
     onyx_seen_at: row.onyx_seen_at instanceof Date ? row.onyx_seen_at.toISOString() : row.onyx_seen_at,
     colorado_printed_at: row.colorado_printed_at instanceof Date ? row.colorado_printed_at.toISOString() : row.colorado_printed_at,
@@ -845,6 +853,8 @@ async function updatePrintOrderLifecycleStatus(client, options) {
           status,
           received_at,
           api_seen_at,
+          submit_tool_at,
+          submit_tool_status,
           submit_tool_processed_at,
           onyx_seen_at,
           colorado_printed_at,
@@ -868,6 +878,16 @@ async function updatePrintOrderLifecycleStatus(client, options) {
           when $2::boolean then coalesce($3::timestamptz, now())
           else null
         end,
+        submit_tool_at = case
+          when $8::boolean and $9::boolean then coalesce($3::timestamptz, now())
+          when $8::boolean then null
+          else submit_tool_at
+        end,
+        submit_tool_status = case
+          when $8::boolean and $9::boolean then 'manual'
+          when $8::boolean then null
+          else submit_tool_status
+        end,
         reprint_needed = $4::boolean,
         issue_reason = nullif($5, ''),
         issue_note = nullif($6, ''),
@@ -881,6 +901,8 @@ async function updatePrintOrderLifecycleStatus(client, options) {
         status,
         received_at,
         api_seen_at,
+        submit_tool_at,
+        submit_tool_status,
         submit_tool_processed_at,
         onyx_seen_at,
         colorado_printed_at,
@@ -890,7 +912,17 @@ async function updatePrintOrderLifecycleStatus(client, options) {
         reprinted_at,
         source_payload
     `,
-    [externalOrderId, completed, completedAt, nextReprintNeeded, nextIssueReason, nextIssueNote, nextReprintedAt]
+    [
+      externalOrderId,
+      completed,
+      completedAt,
+      nextReprintNeeded,
+      nextIssueReason,
+      nextIssueNote,
+      nextReprintedAt,
+      columnName === 'submit_tool_processed_at',
+      completed,
+    ]
   );
 
   if (!result.rows.length) {
