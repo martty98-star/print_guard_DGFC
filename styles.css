@@ -532,6 +532,24 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   margin: 14px 0 10px;
 }
+.pp-filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 4px;
+}
+.pp-filter-row input[type=search],
+.pp-filter-row input[type=date] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: .78rem;
+  padding: 8px 10px;
+  outline: none;
+}
+.pp-filter-row input[type=search] { min-width: 210px; flex: 1; }
+.pp-filter-row input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow); }
 .pp-filter-tab {
   background: transparent;
   border: 1px solid var(--border);
@@ -671,7 +689,6 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   gap: 7px;
 }
-.pp-issue-fields select,
 .pp-issue-fields input {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -681,8 +698,38 @@ textarea { resize: vertical; min-height: 58px; }
   padding: 7px 9px;
   outline: none;
 }
-.pp-issue-fields select { min-width: 145px; }
 .pp-issue-fields input { min-width: 180px; }
+.pp-reason-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+.pp-reason-chip,
+.pp-reprinted-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 6px 9px;
+  text-transform: uppercase;
+}
+.pp-reason-chip.active {
+  border-color: var(--crit);
+  background: var(--crit-dim);
+  color: var(--crit);
+}
+.pp-reprinted-btn {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: var(--ok-dim);
+}
+.pp-reason-chip:disabled,
+.pp-reprinted-btn:disabled { cursor: wait; opacity: .65; }
 .pp-issue-badge {
   border: 1px solid var(--crit);
   color: var(--crit);

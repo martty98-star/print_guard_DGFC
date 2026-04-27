@@ -402,6 +402,9 @@ const S = {
   postPurchaseLoading: false,
   postPurchaseLoaded: false,
   postPurchaseFilter: 'open',
+  postPurchaseSearch: '',
+  postPurchaseDateFrom: '',
+  postPurchaseDateTo: '',
   syncRunning:      false,
   syncIntervalId:   null,
 };
@@ -2166,9 +2169,44 @@ function getPostPurchaseState(row) {
   return { key: 'progress', label: 'In progress' };
 }
 
+function getPostPurchaseComparableDate(row) {
+  const value = row?.received_at || row?.api_seen_at;
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+function isDateInPostPurchaseRange(row) {
+  const date = getPostPurchaseComparableDate(row);
+  if (!date) return !S.postPurchaseDateFrom && !S.postPurchaseDateTo;
+  if (S.postPurchaseDateFrom) {
+    const from = new Date(`${S.postPurchaseDateFrom}T00:00:00`);
+    if (date < from) return false;
+  }
+  if (S.postPurchaseDateTo) {
+    const to = new Date(`${S.postPurchaseDateTo}T23:59:59.999`);
+    if (date > to) return false;
+  }
+  return true;
+}
+
+function getSearchedPostPurchaseOrders() {
+  const query = String(S.postPurchaseSearch || '').trim().toLowerCase();
+  return (S.postPurchaseOrders || []).filter(row => {
+    const haystack = [
+      row.order_number,
+      row.external_order_id,
+      row.customer_order_id,
+      row.status,
+      row.issue_reason,
+      row.issue_note,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return (!query || haystack.includes(query)) && isDateInPostPurchaseRange(row);
+  });
+}
+
 function getFilteredPostPurchaseOrders() {
   const filter = S.postPurchaseFilter || 'open';
-  return (S.postPurchaseOrders || []).filter(row => {
+  return getSearchedPostPurchaseOrders().filter(row => {
     const done = isPostPurchaseDone(row);
     if (filter === 'completed') return done;
     if (filter === 'all') return true;
@@ -2214,10 +2252,15 @@ function postPurchaseIssueControls(row) {
   const enabled = Boolean(row && row.reprint_needed);
   const reason = row && row.issue_reason ? row.issue_reason : '';
   const note = row && row.issue_note ? row.issue_note : '';
-  const options = [''].concat(POST_PURCHASE_ISSUE_REASONS).map(value => {
-    const label = value || 'Reason...';
-    return `<option value="${esc(value)}" ${value === reason ? 'selected' : ''}>${esc(label)}</option>`;
-  }).join('');
+  const reasonButtons = POST_PURCHASE_ISSUE_REASONS.map(value => (
+    `<button
+      type="button"
+      class="pp-reason-chip ${value === reason ? 'active' : ''}"
+      data-external-order-id="${esc(externalOrderId)}"
+      data-issue-reason="${esc(value)}"
+      ${disabled ? 'disabled' : ''}
+    >${esc(value)}</button>`
+  )).join('');
 
   return `<div class="pp-issue-box ${enabled ? 'active' : ''}">
     <label class="pp-reprint-toggle ${enabled ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
@@ -2232,10 +2275,9 @@ function postPurchaseIssueControls(row) {
       <span class="pp-step-label">Reprint needed</span>
     </label>
     ${enabled ? `<div class="pp-issue-fields">
-      <select class="pp-issue-reason" data-external-order-id="${esc(externalOrderId)}" ${disabled ? 'disabled' : ''}>
-        ${options}
-      </select>
+      <div class="pp-reason-chips">${reasonButtons}</div>
       <input type="text" class="pp-issue-note" data-external-order-id="${esc(externalOrderId)}" value="${esc(note)}" placeholder="Optional note" ${disabled ? 'disabled' : ''}>
+      <button type="button" class="pp-reprinted-btn" data-external-order-id="${esc(externalOrderId)}" ${disabled ? 'disabled' : ''}>Reprinted</button>
     </div>` : ''}
   </div>`;
 }
@@ -2281,11 +2323,13 @@ function renderPostPurchaseOrders() {
   const wrap = el('postpurchase-orders-wrap');
   if (!wrap) return;
 
-  const openCount = (S.postPurchaseOrders || []).filter(row => !isPostPurchaseDone(row)).length;
-  const completedCount = (S.postPurchaseOrders || []).filter(row => isPostPurchaseDone(row)).length;
-  const allCount = (S.postPurchaseOrders || []).length;
+  const searchedOrders = getSearchedPostPurchaseOrders();
+  const openCount = searchedOrders.filter(row => !isPostPurchaseDone(row)).length;
+  const completedCount = searchedOrders.filter(row => isPostPurchaseDone(row)).length;
+  const allCount = searchedOrders.length;
   const rowsToShow = getFilteredPostPurchaseOrders();
   const filter = S.postPurchaseFilter || 'open';
+  const totalCount = (S.postPurchaseOrders || []).length;
 
   if (!allCount) {
     wrap.innerHTML = `<div class="pp-filter-tabs">
@@ -2293,7 +2337,7 @@ function renderPostPurchaseOrders() {
       <button class="pp-filter-tab" data-pp-filter="completed">Completed <span>0</span></button>
       <button class="pp-filter-tab" data-pp-filter="all">All <span>0</span></button>
     </div>
-    <div class="empty-state"><div class="empty-state-icon">─</div><p>No Post Purchase orders stored yet.</p></div>`;
+    <div class="empty-state"><div class="empty-state-icon">─</div><p>${totalCount ? 'No orders match these filters.' : 'No Post Purchase orders stored yet.'}</p></div>`;
     bindPostPurchaseFilterTabs(wrap);
     return;
   }
@@ -2369,13 +2413,13 @@ function renderPostPurchaseOrders() {
       });
     });
   });
-  wrap.querySelectorAll('.pp-issue-reason').forEach((select) => {
-    select.addEventListener('change', () => {
-      const externalOrderId = select.dataset.externalOrderId;
+  wrap.querySelectorAll('.pp-reason-chip').forEach((button) => {
+    button.addEventListener('click', () => {
+      const externalOrderId = button.dataset.externalOrderId;
       const row = (S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
       setPostPurchaseIssue(externalOrderId, {
         reprintNeeded: true,
-        issueReason: select.value,
+        issueReason: button.dataset.issueReason || 'Other',
         note: row?.issue_note || '',
       });
     });
@@ -2388,6 +2432,18 @@ function renderPostPurchaseOrders() {
         reprintNeeded: true,
         issueReason: row?.issue_reason || 'Other',
         note: input.value,
+      });
+    });
+  });
+  wrap.querySelectorAll('.pp-reprinted-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      const externalOrderId = button.dataset.externalOrderId;
+      const row = (S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
+      setPostPurchaseIssue(externalOrderId, {
+        reprintNeeded: false,
+        issueReason: row?.issue_reason || 'Other',
+        note: row?.issue_note || '',
+        reprintedAt: new Date().toISOString(),
       });
     });
   });
@@ -2491,6 +2547,7 @@ async function setPostPurchaseIssue(externalOrderId, patch) {
   const reprintNeeded = Boolean(patch && patch.reprintNeeded);
   const issueReason = reprintNeeded ? String((patch && patch.issueReason) || 'Other').trim() : '';
   const note = reprintNeeded ? String((patch && patch.note) || '').trim() : '';
+  const reprintedAt = patch && patch.reprintedAt ? String(patch.reprintedAt) : null;
 
   if (reprintNeeded && !issueReason) {
     showToast('Issue reason is required.', 'error');
@@ -2507,6 +2564,7 @@ async function setPostPurchaseIssue(externalOrderId, patch) {
       reprint_needed: reprintNeeded,
       issue_reason: issueReason,
       issue_note: note,
+      reprinted_at: reprintedAt || row.reprinted_at || null,
     };
   });
   renderPostPurchaseOrders();
@@ -2524,6 +2582,7 @@ async function setPostPurchaseIssue(externalOrderId, patch) {
         reprintNeeded,
         issueReason,
         note,
+        reprintedAt,
       }),
     });
     const payload = await res.json().catch(() => ({}));
@@ -2533,7 +2592,7 @@ async function setPostPurchaseIssue(externalOrderId, patch) {
     S.postPurchaseOrders = (S.postPurchaseOrders || []).map(row =>
       row.external_order_id === externalOrderId && updatedRow ? updatedRow : row
     );
-    showToast(reprintNeeded ? 'Issue marked.' : 'Issue cleared.', 'success');
+    showToast(reprintedAt ? 'Order marked as reprinted.' : reprintNeeded ? 'Issue marked.' : 'Issue cleared.', 'success');
   } catch (error) {
     S.postPurchaseOrders = previousOrders;
     showToast(postPurchaseErrorMessage(error), 'error');
@@ -3538,6 +3597,27 @@ el('sync-btn').addEventListener('click', async () => {
   el('print-log-export-btn').addEventListener('click', exportCSVPrintLog);
   el('postpurchase-refresh-btn')?.addEventListener('click', () => {
     loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-search')?.addEventListener('input', e => {
+    S.postPurchaseSearch = e.target.value || '';
+    renderPostPurchaseOrders();
+  });
+  el('postpurchase-date-from')?.addEventListener('change', e => {
+    S.postPurchaseDateFrom = e.target.value || '';
+    renderPostPurchaseOrders();
+  });
+  el('postpurchase-date-to')?.addEventListener('change', e => {
+    S.postPurchaseDateTo = e.target.value || '';
+    renderPostPurchaseOrders();
+  });
+  el('postpurchase-clear-filters')?.addEventListener('click', () => {
+    S.postPurchaseSearch = '';
+    S.postPurchaseDateFrom = '';
+    S.postPurchaseDateTo = '';
+    if (el('postpurchase-search')) el('postpurchase-search').value = '';
+    if (el('postpurchase-date-from')) el('postpurchase-date-from').value = '';
+    if (el('postpurchase-date-to')) el('postpurchase-date-to').value = '';
+    renderPostPurchaseOrders();
   });
   el('postpurchase-unlock-btn')?.addEventListener('click', () => {
     const pin = (el('postpurchase-pin')?.value || '').trim();

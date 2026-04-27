@@ -13,6 +13,7 @@ create table if not exists print_orders_received (
   reprint_needed boolean not null default false,
   issue_reason text null,
   issue_note text null,
+  reprinted_at timestamptz null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

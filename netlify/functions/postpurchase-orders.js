@@ -52,6 +52,9 @@ function parseUpdateOptions(event) {
   if (Object.prototype.hasOwnProperty.call(body, 'note') || Object.prototype.hasOwnProperty.call(body, 'issue_note')) {
     options.note = body.note ?? body.issue_note;
   }
+  if (Object.prototype.hasOwnProperty.call(body, 'reprintedAt') || Object.prototype.hasOwnProperty.call(body, 'reprinted_at')) {
+    options.reprintedAt = body.reprintedAt ?? body.reprinted_at;
+  }
   return options;
 }
 

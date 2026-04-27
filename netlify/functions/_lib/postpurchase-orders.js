@@ -548,6 +548,7 @@ async function ensurePrintOrdersTable(client) {
         reprint_needed boolean not null default false,
         issue_reason text null,
         issue_note text null,
+        reprinted_at timestamptz null,
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       )
@@ -565,6 +566,7 @@ async function ensurePrintOrdersTable(client) {
   await client.query(`alter table print_orders_received add column if not exists reprint_needed boolean not null default false`);
   await client.query(`alter table print_orders_received add column if not exists issue_reason text null`);
   await client.query(`alter table print_orders_received add column if not exists issue_note text null`);
+  await client.query(`alter table print_orders_received add column if not exists reprinted_at timestamptz null`);
 
   printOrdersSchemaReady = true;
 }
@@ -696,6 +698,7 @@ async function listPrintOrdersReceived(client, options) {
         reprint_needed,
         issue_reason,
         issue_note,
+        reprinted_at,
         source_payload
       from print_orders_received
       order by coalesce(received_at, api_seen_at) desc, id desc
@@ -726,6 +729,7 @@ function mapPrintOrderRow(row) {
     reprint_needed: Boolean(row.reprint_needed),
     issue_reason: row.issue_reason || '',
     issue_note: row.issue_note || '',
+    reprinted_at: row.reprinted_at instanceof Date ? row.reprinted_at.toISOString() : row.reprinted_at,
     statuses: {
       RECEIVED_FROM_API: true,
       SUBMIT_TOOL_PROCESSED: submitToolProcessed,
@@ -746,7 +750,9 @@ async function updatePrintOrderLifecycleStatus(client, options) {
     Object.prototype.hasOwnProperty.call(options, 'issueReason') ||
     Object.prototype.hasOwnProperty.call(options, 'issue_reason') ||
     Object.prototype.hasOwnProperty.call(options, 'note') ||
-    Object.prototype.hasOwnProperty.call(options, 'issue_note')
+    Object.prototype.hasOwnProperty.call(options, 'issue_note') ||
+    Object.prototype.hasOwnProperty.call(options, 'reprintedAt') ||
+    Object.prototype.hasOwnProperty.call(options, 'reprinted_at')
   );
   const completed = Boolean(options && options.completed);
   const completedAt = toIsoOrNull(options && (options.completedAt || options.completed_at));
@@ -775,7 +781,7 @@ async function updatePrintOrderLifecycleStatus(client, options) {
 
   const currentResult = await client.query(
     `
-      select reprint_needed, issue_reason, issue_note
+      select reprint_needed, issue_reason, issue_note, reprinted_at
       from print_orders_received
       where external_order_id = $1
     `,
@@ -807,6 +813,13 @@ async function updatePrintOrderLifecycleStatus(client, options) {
   )
     ? cleanString(options.note ?? options.issue_note)
     : cleanString(current.issue_note);
+  const hasReprintedUpdate = hasIssueUpdate && (
+    Object.prototype.hasOwnProperty.call(options, 'reprintedAt') ||
+    Object.prototype.hasOwnProperty.call(options, 'reprinted_at')
+  );
+  const nextReprintedAt = hasReprintedUpdate
+    ? toIsoOrNull(options.reprintedAt ?? options.reprinted_at)
+    : toIsoOrNull(current.reprinted_at);
 
   if (nextReprintNeeded && !nextIssueReason) {
     const error = new Error('Issue reason is required when reprint is enabled');
@@ -820,8 +833,9 @@ async function updatePrintOrderLifecycleStatus(client, options) {
         update print_orders_received
         set
           reprint_needed = $2::boolean,
-          issue_reason = case when $2::boolean then $3 else null end,
-          issue_note = case when $2::boolean then nullif($4, '') else null end,
+          issue_reason = nullif($3, ''),
+          issue_note = nullif($4, ''),
+          reprinted_at = case when $5::timestamptz is not null then $5::timestamptz else reprinted_at end,
           updated_at = now()
         where external_order_id = $1
         returning
@@ -837,9 +851,10 @@ async function updatePrintOrderLifecycleStatus(client, options) {
           reprint_needed,
           issue_reason,
           issue_note,
+          reprinted_at,
           source_payload
       `,
-      [externalOrderId, nextReprintNeeded, nextIssueReason, nextIssueNote]
+      [externalOrderId, nextReprintNeeded, nextIssueReason, nextIssueNote, nextReprintedAt]
     );
 
     return mapPrintOrderRow(result.rows[0]);
@@ -854,8 +869,9 @@ async function updatePrintOrderLifecycleStatus(client, options) {
           else null
         end,
         reprint_needed = $4::boolean,
-        issue_reason = case when $4::boolean then $5 else null end,
-        issue_note = case when $4::boolean then nullif($6, '') else null end,
+        issue_reason = nullif($5, ''),
+        issue_note = nullif($6, ''),
+        reprinted_at = case when $7::timestamptz is not null then $7::timestamptz else reprinted_at end,
         updated_at = now()
       where external_order_id = $1
       returning
@@ -871,9 +887,10 @@ async function updatePrintOrderLifecycleStatus(client, options) {
         reprint_needed,
         issue_reason,
         issue_note,
+        reprinted_at,
         source_payload
     `,
-    [externalOrderId, completed, completedAt, nextReprintNeeded, nextIssueReason, nextIssueNote]
+    [externalOrderId, completed, completedAt, nextReprintNeeded, nextIssueReason, nextIssueNote, nextReprintedAt]
   );
 
   if (!result.rows.length) {
