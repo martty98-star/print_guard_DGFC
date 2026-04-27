@@ -401,6 +401,7 @@ const S = {
   postPurchaseOrders: [],
   postPurchaseLoading: false,
   postPurchaseLoaded: false,
+  postPurchaseFilter: 'open',
   syncRunning:      false,
   syncIntervalId:   null,
 };
@@ -2125,20 +2126,64 @@ function renderPrintLifecycleGroups(wrap, foot) {
 
 // ── CSV helpers ──────────────────────────────────────────
 
-function postPurchaseStatusBadge(label, isActive) {
-  return `<span class="badge ${isActive ? 'ok' : 'warn'}">${esc(label)}</span>`;
-}
-
 function getPostPurchaseUpdateKey(externalOrderId, stage) {
   return `${externalOrderId || ''}::${stage || ''}`;
 }
 
+const POST_PURCHASE_STEPS = [
+  { stage: 'SUBMIT_TOOL_PROCESSED', label: 'Submit Tool', field: 'submit_tool_processed_at' },
+  { stage: 'ONYX_SEEN', label: 'ONYX', field: 'onyx_seen_at' },
+  { stage: 'COLORADO_PRINTED', label: 'Colorado', field: 'colorado_printed_at' },
+];
+
+function isPostPurchaseStepDone(row, step) {
+  const statuses = row && row.statuses ? row.statuses : {};
+  return Boolean(statuses[step.stage] || row?.[step.field]);
+}
+
+function getPostPurchaseStepCount(row) {
+  return POST_PURCHASE_STEPS.filter(step => isPostPurchaseStepDone(row, step)).length;
+}
+
+function isPostPurchaseDone(row) {
+  return getPostPurchaseStepCount(row) === POST_PURCHASE_STEPS.length;
+}
+
+function getPostPurchaseState(row) {
+  const count = getPostPurchaseStepCount(row);
+  if (count === 0) return { key: 'new', label: 'New' };
+  if (count === POST_PURCHASE_STEPS.length) return { key: 'done', label: 'Done' };
+  return { key: 'progress', label: 'In progress' };
+}
+
+function getFilteredPostPurchaseOrders() {
+  const filter = S.postPurchaseFilter || 'open';
+  return (S.postPurchaseOrders || []).filter(row => {
+    const done = isPostPurchaseDone(row);
+    if (filter === 'completed') return done;
+    if (filter === 'all') return true;
+    return !done;
+  });
+}
+
+function formatPostPurchaseTime(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fmtDT(value);
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${dd}.${mm}. ${hh}:${min}`;
+}
+
 function postPurchaseToggleControl(label, row, stage) {
-  const checked = Boolean(row && row.statuses && row.statuses[stage]);
+  const step = POST_PURCHASE_STEPS.find(item => item.stage === stage) || { stage };
+  const checked = isPostPurchaseStepDone(row, step);
   const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
   const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
   const disabled = Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
-  return `<label class="pp-toggle">
+  return `<label class="pp-step-toggle ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
     <input
       type="checkbox"
       class="pp-stage-toggle"
@@ -2147,7 +2192,8 @@ function postPurchaseToggleControl(label, row, stage) {
       ${checked ? 'checked' : ''}
       ${disabled ? 'disabled' : ''}
     >
-    <span>${esc(label)}</span>
+    <span class="pp-step-box"></span>
+    <span class="pp-step-label">${esc(label)}</span>
   </label>`;
 }
 
@@ -2192,54 +2238,71 @@ function renderPostPurchaseOrders() {
   const wrap = el('postpurchase-orders-wrap');
   if (!wrap) return;
 
-  if (!S.postPurchaseOrders.length) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">â”€</div><p>No Post Purchase orders stored yet.</p></div>`;
+  const openCount = (S.postPurchaseOrders || []).filter(row => !isPostPurchaseDone(row)).length;
+  const completedCount = (S.postPurchaseOrders || []).filter(row => isPostPurchaseDone(row)).length;
+  const allCount = (S.postPurchaseOrders || []).length;
+  const rowsToShow = getFilteredPostPurchaseOrders();
+  const filter = S.postPurchaseFilter || 'open';
+
+  if (!allCount) {
+    wrap.innerHTML = `<div class="pp-filter-tabs">
+      <button class="pp-filter-tab active" data-pp-filter="open">Open <span>0</span></button>
+      <button class="pp-filter-tab" data-pp-filter="completed">Completed <span>0</span></button>
+      <button class="pp-filter-tab" data-pp-filter="all">All <span>0</span></button>
+    </div>
+    <div class="empty-state"><div class="empty-state-icon">─</div><p>No Post Purchase orders stored yet.</p></div>`;
+    bindPostPurchaseFilterTabs(wrap);
     return;
   }
 
-  const rows = S.postPurchaseOrders.map((row) => {
-    const statuses = row.statuses || {};
-    const lifecycle = [
-      postPurchaseStatusBadge('API', statuses.RECEIVED_FROM_API),
-      postPurchaseStatusBadge('Submit Tool', statuses.SUBMIT_TOOL_PROCESSED),
-      postPurchaseStatusBadge('ONYX', statuses.ONYX_SEEN),
-      postPurchaseStatusBadge('Colorado', statuses.COLORADO_PRINTED),
-    ].join(' ');
-    const adminControls = [
-      postPurchaseToggleControl('Submit Tool', row, 'SUBMIT_TOOL_PROCESSED'),
-      postPurchaseToggleControl('ONYX', row, 'ONYX_SEEN'),
-      postPurchaseToggleControl('Colorado', row, 'COLORADO_PRINTED'),
-    ].join('');
+  const filterTabs = `<div class="pp-filter-tabs">
+    <button class="pp-filter-tab ${filter === 'open' ? 'active' : ''}" data-pp-filter="open">Open <span>${openCount}</span></button>
+    <button class="pp-filter-tab ${filter === 'completed' ? 'active' : ''}" data-pp-filter="completed">Completed <span>${completedCount}</span></button>
+    <button class="pp-filter-tab ${filter === 'all' ? 'active' : ''}" data-pp-filter="all">All <span>${allCount}</span></button>
+  </div>`;
+
+  if (!rowsToShow.length) {
+    const emptyText = filter === 'open'
+      ? 'No open orders. Everything is completed.'
+      : filter === 'completed'
+        ? 'No completed orders yet.'
+        : 'No orders match this view.';
+    wrap.innerHTML = `${filterTabs}<div class="empty-state"><div class="empty-state-icon">✓</div><p>${esc(emptyText)}</p></div>`;
+    bindPostPurchaseFilterTabs(wrap);
+    elSet('postpurchase-status', `${openCount} open · ${completedCount} done`);
+    return;
+  }
+
+  const rows = rowsToShow.map((row) => {
+    const state = getPostPurchaseState(row);
+    const controls = POST_PURCHASE_STEPS.map(step =>
+      postPurchaseToggleControl(step.label, row, step.stage)
+    ).join('');
+    const secondary = row.status && row.status !== '-' ? row.status : '';
+    const detailTitle = row.external_order_id ? `External ID ${row.external_order_id}` : '';
 
     return `<tr>
-      <td>${esc(row.external_order_id || '-')}</td>
-      <td>${esc(row.order_number || '-')}</td>
-      <td>${esc(row.status || '-')}</td>
-      <td>${row.received_at ? fmtDT(row.received_at) : '-'}</td>
-      <td>${row.api_seen_at ? fmtDT(row.api_seen_at) : '-'}</td>
-      <td>${row.submit_tool_processed_at ? fmtDT(row.submit_tool_processed_at) : '-'}</td>
-      <td>${row.onyx_seen_at ? fmtDT(row.onyx_seen_at) : '-'}</td>
-      <td>${row.colorado_printed_at ? fmtDT(row.colorado_printed_at) : '-'}</td>
-      <td><div class="pp-status-row">${lifecycle}</div></td>
-      <td><div class="pp-admin-controls">${adminControls}</div></td>
+      <td>
+        <div class="pp-order-main" title="${esc(detailTitle)}">${esc(row.order_number || '-')}</div>
+        ${secondary ? `<div class="pp-order-sub" title="${esc(secondary)}">${esc(secondary)}</div>` : ''}
+      </td>
+      <td class="pp-received">${formatPostPurchaseTime(row.received_at || row.api_seen_at)}</td>
+      <td><div class="pp-step-row">${controls}</div></td>
+      <td><span class="pp-state-badge ${state.key}">${esc(state.label)}</span></td>
     </tr>`;
   }).join('');
 
-  wrap.innerHTML = `<table class="data-table">
+  wrap.innerHTML = `${filterTabs}<table class="data-table pp-queue-table">
     <thead><tr>
-      <th>External order ID</th>
-      <th>Order number</th>
-      <th>${i18n('table.status')}</th>
-      <th>Received at</th>
-      <th>API seen at</th>
-      <th>Submit Tool</th>
-      <th>ONYX</th>
-      <th>Colorado</th>
-      <th>Lifecycle</th>
-      <th>Mark printed</th>
+      <th>Order</th>
+      <th>Received</th>
+      <th>Progress</th>
+      <th>State</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+
+  bindPostPurchaseFilterTabs(wrap);
 
   wrap.querySelectorAll('.pp-stage-toggle').forEach((input) => {
     input.addEventListener('change', () => {
@@ -2251,7 +2314,17 @@ function renderPostPurchaseOrders() {
     });
   });
 
+  elSet('postpurchase-status', `${openCount} open · ${completedCount} done`);
   applyRoleUI();
+}
+
+function bindPostPurchaseFilterTabs(wrap) {
+  wrap.querySelectorAll('.pp-filter-tab').forEach(button => {
+    button.addEventListener('click', () => {
+      S.postPurchaseFilter = button.dataset.ppFilter || 'open';
+      renderPostPurchaseOrders();
+    });
+  });
 }
 
 async function syncPostPurchaseOrdersManual() {
@@ -2279,8 +2352,22 @@ async function syncPostPurchaseOrdersManual() {
 
 async function setPostPurchaseStage(externalOrderId, stage, completed) {
   const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
+  const previousOrders = (S.postPurchaseOrders || []).map(row => ({
+    ...row,
+    statuses: { ...(row.statuses || {}) },
+  }));
   S.postPurchaseUpdating = S.postPurchaseUpdating || {};
   S.postPurchaseUpdating[updateKey] = true;
+  S.postPurchaseOrders = (S.postPurchaseOrders || []).map(row => {
+    if (row.external_order_id !== externalOrderId) return row;
+    return {
+      ...row,
+      statuses: {
+        ...(row.statuses || {}),
+        [stage]: Boolean(completed),
+      },
+    };
+  });
   renderPostPurchaseOrders();
   elSet('postpurchase-status', 'Saving...');
 
@@ -2305,17 +2392,16 @@ async function setPostPurchaseStage(externalOrderId, stage, completed) {
       row.external_order_id === externalOrderId && updatedRow ? updatedRow : row
     );
     showToast('Order status updated.', 'success');
-    elSet('postpurchase-status', `${S.postPurchaseOrders.length} orders loaded`);
   } catch (error) {
+    S.postPurchaseOrders = previousOrders;
     showToast(postPurchaseErrorMessage(error), 'error');
     elSet('postpurchase-status', 'Update failed');
-    await loadPostPurchaseOrders(true);
+    renderPostPurchaseOrders();
     return;
   } finally {
     delete S.postPurchaseUpdating[updateKey];
+    renderPostPurchaseOrders();
   }
-
-  renderPostPurchaseOrders();
 }
 
 function getCurrentMonthExportRange() {
