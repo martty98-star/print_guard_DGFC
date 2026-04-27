@@ -35,6 +35,9 @@ exports.handler = async function handler(event) {
 
     return json(200, body);
   } catch (error) {
+    if (error && (error.statusCode === 401 || error.statusCode === 429)) {
+      return json(error.statusCode, { ok: false, error: error.message || 'Unauthorized' });
+    }
     console.error('delete-stock-movement failed', error);
     return json(500, {
       ok: false,

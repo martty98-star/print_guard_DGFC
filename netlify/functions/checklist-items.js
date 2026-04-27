@@ -63,10 +63,10 @@ exports.handler = async function handler(event) {
 
     return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,PUT,DELETE,OPTIONS' });
   } catch (error) {
-    console.error('checklist-items failed', error);
-    if (error && error.statusCode === 403) {
-      return json(403, { ok: false, error: error.message || 'Forbidden' });
+    if (error && (error.statusCode === 401 || error.statusCode === 403 || error.statusCode === 429)) {
+      return json(error.statusCode, { ok: false, error: error.message || 'Request failed' });
     }
+    console.error('checklist-items failed', error);
     return json(500, {
       ok: false,
       error: error && error.message ? error.message : 'checklist-items failed',

@@ -40,14 +40,15 @@ function getConnectionString() {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function getAdminPin() {
-  const value =
-    process.env.PRINTGUARD_ADMIN_PIN ||
-    process.env.NETLIFY_PRINTGUARD_ADMIN_PIN ||
-    process.env.PG_ADMIN_PIN ||
-    '';
+const rateLimitBuckets = new Map();
 
-  return typeof value === 'string' ? value.trim() : '';
+function getAdminApiKey() {
+  const value = process.env.ADMIN_API_KEY || '';
+  const key = typeof value === 'string' ? value.trim() : '';
+  if (!key) {
+    throw new Error('ADMIN_API_KEY is not configured');
+  }
+  return key;
 }
 
 function getHeader(event, name) {
@@ -61,20 +62,49 @@ function getHeader(event, name) {
   return '';
 }
 
-function requireAdminPin(event) {
-  const expected = getAdminPin();
-  if (!expected) {
-    throw new Error('Missing admin PIN configuration');
+function getRequestIdentity(event) {
+  return getHeader(event, 'x-forwarded-for').split(',')[0].trim() ||
+    getHeader(event, 'client-ip') ||
+    'unknown';
+}
+
+function checkRateLimit(event, options = {}) {
+  const windowMs = options.windowMs || 60 * 1000;
+  const maxRequests = options.maxRequests || 30;
+  const now = Date.now();
+  const identity = getRequestIdentity(event);
+  const key = `${options.name || 'default'}:${identity}`;
+  const bucket = rateLimitBuckets.get(key);
+
+  if (!bucket || now > bucket.resetAt) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
   }
 
-  const provided = getHeader(event, 'x-printguard-admin-pin');
-  if (!provided || provided !== expected) {
-    const error = new Error('Forbidden');
-    error.statusCode = 403;
+  bucket.count += 1;
+  if (bucket.count > maxRequests) {
+    const error = new Error('Too many requests');
+    error.statusCode = 429;
     throw error;
   }
 
   return true;
+}
+
+function requireAdminApiKey(event) {
+  const expected = getAdminApiKey();
+  const provided = getHeader(event, 'x-api-key');
+  if (!provided || provided !== expected) {
+    const error = new Error('Unauthorized');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  return true;
+}
+
+function requireAdminPin(event) {
+  return requireAdminApiKey(event);
 }
 
 async function withClient(run) {
@@ -98,8 +128,11 @@ async function withClient(run) {
 }
 
 module.exports = {
-  getAdminPin,
+  checkRateLimit,
+  getAdminApiKey,
   getConnectionString,
+  getHeader,
+  requireAdminApiKey,
   requireAdminPin,
   json,
   parseRequestBody,

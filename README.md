@@ -8,10 +8,41 @@ Required environment variables:
 - POST_PURCHASE_API_BASE_URL
 - POST_PURCHASE_API_TOKEN
 - NEON_DATABASE_URL
+- ADMIN_API_KEY
 
 Optional environment variables:
 - POST_PURCHASE_API_ORDERS_PATH
 - POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE
+
+Admin API authentication
+
+Sensitive Netlify Functions require a server-side API key. Configure it only in Netlify environment variables or local `.env` files used by Netlify tooling:
+
+```bash
+ADMIN_API_KEY=super_long_random_string_here
+```
+
+Do not put `ADMIN_API_KEY` in frontend JavaScript, HTML, or any bundled asset.
+
+Post Purchase API examples:
+
+```bash
+curl -H "x-api-key: YOUR_KEY" \
+  "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
+
+curl -X POST \
+  -H "x-api-key: YOUR_KEY" \
+  -H "x-internal-sync: true" \
+  -H "content-type: application/json" \
+  -d "{\"limit\":100}" \
+  "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
+
+curl -X PUT \
+  -H "x-api-key: YOUR_KEY" \
+  -H "content-type: application/json" \
+  -d "{\"externalOrderId\":\"PS123\",\"stage\":\"COLORADO_PRINTED\",\"completed\":true}" \
+  "https://your-api.netlify.app/.netlify/functions/postpurchase-orders"
+```
 
 Manual sync
 
@@ -41,8 +72,8 @@ API assumptions
 
 The current implementation assumes the Post Purchase orders endpoint supports:
 - endpoint: /api/purchase-order/get
-- fromId: send 0 on the first run, then the highest API order id already stored in PrintGuard
+- fromId: send 0 on the first run; pagination continues from the last id in each page, and later scheduled runs start from the highest API id already stored in PrintGuard
 - limit: required, clamped to 1-100
 - supplierSystemCode: defaults to desenio_dgfc_printer
 
-The sync stores the full source API object in print_orders_received.source_payload and upserts by external_order_id, so reruns do not create duplicates.
+Order numbers are derived from order.ecommerce_id. PS orders are stored with a PS prefix, for example PS4746094; DS orders keep the numeric ecommerce id. The sync stores the full source API object in print_orders_received.source_payload and upserts by external_order_id, so reruns do not create duplicates.

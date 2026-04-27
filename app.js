@@ -46,7 +46,7 @@ const cfg = {
   set userName(v) { ls('pg_user_name', v); },
   get role() { return ls('pg_role') || 'operator'; },          // operator | admin
   set role(v) { ls('pg_role', v); },
-  get adminPin() { return ls('pg_admin_pin') || '2026'; },    // default PIN (změň si)
+  get adminPin() { return ls('pg_admin_pin') || ''; },
   set adminPin(v) { ls('pg_admin_pin', v); },
 };
 function ls(k, v) {
@@ -699,7 +699,6 @@ async function deleteMovementAdmin(id) {
         method: 'DELETE',
         headers: {
           'content-type': 'application/json',
-          'x-printguard-admin-pin': cfg.adminPin,
         },
         cache: 'no-store',
         body: JSON.stringify({ id }),
@@ -2166,7 +2165,6 @@ async function syncPostPurchaseOrdersManual() {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-printguard-admin-pin': cfg.adminPin,
       },
       cache: 'no-store',
       body: JSON.stringify({ limit: 100 }),
@@ -2693,9 +2691,6 @@ async function cloudDelete(kind, key) {
   });
   const res = await fetch(`/.netlify/functions/sync?${params.toString()}`, {
     method: 'DELETE',
-    headers: {
-      'x-printguard-admin-pin': cfg.adminPin,
-    },
     cache: 'no-store',
   });
   const j = await res.json().catch(() => ({}));
@@ -2710,7 +2705,6 @@ async function deleteMovement(id) {
         method: 'DELETE',
         headers: {
           'content-type': 'application/json',
-          'x-printguard-admin-pin': cfg.adminPin,
         },
         cache: 'no-store',
         body: JSON.stringify({ id }),
@@ -3243,6 +3237,7 @@ el('sync-btn').addEventListener('click', async () => {
   el('admin-unlock-btn')?.addEventListener('click', () => {
     const pin = (el('admin-pin')?.value || '').trim();
     if (!pin) { showToast('Zadejte PIN', 'error'); return; }
+    if (!cfg.adminPin) { showToast('Admin PIN není nastavený', 'error'); return; }
     if (pin !== cfg.adminPin) { showToast('Špatný PIN', 'error'); return; }
     cfg.role = 'admin';
     if (el('admin-pin')) el('admin-pin').value = '';

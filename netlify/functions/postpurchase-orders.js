@@ -1,6 +1,13 @@
 'use strict';
 
-const { json, parseRequestBody, requireAdminPin, withClient } = require('./_lib/db');
+const {
+  checkRateLimit,
+  getHeader,
+  json,
+  parseRequestBody,
+  requireAdminApiKey,
+  withClient,
+} = require('./_lib/db');
 const {
   listPrintOrdersReceived,
   syncPostPurchaseOrders,
@@ -24,7 +31,6 @@ function parseSyncOptions(event) {
     createdFrom: body.createdFrom ?? query.createdFrom,
     limit: body.limit ?? query.limit ?? 100,
     supplierSystemCode: body.supplierSystemCode ?? query.supplierSystemCode,
-    log: console.log,
   };
 }
 
@@ -44,7 +50,11 @@ exports.handler = async function handler(event) {
   }
 
   try {
+    checkRateLimit(event, { name: 'postpurchase-orders', maxRequests: 30, windowMs: 60 * 1000 });
+
     if (event.httpMethod === 'GET') {
+      requireAdminApiKey(event);
+
       const body = await withClient(async (client) => {
         const rows = await listPrintOrdersReceived(client, parseListOptions(event));
         return { ok: true, rows };
@@ -53,7 +63,10 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod === 'POST') {
-      requireAdminPin(event);
+      requireAdminApiKey(event);
+      if (getHeader(event, 'x-internal-sync').toLowerCase() !== 'true') {
+        return json(403, { ok: false, error: 'Internal sync header required' });
+      }
 
       const body = await withClient(async (client) => {
         const result = await syncPostPurchaseOrders(client, parseSyncOptions(event));
@@ -63,6 +76,8 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod === 'PUT') {
+      requireAdminApiKey(event);
+
       const body = await withClient(async (client) => {
         const row = await updatePrintOrderLifecycleStatus(client, parseUpdateOptions(event));
         return { ok: true, row };
@@ -72,10 +87,10 @@ exports.handler = async function handler(event) {
 
     return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,PUT,OPTIONS' });
   } catch (error) {
-    console.error('postpurchase-orders failed', error);
-    if (error && (error.statusCode === 400 || error.statusCode === 403 || error.statusCode === 404)) {
+    if (error && (error.statusCode === 400 || error.statusCode === 401 || error.statusCode === 403 || error.statusCode === 404 || error.statusCode === 429)) {
       return json(error.statusCode, { ok: false, error: error.message || 'Request failed' });
     }
+    console.error('postpurchase-orders failed', error);
     return json(500, {
       ok: false,
       error: error && error.message ? error.message : 'postpurchase-orders failed',

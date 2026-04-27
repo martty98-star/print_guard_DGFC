@@ -2,13 +2,13 @@
 import pg from "pg";
 const { Client } = pg;
 
-function getAdminPin() {
-  const value =
-    process.env.PRINTGUARD_ADMIN_PIN ||
-    process.env.NETLIFY_PRINTGUARD_ADMIN_PIN ||
-    process.env.PG_ADMIN_PIN ||
-    "";
-  return typeof value === "string" ? value.trim() : "";
+const rateLimitBuckets = new Map();
+
+function getAdminApiKey() {
+  const value = process.env.ADMIN_API_KEY || "";
+  const key = typeof value === "string" ? value.trim() : "";
+  if (!key) throw new Error("ADMIN_API_KEY is not configured");
+  return key;
 }
 
 function getHeader(event, name) {
@@ -31,6 +31,38 @@ function resp(statusCode, body) {
     },
     body: JSON.stringify(body),
   };
+}
+
+function getRequestIdentity(event) {
+  return getHeader(event, "x-forwarded-for").split(",")[0].trim() ||
+    getHeader(event, "client-ip") ||
+    "unknown";
+}
+
+function checkRateLimit(event, name, maxRequests = 30, windowMs = 60 * 1000) {
+  const now = Date.now();
+  const identity = getRequestIdentity(event);
+  const key = `${name}:${identity}`;
+  const bucket = rateLimitBuckets.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return;
+  }
+  bucket.count += 1;
+  if (bucket.count > maxRequests) {
+    const error = new Error("Too many requests");
+    error.statusCode = 429;
+    throw error;
+  }
+}
+
+function requireAdminApiKey(event) {
+  const providedKey = getHeader(event, "x-api-key");
+  if (!providedKey || providedKey !== getAdminApiKey()) {
+    const error = new Error("Unauthorized");
+    error.statusCode = 401;
+    throw error;
+  }
 }
 
 function chunkArray(values, size) {
@@ -118,6 +150,18 @@ export async function handler(event) {
   const conn = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
   if (!conn) return resp(500, { ok: false, error: "Missing NETLIFY_DATABASE_URL" });
 
+  if (event.httpMethod === "DELETE") {
+    try {
+      checkRateLimit(event, "sync-delete", 20);
+      requireAdminApiKey(event);
+    } catch (e) {
+      if (e && (e.statusCode === 401 || e.statusCode === 429)) {
+        return resp(e.statusCode, { ok: false, error: e.message });
+      }
+      return resp(500, { ok: false, error: String(e?.message || e) });
+    }
+  }
+
   const client = new Client({
     connectionString: conn,
     ssl: { rejectUnauthorized: false },
@@ -157,13 +201,6 @@ export async function handler(event) {
 
     // ---------- DELETE = hard delete ----------
     if (event.httpMethod === "DELETE") {
-      const expectedPin = getAdminPin();
-      const providedPin = getHeader(event, "x-printguard-admin-pin");
-      if (!expectedPin) return resp(500, { ok: false, error: "Missing admin PIN configuration" });
-      if (!providedPin || providedPin !== expectedPin) {
-        return resp(403, { ok: false, error: "Forbidden" });
-      }
-
       const query = event.queryStringParameters || {};
       const kind = String(query.kind || "").trim();
       const key = String(query.key || "").trim();
@@ -193,6 +230,9 @@ export async function handler(event) {
     return resp(405, { ok: false, error: "Method not allowed" });
   } catch (e) {
     try { await client.query("rollback"); } catch {}
+    if (e && (e.statusCode === 401 || e.statusCode === 429)) {
+      return resp(e.statusCode, { ok: false, error: e.message });
+    }
     return resp(500, { ok: false, error: String(e?.message || e) });
   } finally {
     try { await client.end(); } catch {}

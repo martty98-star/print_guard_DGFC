@@ -21,9 +21,35 @@ function firstCleanString(values) {
   return null;
 }
 
+function normalizeBrandCode(value) {
+  const cleaned = cleanString(value);
+  return cleaned ? cleaned.toLowerCase() : null;
+}
+
+function prefixOrderNumberForBrand(orderNumber, brandCode) {
+  const cleaned = cleanString(orderNumber);
+  const brand = normalizeBrandCode(brandCode);
+  if (!cleaned) return null;
+  if (brand === 'ps' && !/^ps/i.test(cleaned)) return `PS${cleaned}`;
+  return cleaned;
+}
+
 function resolveOrderNumber(order) {
   if (!order || typeof order !== 'object') return null;
-  return firstCleanString([
+  const brand = order.order && typeof order.order === 'object'
+    ? order.order.brand_system_code
+    : order.brand_system_code;
+  const ecommerceId = firstCleanString([
+    order.order && order.order.ecommerce_id,
+    order.order && order.order.ecommerceId,
+    order.ecommerce_id,
+    order.ecommerceId,
+    order.document_id,
+    order.documentId,
+  ]);
+  if (ecommerceId) return prefixOrderNumberForBrand(ecommerceId, brand);
+
+  return prefixOrderNumberForBrand(firstCleanString([
     order.order_number,
     order.orderNumber,
     order.order_no,
@@ -51,7 +77,63 @@ function resolveOrderNumber(order) {
     order.purchaseOrder && order.purchaseOrder.number,
     order.purchaseOrder && order.purchaseOrder.orderNumber,
     order.purchaseOrder && order.purchaseOrder.reference,
-  ]);
+  ]), brand);
+}
+
+function resolveBrand(order) {
+  return cleanString(
+    order && (
+      order.brand_system_code ||
+      order.brandSystemCode ||
+      (order.order && order.order.brand_system_code) ||
+      (order.order && order.order.brandSystemCode)
+    )
+  );
+}
+
+function resolveApiOrderId(order) {
+  return cleanString(
+    order && (
+      order.id ||
+      order.rawId ||
+      order.external_order_id ||
+      order.externalOrderId ||
+      order.uuid
+    )
+  );
+}
+
+function getOrderCreatedAt(order) {
+  return toIsoOrNull(
+    order && (
+      order.created_at ||
+      order.createdAt ||
+      order.received_at ||
+      order.receivedAt ||
+      order.updated_at ||
+      order.updatedAt
+    )
+  );
+}
+
+function mapPostPurchaseOrder(order) {
+  return {
+    orderNumber: resolveOrderNumber(order),
+    brand: resolveBrand(order),
+    createdAt: getOrderCreatedAt(order),
+    supplier: cleanString(order && (order.supplier_system_code || order.supplierSystemCode)),
+    rawId: Number(order && order.id) || null,
+  };
+}
+
+function getNewestCreatedAt(orders) {
+  const timestamps = (orders || [])
+    .map((order) => getOrderCreatedAt(order))
+    .filter(Boolean)
+    .map((value) => new Date(value).getTime())
+    .filter((value) => Number.isFinite(value));
+  if (!timestamps.length) return null;
+  return new Date(Math.max(...timestamps)).toISOString();
 }
 
 function getEnvValue(name) {
@@ -153,7 +235,8 @@ function applyFilterParams(targetUrl, options, pageState) {
   }
 
   params.set('limit', String(limit));
-  if (!params.has('fromId') && !params.has('fromid')) params.set('fromId', String(fromId));
+  params.delete('fromid');
+  params.set('fromId', String(fromId));
   if (supplierSystemCode && !params.has('supplierSystemCode')) {
     params.set('supplierSystemCode', supplierSystemCode);
   }
@@ -269,10 +352,12 @@ function resolveNextPage(payload, currentUrl, pageState, itemCount) {
     .map((item) => Number(item && (item.id || item.external_order_id || item.externalOrderId)))
     .filter((value) => Number.isFinite(value) && value > 0);
   const maxItemId = itemIds.length ? Math.max(...itemIds) : 0;
+  const lastItemId = itemIds.length ? itemIds[itemIds.length - 1] : 0;
   const limit = Math.max(1, Math.min(100, Number(new URL(currentUrl).searchParams.get('limit')) || 100));
+  const currentFromId = Math.max(0, Number(pageState && pageState.fromId) || 0);
 
-  if (maxItemId > 0 && itemCount >= limit) {
-    return { fromId: maxItemId };
+  if (lastItemId > 0 && lastItemId !== currentFromId && itemCount >= limit) {
+    return { fromId: lastItemId };
   }
   if (maxItemId > 0 && itemCount > 0 && itemCount < limit) {
     return null;
@@ -324,22 +409,21 @@ function resolveNextPage(payload, currentUrl, pageState, itemCount) {
   }
 
   const hasMore = payload.has_more === true || payload.hasMore === true;
-  if (hasMore && maxItemId > 0) return { fromId: maxItemId };
+  if (hasMore && lastItemId > 0 && lastItemId !== currentFromId) return { fromId: lastItemId };
 
   return null;
 }
 
+function getLastApiId(orders) {
+  const ids = (orders || [])
+    .map((item) => Number(item && (item.id || item.external_order_id || item.externalOrderId)))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  return ids.length ? ids[ids.length - 1] : null;
+}
+
 function normalizeOrder(order) {
-  const externalOrderId = cleanString(
-    order && (
-      order.external_order_id ||
-      order.externalOrderId ||
-      order.order_id ||
-      order.orderId ||
-      order.id ||
-      order.uuid
-    )
-  );
+  const mapped = mapPostPurchaseOrder(order);
+  const externalOrderId = resolveApiOrderId(order) || mapped.orderNumber;
 
   if (!externalOrderId) {
     return null;
@@ -347,19 +431,10 @@ function normalizeOrder(order) {
 
   return {
     external_order_id: externalOrderId,
-    order_number: resolveOrderNumber(order),
-    customer_order_id: cleanString(order.customer_order_id || order.customerOrderId || order.customer_id || order.customerId),
+    order_number: mapped.orderNumber,
+    customer_order_id: cleanString(order.customer_order_id || order.customerOrderId || order.customer_id || order.customerId || order.document_id || order.documentId),
     status: cleanString(order.status || order.order_status || order.orderStatus),
-    received_at: toIsoOrNull(
-      order.received_at ||
-      order.receivedAt ||
-      order.sent_to_print_at ||
-      order.sentToPrintAt ||
-      order.created_at ||
-      order.createdAt ||
-      order.updated_at ||
-      order.updatedAt
-    ),
+    received_at: mapped.createdAt,
     source_payload: order,
   };
 }
@@ -385,7 +460,7 @@ async function fetchPostPurchaseOrders(options) {
   for (const candidate of urlsToTry) {
     const seenUrls = new Set();
     const pages = [];
-    let pageState = { page: 1 };
+    let pageState = { page: 1, fromId: Math.max(0, Number(options && options.fromId) || 0) };
     let currentUrl = candidate;
 
     try {
@@ -400,7 +475,7 @@ async function fetchPostPurchaseOrders(options) {
         }
         seenUrls.add(requestKey);
 
-        log(`[postpurchase] fetch ${requestKey}`);
+        log(`[postpurchase] fetch page=${pageIndex + 1} ${requestKey}`);
         const payload = await fetchJsonOrThrow(requestUrl, config.token, fetchImpl);
         const items = extractOrdersArray(payload);
         if (!Array.isArray(items)) {
@@ -408,16 +483,22 @@ async function fetchPostPurchaseOrders(options) {
         }
 
         pages.push(...items);
+        const newestCreatedAt = getNewestCreatedAt(pages);
+        const lastApiId = getLastApiId(items);
+        log(`[postpurchase] page=${pageIndex + 1} records=${items.length} total=${pages.length}${lastApiId ? ` last_id=${lastApiId}` : ''}${newestCreatedAt ? ` newest_created_at=${newestCreatedAt}` : ''}`);
         const nextPage = resolveNextPage(payload, requestUrl, pageState, items.length);
+        if (nextPage && nextPage.fromId) {
+          log(`[postpurchase] nextFromId=${nextPage.fromId}`);
+        }
         if (!nextPage) {
-          return { endpoint: requestKey, orders: pages };
+          return { endpoint: requestKey, orders: pages, newestCreatedAt: getNewestCreatedAt(pages) };
         }
 
         currentUrl = requestUrl.toString();
         pageState = nextPage;
       }
 
-      return { endpoint: currentUrl, orders: pages };
+      return { endpoint: currentUrl, orders: pages, newestCreatedAt: getNewestCreatedAt(pages) };
     } catch (error) {
       const canContinueDiscovery =
         !cleanString(config.ordersPath) &&
@@ -587,6 +668,7 @@ async function syncPostPurchaseOrders(client, options) {
   return {
     endpoint: fetched.endpoint,
     fromId,
+    newestCreatedAt: fetched.newestCreatedAt,
     ...stats,
   };
 }
