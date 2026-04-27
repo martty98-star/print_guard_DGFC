@@ -403,8 +403,6 @@ const S = {
   postPurchaseLoaded: false,
   postPurchaseFilter: 'open',
   postPurchaseSearch: '',
-  postPurchaseDateFrom: '',
-  postPurchaseDateTo: '',
   syncRunning:      false,
   syncIntervalId:   null,
 };
@@ -2157,36 +2155,19 @@ function getPostPurchaseStepCount(row) {
   return POST_PURCHASE_STEPS.filter(step => isPostPurchaseStepDone(row, step)).length;
 }
 
+function isPostPurchaseProductionComplete(row) {
+  return getPostPurchaseStepCount(row) === POST_PURCHASE_STEPS.length;
+}
+
 function isPostPurchaseDone(row) {
-  return getPostPurchaseStepCount(row) === POST_PURCHASE_STEPS.length && !row?.reprint_needed;
+  return isPostPurchaseProductionComplete(row);
 }
 
 function getPostPurchaseState(row) {
-  if (row?.reprint_needed) return { key: 'issue', label: 'Issue' };
   const count = getPostPurchaseStepCount(row);
   if (count === 0) return { key: 'new', label: 'New' };
   if (count === POST_PURCHASE_STEPS.length) return { key: 'done', label: 'Done' };
   return { key: 'progress', label: 'In progress' };
-}
-
-function getPostPurchaseComparableDate(row) {
-  const value = row?.received_at || row?.api_seen_at;
-  const date = value ? new Date(value) : null;
-  return date && !Number.isNaN(date.getTime()) ? date : null;
-}
-
-function isDateInPostPurchaseRange(row) {
-  const date = getPostPurchaseComparableDate(row);
-  if (!date) return !S.postPurchaseDateFrom && !S.postPurchaseDateTo;
-  if (S.postPurchaseDateFrom) {
-    const from = new Date(`${S.postPurchaseDateFrom}T00:00:00`);
-    if (date < from) return false;
-  }
-  if (S.postPurchaseDateTo) {
-    const to = new Date(`${S.postPurchaseDateTo}T23:59:59.999`);
-    if (date > to) return false;
-  }
-  return true;
 }
 
 function getSearchedPostPurchaseOrders() {
@@ -2200,7 +2181,7 @@ function getSearchedPostPurchaseOrders() {
       row.issue_reason,
       row.issue_note,
     ].filter(Boolean).join(' ').toLowerCase();
-    return (!query || haystack.includes(query)) && isDateInPostPurchaseRange(row);
+    return !query || haystack.includes(query);
   });
 }
 
@@ -2230,7 +2211,7 @@ function postPurchaseToggleControl(label, row, stage) {
   const checked = isPostPurchaseStepDone(row, step);
   const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
   const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
-  const disabled = Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
+  const disabled = !canEditPostPurchaseOrders() || Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
   return `<label class="pp-step-toggle ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
     <input
       type="checkbox"
@@ -2245,10 +2226,14 @@ function postPurchaseToggleControl(label, row, stage) {
   </label>`;
 }
 
+function canEditPostPurchaseOrders() {
+  return Boolean(cfg.postPurchasePin || cfg.adminPin);
+}
+
 function postPurchaseIssueControls(row) {
   const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
   const updateKey = getPostPurchaseUpdateKey(externalOrderId, 'ISSUE');
-  const disabled = Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
+  const disabled = !canEditPostPurchaseOrders() || Boolean(S.postPurchaseUpdating && S.postPurchaseUpdating[updateKey]);
   const enabled = Boolean(row && row.reprint_needed);
   const reason = row && row.issue_reason ? row.issue_reason : '';
   const note = row && row.issue_note ? row.issue_note : '';
@@ -2365,7 +2350,7 @@ function renderPostPurchaseOrders() {
     const controls = POST_PURCHASE_STEPS.map(step =>
       postPurchaseToggleControl(step.label, row, step.stage)
     ).join('');
-    const issueControls = postPurchaseIssueControls(row);
+    const issueControls = isPostPurchaseProductionComplete(row) ? postPurchaseIssueControls(row) : '';
     const secondary = row.status && row.status !== '-' ? row.status : '';
     const detailTitle = row.external_order_id ? `External ID ${row.external_order_id}` : '';
     const issueBadge = row.reprint_needed ? '<span class="pp-issue-badge">Issue</span>' : '';
@@ -3602,21 +3587,9 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseSearch = e.target.value || '';
     renderPostPurchaseOrders();
   });
-  el('postpurchase-date-from')?.addEventListener('change', e => {
-    S.postPurchaseDateFrom = e.target.value || '';
-    renderPostPurchaseOrders();
-  });
-  el('postpurchase-date-to')?.addEventListener('change', e => {
-    S.postPurchaseDateTo = e.target.value || '';
-    renderPostPurchaseOrders();
-  });
   el('postpurchase-clear-filters')?.addEventListener('click', () => {
     S.postPurchaseSearch = '';
-    S.postPurchaseDateFrom = '';
-    S.postPurchaseDateTo = '';
     if (el('postpurchase-search')) el('postpurchase-search').value = '';
-    if (el('postpurchase-date-from')) el('postpurchase-date-from').value = '';
-    if (el('postpurchase-date-to')) el('postpurchase-date-to').value = '';
     renderPostPurchaseOrders();
   });
   el('postpurchase-unlock-btn')?.addEventListener('click', () => {
