@@ -11,6 +11,7 @@
     'Missing print',
     'Other',
   ];
+  const MISSING_PROCESSED_THRESHOLD_MINUTES = 30;
 
   const state = {
     S: null,
@@ -110,7 +111,7 @@
     params.set('limit', '500');
     if (state.S.postPurchaseSearch) params.set('search', state.S.postPurchaseSearch);
     if (state.S.postPurchaseMonth) params.set('month', state.S.postPurchaseMonth);
-    return '/.netlify/functions/processed-print-orders?' + params.toString();
+    return '/.netlify/functions/order-pipeline?' + params.toString();
   }
 
   async function loadPostPurchaseOrders(force = false) {
@@ -133,14 +134,14 @@
         headers: state.postPurchaseHeaders(),
         cache: 'no-store',
       });
-      const payload = await readJsonResponse(res, 'Failed to load processed orders');
+      const payload = await readJsonResponse(res, 'Failed to load order pipeline');
       state.S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseLoaded = true;
       updateMonthFilter(payload.months || []);
       renderPostPurchaseOrders();
-      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} processed orders`);
+      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} pipeline orders`);
     } catch (error) {
-      console.error('Processed Print Orders load failed', error);
+      console.error('Order pipeline load failed', error);
       const message = cleanApiError(error);
       if (wrap && !(state.S.postPurchaseOrders || []).length) {
         wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Processed orders could not be loaded.</p><div class="table-empty-note">${state.esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
@@ -160,6 +161,40 @@
     return files;
   }
 
+  function getPipelineAgeMinutes(row) {
+    const value = row && (row.receivedAt || row.apiSeenAt);
+    if (!value) return 0;
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? (Date.now() - time) / 60000 : 0;
+  }
+
+  function isMissingProcessedXml(row) {
+    return row && row.pipelineStatus === 'received_only' && getPipelineAgeMinutes(row) >= MISSING_PROCESSED_THRESHOLD_MINUTES;
+  }
+
+  function renderPipelineBadges(row) {
+    const badges = [];
+    if (row.receivedAt || row.apiSeenAt || row.externalOrderId) {
+      badges.push('<span class="pp-pipeline-badge received">RECEIVED</span>');
+    }
+    if (row.processedOrderId || row.queuedDateTime || row.processedAt) {
+      badges.push('<span class="pp-pipeline-badge processed">PROCESSED</span>');
+    }
+    if (Array.isArray(row.printFiles) && row.printFiles.length) {
+      badges.push('<span class="pp-pipeline-badge pdf">PDF</span>');
+    }
+    if (row.reprintPending || row.pipelineStatus === 'reprint_pending') {
+      badges.push('<span class="pp-pipeline-badge reprint">REPRINT PENDING</span>');
+    }
+    if (isMissingProcessedXml(row)) {
+      badges.push('<span class="pp-pipeline-badge missing">Missing processed XML</span>');
+    }
+    if (row.pipelineStatus === 'processed_without_received') {
+      badges.push('<span class="pp-pipeline-badge orphan">NO API MATCH</span>');
+    }
+    return badges.join('');
+  }
+
   function renderPdfFiles(row) {
     const files = normalizePrintFiles(row);
     if (!files.length) return '<div class="pp-file-block"><span class="pp-file-name">-</span></div>';
@@ -167,15 +202,17 @@
       const path = file.printFilePath || '';
       const label = fileNameFromPath(path) || `PDF ${index + 1}`;
       const href = uncToFileHref(path);
-      const pendingKey = getReprintKey(row.id, path);
-      const pending = state.reprintPendingKeys.has(pendingKey);
+      const orderId = row.processedOrderId || row.id;
+      const pendingKey = getReprintKey(orderId, path);
+      const pending = row.reprintPending || state.reprintPendingKeys.has(pendingKey);
+      const reprintDisabled = !orderId || !path;
       return `<div class="pp-file-block">
         <div class="pp-file-title">${state.esc(label)}</div>
         <div class="pp-file-path">${state.esc(path || '-')}</div>
         <div class="pp-file-actions">
           <button class="btn-sm" type="button" data-open-pdf-path="${state.esc(path)}" data-open-pdf-href="${state.esc(href)}">Open PDF</button>
           <button class="btn-sm" type="button" data-copy-path="${state.esc(path)}">Copy path</button>
-          <button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-reprint-order-name="${state.esc(row.orderName || '')}" data-print-file-path="${state.esc(path)}" data-print-file-label="${state.esc(label)}">${pending ? 'Reprint pending' : 'Reprint request'}</button>
+          <button class="btn-sm" type="button" data-reprint-order-id="${state.esc(orderId || '')}" data-reprint-order-name="${state.esc(row.orderName || '')}" data-print-file-path="${state.esc(path)}" data-print-file-label="${state.esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${pending ? 'Reprint pending' : 'Reprint request'}</button>
         </div>
       </div>`;
     }).join('');
@@ -200,10 +237,12 @@
         <div class="pp-processed-head">
           <div>
             <div class="pp-order-main">${state.esc(row.orderName || '-')}</div>
-            <div class="pp-order-sub">${state.esc(row.xmlFileName || '')}</div>
+            <div class="pp-order-sub">${state.esc([row.externalOrderId, row.customerOrderId, row.xmlFileName].filter(Boolean).join(' · '))}</div>
           </div>
-          <div class="pp-processed-time">${state.esc(formatTime(row.queuedDateTime || row.updatedAt || row.importedAt))}</div>
+          <div class="pp-processed-time">${state.esc(formatTime(row.processedAt || row.queuedDateTime || row.receivedAt || row.apiSeenAt))}</div>
         </div>
+        <div class="pp-pipeline-badges">${renderPipelineBadges(row)}</div>
+        ${isMissingProcessedXml(row) ? `<div class="pp-missing-warning">Missing processed XML after ${MISSING_PROCESSED_THRESHOLD_MINUTES} minutes.</div>` : ''}
         <div class="pp-processed-meta">
           <span><strong>Workflow:</strong> ${state.esc(row.workflowName || row.printerName || '-')}</span>
           <span><strong>Type:</strong> ${state.esc(row.orderType || '-')}</span>
@@ -213,10 +252,10 @@
           <div class="pp-section-label">PDF</div>
           ${renderPdfFiles(row)}
         </div>
-        <div class="pp-xml-source">
+        ${row.sourceXmlPath ? `<div class="pp-xml-source">
           <span>${state.esc(fileNameFromPath(row.sourceXmlPath || ''))}</span>
           <button class="btn-sm" type="button" data-copy-path="${state.esc(row.sourceXmlPath || '')}">Copy XML path</button>
-        </div>
+        </div>` : ''}
       </article>
     `).join('')}</div>`;
 

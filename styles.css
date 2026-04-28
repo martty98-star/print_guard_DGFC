@@ -973,6 +973,35 @@ textarea { resize: vertical; min-height: 58px; }
   font-size: .72rem;
   margin-bottom: 12px;
 }
+.pp-pipeline-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.pp-pipeline-badge {
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: .56rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+.pp-pipeline-badge.received { border-color: rgba(92, 128, 184, .35); }
+.pp-pipeline-badge.processed,
+.pp-pipeline-badge.pdf { border-color: rgba(80, 150, 110, .35); }
+.pp-pipeline-badge.reprint,
+.pp-pipeline-badge.missing { border-color: rgba(180, 95, 80, .4); color: var(--crit); }
+.pp-pipeline-badge.orphan { border-color: rgba(160, 130, 70, .4); }
+.pp-missing-warning {
+  border-left: 3px solid var(--crit);
+  color: var(--crit);
+  background: rgba(180, 95, 80, .08);
+  font-size: .72rem;
+  padding: 7px 9px;
+  margin-bottom: 10px;
+}
 .pp-pdf-section {
   display: flex;
   flex-direction: column;
