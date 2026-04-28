@@ -5,7 +5,8 @@
   "scripts": {
     "export:colorado-monthly": "node scripts/export-colorado-monthly.js",
     "sync:postpurchase-orders": "node scripts/sync-postpurchase-orders.js",
-    "sync:submit-tool-logs": "node scripts/sync-submit-tool-logs.js"
+    "sync:submit-tool-logs": "node scripts/sync-submit-tool-logs.js",
+    "sync:processed-print-orders": "node scripts/sync-processed-print-orders.js"
   },
   "dependencies": {
     "pg": "^8.19.0",

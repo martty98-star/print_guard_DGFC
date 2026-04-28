@@ -111,7 +111,7 @@
     </button>
     <button class="nav-item" data-screen="postpurchase-orders">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l1 2h4v16H4V5h4l1-2z"></path><path d="M9 13h6"></path><path d="M9 17h6"></path><path d="M10 7h4"></path></svg>
-      <span>Orders</span>
+      <span>Processed</span>
     </button>
   </nav>
 
@@ -583,22 +583,24 @@
 
   <main id="screen-postpurchase-orders" class="screen">
     <div class="screen-header">
-      <h1>Received Print Orders</h1>
+      <h1>Processed Print Orders</h1>
       <div class="header-meta" id="postpurchase-status">Server data</div>
     </div>
     <section class="settings-card">
       <div class="checklist-toolbar">
-        <div class="hint">Orders received from Post Purchase API before Submit Tool processing.</div>
+        <div class="hint">Clean operator view from SubmitTool processed XML files.</div>
         <div class="checklist-toolbar-actions">
           <input type="password" id="postpurchase-pin" class="input-sm" placeholder="Operator PIN" autocomplete="off">
           <button class="btn-sm" id="postpurchase-unlock-btn">Unlock</button>
           <button class="btn-sm" id="postpurchase-lock-btn">Lock</button>
           <button class="btn-sm" id="postpurchase-refresh-btn">Refresh</button>
-          <button class="btn-sm admin-only" id="postpurchase-sync-btn">Sync orders</button>
         </div>
       </div>
       <div class="pp-filter-row">
-        <input type="search" id="postpurchase-search" placeholder="Search order">
+        <input type="search" id="postpurchase-search" placeholder="Search order, PDF, XML, page size">
+        <select id="postpurchase-month-filter" class="input-sm">
+          <option value="">All months</option>
+        </select>
         <button class="btn-sm" id="postpurchase-clear-filters">Clear</button>
       </div>
       <div id="postpurchase-orders-wrap" class="table-wrap"></div>

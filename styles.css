@@ -943,6 +943,22 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .order-link:hover { color: var(--text); border-color: var(--border-2); }
 
+.pp-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 190px;
+}
+.pp-file-name {
+  color: var(--text-faint);
+  font-size: .64rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Detail tabs (Pohyby / Stav skladu) ── */
 .detail-tabs {
   display: flex; gap: 0; border: 1px solid var(--border); overflow: hidden;

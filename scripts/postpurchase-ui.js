@@ -1,31 +1,14 @@
 'use strict';
 
 (() => {
-  const POST_PURCHASE_STEPS = [
-    { stage: 'SUBMIT_TOOL_PROCESSED', label: 'Submit Tool', field: 'submit_tool_processed_at' },
-    { stage: 'ONYX_SEEN', label: 'ONYX', field: 'onyx_seen_at' },
-    { stage: 'COLORADO_PRINTED', label: 'Colorado', field: 'colorado_printed_at' },
-  ];
-
-  const POST_PURCHASE_ISSUE_REASONS = [
-    'Oil drop',
-    'Bent paper',
-    'Color issue',
-    'Cut issue',
-    'Printer error',
-    'Other',
-  ];
-
   const state = {
     S: null,
     cfg: null,
     el: null,
     elSet: null,
     esc: null,
-    fmtDT: null,
     showToast: null,
     applyRoleUI: null,
-    adminJsonHeaders: null,
     postPurchaseHeaders: null,
     postPurchaseJsonHeaders: null,
     postPurchaseErrorMessage: null,
@@ -37,7 +20,7 @@
   function initPostPurchaseUI(deps) {
     Object.assign(state, deps || {});
     if (!state.S || !state.cfg || !state.el || !state.elSet) {
-      throw new Error('Missing Post Purchase UI dependencies');
+      throw new Error('Missing Processed Print Orders UI dependencies');
     }
   }
 
@@ -68,63 +51,10 @@
     return payload;
   }
 
-  function getPostPurchaseUpdateKey(externalOrderId, stage) {
-    return `${externalOrderId || ''}::${stage || ''}`;
-  }
-
-  function isPostPurchaseStepDone(row, step) {
-    const statuses = row && row.statuses ? row.statuses : {};
-    return Boolean(statuses[step.stage] || row?.[step.field]);
-  }
-
-  function getPostPurchaseStepCount(row) {
-    return POST_PURCHASE_STEPS.filter(step => isPostPurchaseStepDone(row, step)).length;
-  }
-
-  function isPostPurchaseProductionComplete(row) {
-    return getPostPurchaseStepCount(row) === POST_PURCHASE_STEPS.length;
-  }
-
-  function isPostPurchaseDone(row) {
-    return isPostPurchaseProductionComplete(row);
-  }
-
-  function getPostPurchaseState(row) {
-    const count = getPostPurchaseStepCount(row);
-    if (count === 0) return { key: 'new', label: 'New' };
-    if (count === POST_PURCHASE_STEPS.length) return { key: 'done', label: 'Done' };
-    return { key: 'progress', label: 'In progress' };
-  }
-
-  function getSearchedPostPurchaseOrders() {
-    const query = String(state.S.postPurchaseSearch || '').trim().toLowerCase();
-    return (state.S.postPurchaseOrders || []).filter(row => {
-      const haystack = [
-        row.order_number,
-        row.external_order_id,
-        row.customer_order_id,
-        row.status,
-        row.issue_reason,
-        row.issue_note,
-      ].filter(Boolean).join(' ').toLowerCase();
-      return !query || haystack.includes(query);
-    });
-  }
-
-  function getFilteredPostPurchaseOrders() {
-    const filter = state.S.postPurchaseFilter || 'open';
-    return getSearchedPostPurchaseOrders().filter(row => {
-      const done = isPostPurchaseDone(row);
-      if (filter === 'completed') return done;
-      if (filter === 'all') return true;
-      return !done;
-    });
-  }
-
-  function formatPostPurchaseTime(value) {
+  function formatTime(value) {
     if (!value) return '-';
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return state.fmtDT(value);
+    if (Number.isNaN(date.getTime())) return String(value);
     const dd = String(date.getDate()).padStart(2, '0');
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const hh = String(date.getHours()).padStart(2, '0');
@@ -132,79 +62,45 @@
     return `${dd}.${mm}. ${hh}:${min}`;
   }
 
-  function canEditPostPurchaseOrders() {
-    return Boolean(state.cfg.postPurchasePin || state.cfg.adminPin);
+  function fileNameFromPath(value) {
+    const raw = String(value || '');
+    return raw.split(/[\\/]/).filter(Boolean).pop() || raw;
   }
 
-  function postPurchaseToggleControl(label, row, stage) {
-    const step = POST_PURCHASE_STEPS.find(item => item.stage === stage) || { stage };
-    const checked = isPostPurchaseStepDone(row, step);
-    const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
-    const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
-    const disabled = !canEditPostPurchaseOrders() || Boolean(state.S.postPurchaseUpdating && state.S.postPurchaseUpdating[updateKey]);
-    const meta = stage === 'SUBMIT_TOOL_PROCESSED' && checked
-      ? getSubmitToolMeta(row)
-      : '';
-    return `<label class="pp-step-toggle ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
-      <input
-        type="checkbox"
-        class="pp-stage-toggle"
-        data-external-order-id="${state.esc(externalOrderId)}"
-        data-stage="${state.esc(stage)}"
-        ${checked ? 'checked' : ''}
-        ${disabled ? 'disabled' : ''}
-      >
-      <span class="pp-step-box"></span>
-      <span class="pp-step-text">
-        <span class="pp-step-label">${state.esc(label)}</span>
-        ${meta ? `<span class="pp-step-meta">${state.esc(meta)}</span>` : ''}
-      </span>
-    </label>`;
+  function uncToFileHref(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (!raw.startsWith('\\\\')) return raw;
+    return 'file://///' + raw.replace(/^\\\\/, '').replace(/\\/g, '/');
   }
 
-  function getSubmitToolMeta(row) {
-    const status = row && row.submit_tool_status ? row.submit_tool_status : 'manual';
-    const value = row && (row.submit_tool_at || row.submit_tool_processed_at);
-    const time = value ? formatPostPurchaseTime(value) : '';
-    if (status === 'confirmed') return time ? `confirmed ${time}` : 'confirmed';
-    return time ? `manual ${time}` : 'manual';
+  function getPrimaryPrintFile(row) {
+    return (Array.isArray(row && row.printFiles) ? row.printFiles : [])[0] || {};
   }
 
-  function postPurchaseIssueControls(row) {
-    const externalOrderId = row && row.external_order_id ? row.external_order_id : '';
-    const updateKey = getPostPurchaseUpdateKey(externalOrderId, 'ISSUE');
-    const disabled = !canEditPostPurchaseOrders() || Boolean(state.S.postPurchaseUpdating && state.S.postPurchaseUpdating[updateKey]);
-    const enabled = Boolean(row && row.reprint_needed);
-    const reason = row && row.issue_reason ? row.issue_reason : '';
-    const note = row && row.issue_note ? row.issue_note : '';
-    const reasonButtons = POST_PURCHASE_ISSUE_REASONS.map(value => (
-      `<button
-        type="button"
-        class="pp-reason-chip ${value === reason ? 'active' : ''}"
-        data-external-order-id="${state.esc(externalOrderId)}"
-        data-issue-reason="${state.esc(value)}"
-        ${disabled ? 'disabled' : ''}
-      >${state.esc(value)}</button>`
-    )).join('');
+  function getPageSizes(row) {
+    const values = (Array.isArray(row && row.printFiles) ? row.printFiles : [])
+      .map(file => file.pageSize)
+      .filter(Boolean);
+    return Array.from(new Set(values)).join(', ') || '-';
+  }
 
-    return `<div class="pp-issue-box ${enabled ? 'active' : ''}">
-      <label class="pp-reprint-toggle ${enabled ? 'checked' : ''} ${disabled ? 'disabled' : ''}">
-        <input
-          type="checkbox"
-          class="pp-reprint-needed"
-          data-external-order-id="${state.esc(externalOrderId)}"
-          ${enabled ? 'checked' : ''}
-          ${disabled ? 'disabled' : ''}
-        >
-        <span class="pp-step-box"></span>
-        <span class="pp-step-label">Reprint needed</span>
-      </label>
-      ${enabled ? `<div class="pp-issue-fields">
-        <div class="pp-reason-chips">${reasonButtons}</div>
-        <input type="text" class="pp-issue-note" data-external-order-id="${state.esc(externalOrderId)}" value="${state.esc(note)}" placeholder="Optional note" ${disabled ? 'disabled' : ''}>
-        <button type="button" class="pp-reprinted-btn" data-external-order-id="${state.esc(externalOrderId)}" ${disabled ? 'disabled' : ''}>Reprinted</button>
-      </div>` : ''}
-    </div>`;
+  function updateMonthFilter(months) {
+    const select = state.el('postpurchase-month-filter');
+    if (!select) return;
+    const current = state.S.postPurchaseMonth || '';
+    const options = ['<option value="">All months</option>']
+      .concat((months || []).map(month => `<option value="${state.esc(month)}">${state.esc(month)}</option>`));
+    select.innerHTML = options.join('');
+    select.value = current;
+  }
+
+  function buildProcessedOrdersUrl() {
+    const params = new URLSearchParams();
+    params.set('limit', '500');
+    if (state.S.postPurchaseSearch) params.set('search', state.S.postPurchaseSearch);
+    if (state.S.postPurchaseMonth) params.set('month', state.S.postPurchaseMonth);
+    return '/.netlify/functions/processed-print-orders?' + params.toString();
   }
 
   async function loadPostPurchaseOrders(force = false) {
@@ -218,318 +114,157 @@
     state.S.postPurchaseLoading = true;
     state.elSet('postpurchase-status', 'Loading...');
     const wrap = state.el('postpurchase-orders-wrap');
-    if (wrap) {
-      wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading Post Purchase orders...</p></div>`;
+    if (wrap && !(state.S.postPurchaseOrders || []).length) {
+      wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading processed orders...</p></div>`;
     }
 
     try {
-      const res = await state.fetchImpl('/.netlify/functions/postpurchase-orders?limit=200', {
+      const res = await state.fetchImpl(buildProcessedOrdersUrl(), {
         headers: state.postPurchaseHeaders(),
         cache: 'no-store',
       });
-      const payload = await readJsonResponse(res, 'Failed to load Post Purchase orders');
+      const payload = await readJsonResponse(res, 'Failed to load processed orders');
       state.S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseLoaded = true;
+      updateMonthFilter(payload.months || []);
       renderPostPurchaseOrders();
-      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} orders loaded`);
+      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} processed orders`);
     } catch (error) {
+      console.error('Processed Print Orders load failed', error);
       const message = cleanApiError(error);
       if (wrap && !(state.S.postPurchaseOrders || []).length) {
-        wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Failed to load Post Purchase orders.</p><div class="table-empty-note">${state.esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
+        wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Failed to load processed orders.</p><div class="table-empty-note">${state.esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
         wrap.querySelector('[data-pp-retry="true"]')?.addEventListener('click', () => loadPostPurchaseOrders(true));
-      } else if (wrap) {
+      } else {
         renderPostPurchaseOrders();
       }
       state.elSet('postpurchase-status', 'Load failed');
-      state.showToast(message || 'Failed to load Post Purchase orders.', 'error');
+      state.showToast(message, 'error');
     } finally {
       state.S.postPurchaseLoading = false;
     }
+  }
+
+  function renderPdfCell(row) {
+    const files = Array.isArray(row.printFiles) ? row.printFiles : [];
+    if (!files.length) return '-';
+    return files.map((file, index) => {
+      const path = file.printFilePath || '';
+      const label = fileNameFromPath(path) || `PDF ${index + 1}`;
+      const href = uncToFileHref(path);
+      return `<div class="pp-file-actions">
+        <a class="btn-sm" href="${state.esc(href)}" target="_blank" rel="noreferrer" title="${state.esc(path)}">Open PDF</a>
+        <button class="btn-sm" type="button" data-copy-path="${state.esc(path)}">Copy path</button>
+        <span class="pp-file-name">${state.esc(label)}</span>
+      </div>`;
+    }).join('');
   }
 
   function renderPostPurchaseOrders() {
     const wrap = state.el('postpurchase-orders-wrap');
     if (!wrap) return;
 
-    const searchedOrders = getSearchedPostPurchaseOrders();
-    const openCount = searchedOrders.filter(row => !isPostPurchaseDone(row)).length;
-    const completedCount = searchedOrders.filter(row => isPostPurchaseDone(row)).length;
-    const allCount = searchedOrders.length;
-    const rowsToShow = getFilteredPostPurchaseOrders();
-    const filter = state.S.postPurchaseFilter || 'open';
-    const totalCount = (state.S.postPurchaseOrders || []).length;
-
-    if (!allCount) {
-      wrap.innerHTML = `<div class="pp-filter-tabs">
-        <button class="pp-filter-tab active" data-pp-filter="open">Open <span>0</span></button>
-        <button class="pp-filter-tab" data-pp-filter="completed">Completed <span>0</span></button>
-        <button class="pp-filter-tab" data-pp-filter="all">All <span>0</span></button>
-      </div>
-      <div class="empty-state"><div class="empty-state-icon">─</div><p>${totalCount ? 'No orders match these filters.' : 'No Post Purchase orders stored yet.'}</p></div>`;
-      bindPostPurchaseFilterTabs(wrap);
+    const rows = state.S.postPurchaseOrders || [];
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">-</div><p>No processed orders found.</p></div>`;
       return;
     }
 
-    const filterTabs = `<div class="pp-filter-tabs">
-      <button class="pp-filter-tab ${filter === 'open' ? 'active' : ''}" data-pp-filter="open">Open <span>${openCount}</span></button>
-      <button class="pp-filter-tab ${filter === 'completed' ? 'active' : ''}" data-pp-filter="completed">Completed <span>${completedCount}</span></button>
-      <button class="pp-filter-tab ${filter === 'all' ? 'active' : ''}" data-pp-filter="all">All <span>${allCount}</span></button>
-    </div>`;
-
-    if (!rowsToShow.length) {
-      const emptyText = filter === 'open'
-        ? 'No open orders. Everything is completed.'
-        : filter === 'completed'
-          ? 'No completed orders yet.'
-          : 'No orders match this view.';
-      wrap.innerHTML = `${filterTabs}<div class="empty-state"><div class="empty-state-icon">✓</div><p>${state.esc(emptyText)}</p></div>`;
-      bindPostPurchaseFilterTabs(wrap);
-      state.elSet('postpurchase-status', `${openCount} open · ${completedCount} done`);
-      return;
-    }
-
-    const rows = rowsToShow.map((row) => {
-      const stateInfo = getPostPurchaseState(row);
-      const controls = POST_PURCHASE_STEPS.map(step =>
-        postPurchaseToggleControl(step.label, row, step.stage)
-      ).join('');
-      const issueControls = isPostPurchaseProductionComplete(row) ? postPurchaseIssueControls(row) : '';
-      const secondary = row.status && row.status !== '-' ? row.status : '';
-      const detailTitle = row.external_order_id ? `External ID ${row.external_order_id}` : '';
-      const issueBadge = row.reprint_needed ? '<span class="pp-issue-badge">Issue</span>' : '';
-
-      return `<tr class="${row.reprint_needed ? 'pp-issue-row' : ''}">
-        <td>
-          <div class="pp-order-main" title="${state.esc(detailTitle)}">${state.esc(row.order_number || '-')}</div>
-          ${secondary ? `<div class="pp-order-sub" title="${state.esc(secondary)}">${state.esc(secondary)}</div>` : ''}
-        </td>
-        <td class="pp-received">${formatPostPurchaseTime(row.received_at || row.api_seen_at)}</td>
-        <td><div class="pp-progress-cell"><div class="pp-step-row">${controls}</div>${issueControls}</div></td>
-        <td><span class="pp-state-badge ${stateInfo.key}">${state.esc(stateInfo.label)}</span>${issueBadge}</td>
-      </tr>`;
-    }).join('');
-
-    wrap.innerHTML = `${filterTabs}<table class="data-table pp-queue-table">
+    wrap.innerHTML = `<table class="data-table pp-queue-table">
       <thead><tr>
         <th>Order</th>
-        <th>Received</th>
-        <th>Progress</th>
-        <th>State</th>
+        <th>Queued / Processed time</th>
+        <th>Workflow</th>
+        <th>Type</th>
+        <th>Page size</th>
+        <th>PDF</th>
+        <th>Reprint</th>
+        <th>XML source</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody>${rows.map((row) => {
+        const primaryFile = getPrimaryPrintFile(row);
+        return `<tr>
+          <td><div class="pp-order-main">${state.esc(row.orderName || '-')}</div><div class="pp-order-sub">${state.esc(row.xmlFileName || '')}</div></td>
+          <td>${state.esc(formatTime(row.queuedDateTime || row.updatedAt || row.importedAt))}</td>
+          <td>${state.esc(row.workflowName || row.printerName || '-')}</td>
+          <td>${state.esc(row.orderType || '-')}</td>
+          <td>${state.esc(getPageSizes(row))}</td>
+          <td>${renderPdfCell(row)}</td>
+          <td><button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-print-file-path="${state.esc(primaryFile.printFilePath || '')}">Reprint</button></td>
+          <td><button class="btn-sm" type="button" data-copy-path="${state.esc(row.sourceXmlPath || '')}">Copy XML</button><div class="pp-order-sub">${state.esc(fileNameFromPath(row.sourceXmlPath || ''))}</div></td>
+        </tr>`;
+      }).join('')}</tbody>
     </table>`;
 
-    bindPostPurchaseFilterTabs(wrap);
-    bindPostPurchaseRowEvents(wrap);
-    state.elSet('postpurchase-status', `${openCount} open · ${completedCount} done`);
-    state.applyRoleUI();
+    bindProcessedOrderActions(wrap);
+    if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
 
-  function bindPostPurchaseFilterTabs(wrap) {
-    wrap.querySelectorAll('.pp-filter-tab').forEach(button => {
-      button.addEventListener('click', () => {
-        state.S.postPurchaseFilter = button.dataset.ppFilter || 'open';
-        renderPostPurchaseOrders();
-      });
-    });
+  async function copyText(value) {
+    const text = String(value || '');
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', 'readonly');
+    area.style.position = 'fixed';
+    area.style.left = '-9999px';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
   }
 
-  function bindPostPurchaseRowEvents(wrap) {
-    wrap.querySelectorAll('.pp-stage-toggle').forEach((input) => {
-      input.addEventListener('change', () => {
-        setPostPurchaseStage(
-          input.dataset.externalOrderId,
-          input.dataset.stage,
-          input.checked
-        );
+  function getActor() {
+    return (state.cfg && state.cfg.userName) || (state.cfg && state.cfg.role) || 'operator';
+  }
+
+  async function createReprintRequest(orderId, printFilePath) {
+    try {
+      const res = await state.fetchImpl('/.netlify/functions/processed-print-orders', {
+        method: 'POST',
+        headers: state.postPurchaseJsonHeaders(),
+        cache: 'no-store',
+        body: JSON.stringify({
+          action: 'reprint',
+          orderId,
+          printFilePath,
+          requestedBy: getActor(),
+          workstationId: state.cfg && state.cfg.deviceId,
+        }),
+      });
+      await readJsonResponse(res, 'Failed to create reprint request');
+      state.showToast('Reprint request created', 'success');
+    } catch (error) {
+      console.error('Reprint request failed', error);
+      state.showToast(cleanApiError(error), 'error');
+    }
+  }
+
+  function bindProcessedOrderActions(wrap) {
+    wrap.querySelectorAll('[data-copy-path]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        try {
+          await copyText(button.dataset.copyPath || '');
+          state.showToast('Path copied', 'success');
+        } catch (error) {
+          console.error('Copy path failed', error);
+          state.showToast('Copy failed', 'error');
+        }
       });
     });
-    wrap.querySelectorAll('.pp-reprint-needed').forEach((input) => {
-      input.addEventListener('change', () => {
-        const externalOrderId = input.dataset.externalOrderId;
-        const row = (state.S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
-        setPostPurchaseIssue(externalOrderId, {
-          reprintNeeded: input.checked,
-          issueReason: input.checked ? (row?.issue_reason || 'Other') : '',
-          note: input.checked ? (row?.issue_note || '') : '',
-        });
-      });
-    });
-    wrap.querySelectorAll('.pp-reason-chip').forEach((button) => {
+    wrap.querySelectorAll('[data-reprint-order-id]').forEach((button) => {
       button.addEventListener('click', () => {
-        const externalOrderId = button.dataset.externalOrderId;
-        const row = (state.S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
-        setPostPurchaseIssue(externalOrderId, {
-          reprintNeeded: true,
-          issueReason: button.dataset.issueReason || 'Other',
-          note: row?.issue_note || '',
-        });
-      });
-    });
-    wrap.querySelectorAll('.pp-issue-note').forEach((input) => {
-      input.addEventListener('change', () => {
-        const externalOrderId = input.dataset.externalOrderId;
-        const row = (state.S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
-        setPostPurchaseIssue(externalOrderId, {
-          reprintNeeded: true,
-          issueReason: row?.issue_reason || 'Other',
-          note: input.value,
-        });
-      });
-    });
-    wrap.querySelectorAll('.pp-reprinted-btn').forEach((button) => {
-      button.addEventListener('click', () => {
-        const externalOrderId = button.dataset.externalOrderId;
-        const row = (state.S.postPurchaseOrders || []).find(item => item.external_order_id === externalOrderId);
-        setPostPurchaseIssue(externalOrderId, {
-          reprintNeeded: false,
-          issueReason: row?.issue_reason || 'Other',
-          note: row?.issue_note || '',
-          reprintedAt: new Date().toISOString(),
-        });
+        createReprintRequest(button.dataset.reprintOrderId, button.dataset.printFilePath || '');
       });
     });
   }
 
   async function syncPostPurchaseOrdersManual() {
-    try {
-      state.elSet('postpurchase-status', 'Syncing...');
-      const res = await state.fetchImpl('/.netlify/functions/postpurchase-orders', {
-        method: 'POST',
-        headers: {
-          ...state.adminJsonHeaders(),
-          'x-internal-sync': 'true',
-        },
-        cache: 'no-store',
-        body: JSON.stringify({ limit: 100 }),
-      });
-      const payload = await readJsonResponse(res, 'Failed to sync Post Purchase orders');
-      state.showToast(`Orders sync OK · +${payload.inserted || 0} / ~${payload.updated || 0}`, 'success');
-      state.S.postPurchaseLoaded = false;
-      await loadPostPurchaseOrders(true);
-    } catch (error) {
-      state.elSet('postpurchase-status', 'Sync failed');
-      state.showToast(cleanApiError(error), 'error');
-    }
-  }
-
-  async function setPostPurchaseStage(externalOrderId, stage, completed) {
-    const updateKey = getPostPurchaseUpdateKey(externalOrderId, stage);
-    const previousOrders = (state.S.postPurchaseOrders || []).map(row => ({
-      ...row,
-      statuses: { ...(row.statuses || {}) },
-    }));
-    state.S.postPurchaseUpdating = state.S.postPurchaseUpdating || {};
-    state.S.postPurchaseUpdating[updateKey] = true;
-    state.S.postPurchaseOrders = (state.S.postPurchaseOrders || []).map(row => {
-      if (row.external_order_id !== externalOrderId) return row;
-      return {
-        ...row,
-        statuses: {
-          ...(row.statuses || {}),
-          [stage]: Boolean(completed),
-        },
-      };
-    });
-    renderPostPurchaseOrders();
-    state.elSet('postpurchase-status', 'Saving...');
-
-    try {
-      const res = await state.fetchImpl('/.netlify/functions/postpurchase-orders', {
-        method: 'PUT',
-        headers: {
-          ...state.postPurchaseJsonHeaders(),
-        },
-        cache: 'no-store',
-        body: JSON.stringify({
-          externalOrderId,
-          stage,
-          completed,
-        }),
-      });
-      const payload = await readJsonResponse(res, 'Failed to update Post Purchase order');
-
-      const updatedRow = payload.row || null;
-      state.S.postPurchaseOrders = (state.S.postPurchaseOrders || []).map((row) =>
-        row.external_order_id === externalOrderId && updatedRow ? updatedRow : row
-      );
-      state.showToast('Order status updated.', 'success');
-    } catch (error) {
-      state.S.postPurchaseOrders = previousOrders;
-      state.showToast(cleanApiError(error), 'error');
-      state.elSet('postpurchase-status', 'Update failed');
-      renderPostPurchaseOrders();
-      return;
-    } finally {
-      delete state.S.postPurchaseUpdating[updateKey];
-      renderPostPurchaseOrders();
-    }
-  }
-
-  async function setPostPurchaseIssue(externalOrderId, patch) {
-    const updateKey = getPostPurchaseUpdateKey(externalOrderId, 'ISSUE');
-    const previousOrders = (state.S.postPurchaseOrders || []).map(row => ({
-      ...row,
-      statuses: { ...(row.statuses || {}) },
-    }));
-    const reprintNeeded = Boolean(patch && patch.reprintNeeded);
-    const issueReason = reprintNeeded ? String((patch && patch.issueReason) || 'Other').trim() : '';
-    const note = reprintNeeded ? String((patch && patch.note) || '').trim() : '';
-    const reprintedAt = patch && patch.reprintedAt ? String(patch.reprintedAt) : null;
-
-    if (reprintNeeded && !issueReason) {
-      state.showToast('Issue reason is required.', 'error');
-      renderPostPurchaseOrders();
-      return;
-    }
-
-    state.S.postPurchaseUpdating = state.S.postPurchaseUpdating || {};
-    state.S.postPurchaseUpdating[updateKey] = true;
-    state.S.postPurchaseOrders = (state.S.postPurchaseOrders || []).map(row => {
-      if (row.external_order_id !== externalOrderId) return row;
-      return {
-        ...row,
-        reprint_needed: reprintNeeded,
-        issue_reason: issueReason,
-        issue_note: note,
-        reprinted_at: reprintedAt || row.reprinted_at || null,
-      };
-    });
-    renderPostPurchaseOrders();
-    state.elSet('postpurchase-status', 'Saving issue...');
-
-    try {
-      const res = await state.fetchImpl('/.netlify/functions/postpurchase-orders', {
-        method: 'PUT',
-        headers: {
-          ...state.postPurchaseJsonHeaders(),
-        },
-        cache: 'no-store',
-        body: JSON.stringify({
-          externalOrderId,
-          reprintNeeded,
-          issueReason,
-          note,
-          reprintedAt,
-        }),
-      });
-      const payload = await readJsonResponse(res, 'Failed to update issue');
-
-      const updatedRow = payload.row || null;
-      state.S.postPurchaseOrders = (state.S.postPurchaseOrders || []).map(row =>
-        row.external_order_id === externalOrderId && updatedRow ? updatedRow : row
-      );
-      state.showToast(reprintedAt ? 'Order marked as reprinted.' : reprintNeeded ? 'Issue marked.' : 'Issue cleared.', 'success');
-    } catch (error) {
-      state.S.postPurchaseOrders = previousOrders;
-      state.showToast(cleanApiError(error), 'error');
-      state.elSet('postpurchase-status', 'Issue update failed');
-      renderPostPurchaseOrders();
-      return;
-    } finally {
-      delete state.S.postPurchaseUpdating[updateKey];
-      renderPostPurchaseOrders();
-    }
+    state.showToast('Processed XML sync runs on the workstation/server task.', 'error');
   }
 
   window.PrintGuardPostPurchaseUI = {

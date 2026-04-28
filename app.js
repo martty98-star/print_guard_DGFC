@@ -185,7 +185,7 @@ function adminErrorMessage(error) {
 function getPostPurchasePinForRequest() {
   const pin = String(cfg.postPurchasePin || cfg.adminPin || '').trim();
   if (!pin) {
-    throw new Error('Post Purchase PIN is required for this action.');
+    throw new Error('Processed Orders PIN is required for this action.');
   }
   return pin;
 }
@@ -209,7 +209,7 @@ function postPurchaseJsonHeaders(extra = {}) {
 
 function postPurchaseErrorMessage(error) {
   const message = error && error.message ? error.message : String(error || '');
-  if (message === 'Unauthorized') return 'Invalid or expired Post Purchase PIN.';
+  if (message === 'Unauthorized') return 'Invalid or expired Processed Orders PIN.';
   if (/illegal invocation/i.test(message) || /failed to fetch/i.test(message) || /networkerror/i.test(message)) {
     return 'Database/API unavailable. Try refresh later.';
   }
@@ -232,14 +232,14 @@ function renderPostPurchaseAccessRequired() {
   elSet('postpurchase-status', 'Operator PIN required');
   const wrap = el('postpurchase-orders-wrap');
   if (wrap) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Post Purchase PIN is required.</p><div class="table-empty-note">Enter the operator PIN above and unlock the orders table.</div></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Processed Orders PIN is required.</p><div class="table-empty-note">Enter the operator PIN above and unlock the orders table.</div></div>`;
   }
 }
 
 function requirePostPurchasePinForScreen() {
   if (cfg.postPurchasePin || cfg.adminPin) return true;
   renderPostPurchaseAccessRequired();
-  showToast('Post Purchase PIN is required.', 'error');
+  showToast('Processed Orders PIN is required.', 'error');
   return false;
 }
 
@@ -416,6 +416,7 @@ const S = {
   postPurchaseLoaded: false,
   postPurchaseFilter: 'open',
   postPurchaseSearch: '',
+  postPurchaseMonth: '',
   syncRunning:      false,
   syncIntervalId:   null,
 };
@@ -3164,20 +3165,26 @@ el('sync-btn').addEventListener('click', async () => {
   });
   el('postpurchase-search')?.addEventListener('input', e => {
     S.postPurchaseSearch = e.target.value || '';
-    renderPostPurchaseOrders();
+    loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-month-filter')?.addEventListener('change', e => {
+    S.postPurchaseMonth = e.target.value || '';
+    loadPostPurchaseOrders(true);
   });
   el('postpurchase-clear-filters')?.addEventListener('click', () => {
     S.postPurchaseSearch = '';
+    S.postPurchaseMonth = '';
     if (el('postpurchase-search')) el('postpurchase-search').value = '';
-    renderPostPurchaseOrders();
+    if (el('postpurchase-month-filter')) el('postpurchase-month-filter').value = '';
+    loadPostPurchaseOrders(true);
   });
   el('postpurchase-unlock-btn')?.addEventListener('click', () => {
     const pin = (el('postpurchase-pin')?.value || '').trim();
-    if (!pin) { showToast('Zadejte Post Purchase PIN', 'error'); return; }
+    if (!pin) { showToast('Enter Processed Orders PIN', 'error'); return; }
     cfg.postPurchasePin = pin;
     if (el('postpurchase-pin')) el('postpurchase-pin').value = '';
     S.postPurchaseLoaded = false;
-    showToast('Post Purchase tabulka odemčena', 'success');
+    showToast('Processed orders unlocked', 'success');
     loadPostPurchaseOrders(true);
   });
   el('postpurchase-lock-btn')?.addEventListener('click', () => {
@@ -3185,7 +3192,7 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseLoaded = false;
     S.postPurchaseOrders = [];
     renderPostPurchaseAccessRequired();
-    showToast('Post Purchase tabulka zamčena', 'success');
+    showToast('Processed orders locked', 'success');
   });
   el('postpurchase-sync-btn')?.addEventListener('click', () => {
     syncPostPurchaseOrdersManual();
