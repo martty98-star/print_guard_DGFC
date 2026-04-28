@@ -16,7 +16,7 @@ function cleanApiError(error) {
   if (/connect|timeout|database|neon|ECONN|ENOTFOUND/i.test(message)) {
     return 'Database/API unavailable. Try refresh later.';
   }
-  return message;
+  return 'Order pipeline could not be loaded.';
 }
 
 exports.handler = async function handler(event) {
@@ -47,7 +47,13 @@ exports.handler = async function handler(event) {
     if (error && (error.statusCode === 400 || error.statusCode === 401 || error.statusCode === 403 || error.statusCode === 429)) {
       return json(error.statusCode, { ok: false, error: error.message || 'Request failed' });
     }
-    console.error('order-pipeline failed', error);
+    console.error('order-pipeline failed', {
+      message: error && error.message,
+      code: error && error.code,
+      detail: error && error.detail,
+      hint: error && error.hint,
+      stack: error && error.stack,
+    });
     return json(500, {
       ok: false,
       error: cleanApiError(error),
