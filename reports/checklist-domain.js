@@ -230,6 +230,32 @@
     return null;
   }
 
+  function getVisibleChecklistOccurrence(item, options) {
+    const normalized = validateChecklistItemInput(item, new Date());
+    const timeZone = (options && options.timeZone) || normalized.timeZone || 'Europe/Prague';
+    const now = options && options.now ? new Date(options.now) : new Date();
+    const today = getChecklistLocalDateKey(now, timeZone);
+    const weekday = getChecklistLocalWeekday(today);
+    const dayOfMonth = Number(today.split('-')[2]);
+    const occursToday = normalized.scheduleType === 'weekly'
+      ? normalized.daysOfWeek.includes(weekday)
+      : normalized.dayOfMonth === dayOfMonth;
+
+    if (occursToday) {
+      return {
+        occurrenceKey: buildChecklistOccurrenceKey(normalized, today, normalized.timeOfDay),
+        checklistId: normalized.id,
+        item: normalized,
+        localDate: today,
+        localTime: normalized.timeOfDay,
+        localWeekday: weekday,
+        pseudoEpochMs: getChecklistPseudoEpochMs(today, normalized.timeOfDay),
+      };
+    }
+
+    return getNextChecklistOccurrence(normalized, options);
+  }
+
   function evaluateDueChecklistOccurrences(items, options) {
     const now = options && options.now ? new Date(options.now) : new Date();
     const lookbackMinutes = Math.max(1, Number(options && options.lookbackMinutes) || 15);
@@ -317,6 +343,7 @@
     getChecklistPseudoEpochMs,
     getChecklistZonedParts,
     getNextChecklistOccurrence,
+    getVisibleChecklistOccurrence,
     normalizeChecklistDaysOfWeek,
     normalizeChecklistTimeOfDay,
     normalizeChecklistWeekday,

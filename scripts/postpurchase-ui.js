@@ -41,6 +41,33 @@
     }
   }
 
+  function cleanApiError(error) {
+    if (typeof state.postPurchaseErrorMessage === 'function') {
+      return state.postPurchaseErrorMessage(error);
+    }
+    return error && error.message ? error.message : 'Database/API unavailable. Try refresh later.';
+  }
+
+  async function readJsonResponse(res, fallbackMessage) {
+    const text = await res.text().catch(() => '');
+    let payload = {};
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch (error) {
+        payload = {};
+      }
+    }
+    if (!res.ok || payload.ok === false) {
+      const message = payload.error || fallbackMessage || `Request failed (${res.status})`;
+      const error = new Error(res.status >= 500 ? 'Database/API unavailable. Try refresh later.' : message);
+      error.status = res.status;
+      error.payload = payload;
+      throw error;
+    }
+    return payload;
+  }
+
   function getPostPurchaseUpdateKey(externalOrderId, stage) {
     return `${externalOrderId || ''}::${stage || ''}`;
   }
@@ -200,18 +227,21 @@
         headers: state.postPurchaseHeaders(),
         cache: 'no-store',
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to load Post Purchase orders');
+      const payload = await readJsonResponse(res, 'Failed to load Post Purchase orders');
       state.S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseLoaded = true;
       renderPostPurchaseOrders();
       state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} orders loaded`);
     } catch (error) {
-      if (wrap) {
-        wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Failed to load Post Purchase orders.</p><div class="table-empty-note">${state.esc(state.postPurchaseErrorMessage(error))}</div></div>`;
+      const message = cleanApiError(error);
+      if (wrap && !(state.S.postPurchaseOrders || []).length) {
+        wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Failed to load Post Purchase orders.</p><div class="table-empty-note">${state.esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
+        wrap.querySelector('[data-pp-retry="true"]')?.addEventListener('click', () => loadPostPurchaseOrders(true));
+      } else if (wrap) {
+        renderPostPurchaseOrders();
       }
       state.elSet('postpurchase-status', 'Load failed');
-      state.showToast(state.postPurchaseErrorMessage(error) || 'Failed to load Post Purchase orders.', 'error');
+      state.showToast(message || 'Failed to load Post Purchase orders.', 'error');
     } finally {
       state.S.postPurchaseLoading = false;
     }
@@ -373,14 +403,13 @@
         cache: 'no-store',
         body: JSON.stringify({ limit: 100 }),
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to sync Post Purchase orders');
+      const payload = await readJsonResponse(res, 'Failed to sync Post Purchase orders');
       state.showToast(`Orders sync OK · +${payload.inserted || 0} / ~${payload.updated || 0}`, 'success');
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
     } catch (error) {
       state.elSet('postpurchase-status', 'Sync failed');
-      state.showToast(state.postPurchaseErrorMessage(error), 'error');
+      state.showToast(cleanApiError(error), 'error');
     }
   }
 
@@ -418,8 +447,7 @@
           completed,
         }),
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to update Post Purchase order');
+      const payload = await readJsonResponse(res, 'Failed to update Post Purchase order');
 
       const updatedRow = payload.row || null;
       state.S.postPurchaseOrders = (state.S.postPurchaseOrders || []).map((row) =>
@@ -428,7 +456,7 @@
       state.showToast('Order status updated.', 'success');
     } catch (error) {
       state.S.postPurchaseOrders = previousOrders;
-      state.showToast(state.postPurchaseErrorMessage(error), 'error');
+      state.showToast(cleanApiError(error), 'error');
       state.elSet('postpurchase-status', 'Update failed');
       renderPostPurchaseOrders();
       return;
@@ -485,8 +513,7 @@
           reprintedAt,
         }),
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok || !payload.ok) throw new Error(payload.error || 'Failed to update issue');
+      const payload = await readJsonResponse(res, 'Failed to update issue');
 
       const updatedRow = payload.row || null;
       state.S.postPurchaseOrders = (state.S.postPurchaseOrders || []).map(row =>
@@ -495,7 +522,7 @@
       state.showToast(reprintedAt ? 'Order marked as reprinted.' : reprintNeeded ? 'Issue marked.' : 'Issue cleared.', 'success');
     } catch (error) {
       state.S.postPurchaseOrders = previousOrders;
-      state.showToast(state.postPurchaseErrorMessage(error), 'error');
+      state.showToast(cleanApiError(error), 'error');
       state.elSet('postpurchase-status', 'Issue update failed');
       renderPostPurchaseOrders();
       return;

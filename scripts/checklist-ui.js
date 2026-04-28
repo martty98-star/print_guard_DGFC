@@ -130,6 +130,15 @@
     return state.items.find((item) => item.id === id) || null;
   }
 
+  function getVisibleOccurrence(item) {
+    const getOccurrence = ChecklistDomain.getVisibleChecklistOccurrence || ChecklistDomain.getNextChecklistOccurrence;
+    return getOccurrence(item);
+  }
+
+  function getCompletedOccurrenceKeys() {
+    return new Set((state.completions || []).map((row) => String(row.occurrenceKey || '').trim()).filter(Boolean));
+  }
+
   function getEditingItem() {
     return findItemById(state.editingItemId) || null;
   }
@@ -234,15 +243,17 @@
     }
 
     host.innerHTML = state.items.map((item) => {
-      const nextOccurrence = ChecklistDomain.getNextChecklistOccurrence(item);
+      const nextOccurrence = getVisibleOccurrence(item);
+      const isCompleted = Boolean(nextOccurrence && getCompletedOccurrenceKeys().has(nextOccurrence.occurrenceKey));
       const scheduleLabel = getScheduleLabel(item);
       const enabledLabel = item.enabled ? t('checklist.status.enabled') : t('checklist.status.disabled');
       const nextLabel = nextOccurrence
         ? (nextOccurrence.localDate + ' ' + nextOccurrence.localTime)
         : t('checklist.next.none');
+      const completeLabel = isCompleted ? 'Completed' : 'Complete';
 
       return `
-        <article class="checklist-item-card ${item.enabled ? '' : 'is-disabled'}">
+        <article class="checklist-item-card ${item.enabled ? '' : 'is-disabled'} ${isCompleted ? 'is-completed' : ''}">
           <div class="checklist-item-head">
             <div>
               <h3>${escapeHtml(item.title)}</h3>
@@ -254,7 +265,7 @@
             </div>
             <div class="checklist-item-actions">
               <button class="btn-sm admin-only" data-action="toggle" data-id="${escapeHtml(item.id)}">${item.enabled ? escapeHtml(t('checklist.action.disable')) : escapeHtml(t('checklist.action.enable'))}</button>
-              <button class="btn-sm" data-action="complete" data-id="${escapeHtml(item.id)}">Complete</button>
+              <button class="btn-sm" data-action="complete" data-id="${escapeHtml(item.id)}" ${isCompleted ? 'disabled' : ''}>${escapeHtml(completeLabel)}</button>
               <button class="btn-sm admin-only" data-action="edit" data-id="${escapeHtml(item.id)}">${escapeHtml(t('btn.edit'))}</button>
               <button class="btn-sm admin-only danger" data-action="delete" data-id="${escapeHtml(item.id)}">${escapeHtml(t('btn.delete'))}</button>
             </div>
@@ -347,6 +358,7 @@
       });
       const logResponse = await ChecklistApi.listChecklistCompletions({
         fetchImpl: state.fetchImpl,
+        limit: 500,
       });
       state.items = Array.isArray(response.items) ? response.items : [];
       state.completions = Array.isArray(logResponse.completions) ? logResponse.completions : [];
@@ -410,11 +422,15 @@
   }
 
   async function completeChecklist(item) {
-    const nextOccurrence = ChecklistDomain.getNextChecklistOccurrence(item);
+    const nextOccurrence = getVisibleOccurrence(item);
     if (!nextOccurrence) return;
+    if (getCompletedOccurrenceKeys().has(nextOccurrence.occurrenceKey)) {
+      await refreshChecklist(true);
+      return;
+    }
 
     try {
-      await ChecklistApi.completeChecklistOccurrence(
+      const result = await ChecklistApi.completeChecklistOccurrence(
         {
           checklist_id: item.id,
           checklist_title: item.title,
@@ -426,9 +442,14 @@
         },
         { fetchImpl: state.fetchImpl }
       );
-      state.showToast && state.showToast('Checklist occurrence completed', 'success');
+      state.showToast && state.showToast(result && result.alreadyCompleted ? 'Checklist occurrence already completed' : 'Checklist occurrence completed', 'success');
       await refreshChecklist(true);
     } catch (error) {
+      if (error && error.status === 409) {
+        await refreshChecklist(true);
+        state.showToast && state.showToast('Checklist occurrence already completed', 'success');
+        return;
+      }
       state.showToast && state.showToast(error && error.message ? error.message : 'Checklist completion failed', 'error');
     }
   }
@@ -531,7 +552,7 @@
     state.applyRoleUI = options.applyRoleUI || null;
     state.cfg = options.cfg;
     state.el = options.el;
-    state.fetchImpl = options.fetchImpl || fetch;
+    state.fetchImpl = options.fetchImpl || (typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : fetch);
     state.i18n = options.i18n || null;
     state.showConfirm = options.showConfirm || null;
     state.showToast = options.showToast || null;

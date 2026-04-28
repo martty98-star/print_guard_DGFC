@@ -59,23 +59,24 @@ exports.handler = async function handler(event) {
       });
 
       if (!completed) {
-        return { ok: false, error: 'Checklist occurrence already completed' };
+        return { ok: false, error: 'Checklist completion failed' };
       }
 
       return {
         ok: true,
+        alreadyCompleted: !completed.inserted,
         completion: {
-          checklist_id: checklistId,
-          checklist_title: checklistTitle,
-          occurrence_key: occurrenceKey,
-          completed_at: completedAt,
-          completed_by: completedBy,
-          device_id: deviceId,
+          checklist_id: completed.checklistId,
+          checklist_title: completed.checklistTitle || checklistTitle,
+          occurrence_key: completed.occurrenceKey,
+          completed_at: completed.completedAt,
+          completed_by: completed.completedBy,
+          device_id: completed.deviceId,
         },
       };
     });
 
-    return body.ok ? json(200, body) : json(409, body);
+    return body.ok ? json(200, body) : json(500, body);
   } catch (error) {
     console.error('checklist-completions failed', error);
     return json(500, {

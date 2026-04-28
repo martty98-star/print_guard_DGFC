@@ -77,23 +77,33 @@ function parseSubmitToolLine(rawLine) {
   const [, eventType, orderIdentifier, attrsText] = messageMatch;
   const attrs = parseKeyValues(attrsText);
   const eventStatus = attrs.status || (attrs.runWF ? `runWF=${attrs.runWF}` : '');
-  const isRelevantPrintJob = eventType === 'PrintJob' && ['Opened', WORKFLOW_STATUS].includes(eventStatus);
-  const isRelevantOpenPrintJob = eventType === 'OpenPrintJob' && attrs.print === 'False' && attrs.runWF === 'True';
 
-  if (!isRelevantPrintJob && !isRelevantOpenPrintJob) return null;
+  if (eventType === 'PrintJob' && eventStatus === 'Opened') {
+    return { skipped: true, reason: 'opened-noise' };
+  }
+  if (eventType === 'OpenPrintJob' && attrs.print === 'False' && attrs.runWF === 'True') {
+    return { skipped: true, reason: 'runwf-noise' };
+  }
+  if (eventType !== 'PrintJob' || eventStatus !== WORKFLOW_STATUS) return null;
 
   const eventAt = new Date(`${date}T${hh}:${mm}:${ss}.${ms}`);
   if (Number.isNaN(eventAt.getTime())) return null;
+  const eventAtIso = eventAt.toISOString();
+  const rawLineHash = sha256(line);
+  // WorkflowRun is the durable marker that Submit Tool actually started
+  // workflow execution; Opened and runWF=True are intermediate noise.
+  const lifecycleDedupeKey = [SOURCE, orderIdentifier, WORKFLOW_STATUS, eventAtIso || rawLineHash].join('|');
 
   return {
     source: SOURCE,
     event_type: eventType,
     order_identifier: orderIdentifier,
     event_status: eventStatus,
-    event_at: eventAt.toISOString(),
+    event_at: eventAtIso,
     module: moduleName.trim(),
     raw_line: line,
-    raw_line_hash: sha256(line),
+    raw_line_hash: rawLineHash,
+    lifecycle_dedupe_key: lifecycleDedupeKey,
   };
 }
 
@@ -116,9 +126,20 @@ async function ensureLifecycleEventsTable(client) {
     )
   `);
   await client.query(`alter table print_lifecycle_events add column if not exists source_module text null`);
+  await client.query(`alter table print_lifecycle_events add column if not exists lifecycle_dedupe_key text null`);
+  await client.query(`
+    update print_lifecycle_events
+    set lifecycle_dedupe_key = concat_ws('|', source, order_identifier, coalesce(event_status, ''), to_char(event_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+    where lifecycle_dedupe_key is null
+  `);
   await client.query(`
     create index if not exists print_lifecycle_events_order_idx
       on print_lifecycle_events (source, order_identifier, event_at desc)
+  `);
+  await client.query(`
+    create unique index if not exists print_lifecycle_events_dedupe_key_idx
+      on print_lifecycle_events (lifecycle_dedupe_key)
+      where lifecycle_dedupe_key is not null
   `);
 }
 
@@ -165,13 +186,16 @@ async function insertLifecycleEvent(client, event, matchedOrder) {
         event_status,
         event_at,
         raw_line,
-        raw_line_hash
+        raw_line_hash,
+        lifecycle_dedupe_key
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9, $10)
-      on conflict (raw_line_hash) do update
+      values ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9, $10, $11)
+      on conflict (lifecycle_dedupe_key) where lifecycle_dedupe_key is not null do update
       set
         order_number = coalesce(print_lifecycle_events.order_number, excluded.order_number),
-        matched_external_order_id = coalesce(print_lifecycle_events.matched_external_order_id, excluded.matched_external_order_id)
+        matched_external_order_id = coalesce(print_lifecycle_events.matched_external_order_id, excluded.matched_external_order_id),
+        raw_line = coalesce(print_lifecycle_events.raw_line, excluded.raw_line),
+        raw_line_hash = coalesce(print_lifecycle_events.raw_line_hash, excluded.raw_line_hash)
       returning (xmax = 0) as inserted
     `,
     [
@@ -185,6 +209,7 @@ async function insertLifecycleEvent(client, event, matchedOrder) {
       event.event_at,
       event.raw_line,
       event.raw_line_hash,
+      event.lifecycle_dedupe_key,
     ]
   );
   return Boolean(result.rows[0] && result.rows[0].inserted);
@@ -248,7 +273,9 @@ async function readEventsFromFile(filePath, stats) {
     stats.linesRead += 1;
     try {
       const event = parseSubmitToolLine(rawLine);
-      if (event) {
+      if (event && event.skipped) {
+        stats.noisyEventsSkipped += 1;
+      } else if (event) {
         events.push(event);
         stats.linesParsed += 1;
       }
@@ -269,6 +296,8 @@ async function syncSubmitToolLogs(client, options) {
     filesScanned: 0,
     linesRead: 0,
     linesParsed: 0,
+    noisyEventsSkipped: 0,
+    duplicateEventsSkipped: 0,
     parseErrors: 0,
     eventsInserted: 0,
     ordersUpdated: 0,
@@ -290,6 +319,7 @@ async function syncSubmitToolLogs(client, options) {
         const matchedOrder = await findMatchingOrder(client, event.order_identifier);
         const inserted = await insertLifecycleEvent(client, event, matchedOrder);
         if (inserted) stats.eventsInserted += 1;
+        else stats.duplicateEventsSkipped += 1;
 
         const updated = await updateSubmitToolStatus(client, event, matchedOrder);
         if (updated) {
@@ -325,7 +355,7 @@ async function main() {
   const result = await withClient(client => syncSubmitToolLogs(client, options));
 
   console.log('[submit-tool] sync success');
-  console.log(`[submit-tool] folders=${result.foldersScanned} files=${result.filesScanned} lines=${result.linesRead} parsed=${result.linesParsed} parseErrors=${result.parseErrors}`);
+  console.log(`[submit-tool] folders=${result.foldersScanned} files=${result.filesScanned} lines=${result.linesRead} workflowEvents=${result.linesParsed} noisySkipped=${result.noisyEventsSkipped} duplicateSkipped=${result.duplicateEventsSkipped} parseErrors=${result.parseErrors}`);
   console.log(`[submit-tool] eventsInserted=${result.eventsInserted} ordersUpdated=${result.ordersUpdated} unmatched=${result.unmatchedIdentifiers.length}`);
   if (result.unmatchedIdentifiers.length) {
     console.log(`[submit-tool] unmatchedIdentifiers=${result.unmatchedIdentifiers.slice(0, 50).join(',')}`);

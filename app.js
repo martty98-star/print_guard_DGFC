@@ -140,6 +140,13 @@ function getCostUnitPerM2() {
   return `${cfg.costCurrency} / m²`;
 }
 
+function appFetch(url, options) {
+  if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+    return window.fetch(url, options);
+  }
+  return fetch(url, options);
+}
+
 function getCostUnitPerMonth() {
   return `${cfg.costCurrency} / ${i18n('unit.month-word')}`;
 }
@@ -202,7 +209,11 @@ function postPurchaseJsonHeaders(extra = {}) {
 
 function postPurchaseErrorMessage(error) {
   const message = error && error.message ? error.message : String(error || '');
-  return message === 'Unauthorized' ? 'Invalid or expired Post Purchase PIN.' : message;
+  if (message === 'Unauthorized') return 'Invalid or expired Post Purchase PIN.';
+  if (/illegal invocation/i.test(message) || /failed to fetch/i.test(message) || /networkerror/i.test(message)) {
+    return 'Database/API unavailable. Try refresh later.';
+  }
+  return message;
 }
 
 function requireAdminPinForScreen(statusId, wrapId) {
@@ -3029,7 +3040,7 @@ el('sync-btn').addEventListener('click', async () => {
     adminHeaders,
     cfg,
     el,
-    fetchImpl: fetch,
+    fetchImpl: appFetch,
     i18n,
     showConfirm,
     showToast,
@@ -3048,7 +3059,7 @@ el('sync-btn').addEventListener('click', async () => {
     exportCSVStock,
     exportCSVStockLevels,
     exportJSON,
-    fetchImpl: fetch,
+    fetchImpl: appFetch,
     handleImportJSON,
     i18n,
     idbClear,
@@ -3070,7 +3081,7 @@ el('sync-btn').addEventListener('click', async () => {
     el,
     elSet,
     esc,
-    fetchImpl: fetch,
+    fetchImpl: appFetch,
     fmtDT,
     postPurchaseErrorMessage,
     postPurchaseHeaders,

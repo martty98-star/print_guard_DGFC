@@ -392,8 +392,16 @@ async function completeChecklistOccurrence(client, completion) {
         $6,
         now()
       )
-      on conflict (occurrence_key) do nothing
-      returning occurrence_key
+      on conflict (occurrence_key) do update
+      set occurrence_key = excluded.occurrence_key
+      returning
+        occurrence_key,
+        checklist_id,
+        checklist_title,
+        completed_at,
+        completed_by,
+        device_id,
+        (xmax = 0) as inserted
     `,
     [
       completion.occurrenceKey,
@@ -405,7 +413,16 @@ async function completeChecklistOccurrence(client, completion) {
     ]
   );
 
-  return result.rowCount > 0;
+  const row = result.rows[0];
+  return row ? {
+    occurrenceKey: row.occurrence_key,
+    checklistId: row.checklist_id,
+    checklistTitle: row.checklist_title,
+    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at || ''),
+    completedBy: row.completed_by,
+    deviceId: row.device_id,
+    inserted: Boolean(row.inserted),
+  } : null;
 }
 
 async function listChecklistCompletions(client, limit = 50) {

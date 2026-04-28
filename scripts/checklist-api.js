@@ -7,8 +7,14 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createChecklistApi() {
   'use strict';
 
+  function getFetch(options) {
+    if (options && options.fetchImpl) return options.fetchImpl;
+    if (typeof window !== 'undefined' && window.fetch) return window.fetch.bind(window);
+    return fetch;
+  }
+
   async function request(method, url, body, options) {
-    const fetchImpl = (options && options.fetchImpl) || fetch;
+    const fetchImpl = getFetch(options);
     const response = await fetchImpl(url, {
       method,
       headers: {
@@ -21,7 +27,10 @@
 
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || payload.ok === false) {
-      throw new Error(payload.error || ('Checklist request failed: ' + response.status));
+      const error = new Error(payload.error || ('Checklist request failed: ' + response.status));
+      error.status = response.status;
+      error.payload = payload;
+      throw error;
     }
 
     return payload;
@@ -48,7 +57,8 @@
   }
 
   function listChecklistCompletions(options) {
-    return request('GET', '/.netlify/functions/checklist-completions', null, options);
+    const limit = Math.max(1, Number(options && options.limit) || 200);
+    return request('GET', '/.netlify/functions/checklist-completions?limit=' + encodeURIComponent(String(limit)), null, options);
   }
 
   function evaluateChecklistReminders(payload, options) {
