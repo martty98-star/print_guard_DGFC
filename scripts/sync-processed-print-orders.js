@@ -7,6 +7,8 @@ const path = require('path');
 const { withClient } = require('../netlify/functions/_lib/db');
 const { upsertProcessedPrintOrder, ensureProcessedPrintOrderTables } = require('../netlify/functions/_lib/processed-print-orders');
 
+const DEFAULT_OPERATION_TIMEOUT_MS = 60 * 1000;
+
 function parseArgs(argv) {
   const args = {};
   for (const token of argv) {
@@ -94,15 +96,55 @@ function toPositiveInteger(value, fallback) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function getTimeoutMs(options) {
+  return toPositiveInteger(options && options.timeoutMs, DEFAULT_OPERATION_TIMEOUT_MS);
+}
+
+function withTimeout(promise, label, timeoutMs) {
+  let timer = null;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+async function checkRootExists(root, options) {
+  console.log(`[processed-orders] checking root: ${root}`);
+  try {
+    await withTimeout(fs.access(root), `checking root ${root}`, getTimeoutMs(options));
+    console.log('[processed-orders] root exists: true');
+    return true;
+  } catch (error) {
+    console.log('[processed-orders] root exists: false');
+    throw error;
+  }
+}
+
 async function listMonthFolders(root, options) {
-  if (options.month) return [options.month];
+  console.log('[processed-orders] listing month folders');
+  if (options.month) {
+    console.log(`[processed-orders] selected folders: ${options.month}`);
+    return [options.month];
+  }
 
   if (options.full) {
-    const entries = await fs.readdir(root, { withFileTypes: true });
-    return entries
+    const entries = await withTimeout(
+      fs.readdir(root, { withFileTypes: true }),
+      `listing month folders in ${root}`,
+      getTimeoutMs(options)
+    );
+    const folders = entries
       .filter((entry) => entry.isDirectory() && /^\d{4}-\d{2}$/.test(entry.name))
       .map((entry) => entry.name)
       .sort();
+    console.log(`[processed-orders] selected folders: ${folders.join(',') || '(none)'}`);
+    return folders;
   }
 
   const months = new Set();
@@ -112,29 +154,62 @@ async function listMonthFolders(root, options) {
     date.setDate(today.getDate() - offset);
     months.add(formatMonth(date));
   }
-  return Array.from(months).sort();
+  const folders = Array.from(months).sort();
+  console.log(`[processed-orders] selected folders: ${folders.join(',') || '(none)'}`);
+  return folders;
 }
 
-async function listXmlFiles(folderPath) {
+async function listXmlFiles(folderPath, options) {
+  console.log(`[processed-orders] listing XML files: ${folderPath}`);
   let entries;
   try {
-    entries = await fs.readdir(folderPath, { withFileTypes: true });
+    entries = await withTimeout(
+      fs.readdir(folderPath, { withFileTypes: true }),
+      `listing XML files in ${folderPath}`,
+      getTimeoutMs(options)
+    );
   } catch (error) {
-    if (error && error.code === 'ENOENT') return [];
+    if (error && error.code === 'ENOENT') {
+      console.log(`[processed-orders] XML files found: 0 (${folderPath} missing)`);
+      return [];
+    }
     if (error && (error.code === 'EACCES' || error.code === 'EPERM')) {
       throw new Error(`Cannot access processed XML folder: ${folderPath}. Check NAS permissions and the scheduled-task Windows user.`);
     }
     throw error;
   }
 
-  return entries
+  const files = entries
     .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.xml'))
     .map((entry) => path.join(folderPath, entry.name))
     .sort((a, b) => a.localeCompare(b));
+  console.log(`[processed-orders] XML files found: ${files.length}`);
+
+  if (options.full || options.month || !options.days) {
+    return files;
+  }
+
+  const cutoffMs = Date.now() - options.days * 24 * 60 * 60 * 1000;
+  console.log(`[processed-orders] filtering XML files by modified time: last ${options.days} days`);
+  const recentFiles = [];
+  for (const filePath of files) {
+    const stat = await withTimeout(
+      fs.stat(filePath),
+      `reading file metadata ${filePath}`,
+      getTimeoutMs(options)
+    );
+    if (stat.mtimeMs >= cutoffMs) {
+      recentFiles.push(filePath);
+    }
+  }
+  console.log(`[processed-orders] XML files selected after days filter: ${recentFiles.length}`);
+  return recentFiles;
 }
 
 async function syncProcessedPrintOrders(client, options) {
+  console.log('[processed-orders] ensuring database schema');
   await ensureProcessedPrintOrderTables(client);
+  console.log('[processed-orders] database schema ready');
   const stats = {
     monthsScanned: 0,
     scannedXmlFiles: 0,
@@ -148,12 +223,23 @@ async function syncProcessedPrintOrders(client, options) {
     stats.monthsScanned = 1;
     stats.scannedXmlFiles = 1;
     try {
-      const xml = await fs.readFile(options.file, 'utf8');
+      console.log(`[processed-orders] parsing XML 1/1: ${options.file}`);
+      const xml = await withTimeout(
+        fs.readFile(options.file, 'utf8'),
+        `reading XML ${options.file}`,
+        getTimeoutMs(options)
+      );
       const folderName = path.basename(path.dirname(options.file));
       const sourceMonth = /^\d{4}-\d{2}$/.test(folderName) ? folderName : '';
       const order = parseProcessedPrintOrderXml(xml, options.file, sourceMonth);
       if (!order.orderName) throw new Error('Missing <Name>');
-      const result = await upsertProcessedPrintOrder(client, order);
+      console.log(`[processed-orders] DB upsert start: ${order.orderName} (${order.xmlFileName || path.basename(options.file)})`);
+      const result = await withTimeout(
+        upsertProcessedPrintOrder(client, order),
+        `DB upsert ${options.file}`,
+        getTimeoutMs(options)
+      );
+      console.log(`[processed-orders] DB upsert success: ${order.orderName}`);
       if (result.inserted) stats.insertedOrders += 1;
       else if (result.updated) stats.updatedOrders += 1;
       else stats.skippedUnchanged += 1;
@@ -168,14 +254,26 @@ async function syncProcessedPrintOrders(client, options) {
   for (const month of months) {
     const folderPath = path.join(options.root, month);
     stats.monthsScanned += 1;
-    const files = await listXmlFiles(folderPath);
-    for (const filePath of files) {
+    const files = await listXmlFiles(folderPath, options);
+    for (let index = 0; index < files.length; index += 1) {
+      const filePath = files[index];
       stats.scannedXmlFiles += 1;
       try {
-        const xml = await fs.readFile(filePath, 'utf8');
+        console.log(`[processed-orders] parsing XML ${index + 1}/${files.length}: ${filePath}`);
+        const xml = await withTimeout(
+          fs.readFile(filePath, 'utf8'),
+          `reading XML ${filePath}`,
+          getTimeoutMs(options)
+        );
         const order = parseProcessedPrintOrderXml(xml, filePath, month);
         if (!order.orderName) throw new Error('Missing <Name>');
-        const result = await upsertProcessedPrintOrder(client, order);
+        console.log(`[processed-orders] DB upsert start: ${order.orderName} (${order.xmlFileName || path.basename(filePath)})`);
+        const result = await withTimeout(
+          upsertProcessedPrintOrder(client, order),
+          `DB upsert ${filePath}`,
+          getTimeoutMs(options)
+        );
+        console.log(`[processed-orders] DB upsert success: ${order.orderName}`);
         if (result.inserted) stats.insertedOrders += 1;
         else if (result.updated) stats.updatedOrders += 1;
         else stats.skippedUnchanged += 1;
@@ -203,10 +301,20 @@ async function main() {
     file,
     days: toPositiveInteger(args.days || process.env.PROCESSED_PRINT_ORDERS_DAYS, 2),
     full: Boolean(args.full),
+    timeoutMs: toPositiveInteger(args.timeoutMs || process.env.PROCESSED_PRINT_ORDERS_TIMEOUT_MS, DEFAULT_OPERATION_TIMEOUT_MS),
   };
 
+  console.log(`[processed-orders] resolved root path: ${options.root}`);
+  console.log(`[processed-orders] operation timeout: ${options.timeoutMs}ms`);
+  if (!options.file) {
+    await checkRootExists(options.root, options);
+  }
   console.log(`[processed-orders] sync start root=${options.root} scope=${options.file || (options.full ? 'full' : options.month || `${options.days}d`)}`);
-  const result = await withClient((client) => syncProcessedPrintOrders(client, options));
+  console.log('[processed-orders] DB connection start');
+  const result = await withClient((client) => {
+    console.log('[processed-orders] DB connection success');
+    return syncProcessedPrintOrders(client, options);
+  });
   console.log('[processed-orders] sync success');
   console.log(`[processed-orders] months=${result.monthsScanned} scannedXmlFiles=${result.scannedXmlFiles} insertedOrders=${result.insertedOrders} updatedOrders=${result.updatedOrders} skippedUnchanged=${result.skippedUnchanged} errors=${result.errors}`);
 }
