@@ -943,6 +943,65 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .order-link:hover { color: var(--text); border-color: var(--border-2); }
 
+.pp-processed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pp-processed-card {
+  border: 1px solid var(--border);
+  background: var(--bg4);
+  padding: 14px;
+}
+.pp-processed-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.pp-processed-time {
+  color: var(--text-dim);
+  font-size: .72rem;
+  white-space: nowrap;
+}
+.pp-processed-meta {
+  display: flex;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  color: var(--text-dim);
+  font-size: .72rem;
+  margin-bottom: 12px;
+}
+.pp-pdf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pp-section-label {
+  color: var(--text-faint);
+  font-size: .58rem;
+  font-weight: 600;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
+.pp-file-block {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.pp-file-title {
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.pp-file-path {
+  color: var(--text-faint);
+  font-size: .66rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  margin-bottom: 7px;
+}
 .pp-file-actions {
   display: flex;
   align-items: center;
@@ -957,6 +1016,17 @@ textarea { resize: vertical; min-height: 58px; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.pp-xml-source {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-faint);
+  font-size: .66rem;
 }
 
 /* ── Detail tabs (Pohyby / Stav skladu) ── */

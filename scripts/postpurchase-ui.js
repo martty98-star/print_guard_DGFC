@@ -74,10 +74,6 @@
     return 'file://///' + raw.replace(/^\\\\/, '').replace(/\\/g, '/');
   }
 
-  function getPrimaryPrintFile(row) {
-    return (Array.isArray(row && row.printFiles) ? row.printFiles : [])[0] || {};
-  }
-
   function getPageSizes(row) {
     const values = (Array.isArray(row && row.printFiles) ? row.printFiles : [])
       .map(file => file.pageSize)
@@ -133,7 +129,7 @@
       console.error('Processed Print Orders load failed', error);
       const message = cleanApiError(error);
       if (wrap && !(state.S.postPurchaseOrders || []).length) {
-        wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Failed to load processed orders.</p><div class="table-empty-note">${state.esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
+        wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Processed orders could not be loaded.</p><div class="table-empty-note">${state.esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
         wrap.querySelector('[data-pp-retry="true"]')?.addEventListener('click', () => loadPostPurchaseOrders(true));
       } else {
         renderPostPurchaseOrders();
@@ -145,17 +141,26 @@
     }
   }
 
-  function renderPdfCell(row) {
-    const files = Array.isArray(row.printFiles) ? row.printFiles : [];
-    if (!files.length) return '-';
+  function normalizePrintFiles(row) {
+    const files = Array.isArray(row && row.printFiles) ? row.printFiles : [];
+    return files;
+  }
+
+  function renderPdfFiles(row) {
+    const files = normalizePrintFiles(row);
+    if (!files.length) return '<div class="pp-file-block"><span class="pp-file-name">-</span></div>';
     return files.map((file, index) => {
       const path = file.printFilePath || '';
       const label = fileNameFromPath(path) || `PDF ${index + 1}`;
       const href = uncToFileHref(path);
-      return `<div class="pp-file-actions">
-        <a class="btn-sm" href="${state.esc(href)}" target="_blank" rel="noreferrer" title="${state.esc(path)}">Open PDF</a>
-        <button class="btn-sm" type="button" data-copy-path="${state.esc(path)}">Copy path</button>
-        <span class="pp-file-name">${state.esc(label)}</span>
+      return `<div class="pp-file-block">
+        <div class="pp-file-title">${state.esc(label)}</div>
+        <div class="pp-file-path">${state.esc(path || '-')}</div>
+        <div class="pp-file-actions">
+          <a class="btn-sm" href="${state.esc(href)}" target="_blank" rel="noreferrer" title="${state.esc(path)}">Open PDF</a>
+          <button class="btn-sm" type="button" data-copy-path="${state.esc(path)}">Copy path</button>
+          <button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-print-file-path="${state.esc(path)}">Reprint request</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -170,31 +175,30 @@
       return;
     }
 
-    wrap.innerHTML = `<table class="data-table pp-queue-table">
-      <thead><tr>
-        <th>Order</th>
-        <th>Queued / Processed time</th>
-        <th>Workflow</th>
-        <th>Type</th>
-        <th>Page size</th>
-        <th>PDF</th>
-        <th>Reprint</th>
-        <th>XML source</th>
-      </tr></thead>
-      <tbody>${rows.map((row) => {
-        const primaryFile = getPrimaryPrintFile(row);
-        return `<tr>
-          <td><div class="pp-order-main">${state.esc(row.orderName || '-')}</div><div class="pp-order-sub">${state.esc(row.xmlFileName || '')}</div></td>
-          <td>${state.esc(formatTime(row.queuedDateTime || row.updatedAt || row.importedAt))}</td>
-          <td>${state.esc(row.workflowName || row.printerName || '-')}</td>
-          <td>${state.esc(row.orderType || '-')}</td>
-          <td>${state.esc(getPageSizes(row))}</td>
-          <td>${renderPdfCell(row)}</td>
-          <td><button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-print-file-path="${state.esc(primaryFile.printFilePath || '')}">Reprint</button></td>
-          <td><button class="btn-sm" type="button" data-copy-path="${state.esc(row.sourceXmlPath || '')}">Copy XML</button><div class="pp-order-sub">${state.esc(fileNameFromPath(row.sourceXmlPath || ''))}</div></td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>`;
+    wrap.innerHTML = `<div class="pp-processed-list">${rows.map((row) => `
+      <article class="pp-processed-card">
+        <div class="pp-processed-head">
+          <div>
+            <div class="pp-order-main">${state.esc(row.orderName || '-')}</div>
+            <div class="pp-order-sub">${state.esc(row.xmlFileName || '')}</div>
+          </div>
+          <div class="pp-processed-time">${state.esc(formatTime(row.queuedDateTime || row.updatedAt || row.importedAt))}</div>
+        </div>
+        <div class="pp-processed-meta">
+          <span><strong>Workflow:</strong> ${state.esc(row.workflowName || row.printerName || '-')}</span>
+          <span><strong>Type:</strong> ${state.esc(row.orderType || '-')}</span>
+          <span><strong>Size:</strong> ${state.esc(getPageSizes(row))}</span>
+        </div>
+        <div class="pp-pdf-section">
+          <div class="pp-section-label">PDF</div>
+          ${renderPdfFiles(row)}
+        </div>
+        <div class="pp-xml-source">
+          <span>${state.esc(fileNameFromPath(row.sourceXmlPath || ''))}</span>
+          <button class="btn-sm" type="button" data-copy-path="${state.esc(row.sourceXmlPath || '')}">Copy XML path</button>
+        </div>
+      </article>
+    `).join('')}</div>`;
 
     bindProcessedOrderActions(wrap);
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
