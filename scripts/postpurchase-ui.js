@@ -157,7 +157,7 @@
         <div class="pp-file-title">${state.esc(label)}</div>
         <div class="pp-file-path">${state.esc(path || '-')}</div>
         <div class="pp-file-actions">
-          <a class="btn-sm" href="${state.esc(href)}" target="_blank" rel="noreferrer" title="${state.esc(path)}">Open PDF</a>
+          <button class="btn-sm" type="button" data-open-pdf-path="${state.esc(path)}" data-open-pdf-href="${state.esc(href)}">Open PDF</button>
           <button class="btn-sm" type="button" data-copy-path="${state.esc(path)}">Copy path</button>
           <button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-print-file-path="${state.esc(path)}">Reprint request</button>
         </div>
@@ -222,6 +222,40 @@
     area.remove();
   }
 
+  async function openPdfPath(pathValue, fileHref) {
+    const pdfPath = String(pathValue || '').trim();
+    if (!pdfPath) return;
+
+    const helperUrls = [
+      'http://127.0.0.1:17891/open-pdf',
+      'http://localhost:17891/open-pdf',
+    ];
+
+    for (const url of helperUrls) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ path: pdfPath }),
+        });
+        if (response.ok) {
+          state.showToast('PDF open request sent', 'success');
+          return;
+        }
+      } catch (error) {
+        console.debug('PDF helper unavailable', url, error);
+      }
+    }
+
+    try {
+      window.open(fileHref || uncToFileHref(pdfPath), '_blank', 'noreferrer');
+    } catch (error) {
+      console.debug('Direct PDF open blocked', error);
+    }
+    await copyText(pdfPath);
+    state.showToast('PDF path copied. Browser blocked direct open.', 'error');
+  }
+
   function getActor() {
     return (state.cfg && state.cfg.userName) || (state.cfg && state.cfg.role) || 'operator';
   }
@@ -258,6 +292,11 @@
           console.error('Copy path failed', error);
           state.showToast('Copy failed', 'error');
         }
+      });
+    });
+    wrap.querySelectorAll('[data-open-pdf-path]').forEach((button) => {
+      button.addEventListener('click', () => {
+        openPdfPath(button.dataset.openPdfPath || '', button.dataset.openPdfHref || '');
       });
     });
     wrap.querySelectorAll('[data-reprint-order-id]').forEach((button) => {
