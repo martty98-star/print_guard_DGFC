@@ -69,6 +69,7 @@ async function ensureProcessedPrintOrderTables(client) {
   await client.query(`create unique index if not exists processed_print_orders_guid_idx on processed_print_orders (guid) where guid is not null`);
   await client.query(`create index if not exists processed_print_orders_queued_idx on processed_print_orders (queued_date_time desc nulls last, id desc)`);
   await client.query(`create index if not exists processed_print_orders_source_month_idx on processed_print_orders (source_month)`);
+  await client.query(`create index if not exists processed_print_orders_source_path_idx on processed_print_orders (source_xml_path)`);
 
   await client.query(`
     create table if not exists processed_order_reprint_requests (
@@ -86,6 +87,34 @@ async function ensureProcessedPrintOrderTables(client) {
   await client.query(`create index if not exists processed_reprint_order_idx on processed_order_reprint_requests (order_id, requested_at desc)`);
 
   processedOrdersSchemaReady = true;
+}
+
+function chunkArray(values, size) {
+  const chunks = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+}
+
+async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
+  await ensureProcessedPrintOrderTables(client);
+  const paths = Array.from(new Set((sourceXmlPaths || []).map(cleanString).filter(Boolean)));
+  const known = new Map();
+  for (const chunk of chunkArray(paths, 500)) {
+    const result = await client.query(
+      `
+        select source_xml_path, source_xml_hash
+        from processed_print_orders
+        where source_xml_path = any($1::text[])
+      `,
+      [chunk]
+    );
+    for (const row of result.rows) {
+      known.set(row.source_xml_path, row.source_xml_hash);
+    }
+  }
+  return known;
 }
 
 function mapProcessedOrderRow(row) {
@@ -310,5 +339,6 @@ module.exports = {
   ensureProcessedPrintOrderTables,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
+  listKnownProcessedXmlHashes,
   upsertProcessedPrintOrder,
 };

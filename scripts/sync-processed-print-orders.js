@@ -5,7 +5,11 @@ const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
 const { withClient } = require('../netlify/functions/_lib/db');
-const { upsertProcessedPrintOrder, ensureProcessedPrintOrderTables } = require('../netlify/functions/_lib/processed-print-orders');
+const {
+  listKnownProcessedXmlHashes,
+  upsertProcessedPrintOrder,
+  ensureProcessedPrintOrderTables,
+} = require('../netlify/functions/_lib/processed-print-orders');
 
 const DEFAULT_OPERATION_TIMEOUT_MS = 60 * 1000;
 
@@ -206,6 +210,18 @@ async function listXmlFiles(folderPath, options) {
   return recentFiles;
 }
 
+async function listKnownHashesForFiles(client, files, options) {
+  if (!files.length) return new Map();
+  console.log(`[processed-orders] loading known XML hashes from DB: ${files.length} paths`);
+  const known = await withTimeout(
+    listKnownProcessedXmlHashes(client, files),
+    `loading known XML hashes for ${files.length} paths`,
+    getTimeoutMs(options)
+  );
+  console.log(`[processed-orders] known XML hashes loaded: ${known.size}`);
+  return known;
+}
+
 async function syncProcessedPrintOrders(client, options) {
   console.log('[processed-orders] ensuring database schema');
   await ensureProcessedPrintOrderTables(client);
@@ -229,6 +245,13 @@ async function syncProcessedPrintOrders(client, options) {
         `reading XML ${options.file}`,
         getTimeoutMs(options)
       );
+      const sourceXmlHash = sha256(xml);
+      const knownHashes = await listKnownHashesForFiles(client, [options.file], options);
+      if (knownHashes.get(options.file) === sourceXmlHash) {
+        console.log(`[processed-orders] unchanged XML skip: ${options.file}`);
+        stats.skippedUnchanged += 1;
+        return stats;
+      }
       const folderName = path.basename(path.dirname(options.file));
       const sourceMonth = /^\d{4}-\d{2}$/.test(folderName) ? folderName : '';
       const order = parseProcessedPrintOrderXml(xml, options.file, sourceMonth);
@@ -255,6 +278,7 @@ async function syncProcessedPrintOrders(client, options) {
     const folderPath = path.join(options.root, month);
     stats.monthsScanned += 1;
     const files = await listXmlFiles(folderPath, options);
+    const knownHashes = await listKnownHashesForFiles(client, files, options);
     for (let index = 0; index < files.length; index += 1) {
       const filePath = files[index];
       stats.scannedXmlFiles += 1;
@@ -265,6 +289,12 @@ async function syncProcessedPrintOrders(client, options) {
           `reading XML ${filePath}`,
           getTimeoutMs(options)
         );
+        const sourceXmlHash = sha256(xml);
+        if (knownHashes.get(filePath) === sourceXmlHash) {
+          console.log(`[processed-orders] unchanged XML skip ${index + 1}/${files.length}: ${filePath}`);
+          stats.skippedUnchanged += 1;
+          continue;
+        }
         const order = parseProcessedPrintOrderXml(xml, filePath, month);
         if (!order.orderName) throw new Error('Missing <Name>');
         console.log(`[processed-orders] DB upsert start: ${order.orderName} (${order.xmlFileName || path.basename(filePath)})`);

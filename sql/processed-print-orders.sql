@@ -29,6 +29,9 @@ create index if not exists processed_print_orders_queued_idx
 create index if not exists processed_print_orders_source_month_idx
   on processed_print_orders (source_month);
 
+create index if not exists processed_print_orders_source_path_idx
+  on processed_print_orders (source_xml_path);
+
 create table if not exists processed_order_reprint_requests (
   id bigserial primary key,
   order_id bigint not null references processed_print_orders(id) on delete cascade,
