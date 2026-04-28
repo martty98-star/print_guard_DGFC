@@ -1028,6 +1028,86 @@ textarea { resize: vertical; min-height: 58px; }
   color: var(--text-faint);
   font-size: .66rem;
 }
+.pp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .32);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.pp-modal {
+  background: var(--bg4);
+  border: 1px solid var(--border-2);
+  box-shadow: var(--shadow-lg);
+  width: min(540px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+.pp-modal-head,
+.pp-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.pp-modal-actions {
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+  justify-content: flex-end;
+}
+.pp-modal-head h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+.pp-modal-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pp-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pp-modal-field span,
+.pp-modal-field small {
+  color: var(--text-faint);
+  font-size: .66rem;
+}
+.pp-modal-field small {
+  overflow-wrap: anywhere;
+}
+.pp-reprint-reasons {
+  display: grid;
+  gap: 6px;
+}
+.pp-reprint-reason {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: .78rem;
+}
+.pp-reprint-note {
+  min-height: 88px;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px;
+  font-family: var(--font-ui);
+}
+.pp-reprint-error {
+  min-height: 18px;
+  color: var(--crit);
+  font-size: .72rem;
+}
 
 /* ── Detail tabs (Pohyby / Stav skladu) ── */
 .detail-tabs {

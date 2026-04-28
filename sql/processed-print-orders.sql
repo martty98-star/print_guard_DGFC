@@ -37,6 +37,7 @@ create table if not exists processed_order_reprint_requests (
   order_id bigint not null references processed_print_orders(id) on delete cascade,
   order_name text not null,
   print_file_path text null,
+  reason text null,
   requested_by text null,
   requested_at timestamptz not null default now(),
   workstation_id text null,
@@ -46,3 +47,13 @@ create table if not exists processed_order_reprint_requests (
 
 create index if not exists processed_reprint_order_idx
   on processed_order_reprint_requests (order_id, requested_at desc);
+
+alter table processed_order_reprint_requests
+  add column if not exists reason text null;
+
+alter table processed_order_reprint_requests
+  add column if not exists note text null;
+
+create index if not exists processed_reprint_pending_lookup_idx
+  on processed_order_reprint_requests (order_id, print_file_path)
+  where status = 'pending' and print_file_path is not null;

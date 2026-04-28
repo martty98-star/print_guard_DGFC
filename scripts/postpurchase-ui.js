@@ -1,6 +1,17 @@
 'use strict';
 
 (() => {
+  const REPRINT_REASONS = [
+    'Printer dots / contamination',
+    'Cutter oil contamination',
+    'Incorrect cut / not cut through',
+    'Wrong media',
+    'Color issue',
+    'Damaged during handling',
+    'Missing print',
+    'Other',
+  ];
+
   const state = {
     S: null,
     cfg: null,
@@ -15,6 +26,9 @@
     requirePostPurchasePinForScreen: null,
     renderPostPurchaseAccessRequired: null,
     fetchImpl: null,
+    reprintSubmitting: false,
+    reprintPendingKeys: new Set(),
+    reprintDialog: null,
   };
 
   function initPostPurchaseUI(deps) {
@@ -153,16 +167,22 @@
       const path = file.printFilePath || '';
       const label = fileNameFromPath(path) || `PDF ${index + 1}`;
       const href = uncToFileHref(path);
+      const pendingKey = getReprintKey(row.id, path);
+      const pending = state.reprintPendingKeys.has(pendingKey);
       return `<div class="pp-file-block">
         <div class="pp-file-title">${state.esc(label)}</div>
         <div class="pp-file-path">${state.esc(path || '-')}</div>
         <div class="pp-file-actions">
           <button class="btn-sm" type="button" data-open-pdf-path="${state.esc(path)}" data-open-pdf-href="${state.esc(href)}">Open PDF</button>
           <button class="btn-sm" type="button" data-copy-path="${state.esc(path)}">Copy path</button>
-          <button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-print-file-path="${state.esc(path)}">Reprint request</button>
+          <button class="btn-sm" type="button" data-reprint-order-id="${state.esc(row.id)}" data-reprint-order-name="${state.esc(row.orderName || '')}" data-print-file-path="${state.esc(path)}" data-print-file-label="${state.esc(label)}">${pending ? 'Reprint pending' : 'Reprint request'}</button>
         </div>
       </div>`;
     }).join('');
+  }
+
+  function getReprintKey(orderId, printFilePath) {
+    return `${orderId || ''}::${printFilePath || ''}`;
   }
 
   function renderPostPurchaseOrders() {
@@ -260,7 +280,7 @@
     return (state.cfg && state.cfg.userName) || (state.cfg && state.cfg.role) || 'operator';
   }
 
-  async function createReprintRequest(orderId, printFilePath) {
+  async function createReprintRequest(payload) {
     try {
       const res = await state.fetchImpl('/.netlify/functions/processed-print-orders', {
         method: 'POST',
@@ -268,17 +288,109 @@
         cache: 'no-store',
         body: JSON.stringify({
           action: 'reprint',
-          orderId,
-          printFilePath,
+          orderId: payload.orderId,
+          printFilePath: payload.printFilePath,
+          reason: payload.reason,
+          note: payload.note,
           requestedBy: getActor(),
           workstationId: state.cfg && state.cfg.deviceId,
         }),
       });
-      await readJsonResponse(res, 'Failed to create reprint request');
-      state.showToast('Reprint request created', 'success');
+      const result = await readJsonResponse(res, 'Failed to create reprint request');
+      state.reprintPendingKeys.add(getReprintKey(payload.orderId, payload.printFilePath));
+      state.showToast(result && result.alreadyPending ? 'Reprint request already pending' : 'Reprint request created', 'success');
+      renderPostPurchaseOrders();
+      return result;
     } catch (error) {
       console.error('Reprint request failed', error);
-      state.showToast(cleanApiError(error), 'error');
+      state.showToast('Reprint request could not be created', 'error');
+      throw error;
+    }
+  }
+
+  function closeReprintDialog() {
+    const dialog = document.getElementById('pp-reprint-dialog');
+    if (dialog) dialog.remove();
+    state.reprintDialog = null;
+    state.reprintSubmitting = false;
+  }
+
+  function openReprintDialog(input) {
+    closeReprintDialog();
+    state.reprintDialog = {
+      orderId: input.orderId,
+      orderName: input.orderName || input.orderId,
+      printFilePath: input.printFilePath,
+      printFileLabel: input.printFileLabel || fileNameFromPath(input.printFilePath),
+    };
+
+    const reasonOptions = REPRINT_REASONS.map((reason) =>
+      `<label class="pp-reprint-reason"><input type="radio" name="pp-reprint-reason" value="${state.esc(reason)}"> <span>${state.esc(reason)}</span></label>`
+    ).join('');
+
+    const host = document.createElement('div');
+    host.id = 'pp-reprint-dialog';
+    host.className = 'pp-modal-backdrop';
+    host.innerHTML = `<div class="pp-modal" role="dialog" aria-modal="true" aria-labelledby="pp-reprint-title">
+      <div class="pp-modal-head">
+        <h2 id="pp-reprint-title">Request reprint</h2>
+        <button class="btn-sm" type="button" data-reprint-cancel="true">Cancel</button>
+      </div>
+      <div class="pp-modal-body">
+        <div class="pp-modal-field"><span>Order</span><strong>${state.esc(state.reprintDialog.orderName || '-')}</strong></div>
+        <div class="pp-modal-field"><span>PDF</span><strong>${state.esc(state.reprintDialog.printFileLabel || '-')}</strong><small>${state.esc(state.reprintDialog.printFilePath || '')}</small></div>
+        <div class="pp-reprint-reasons">${reasonOptions}</div>
+        <textarea id="pp-reprint-note" class="pp-reprint-note" placeholder="Add details if needed"></textarea>
+        <div class="pp-reprint-error" id="pp-reprint-error"></div>
+      </div>
+      <div class="pp-modal-actions">
+        <button class="btn-sm" type="button" data-reprint-cancel="true">Cancel</button>
+        <button class="btn-sm" type="button" id="pp-reprint-create">Create request</button>
+      </div>
+    </div>`;
+    document.body.appendChild(host);
+    host.querySelectorAll('[data-reprint-cancel]').forEach((button) => {
+      button.addEventListener('click', closeReprintDialog);
+    });
+    host.addEventListener('click', (event) => {
+      if (event.target === host) closeReprintDialog();
+    });
+    host.querySelector('#pp-reprint-create')?.addEventListener('click', submitReprintDialog);
+  }
+
+  async function submitReprintDialog() {
+    if (state.reprintSubmitting || !state.reprintDialog) return;
+    const dialog = document.getElementById('pp-reprint-dialog');
+    const errorNode = dialog && dialog.querySelector('#pp-reprint-error');
+    const createButton = dialog && dialog.querySelector('#pp-reprint-create');
+    const selected = dialog && dialog.querySelector('input[name="pp-reprint-reason"]:checked');
+    const reason = selected ? selected.value : '';
+    const note = String((dialog && dialog.querySelector('#pp-reprint-note')?.value) || '').trim();
+
+    if (!reason) {
+      if (errorNode) errorNode.textContent = 'Reason is required.';
+      return;
+    }
+    if (reason === 'Other' && !note) {
+      if (errorNode) errorNode.textContent = 'Note is required for Other.';
+      return;
+    }
+
+    state.reprintSubmitting = true;
+    if (createButton) createButton.disabled = true;
+    if (errorNode) errorNode.textContent = '';
+
+    try {
+      await createReprintRequest({
+        ...state.reprintDialog,
+        reason,
+        note,
+      });
+      closeReprintDialog();
+    } catch (error) {
+      if (errorNode) errorNode.textContent = 'Reprint request could not be created.';
+      if (createButton) createButton.disabled = false;
+      state.reprintSubmitting = false;
     }
   }
 
@@ -301,7 +413,12 @@
     });
     wrap.querySelectorAll('[data-reprint-order-id]').forEach((button) => {
       button.addEventListener('click', () => {
-        createReprintRequest(button.dataset.reprintOrderId, button.dataset.printFilePath || '');
+        openReprintDialog({
+          orderId: button.dataset.reprintOrderId,
+          orderName: button.dataset.reprintOrderName,
+          printFilePath: button.dataset.printFilePath || '',
+          printFileLabel: button.dataset.printFileLabel,
+        });
       });
     });
   }

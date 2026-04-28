@@ -55,11 +55,12 @@ exports.handler = async function handler(event) {
         const request = await createReprintRequest(client, {
           orderId: bodyInput.orderId || bodyInput.order_id,
           printFilePath: bodyInput.printFilePath || bodyInput.print_file_path,
+          reason: bodyInput.reason,
           requestedBy: bodyInput.requestedBy || bodyInput.requested_by,
           workstationId: bodyInput.workstationId || bodyInput.workstation_id,
           note: bodyInput.note,
         });
-        return { ok: true, request };
+        return { ok: true, alreadyPending: Boolean(request && request.alreadyPending), request };
       });
       return json(200, body);
     }

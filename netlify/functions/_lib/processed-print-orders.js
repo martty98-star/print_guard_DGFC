@@ -77,6 +77,7 @@ async function ensureProcessedPrintOrderTables(client) {
       order_id bigint not null references processed_print_orders(id) on delete cascade,
       order_name text not null,
       print_file_path text null,
+      reason text null,
       requested_by text null,
       requested_at timestamptz not null default now(),
       workstation_id text null,
@@ -84,7 +85,14 @@ async function ensureProcessedPrintOrderTables(client) {
       note text null
     )
   `);
+  await client.query(`alter table processed_order_reprint_requests add column if not exists reason text null`);
+  await client.query(`alter table processed_order_reprint_requests add column if not exists note text null`);
   await client.query(`create index if not exists processed_reprint_order_idx on processed_order_reprint_requests (order_id, requested_at desc)`);
+  await client.query(`
+    create index if not exists processed_reprint_pending_lookup_idx
+      on processed_order_reprint_requests (order_id, print_file_path)
+      where status = 'pending' and print_file_path is not null
+  `);
 
   processedOrdersSchemaReady = true;
 }
@@ -301,22 +309,64 @@ async function createReprintRequest(client, input) {
 
   const printFilePath = cleanString(input.printFilePath) ||
     (((Array.isArray(order.print_files) ? order.print_files : [])[0] || {}).printFilePath || null);
+  const reason = cleanString(input.reason);
+  const note = cleanString(input.note);
+  if (!reason) {
+    const error = new Error('Reprint reason is required');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (reason === 'Other' && !note) {
+    const error = new Error('Reprint note is required for Other');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const existingPending = await client.query(
+    `
+      select id, order_id, order_name, print_file_path, reason, requested_by, requested_at, workstation_id, status, note
+      from processed_order_reprint_requests
+      where order_id = $1
+        and print_file_path = $2
+        and status = 'pending'
+      order by requested_at desc
+      limit 1
+    `,
+    [order.id, printFilePath]
+  );
+  if (existingPending.rows[0]) {
+    const row = existingPending.rows[0];
+    return {
+      id: Number(row.id),
+      orderId: Number(row.order_id),
+      orderName: row.order_name,
+      printFilePath: row.print_file_path,
+      reason: row.reason,
+      requestedBy: row.requested_by,
+      requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
+      workstationId: row.workstation_id,
+      status: row.status,
+      note: row.note,
+      alreadyPending: true,
+    };
+  }
 
   const result = await client.query(
     `
       insert into processed_order_reprint_requests (
-        order_id, order_name, print_file_path, requested_by, requested_at, workstation_id, status, note
+        order_id, order_name, print_file_path, reason, requested_by, requested_at, workstation_id, status, note
       )
-      values ($1, $2, $3, $4, now(), $5, 'pending', $6)
-      returning id, order_id, order_name, print_file_path, requested_by, requested_at, workstation_id, status, note
+      values ($1, $2, $3, $4, $5, now(), $6, 'pending', $7)
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, workstation_id, status, note
     `,
     [
       order.id,
       order.order_name,
       printFilePath,
+      reason,
       cleanString(input.requestedBy),
       cleanString(input.workstationId),
-      cleanString(input.note),
+      note,
     ]
   );
 
@@ -326,11 +376,13 @@ async function createReprintRequest(client, input) {
     orderId: Number(row.order_id),
     orderName: row.order_name,
     printFilePath: row.print_file_path,
+    reason: row.reason,
     requestedBy: row.requested_by,
     requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
     workstationId: row.workstation_id,
     status: row.status,
     note: row.note,
+    alreadyPending: false,
   };
 }
 
