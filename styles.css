@@ -869,6 +869,33 @@ textarea { resize: vertical; min-height: 58px; }
   letter-spacing: var(--wide); color: var(--text-faint);
   padding-bottom: 10px; border-bottom: 1px solid var(--border);
 }
+.checklist-completion-list {
+  display: grid;
+  gap: 8px;
+}
+.checklist-completion-card {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 10px 12px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.checklist-completion-task {
+  color: var(--text);
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.checklist-completion-meta {
+  color: var(--text-faint);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: .68rem;
+  line-height: 1.4;
+}
 .csv-info {
   background: var(--bg2); border: 1px solid var(--border);
   padding: 9px 12px; font-size: .68rem; color: var(--text-dim); line-height: 1.7;

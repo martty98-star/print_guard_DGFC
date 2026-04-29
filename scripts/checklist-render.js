@@ -168,18 +168,17 @@
       return;
     }
 
-    host.innerHTML = `<table class="data-table">
-      <thead><tr><th>Task</th><th>Occurrence</th><th>Completed at</th><th>By</th><th>Device</th></tr></thead>
-      <tbody>${state.completions.map((row) => `
-        <tr>
-          <td>${escapeHtml(row.checklistTitle || row.checklistId || '')}</td>
-          <td>${escapeHtml(formatOccurrenceLabel(state, row.occurrenceKey || ''))}</td>
-          <td>${escapeHtml(formatDate(row.completedAt || ''))}</td>
-          <td>${escapeHtml(row.completedBy || '')}</td>
-          <td>${escapeHtml(row.deviceId || '')}</td>
-        </tr>
-      `).join('')}</tbody>
-    </table>`;
+    host.innerHTML = `<div class="checklist-completion-list">
+      ${state.completions.map((row) => `
+        <article class="checklist-completion-card">
+          <div class="checklist-completion-task">${escapeHtml(row.checklistTitle || row.checklistId || '')}</div>
+          <div class="checklist-completion-meta">
+            <span>${escapeHtml(row.completedBy || '-')}</span>
+            <span>${escapeHtml(formatDate(row.completedAt || ''))}</span>
+          </div>
+        </article>
+      `).join('')}
+    </div>`;
   }
 
   function renderChecklistScreen(state) {
