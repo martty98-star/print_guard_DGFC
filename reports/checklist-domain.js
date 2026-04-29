@@ -10,10 +10,10 @@
   const WEEKDAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   const WEEKDAY_LABELS_CS = {
     mon: 'Po',
-    tue: 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡t',
+    tue: '\u00dat',
     wed: 'St',
-    thu: 'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢t',
-    fri: 'PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡',
+    thu: '\u010ct',
+    fri: 'P\u00e1',
     sat: 'So',
     sun: 'Ne',
   };
@@ -35,41 +35,41 @@
     return `${safePrefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
+  function normalizeChecklistLookupKey(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
   function normalizeChecklistWeekday(value) {
-    const raw = String(value || '').trim().toLowerCase();
+    const raw = normalizeChecklistLookupKey(value);
     const aliases = {
       mon: 'mon',
       monday: 'mon',
       mo: 'mon',
       pondeli: 'mon',
-      'pondÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºlÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­': 'mon',
       tue: 'tue',
       tuesday: 'tue',
       tu: 'tue',
       ut: 'tue',
-      'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºt': 'tue',
       utery: 'tue',
-      'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºterÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½': 'tue',
       wed: 'wed',
       wednesday: 'wed',
       we: 'wed',
       st: 'wed',
       streda: 'wed',
-      'stÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢eda': 'wed',
       thu: 'thu',
       thursday: 'thu',
       th: 'thu',
       ct: 'thu',
-      'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Ât': 'thu',
       ctvrtek: 'thu',
-      'ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âtvrtek': 'thu',
       fri: 'fri',
       friday: 'fri',
       fr: 'fri',
       pa: 'fri',
-      'pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡': 'fri',
       patek: 'fri',
-      'pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡tek': 'fri',
       sat: 'sat',
       saturday: 'sat',
       sa: 'sat',
@@ -80,7 +80,6 @@
       su: 'sun',
       ne: 'sun',
       nedele: 'sun',
-      'nedÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Âºle': 'sun',
     };
     return aliases[raw] || null;
   }
@@ -299,10 +298,10 @@
 
   function buildChecklistReminderEvent(occurrence, url) {
     const targetUrl = url || '/?mode=stock&screen=checklist';
-    const title = `Checklist ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${occurrence.item.title}`;
+    const title = `Checklist \u00b7 ${occurrence.item.title}`;
     const body = occurrence.item.description
       ? occurrence.item.description
-      : `Je ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âas na ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºkol "${occurrence.item.title}" (${occurrence.localTime}).`;
+      : `Je \u010das na \u00fakol "${occurrence.item.title}" (${occurrence.localTime}).`;
 
     return {
       type: 'checklist.reminder.due',

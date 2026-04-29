@@ -103,41 +103,41 @@ export function createChecklistId(prefix = 'chk'): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function normalizeChecklistLookupKey(value: unknown): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 export function normalizeChecklistWeekday(value: unknown): ChecklistWeekdayKey | null {
-  const raw = String(value || '').trim().toLowerCase();
+  const raw = normalizeChecklistLookupKey(value);
   const aliases: Record<string, ChecklistWeekdayKey> = {
     mon: 'mon',
     monday: 'mon',
     mo: 'mon',
     pondeli: 'mon',
-    pondělí: 'mon',
     tue: 'tue',
     tuesday: 'tue',
     tu: 'tue',
     ut: 'tue',
-    út: 'tue',
     utery: 'tue',
-    úterý: 'tue',
     wed: 'wed',
     wednesday: 'wed',
     we: 'wed',
     st: 'wed',
     streda: 'wed',
-    středa: 'wed',
     thu: 'thu',
     thursday: 'thu',
     th: 'thu',
     ct: 'thu',
-    čt: 'thu',
     ctvrtek: 'thu',
-    čtvrtek: 'thu',
     fri: 'fri',
     friday: 'fri',
     fr: 'fri',
     pa: 'fri',
-    pá: 'fri',
     patek: 'fri',
-    pátek: 'fri',
     sat: 'sat',
     saturday: 'sat',
     sa: 'sat',
@@ -148,7 +148,6 @@ export function normalizeChecklistWeekday(value: unknown): ChecklistWeekdayKey |
     su: 'sun',
     ne: 'sun',
     nedele: 'sun',
-    neděle: 'sun',
   };
   return aliases[raw] || null;
 }
