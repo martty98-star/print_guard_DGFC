@@ -28,9 +28,14 @@
     const errorNode = dialog && dialog.querySelector('#pp-reprint-error');
     const createButton = dialog && dialog.querySelector('#pp-reprint-create');
     const selected = dialog && dialog.querySelector('input[name="pp-reprint-reason"]:checked');
+    const operatorName = String((dialog && dialog.querySelector('#pp-reprint-operator')?.value) || '').trim();
     const reason = selected ? selected.value : '';
     const note = String((dialog && dialog.querySelector('#pp-reprint-note')?.value) || '').trim();
 
+    if (!operatorName) {
+      if (errorNode) errorNode.textContent = 'Operator name is required.';
+      return;
+    }
     if (!reason) {
       if (errorNode) errorNode.textContent = 'Reason is required.';
       return;
@@ -47,6 +52,7 @@
     try {
       await options.onSubmit({
         ...dialogState,
+        operatorName,
         reason,
         note,
       });
@@ -66,6 +72,7 @@
       orderName: input.orderName || input.orderId,
       printFilePath: input.printFilePath,
       printFileLabel: input.printFileLabel || options.fileNameFromPath(input.printFilePath),
+      operatorName: input.operatorName || '',
     };
 
     const reasonOptions = REPRINT_REASONS.map((reason) =>
@@ -83,13 +90,14 @@
       <div class="pp-modal-body">
         <div class="pp-modal-field"><span>Order</span><strong>${esc(dialogState.orderName || '-')}</strong></div>
         <div class="pp-modal-field"><span>PDF</span><strong>${esc(dialogState.printFileLabel || '-')}</strong><small>${esc(dialogState.printFilePath || '')}</small></div>
+        <label class="pp-modal-field"><span>Operator name</span><input id="pp-reprint-operator" class="input-sm" type="text" value="${esc(dialogState.operatorName || '')}" autocomplete="name"></label>
         <div class="pp-reprint-reasons">${reasonOptions}</div>
         <textarea id="pp-reprint-note" class="pp-reprint-note" placeholder="Add details if needed"></textarea>
         <div class="pp-reprint-error" id="pp-reprint-error"></div>
       </div>
       <div class="pp-modal-actions">
         <button class="btn-sm" type="button" data-reprint-cancel="true">Cancel</button>
-        <button class="btn-sm" type="button" id="pp-reprint-create">Create request</button>
+        <button class="btn-sm" type="button" id="pp-reprint-create">Create reprint</button>
       </div>
     </div>`;
     document.body.appendChild(host);

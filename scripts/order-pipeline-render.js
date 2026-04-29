@@ -79,6 +79,26 @@
     return `${orderId || ''}::${printFilePath || ''}`;
   }
 
+  function getFileHistory(orderId, printFilePath, options) {
+    const history = options.reprintHistoryByKey && options.reprintHistoryByKey.get(getReprintKey(orderId, printFilePath));
+    return Array.isArray(history) ? history : [];
+  }
+
+  function renderReprintHistory(entries, esc) {
+    if (!entries.length) return '';
+    return `<div class="pp-reprint-history">
+      <div class="pp-section-label">Reprint history</div>
+      ${entries.map((entry) => `<div class="pp-reprint-history-entry">
+        <span class="pp-pipeline-badge reprint">${esc(entry.status || 'pending')}</span>
+        <span>${esc(entry.reason || '-')}</span>
+        <span>${esc(entry.requestedBy || '-')}</span>
+        <span>Requested: ${esc(formatPipelineDateTime(entry.requestedAt))}</span>
+        ${entry.confirmedAt ? `<span>Confirmed: ${esc(formatPipelineDateTime(entry.confirmedAt))}</span>` : ''}
+        ${entry.note ? `<small>${esc(entry.note)}</small>` : ''}
+      </div>`).join('')}
+    </div>`;
+  }
+
   function renderPdfFiles(row, options) {
     const esc = options.esc;
     const files = normalizePrintFiles(row);
@@ -88,11 +108,12 @@
       const label = fileNameFromPath(path) || `PDF ${index + 1}`;
       const href = options.toFileHref(path);
       const orderId = row.processedOrderId || row.id;
+      const history = getFileHistory(orderId, path, options);
       const pendingKey = getReprintKey(orderId, path);
-      const pending = row.reprintPending || options.reprintPendingKeys.has(pendingKey);
+      const pending = history.some((entry) => entry.status === 'pending') || options.reprintPendingKeys.has(pendingKey);
       const reprintDisabled = !orderId || !path;
       const reprintAction = pending
-        ? `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="${esc(path)}">Mark resolved</button>`
+        ? `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="${esc(path)}">Mark reprinted</button>`
         : `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>Reprint request</button>`;
       return `<div class="pp-file-block">
         <div class="pp-file-title">${esc(label)}</div>
@@ -103,6 +124,7 @@
           ${pending ? '<button class="btn-sm" type="button" disabled>Reprint pending</button>' : ''}
           ${reprintAction}
         </div>
+        ${renderReprintHistory(history, esc)}
       </div>`;
     }).join('');
   }

@@ -11,6 +11,7 @@ const {
   createReprintRequest,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
+  listReprintRequests,
   resolveReprintRequest,
 } = require('./_lib/processed-print-orders');
 
@@ -34,6 +35,15 @@ exports.handler = async function handler(event) {
     if (event.httpMethod === 'GET') {
       const query = event.queryStringParameters || {};
       const body = await withClient(async (client) => {
+        if (query.reprintHistoryOrderIds) {
+          const orderIds = String(query.reprintHistoryOrderIds || '')
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean);
+          const requests = await listReprintRequests(client, orderIds);
+          return { ok: true, requests };
+        }
+
         const rows = await listProcessedPrintOrders(client, {
           limit: query.limit,
           month: query.month,
@@ -48,11 +58,11 @@ exports.handler = async function handler(event) {
     if (event.httpMethod === 'POST') {
       const bodyInput = parseRequestBody(event);
       const action = String(bodyInput.action || '').trim().toLowerCase();
-      if (action !== 'reprint' && action !== 'resolve_reprint') {
+      if (action !== 'reprint' && action !== 'resolve_reprint' && action !== 'mark_reprinted') {
         return json(400, { ok: false, error: 'Unsupported action' });
       }
 
-      if (action === 'resolve_reprint') {
+      if (action === 'resolve_reprint' || action === 'mark_reprinted') {
         const body = await withClient(async (client) => {
           const request = await resolveReprintRequest(client, {
             orderId: bodyInput.orderId || bodyInput.order_id,
@@ -72,7 +82,7 @@ exports.handler = async function handler(event) {
           workstationId: bodyInput.workstationId || bodyInput.workstation_id,
           note: bodyInput.note,
         });
-        return { ok: true, alreadyPending: Boolean(request && request.alreadyPending), request };
+        return { ok: true, request };
       });
       return json(200, body);
     }

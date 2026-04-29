@@ -5,9 +5,10 @@
   const Filters = window.PrintGuardOrderPipelineFilters;
   const Render = window.PrintGuardOrderPipelineRender;
   const ReprintModal = window.PrintGuardReprintModal;
+  const ReprintXml = window.PrintGuardReprintXml;
   const PdfOpen = window.PrintGuardPdfOpen;
 
-  if (!Api || !Filters || !Render || !ReprintModal || !PdfOpen) {
+  if (!Api || !Filters || !Render || !ReprintModal || !ReprintXml || !PdfOpen) {
     throw new Error('Missing Processed Print Orders modules');
   }
 
@@ -26,6 +27,7 @@
     renderPostPurchaseAccessRequired: null,
     fetchImpl: null,
     reprintPendingKeys: new Set(),
+    reprintHistoryByKey: new Map(),
   };
 
   function initPostPurchaseUI(deps) {
@@ -63,32 +65,83 @@
     if (reprint) reprint.value = state.S.postPurchaseReprint || 'all';
   }
 
-  function getActor() {
-    return (state.cfg && state.cfg.userName) || (state.cfg && state.cfg.role) || 'operator';
+  function getOperatorName() {
+    return (state.cfg && state.cfg.userName) || '';
   }
 
   function getRenderOptions() {
     return {
       esc: state.esc,
+      reprintHistoryByKey: state.reprintHistoryByKey,
       reprintPendingKeys: state.reprintPendingKeys,
       toFileHref: PdfOpen.uncToFileHref,
     };
   }
 
+  function getProcessedOrderId(row) {
+    return row && (row.processedOrderId || row.id);
+  }
+
+  function findOrderAndPrintFile(orderId, printFilePath) {
+    const rows = state.S.postPurchaseOrders || [];
+    const id = String(orderId || '');
+    for (const row of rows) {
+      if (String(getProcessedOrderId(row) || '') !== id) continue;
+      const files = Array.isArray(row.printFiles) ? row.printFiles : [];
+      const printFile = files.find((file) => (file.printFilePath || '') === printFilePath);
+      if (printFile) return { row, printFile };
+    }
+    return { row: null, printFile: null };
+  }
+
+  function storeReprintHistory(requests) {
+    state.reprintHistoryByKey = new Map();
+    (Array.isArray(requests) ? requests : []).forEach((request) => {
+      const key = Render.getReprintKey(request.orderId, request.printFilePath);
+      if (!state.reprintHistoryByKey.has(key)) state.reprintHistoryByKey.set(key, []);
+      state.reprintHistoryByKey.get(key).push(request);
+    });
+  }
+
+  async function loadVisibleReprintHistory() {
+    const orderIds = (state.S.postPurchaseOrders || []).map(getProcessedOrderId).filter(Boolean);
+    if (!orderIds.length) {
+      storeReprintHistory([]);
+      return;
+    }
+    try {
+      const payload = await Api.loadReprintHistory({
+        fetchImpl: state.fetchImpl,
+        headers: state.postPurchaseHeaders(),
+        orderIds,
+      });
+      storeReprintHistory(payload.requests || []);
+    } catch (error) {
+      console.error('Reprint history load failed', error);
+      storeReprintHistory([]);
+    }
+  }
+
   async function createReprintRequest(payload) {
     try {
+      const selected = findOrderAndPrintFile(payload.orderId, payload.printFilePath);
       const result = await Api.createReprintRequest({
         fetchImpl: state.fetchImpl,
         headers: state.postPurchaseJsonHeaders(),
         payload: {
           ...payload,
-          requestedBy: getActor(),
+          requestedBy: payload.operatorName,
           workstationId: state.cfg && state.cfg.deviceId,
         },
       });
       state.reprintPendingKeys.add(Render.getReprintKey(payload.orderId, payload.printFilePath));
-      state.showToast(result && result.alreadyPending ? 'Reprint request already pending' : 'Reprint request created', 'success');
-      renderPostPurchaseOrders();
+      if (selected.row && selected.printFile) {
+        const xml = ReprintXml.generateReprintXml(selected.row, selected.printFile);
+        ReprintXml.downloadXml(xml, selected.row.orderName || payload.orderName || payload.orderId);
+      }
+      state.showToast('Reprint request created', 'success');
+      state.S.postPurchaseLoaded = false;
+      await loadPostPurchaseOrders(true);
       return result;
     } catch (error) {
       console.error('Reprint request failed', error);
@@ -105,7 +158,7 @@
         payload,
       });
       state.reprintPendingKeys.delete(Render.getReprintKey(payload.orderId, payload.printFilePath));
-      state.showToast('Reprint request resolved', 'success');
+      state.showToast('Reprint marked as done', 'success');
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
     } catch (error) {
@@ -137,6 +190,7 @@
         filters: Filters.getFiltersFromState(state.S),
       });
       state.S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
+      await loadVisibleReprintHistory();
       state.S.postPurchaseLoaded = true;
       updateMonthFilter(payload.months || []);
       updateFilterControls();
@@ -193,6 +247,7 @@
         ReprintModal.open({
           orderId: button.dataset.reprintOrderId,
           orderName: button.dataset.reprintOrderName,
+          operatorName: getOperatorName(),
           printFilePath: button.dataset.printFilePath || '',
           printFileLabel: button.dataset.printFileLabel,
         }, {

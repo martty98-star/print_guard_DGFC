@@ -1,7 +1,7 @@
 {
   "name": "print-guard-dgfc",
   "private": true,
-  "version": "6.0.0",
+  "version": "7.0.0",
   "scripts": {
     "export:colorado-monthly": "node scripts/export-colorado-monthly.js",
     "sync:postpurchase-orders": "node scripts/sync-postpurchase-orders.js",

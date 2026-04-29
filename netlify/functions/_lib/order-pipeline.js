@@ -240,7 +240,7 @@ async function listOrderPipeline(client, options = {}) {
       select *
       from v_print_order_pipeline
       ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by coalesce(processed_at, received_at, api_seen_at) desc nulls last, order_number desc
+      order by coalesce(received_at, api_seen_at, processed_at, queued_date_time) desc nulls last, order_number desc
       limit $1
     `,
     params
