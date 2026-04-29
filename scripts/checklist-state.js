@@ -10,6 +10,8 @@
   function createState() {
     return {
       applyRoleUI: null,
+      adminErrorMessage: null,
+      adminHeaders: null,
       cfg: null,
       el: null,
       fetchImpl: null,

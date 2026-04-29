@@ -203,6 +203,8 @@
   function initChecklistUI(options) {
     if (state.initialized) return;
 
+    state.adminErrorMessage = options.adminErrorMessage || null;
+    state.adminHeaders = options.adminHeaders || null;
     state.applyRoleUI = options.applyRoleUI || null;
     state.cfg = options.cfg;
     state.el = options.el;
