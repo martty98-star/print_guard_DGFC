@@ -11,6 +11,7 @@ const {
   createReprintRequest,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
+  resolveReprintRequest,
 } = require('./_lib/processed-print-orders');
 
 function cleanApiError(error) {
@@ -47,8 +48,19 @@ exports.handler = async function handler(event) {
     if (event.httpMethod === 'POST') {
       const bodyInput = parseRequestBody(event);
       const action = String(bodyInput.action || '').trim().toLowerCase();
-      if (action !== 'reprint') {
+      if (action !== 'reprint' && action !== 'resolve_reprint') {
         return json(400, { ok: false, error: 'Unsupported action' });
+      }
+
+      if (action === 'resolve_reprint') {
+        const body = await withClient(async (client) => {
+          const request = await resolveReprintRequest(client, {
+            orderId: bodyInput.orderId || bodyInput.order_id,
+            printFilePath: bodyInput.printFilePath || bodyInput.print_file_path,
+          });
+          return { ok: true, request };
+        });
+        return json(200, body);
       }
 
       const body = await withClient(async (client) => {

@@ -97,6 +97,24 @@
     }
   }
 
+  async function resolveReprintRequest(payload) {
+    try {
+      await Api.resolveReprintRequest({
+        fetchImpl: state.fetchImpl,
+        headers: state.postPurchaseJsonHeaders(),
+        payload,
+      });
+      state.reprintPendingKeys.delete(Render.getReprintKey(payload.orderId, payload.printFilePath));
+      state.showToast('Reprint request resolved', 'success');
+      state.S.postPurchaseLoaded = false;
+      await loadPostPurchaseOrders(true);
+    } catch (error) {
+      console.error('Resolve reprint request failed', error);
+      state.showToast(error && error.message ? error.message : 'Reprint request could not be resolved', 'error');
+      throw error;
+    }
+  }
+
   async function loadPostPurchaseOrders(force = false) {
     if (state.S.postPurchaseLoading) return;
     if (state.S.postPurchaseLoaded && !force) {
@@ -181,6 +199,17 @@
           esc: state.esc,
           fileNameFromPath: Render.fileNameFromPath,
           onSubmit: createReprintRequest,
+        });
+      });
+    });
+    wrap.querySelectorAll('[data-resolve-reprint-order-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        resolveReprintRequest({
+          orderId: button.dataset.resolveReprintOrderId,
+          printFilePath: button.dataset.resolvePrintFilePath || '',
+        }).catch(() => {
+          button.disabled = false;
         });
       });
     });

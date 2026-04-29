@@ -386,11 +386,58 @@ async function createReprintRequest(client, input) {
   };
 }
 
+async function resolveReprintRequest(client, input) {
+  await ensureProcessedPrintOrderTables(client);
+  const orderId = Number(input && input.orderId);
+  if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
+  const printFilePath = cleanString(input && input.printFilePath);
+  if (!printFilePath) throw new Error('Missing print file path');
+
+  const result = await client.query(
+    `
+      update processed_order_reprint_requests
+      set status = 'resolved'
+      where id = (
+        select id
+        from processed_order_reprint_requests
+        where order_id = $1
+          and print_file_path = $2
+          and status = 'pending'
+        order by requested_at desc, id desc
+        limit 1
+      )
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, workstation_id, status, note
+    `,
+    [orderId, printFilePath]
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    const error = new Error('Pending reprint request not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    id: Number(row.id),
+    orderId: Number(row.order_id),
+    orderName: row.order_name,
+    printFilePath: row.print_file_path,
+    reason: row.reason,
+    requestedBy: row.requested_by,
+    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
+    workstationId: row.workstation_id,
+    status: row.status,
+    note: row.note,
+  };
+}
+
 module.exports = {
   createReprintRequest,
   ensureProcessedPrintOrderTables,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
   listKnownProcessedXmlHashes,
+  resolveReprintRequest,
   upsertProcessedPrintOrder,
 };

@@ -91,13 +91,17 @@
       const pendingKey = getReprintKey(orderId, path);
       const pending = row.reprintPending || options.reprintPendingKeys.has(pendingKey);
       const reprintDisabled = !orderId || !path;
+      const reprintAction = pending
+        ? `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="${esc(path)}">Mark resolved</button>`
+        : `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>Reprint request</button>`;
       return `<div class="pp-file-block">
         <div class="pp-file-title">${esc(label)}</div>
         <div class="pp-file-path">${esc(path || '-')}</div>
         <div class="pp-file-actions">
           <button class="btn-sm" type="button" data-open-pdf-path="${esc(path)}" data-open-pdf-href="${esc(href)}">Open PDF</button>
           <button class="btn-sm" type="button" data-copy-path="${esc(path)}">Copy path</button>
-          <button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${pending ? 'Reprint pending' : 'Reprint request'}</button>
+          ${pending ? '<button class="btn-sm" type="button" disabled>Reprint pending</button>' : ''}
+          ${reprintAction}
         </div>
       </div>`;
     }).join('');

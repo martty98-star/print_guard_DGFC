@@ -56,10 +56,26 @@
     return readJsonResponse(res, 'Failed to create reprint request');
   }
 
+  async function resolveReprintRequest(options) {
+    const payload = options.payload || {};
+    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
+      method: 'POST',
+      headers: options.headers || {},
+      cache: 'no-store',
+      body: JSON.stringify({
+        action: 'resolve_reprint',
+        orderId: payload.orderId,
+        printFilePath: payload.printFilePath,
+      }),
+    });
+    return readJsonResponse(res, 'Failed to resolve reprint request');
+  }
+
   window.PrintGuardOrderPipelineApi = {
     buildOrderPipelineUrl,
     createReprintRequest,
     loadOrderPipeline,
     readJsonResponse,
+    resolveReprintRequest,
   };
 })();
