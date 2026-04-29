@@ -2551,7 +2551,55 @@ function exportCSVStockLog() {
 //  NAVIGATION + MODE
 // ══════════════════════════════════════════════════════════
 
-function navigate(screenId) {
+const LAST_SCREEN_KEY = 'pg_last_screen';
+const DEFAULT_SCREEN = 'stock-overview';
+
+function isValidScreen(screenId) {
+  return Boolean(screenId && el('screen-' + screenId));
+}
+
+function getInitialScreen() {
+  const params = new URLSearchParams(window.location.search);
+  const urlScreen = params.get('screen');
+  if (isValidScreen(urlScreen)) return urlScreen;
+
+  const storedScreen = ls(LAST_SCREEN_KEY);
+  if (isValidScreen(storedScreen)) return storedScreen;
+
+  return isValidScreen('home') ? 'home' : DEFAULT_SCREEN;
+}
+
+function getModeForScreen(screenId) {
+  return ['co-dashboard', 'co-entry', 'co-history', 'print-log', 'postpurchase-orders'].includes(screenId)
+    ? 'colorado'
+    : 'stock';
+}
+
+function applyModeUI(mode) {
+  S.mode = mode === 'colorado' ? 'colorado' : 'stock';
+  document.querySelectorAll('.mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === S.mode));
+  el('stock-nav')?.classList.toggle('hidden', S.mode !== 'stock');
+  el('colorado-nav')?.classList.toggle('hidden', S.mode !== 'colorado');
+}
+
+function persistScreenRoute(screenId, options = {}) {
+  if (!isValidScreen(screenId)) return;
+  ls(LAST_SCREEN_KEY, screenId);
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('screen') === screenId && !options.replace) return;
+  params.set('screen', screenId);
+  const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash || ''}`;
+  const state = { screen: screenId };
+  if (options.replace) window.history.replaceState(state, '', nextUrl);
+  else window.history.pushState(state, '', nextUrl);
+}
+
+function navigate(screenId, options = {}) {
+  if (!isValidScreen(screenId)) screenId = DEFAULT_SCREEN;
+  applyModeUI(getModeForScreen(screenId));
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   el('screen-' + screenId)?.classList.add('active');
 
@@ -2569,16 +2617,13 @@ function navigate(screenId) {
   if (screenId === 'postpurchase-orders') loadPostPurchaseOrders();
   if (screenId === 'settings')      loadSettingsUI();
 
+  persistScreenRoute(screenId, options);
   window.scrollTo(0, 0);
   applyRoleUI(); // ✅ IMPORTANT
 }
 
 function setMode(mode) {
-  S.mode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.mode === mode));
-  el('stock-nav').classList.toggle('hidden', mode !== 'stock');
-  el('colorado-nav').classList.toggle('hidden', mode !== 'colorado');
+  applyModeUI(mode);
   navigate(mode === 'stock' ? 'stock-overview' : 'co-dashboard');
 }
 
@@ -2991,6 +3036,10 @@ async function init() {
   document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(b =>
     b.addEventListener('click', () => navigate(b.dataset.screen)));
 
+  window.addEventListener('popstate', () => {
+    navigate(getInitialScreen(), { replace: true });
+  });
+
   // Back buttons
   document.querySelectorAll('.back-btn').forEach(b =>
     b.addEventListener('click', () => navigate(b.dataset.screen || 'stock-overview')));
@@ -3278,10 +3327,7 @@ el('sync-btn').addEventListener('click', async () => {
     setupAppUpdateChecks();
   }
 
-  // URL params
-  const p = new URLSearchParams(location.search);
-  if (p.get('mode'))   setMode(p.get('mode'));
-  if (p.get('screen')) navigate(p.get('screen'));
+  navigate(getInitialScreen(), { replace: true });
   applyRoleUI();
 }
 

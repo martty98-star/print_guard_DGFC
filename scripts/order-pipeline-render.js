@@ -89,12 +89,16 @@
     return `<div class="pp-reprint-history">
       <div class="pp-section-label">Reprint history</div>
       ${entries.map((entry) => `<div class="pp-reprint-history-entry">
-        <span class="pp-pipeline-badge reprint">${esc(entry.status || 'pending')}</span>
-        <span>${esc(entry.reason || '-')}</span>
-        <span>${esc(entry.requestedBy || '-')}</span>
-        <span>Requested: ${esc(formatPipelineDateTime(entry.requestedAt))}</span>
-        ${entry.confirmedAt ? `<span>Confirmed: ${esc(formatPipelineDateTime(entry.confirmedAt))}</span>` : ''}
-        ${entry.note ? `<small>${esc(entry.note)}</small>` : ''}
+        <div class="pp-reprint-history-top">
+          <span class="pp-pipeline-badge reprint">${esc(entry.status || 'pending')}</span>
+          <strong>${esc(entry.reason || '-')}</strong>
+        </div>
+        <div class="pp-reprint-history-meta">
+          <span>${esc(entry.requestedBy || '-')}</span>
+          <span>Requested: ${esc(formatPipelineDateTime(entry.requestedAt))}</span>
+          ${entry.confirmedAt ? `<span>Confirmed: ${esc(formatPipelineDateTime(entry.confirmedAt))}</span>` : ''}
+        </div>
+        ${entry.note ? `<div class="pp-reprint-history-note">${esc(entry.note)}</div>` : ''}
       </div>`).join('')}
     </div>`;
   }

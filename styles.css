@@ -506,7 +506,7 @@ textarea { resize: vertical; min-height: 58px; }
 .hist-tab.active { background: var(--text); color: var(--bg4); }
 
 /* ── Tables ── */
-.table-wrap { overflow-x: auto; }
+.table-wrap { max-width: 100%; overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; font-size: .78rem; min-width: 580px; }
 .data-table th {
   font-size: .57rem; font-weight: 600; text-transform: uppercase; letter-spacing: .09em;
@@ -957,6 +957,8 @@ textarea { resize: vertical; min-height: 58px; }
   border: 1px solid var(--border);
   background: var(--bg4);
   padding: 14px;
+  max-width: 100%;
+  overflow: hidden;
 }
 .pp-processed-head {
   display: flex;
@@ -964,6 +966,9 @@ textarea { resize: vertical; min-height: 58px; }
   gap: 12px;
   align-items: flex-start;
   margin-bottom: 10px;
+}
+.pp-processed-head > * {
+  min-width: 0;
 }
 .pp-processed-time {
   color: var(--text-dim);
@@ -1022,6 +1027,7 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-file-block {
   border-top: 1px solid var(--border);
   padding-top: 8px;
+  min-width: 0;
 }
 .pp-file-title {
   color: var(--text);
@@ -1042,6 +1048,44 @@ textarea { resize: vertical; min-height: 58px; }
   gap: 6px;
   flex-wrap: wrap;
   min-width: 190px;
+}
+.pp-reprint-history {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+}
+.pp-reprint-history-entry {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 8px 9px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.pp-reprint-history-top,
+.pp-reprint-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.pp-reprint-history-top strong {
+  color: var(--text);
+  font-size: .78rem;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pp-reprint-history-meta {
+  color: var(--text-faint);
+  font-size: .66rem;
+}
+.pp-reprint-history-note {
+  color: var(--text-dim);
+  font-size: .72rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .pp-file-name {
   color: var(--text-faint);
@@ -1310,6 +1354,8 @@ textarea { resize: vertical; min-height: 58px; }
   }
   .screen {
     padding: 22px 14px 108px;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
   .screen-header {
     flex-wrap: wrap;
@@ -1326,6 +1372,28 @@ textarea { resize: vertical; min-height: 58px; }
     height: 48px;
     right: 14px;
     bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+  }
+}
+
+@media (max-width: 640px) {
+  .pp-processed-head,
+  .pp-xml-source {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pp-processed-time {
+    white-space: normal;
+  }
+  .pp-file-actions {
+    min-width: 0;
+  }
+  .pp-file-actions .btn-sm,
+  .pp-xml-source .btn-sm {
+    flex: 1 1 140px;
+  }
+  .pp-reprint-history-top,
+  .pp-reprint-history-meta {
+    align-items: flex-start;
   }
 }
 
