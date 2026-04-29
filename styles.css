@@ -881,6 +881,10 @@ textarea { resize: vertical; min-height: 58px; }
   gap: 5px;
   min-width: 0;
 }
+.checklist-completion-card.is-missing {
+  border-color: rgba(155, 58, 47, .35);
+  background: rgba(155, 58, 47, .05);
+}
 .checklist-completion-task {
   color: var(--text);
   font-size: .82rem;
@@ -895,6 +899,97 @@ textarea { resize: vertical; min-height: 58px; }
   gap: 4px 12px;
   font-size: .68rem;
   line-height: 1.4;
+}
+.checklist-log-summary {
+  border: 1px solid var(--border);
+  background: var(--bg4);
+  padding: 12px;
+  margin-bottom: 10px;
+  display: grid;
+  gap: 10px;
+}
+.checklist-log-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: .68rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: var(--wide);
+}
+.checklist-log-summary-head strong {
+  color: var(--text);
+  font-size: .68rem;
+}
+.checklist-log-summary-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.checklist-log-summary-item {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.checklist-log-summary-item span {
+  color: var(--text-dim);
+  font-size: .7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.checklist-log-summary-item strong {
+  color: var(--accent);
+  font-size: .75rem;
+  flex-shrink: 0;
+}
+.checklist-log-summary-empty {
+  color: var(--text-faint);
+  font-size: .7rem;
+}
+.checklist-log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.checklist-log-filter {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: .58rem;
+  font-weight: 600;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+  padding: 6px 10px;
+}
+.checklist-log-filter.active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg4);
+}
+.checklist-log-days {
+  display: grid;
+  gap: 12px;
+}
+.checklist-log-day {
+  display: grid;
+  gap: 8px;
+}
+.checklist-log-day-header {
+  color: var(--text-faint);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
 }
 .csv-info {
   background: var(--bg2); border: 1px solid var(--border);
@@ -1421,6 +1516,14 @@ textarea { resize: vertical; min-height: 58px; }
   .pp-reprint-history-top,
   .pp-reprint-history-meta {
     align-items: flex-start;
+  }
+  .checklist-log-summary-head,
+  .checklist-log-summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .checklist-log-summary-item strong {
+    align-self: flex-end;
   }
 }
 
