@@ -598,8 +598,23 @@
       </div>
       <div class="pp-filter-row">
         <input type="search" id="postpurchase-search" placeholder="Search order, PDF, XML, page size">
-        <select id="postpurchase-month-filter" class="input-sm">
-          <option value="">All months</option>
+        <select id="postpurchase-date-preset" class="input-sm">
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="this_week">This week</option>
+          <option value="last_week">Last week</option>
+          <option value="this_month" selected>This month</option>
+          <option value="last_month">Last month</option>
+          <option value="custom">Custom range</option>
+        </select>
+        <input type="date" id="postpurchase-date-from" class="input-sm" aria-label="From date">
+        <input type="date" id="postpurchase-date-to" class="input-sm" aria-label="To date">
+        <select id="postpurchase-reprint-filter" class="input-sm">
+          <option value="all">All reprints</option>
+          <option value="has_reprint">Has reprint request</option>
+          <option value="pending">Reprint pending</option>
+          <option value="completed">Reprint completed</option>
+          <option value="none">No reprint</option>
         </select>
         <button class="btn-sm" id="postpurchase-clear-filters">Clear</button>
       </div>
@@ -823,10 +838,10 @@
   <script src="scripts/print-log-ui.js"></script>
   <script src="scripts/checklist-api.js"></script>
   <script src="scripts/checklist-ui.js"></script>
-  <script src="scripts/postpurchase-ui.js?v=6.0.3"></script>
+  <script src="scripts/postpurchase-ui.js?v=6.0.4"></script>
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
   </script>
-  <script src="app.js?v=6.0.3"></script>
+  <script src="app.js?v=6.0.4"></script>
 </body>
 </html>

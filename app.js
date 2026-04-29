@@ -5,7 +5,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'printguard-6.0.3';
+const APP_VERSION = 'printguard-6.0.4';
 const DB_NAME     = 'printguard-db';
 const DB_VERSION  = 2;
 const ST_ITEMS    = 'items';
@@ -417,6 +417,10 @@ const S = {
   postPurchaseFilter: 'open',
   postPurchaseSearch: '',
   postPurchaseMonth: '',
+  postPurchaseDatePreset: 'this_month',
+  postPurchaseDateFrom: '',
+  postPurchaseDateTo: '',
+  postPurchaseReprint: 'all',
   syncRunning:      false,
   syncIntervalId:   null,
 };
@@ -3167,15 +3171,38 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseSearch = e.target.value || '';
     loadPostPurchaseOrders(true);
   });
-  el('postpurchase-month-filter')?.addEventListener('change', e => {
-    S.postPurchaseMonth = e.target.value || '';
+  el('postpurchase-date-preset')?.addEventListener('change', e => {
+    S.postPurchaseDatePreset = e.target.value || 'this_month';
+    loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-date-from')?.addEventListener('change', e => {
+    S.postPurchaseDateFrom = e.target.value || '';
+    if (S.postPurchaseDateFrom || S.postPurchaseDateTo) S.postPurchaseDatePreset = 'custom';
+    if (el('postpurchase-date-preset')) el('postpurchase-date-preset').value = S.postPurchaseDatePreset;
+    loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-date-to')?.addEventListener('change', e => {
+    S.postPurchaseDateTo = e.target.value || '';
+    if (S.postPurchaseDateFrom || S.postPurchaseDateTo) S.postPurchaseDatePreset = 'custom';
+    if (el('postpurchase-date-preset')) el('postpurchase-date-preset').value = S.postPurchaseDatePreset;
+    loadPostPurchaseOrders(true);
+  });
+  el('postpurchase-reprint-filter')?.addEventListener('change', e => {
+    S.postPurchaseReprint = e.target.value || 'all';
     loadPostPurchaseOrders(true);
   });
   el('postpurchase-clear-filters')?.addEventListener('click', () => {
     S.postPurchaseSearch = '';
     S.postPurchaseMonth = '';
+    S.postPurchaseDatePreset = 'this_month';
+    S.postPurchaseDateFrom = '';
+    S.postPurchaseDateTo = '';
+    S.postPurchaseReprint = 'all';
     if (el('postpurchase-search')) el('postpurchase-search').value = '';
-    if (el('postpurchase-month-filter')) el('postpurchase-month-filter').value = '';
+    if (el('postpurchase-date-preset')) el('postpurchase-date-preset').value = 'this_month';
+    if (el('postpurchase-date-from')) el('postpurchase-date-from').value = '';
+    if (el('postpurchase-date-to')) el('postpurchase-date-to').value = '';
+    if (el('postpurchase-reprint-filter')) el('postpurchase-reprint-filter').value = 'all';
     loadPostPurchaseOrders(true);
   });
   el('postpurchase-unlock-btn')?.addEventListener('click', () => {

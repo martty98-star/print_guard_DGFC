@@ -77,6 +77,26 @@
     return `${dd}.${mm}. ${hh}:${min}`;
   }
 
+  function isToday(date) {
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear()
+      && date.getMonth() === now.getMonth()
+      && date.getDate() === now.getDate();
+  }
+
+  function formatPipelineDateTime(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    if (isToday(date)) return `${hh}:${min}`;
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
+  }
+
   function fileNameFromPath(value) {
     const raw = String(value || '');
     return raw.split(/[\\/]/).filter(Boolean).pop() || raw;
@@ -106,11 +126,28 @@
     select.value = current;
   }
 
+  function updateFilterControls() {
+    const preset = state.el('postpurchase-date-preset');
+    const from = state.el('postpurchase-date-from');
+    const to = state.el('postpurchase-date-to');
+    const reprint = state.el('postpurchase-reprint-filter');
+    if (preset) preset.value = state.S.postPurchaseDatePreset || 'this_month';
+    if (from) from.value = state.S.postPurchaseDateFrom || '';
+    if (to) to.value = state.S.postPurchaseDateTo || '';
+    if (reprint) reprint.value = state.S.postPurchaseReprint || 'all';
+  }
+
   function buildProcessedOrdersUrl() {
     const params = new URLSearchParams();
     params.set('limit', '500');
-    if (state.S.postPurchaseSearch) params.set('search', state.S.postPurchaseSearch);
+    params.set('datePreset', state.S.postPurchaseDatePreset || 'this_month');
+    params.set('reprint', state.S.postPurchaseReprint || 'all');
+    if (state.S.postPurchaseSearch) params.set('q', state.S.postPurchaseSearch);
     if (state.S.postPurchaseMonth) params.set('month', state.S.postPurchaseMonth);
+    if ((state.S.postPurchaseDatePreset || '') === 'custom') {
+      if (state.S.postPurchaseDateFrom) params.set('from', state.S.postPurchaseDateFrom);
+      if (state.S.postPurchaseDateTo) params.set('to', state.S.postPurchaseDateTo);
+    }
     return '/.netlify/functions/order-pipeline?' + params.toString();
   }
 
@@ -138,6 +175,7 @@
       state.S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseLoaded = true;
       updateMonthFilter(payload.months || []);
+      updateFilterControls();
       renderPostPurchaseOrders();
       state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} pipeline orders`);
     } catch (error) {
@@ -185,6 +223,8 @@
     }
     if (row.reprintPending || row.pipelineStatus === 'reprint_pending') {
       badges.push('<span class="pp-pipeline-badge reprint">REPRINT PENDING</span>');
+    } else if (row.reprintRequestCount > 0) {
+      badges.push('<span class="pp-pipeline-badge reprint">REPRINT REQUESTED</span>');
     }
     if (isMissingProcessedXml(row)) {
       badges.push('<span class="pp-pipeline-badge missing">Missing processed XML</span>');
@@ -228,7 +268,7 @@
 
     const rows = state.S.postPurchaseOrders || [];
     if (!rows.length) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">-</div><p>No processed orders found.</p></div>`;
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">-</div><p>No orders match the current filters.</p></div>`;
       return;
     }
 
@@ -239,7 +279,10 @@
             <div class="pp-order-main">${state.esc(row.orderName || '-')}</div>
             <div class="pp-order-sub">${state.esc([row.externalOrderId, row.customerOrderId, row.xmlFileName].filter(Boolean).join(' · '))}</div>
           </div>
-          <div class="pp-processed-time">${state.esc(formatTime(row.processedAt || row.queuedDateTime || row.receivedAt || row.apiSeenAt))}</div>
+          <div class="pp-processed-time">
+            <div>SubmitTool processed: ${state.esc(formatPipelineDateTime(row.processedAt || row.queuedDateTime))}</div>
+            <div>Received at: ${state.esc(formatPipelineDateTime(row.receivedAt || row.apiSeenAt))}</div>
+          </div>
         </div>
         <div class="pp-pipeline-badges">${renderPipelineBadges(row)}</div>
         ${isMissingProcessedXml(row) ? `<div class="pp-missing-warning">Missing processed XML after ${MISSING_PROCESSED_THRESHOLD_MINUTES} minutes.</div>` : ''}

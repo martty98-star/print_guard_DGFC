@@ -38,6 +38,11 @@ exports.handler = async function handler(event) {
         limit: query.limit,
         month: query.month,
         search: query.search,
+        q: query.q,
+        datePreset: query.datePreset,
+        from: query.from,
+        to: query.to,
+        reprint: query.reprint,
       });
       const months = await listPipelineMonths(client);
       return { ok: true, rows, months };

@@ -1,12 +1,14 @@
 drop view if exists v_print_order_pipeline;
 
 create view v_print_order_pipeline as
-with pending_reprints as (
+with reprint_summary as (
   select
     order_id,
-    true as has_pending_reprint
+    count(*)::int as reprint_request_count,
+    count(*) filter (where status = 'pending')::int as reprint_pending_count,
+    count(*) filter (where status in ('completed', 'resolved', 'done'))::int as reprint_completed_count,
+    (array_agg(status order by requested_at desc, id desc))[1] as latest_reprint_status
   from processed_order_reprint_requests
-  where status = 'pending'
   group by order_id
 ),
 incoming_pipeline as (
@@ -93,14 +95,18 @@ select
   pr.print_files,
   pr.source_xml_path,
   pr.source_month,
-  coalesce(r.has_pending_reprint, false) as reprint_pending,
+  coalesce(r.reprint_request_count, 0) as reprint_request_count,
+  coalesce(r.reprint_pending_count, 0) as reprint_pending_count,
+  coalesce(r.reprint_completed_count, 0) as reprint_completed_count,
+  r.latest_reprint_status,
+  coalesce(r.reprint_pending_count, 0) > 0 as reprint_pending,
   case
-    when coalesce(r.has_pending_reprint, false) then 'reprint_pending'
+    when coalesce(r.reprint_pending_count, 0) > 0 then 'reprint_pending'
     when pr.external_order_id is not null and pr.processed_order_id is not null then 'processed'
     when pr.external_order_id is not null and pr.processed_order_id is null then 'received_only'
     when pr.external_order_id is null and pr.processed_order_id is not null then 'processed_without_received'
     else 'received_only'
   end as pipeline_status
 from pipeline_rows pr
-left join pending_reprints r
+left join reprint_summary r
   on r.order_id = pr.processed_order_id;

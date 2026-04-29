@@ -538,7 +538,9 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   margin: 14px 0 4px;
 }
-.pp-filter-row input[type=search] {
+.pp-filter-row input[type=search],
+.pp-filter-row input[type=date],
+.pp-filter-row select {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
@@ -548,7 +550,10 @@ textarea { resize: vertical; min-height: 58px; }
   outline: none;
 }
 .pp-filter-row input[type=search] { min-width: 240px; flex: 1; }
-.pp-filter-row input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow); }
+.pp-filter-row input[type=date] { min-width: 145px; }
+.pp-filter-row select { min-width: 150px; }
+.pp-filter-row input:focus,
+.pp-filter-row select:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow); }
 .pp-filter-tab {
   background: transparent;
   border: 1px solid var(--border);
