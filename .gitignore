@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.netlify/
+build/
+coverage/
+.env
+.env.local
+*.log
+preview-*.txt
