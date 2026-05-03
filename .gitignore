@@ -1,0 +1,4 @@
+node_modules/
+dist/
+preview-out.txt
+preview-err.txt
