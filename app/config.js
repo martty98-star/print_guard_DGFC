@@ -9,7 +9,23 @@
     return localStorage.getItem(k);
   }
 
+  function normalizeTheme(value) {
+    return value === 'dark' ? 'dark' : 'light';
+  }
+
+  function applyTheme(value) {
+    const theme = normalizeTheme(value);
+    if (global.document && global.document.documentElement) {
+      global.document.documentElement.dataset.theme = theme;
+    }
+    const metaTheme = global.document && global.document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#171512' : '#f5f2ed');
+    return theme;
+  }
+
   const cfg = {
+    get theme() { return normalizeTheme(ls('pg_theme') || 'light'); },
+    set theme(v) { ls('pg_theme', applyTheme(v)); },
     get weeksN()      { return parseInt(ls('pg_weeks')   || '8', 10); },
     set weeksN(v)     { ls('pg_weeks', v); },
     get rollingN()    { return parseInt(ls('pg_rolling') || '8', 10); },
@@ -57,7 +73,10 @@
 
   global.PrintGuardAppConfig = {
     APP_VERSION,
+    applyTheme,
     cfg,
     ls,
   };
+
+  applyTheme(cfg.theme);
 })(typeof window !== 'undefined' ? window : globalThis);

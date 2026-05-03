@@ -38,12 +38,47 @@
   --shadow-sm:     0 1px 4px rgba(44,42,38,.08);
   --shadow:        0 4px 20px rgba(44,42,38,.10);
   --shadow-lg:     0 8px 40px rgba(44,42,38,.14);
+  --overlay:       rgba(44,42,38,.45);
   --topbar-h:      60px;
   --nav-h:         68px;
   --font-d:        'Space Grotesk', system-ui, sans-serif;
   --font-ui:       'DM Sans', system-ui, sans-serif;
   --wide:          0.12em;
   --tr:            .20s cubic-bezier(.4,0,.2,1);
+}
+
+[data-theme="dark"] {
+  --bg:            #171512;
+  --bg2:           #1f1c18;
+  --bg3:           #2a251f;
+  --bg4:           #211e1a;
+  --border:        #3a332c;
+  --border-2:      #51473d;
+  --text:          #f1ede6;
+  --text-dim:      #c4b9aa;
+  --text-faint:    #8f8376;
+  --accent:        #d1ae7e;
+  --accent-light:  #e3c392;
+  --accent-glow:   rgba(209,174,126,.18);
+  --accent-bg:     rgba(209,174,126,.12);
+  --ok:            #8fbf92;
+  --ok-dim:        rgba(143,191,146,.14);
+  --warn:          #e0a15f;
+  --warn-dim:      rgba(224,161,95,.14);
+  --crit:          #df7f72;
+  --crit-dim:      rgba(223,127,114,.16);
+  --receipt:       #8fbf92;
+  --receipt-dim:   rgba(143,191,146,.14);
+  --issue:         #df7f72;
+  --issue-dim:     rgba(223,127,114,.16);
+  --stocktake:     #8fb1d6;
+  --stocktake-dim: rgba(143,177,214,.14);
+  --ink-color:     #8fb1d6;
+  --ink-dim:       rgba(143,177,214,.12);
+  --shadow-sm:     0 1px 4px rgba(0,0,0,.28);
+  --shadow:        0 4px 20px rgba(0,0,0,.34);
+  --shadow-lg:     0 8px 40px rgba(0,0,0,.48);
+  --overlay:       rgba(0,0,0,.62);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -303,7 +338,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   transition: box-shadow var(--tr), background var(--tr);
   animation: slideIn .2s ease;
 }
-.item-card:hover { box-shadow: var(--shadow); background: #fff; }
+.item-card:hover { box-shadow: var(--shadow); background: var(--bg4); }
 .item-card.warn { border-left-color: var(--warn); }
 .item-card.crit { border-left-color: var(--crit); animation: slideIn .2s ease, pulse-crit 2.5s ease-in-out infinite; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
@@ -1001,7 +1036,7 @@ textarea { resize: vertical; min-height: 58px; }
 /* ── Modal ── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 2000;
-  background: rgba(44,42,38,.45);
+  background: var(--overlay);
   display: flex; align-items: center; justify-content: center;
   padding: 16px; backdrop-filter: blur(2px);
 }

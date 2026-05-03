@@ -8,6 +8,7 @@
     el('cfg-ink-cost').value = cfg.inkCost || '';
     el('cfg-media-cost').value = cfg.mediaCost || '';
     el('cfg-cost-currency').value = cfg.costCurrency;
+    if (el('cfg-theme')) el('cfg-theme').value = cfg.theme || 'light';
     if (el('cfg-user-name')) el('cfg-user-name').value = cfg.userName || '';
     el('device-id-display').textContent = cfg.deviceId;
     el('app-version-display').textContent = APP_VERSION;
@@ -49,6 +50,7 @@
       cfg.inkCost = parseFloat(el('cfg-ink-cost').value) || 0;
       cfg.mediaCost = parseFloat(el('cfg-media-cost').value) || 0;
       cfg.costCurrency = el('cfg-cost-currency').value || cfg.costCurrency;
+      if (el('cfg-theme')) cfg.theme = el('cfg-theme').value || 'light';
       cfg.userName = (el('cfg-user-name').value || '').trim();
       await saveSettingsToIDB();
       renderStockOverview();
@@ -56,6 +58,12 @@
       renderCoHistory();
       showToast(i18n('settings.toast.saved'), 'success');
     });
+
+    if (el('cfg-theme')) {
+      el('cfg-theme').addEventListener('change', event => {
+        cfg.theme = event.target.value || 'light';
+      });
+    }
 
     el('enable-push-btn').addEventListener('click', () => {
       enablePushNotifications();

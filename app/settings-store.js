@@ -18,6 +18,7 @@
       inkCost: cfg.inkCost,
       mediaCost: cfg.mediaCost,
       costCurrency: cfg.costCurrency,
+      theme: cfg.theme,
       savedAt: new Date().toISOString(),
     });
   }
@@ -31,6 +32,7 @@
     if (rec.inkCost != null) cfg.inkCost = rec.inkCost;
     if (rec.mediaCost != null) cfg.mediaCost = rec.mediaCost;
     if (rec.costCurrency != null) cfg.costCurrency = rec.costCurrency;
+    if (rec.theme != null) cfg.theme = rec.theme;
   }
 
   global.PrintGuardSettingsStore = {
