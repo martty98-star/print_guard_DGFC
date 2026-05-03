@@ -6,10 +6,19 @@
     "export:colorado-monthly": "node scripts/export-colorado-monthly.js",
     "sync:postpurchase-orders": "node scripts/sync-postpurchase-orders.js",
     "sync:submit-tool-logs": "node scripts/sync-submit-tool-logs.js",
-    "sync:processed-print-orders": "node scripts/sync-processed-print-orders.js"
+    "sync:processed-print-orders": "node scripts/sync-processed-print-orders.js",
+    "dev:vue": "vite --config vue-shell/vite.config.mjs",
+    "build:vue": "vite build --config vue-shell/vite.config.mjs",
+    "preview:vue": "vite preview --config vue-shell/vite.config.mjs"
   },
   "dependencies": {
     "pg": "^8.19.0",
     "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.3",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   }
 }
