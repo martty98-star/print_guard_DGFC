@@ -169,6 +169,20 @@ body {
   color: rgba(245, 242, 237, .68);
 }
 
+[data-theme="dark"] .brand-partner {
+  background: var(--bg4);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+}
+
+[data-theme="dark"] .brand-partner-prefix {
+  color: var(--text-faint);
+}
+
+[data-theme="dark"] .dgfc-wordmark {
+  color: var(--text);
+}
+
 .dgfc-wordmark {
   font-family: var(--font-d);
   font-size: .96rem;
