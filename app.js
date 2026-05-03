@@ -9,6 +9,18 @@ const PrintGuardAppConfig = typeof window !== 'undefined' && window.PrintGuardAp
 if (!PrintGuardAppConfig) throw new Error('Missing PrintGuardAppConfig');
 const { APP_VERSION, cfg, ls } = PrintGuardAppConfig;
 
+const PrintGuardAuth = typeof window !== 'undefined' && window.PrintGuardAuth;
+if (!PrintGuardAuth) throw new Error('Missing PrintGuardAuth');
+const {
+  adminErrorMessage,
+  adminHeaders,
+  adminJsonHeaders,
+  appFetch,
+  postPurchaseErrorMessage,
+  postPurchaseHeaders,
+  postPurchaseJsonHeaders,
+} = PrintGuardAuth;
+
 const PrintGuardAppDB = typeof window !== 'undefined' && window.PrintGuardAppDB;
 if (!PrintGuardAppDB) throw new Error('Missing PrintGuardAppDB');
 const {
@@ -104,80 +116,12 @@ function getCostUnitPerM2() {
   return `${cfg.costCurrency} / m²`;
 }
 
-function appFetch(url, options) {
-  if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
-    return window.fetch(url, options);
-  }
-  return fetch(url, options);
-}
-
 function getCostUnitPerMonth() {
   return `${cfg.costCurrency} / ${i18n('unit.month-word')}`;
 }
 
 function loadSettingsUI() {
   return loadSettingsUIScreen({ APP_VERSION, cfg, el });
-}
-
-function getAdminPinForRequest() {
-  const pin = String(cfg.adminPin || '').trim();
-  if (!pin) {
-    throw new Error('Admin PIN is required for this action.');
-  }
-  return pin;
-}
-
-function adminHeaders(extra = {}) {
-  return {
-    ...extra,
-    'x-admin-pin': getAdminPinForRequest(),
-  };
-}
-
-function adminJsonHeaders(extra = {}) {
-  return adminHeaders({
-    'content-type': 'application/json',
-    ...extra,
-  });
-}
-
-function adminErrorMessage(error) {
-  const message = error && error.message ? error.message : String(error || '');
-  return message === 'Unauthorized' ? 'Invalid or expired admin PIN.' : message;
-}
-
-function getPostPurchasePinForRequest() {
-  const pin = String(cfg.postPurchasePin || cfg.adminPin || '').trim();
-  if (!pin) {
-    throw new Error('Processed Orders PIN is required for this action.');
-  }
-  return pin;
-}
-
-function postPurchaseHeaders(extra = {}) {
-  if (cfg.postPurchasePin) {
-    return {
-      ...extra,
-      'x-postpurchase-pin': getPostPurchasePinForRequest(),
-    };
-  }
-  return adminHeaders(extra);
-}
-
-function postPurchaseJsonHeaders(extra = {}) {
-  return postPurchaseHeaders({
-    'content-type': 'application/json',
-    ...extra,
-  });
-}
-
-function postPurchaseErrorMessage(error) {
-  const message = error && error.message ? error.message : String(error || '');
-  if (message === 'Unauthorized') return 'Invalid or expired Processed Orders PIN.';
-  if (/illegal invocation/i.test(message) || /failed to fetch/i.test(message) || /networkerror/i.test(message)) {
-    return 'Database/API unavailable. Try refresh later.';
-  }
-  return message;
 }
 
 function requireAdminPinForScreen(statusId, wrapId) {
