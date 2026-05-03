@@ -5,64 +5,28 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'printguard-7.0.0';
-const DB_NAME     = 'printguard-db';
-const DB_VERSION  = 2;
-const ST_ITEMS    = 'items';
-const ST_MOVES    = 'movements';
-const ST_CORECS   = 'co_records';
-const ST_SETTINGS = 'settings';
+const PrintGuardAppConfig = typeof window !== 'undefined' && window.PrintGuardAppConfig;
+if (!PrintGuardAppConfig) throw new Error('Missing PrintGuardAppConfig');
+const { APP_VERSION, cfg, ls } = PrintGuardAppConfig;
 
-// ── Config ─────────────────────────────────────────────────
-const cfg = {
-  get weeksN()      { return parseInt(ls('pg_weeks')   || '8', 10); },
-  set weeksN(v)     { ls('pg_weeks', v); },
-  get rollingN()    { return parseInt(ls('pg_rolling') || '8', 10); },
-  set rollingN(v)   { ls('pg_rolling', v); },
-  get inkCost()     { return parseFloat(ls('pg_ink_cost')   || '0'); },
-  set inkCost(v)    { ls('pg_ink_cost', v); },
-  get mediaCost()   { return parseFloat(ls('pg_media_cost') || '0'); },
-  set mediaCost(v)  { ls('pg_media_cost', v); },
-  get costCurrency() {
-    const stored = String(ls('pg_cost_currency') || '').toUpperCase();
-    if (stored === 'CZK' || stored === 'SEK') return stored;
-    const lang =
-      (typeof window !== 'undefined' && window.I18N && window.I18N.currentLang) ||
-      (typeof window !== 'undefined' && window.I18N && window.I18N.defaultLang) ||
-      document.documentElement.lang ||
-      'cs';
-    return lang === 'en' ? 'SEK' : 'CZK';
-  },
-  set costCurrency(v) {
-    const norm = String(v || '').toUpperCase();
-    ls('pg_cost_currency', norm === 'CZK' ? 'CZK' : 'SEK');
-  },
-  get deviceId() {
-    let id = ls('pg_device_id');
-    if (!id) { id = 'pg-' + Math.random().toString(36).slice(2, 10); ls('pg_device_id', id); }
-    return id;
-  },
-  get userName() { return ls('pg_user_name') || ''; },
-  set userName(v) { ls('pg_user_name', v); },
-  get role() { return ls('pg_role') || 'operator'; },          // operator | admin
-  set role(v) { ls('pg_role', v); },
-  get adminPin() { return sessionStorage.getItem('pg_admin_pin') || ''; },
-  set adminPin(v) {
-    const value = String(v || '').trim();
-    if (value) sessionStorage.setItem('pg_admin_pin', value);
-    else sessionStorage.removeItem('pg_admin_pin');
-  },
-  get postPurchasePin() { return sessionStorage.getItem('pg_postpurchase_pin') || ''; },
-  set postPurchasePin(v) {
-    const value = String(v || '').trim();
-    if (value) sessionStorage.setItem('pg_postpurchase_pin', value);
-    else sessionStorage.removeItem('pg_postpurchase_pin');
-  },
-};
-function ls(k, v) {
-  if (v !== undefined) { localStorage.setItem(k, String(v)); return v; }
-  return localStorage.getItem(k);
-}
+const PrintGuardAppDB = typeof window !== 'undefined' && window.PrintGuardAppDB;
+if (!PrintGuardAppDB) throw new Error('Missing PrintGuardAppDB');
+const {
+  ST_ITEMS,
+  ST_MOVES,
+  ST_CORECS,
+  ST_SETTINGS,
+  setDb,
+  openDB,
+  idbAll,
+  idbPut,
+  idbDelete,
+  idbClear,
+} = PrintGuardAppDB;
+
+const PrintGuardPushBridge = typeof window !== 'undefined' && window.PrintGuardPushBridge;
+if (!PrintGuardPushBridge) throw new Error('Missing PrintGuardPushBridge');
+const { getPushEndpointSuffix } = PrintGuardPushBridge;
 
 function i18n(key) {
   if (typeof window !== 'undefined' && window.I18N && typeof window.I18N.t === 'function') {
@@ -241,12 +205,6 @@ function requirePostPurchasePinForScreen() {
   renderPostPurchaseAccessRequired();
   showToast('Processed Orders PIN is required.', 'error');
   return false;
-}
-
-function getPushEndpointSuffix(endpoint) {
-  return typeof endpoint === 'string' && endpoint.length > 24
-    ? endpoint.slice(-24)
-    : (typeof endpoint === 'string' ? endpoint : '');
 }
 
 function showPendingUpdateToast() {
@@ -443,60 +401,6 @@ function shouldRunBackgroundSync() {
     document.visibilityState === 'visible' &&
     Date.now() - getLastCloudSyncMs() >= SYNC_MIN_INTERVAL_MS
   );
-}
-
-// ── IndexedDB ──────────────────────────────────────────────
-let db;
-
-function openDB() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains(ST_ITEMS))
-        d.createObjectStore(ST_ITEMS, { keyPath: 'articleNumber' });
-      if (!d.objectStoreNames.contains(ST_MOVES)) {
-        const m = d.createObjectStore(ST_MOVES, { keyPath: 'id' });
-        m.createIndex('byArticle', 'articleNumber', { unique: false });
-      }
-      if (!d.objectStoreNames.contains(ST_CORECS)) {
-        const c = d.createObjectStore(ST_CORECS, { keyPath: 'id' });
-        c.createIndex('byMachine', 'machineId', { unique: false });
-      }
-      if (!d.objectStoreNames.contains(ST_SETTINGS))
-        d.createObjectStore(ST_SETTINGS, { keyPath: 'key' });
-    };
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-function idbAll(store) {
-  return new Promise((res, rej) => {
-    const req = db.transaction(store, 'readonly').objectStore(store).getAll();
-    req.onsuccess = e => res(e.target.result || []);
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-function idbPut(store, obj) {
-  return new Promise((res, rej) => {
-    const req = db.transaction(store, 'readwrite').objectStore(store).put(obj);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-function idbDelete(store, key) {
-  return new Promise((res, rej) => {
-    const req = db.transaction(store, 'readwrite').objectStore(store).delete(key);
-    req.onsuccess = () => res();
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-function idbClear(store) {
-  return new Promise((res, rej) => {
-    const req = db.transaction(store, 'readwrite').objectStore(store).clear();
-    req.onsuccess = () => res();
-    req.onerror   = e => rej(e.target.error);
-  });
 }
 
 // ── Settings IDB persistence ───────────────────────────────
@@ -3026,7 +2930,7 @@ async function init() {
   if (window.I18N && typeof window.I18N.init === 'function') {
     window.I18N.init();
   }
-  db = await openDB();
+  setDb(await openDB());
 
   // Mode toggle
   document.querySelectorAll('.mode-btn').forEach(b =>
