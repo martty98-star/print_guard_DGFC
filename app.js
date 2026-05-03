@@ -36,6 +36,13 @@ const {
   idbClear,
 } = PrintGuardAppDB;
 
+const PrintGuardSettingsStore = typeof window !== 'undefined' && window.PrintGuardSettingsStore;
+if (!PrintGuardSettingsStore) throw new Error('Missing PrintGuardSettingsStore');
+const {
+  loadSettingsFromIDB,
+  saveSettingsToIDB,
+} = PrintGuardSettingsStore;
+
 const PrintGuardPushBridge = typeof window !== 'undefined' && window.PrintGuardPushBridge;
 if (!PrintGuardPushBridge) throw new Error('Missing PrintGuardPushBridge');
 const { getPushEndpointSuffix } = PrintGuardPushBridge;
@@ -348,29 +355,6 @@ function shouldRunBackgroundSync() {
 }
 
 // ── Settings IDB persistence ───────────────────────────────
-async function saveSettingsToIDB() {
-  await idbPut(ST_SETTINGS, {
-    key:        'config',
-    weeksN:     cfg.weeksN,
-    rollingN:   cfg.rollingN,
-    inkCost:    cfg.inkCost,
-    mediaCost:  cfg.mediaCost,
-    costCurrency: cfg.costCurrency,
-    savedAt:    new Date().toISOString(),
-  });
-}
-
-async function loadSettingsFromIDB() {
-  const all = await idbAll(ST_SETTINGS);
-  const rec = all.find(r => r.key === 'config');
-  if (!rec) return;
-  if (rec.weeksN   != null) cfg.weeksN   = rec.weeksN;
-  if (rec.rollingN != null) cfg.rollingN = rec.rollingN;
-  if (rec.inkCost  != null) cfg.inkCost  = rec.inkCost;
-  if (rec.mediaCost!= null) cfg.mediaCost= rec.mediaCost;
-  if (rec.costCurrency != null) cfg.costCurrency = rec.costCurrency;
-}
-
 // ── Load all data ──────────────────────────────────────────
 async function loadAll() {
   S.items     = await idbAll(ST_ITEMS);
