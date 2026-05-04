@@ -18,6 +18,10 @@ function normalizeSearchTerm(value) {
   return cleaned ? cleaned.toLowerCase().replace(/[\s_-]+/g, '') : null;
 }
 
+function pipelineDateExpr() {
+  return `(coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) at time zone 'Europe/Prague')::date`;
+}
+
 async function ensureOrderPipelineView(client) {
   await ensurePrintOrdersTable(client);
   await ensureProcessedPrintOrderTables(client);
@@ -133,11 +137,13 @@ async function ensureOrderPipelineView(client) {
       select
         pr.*,
         coalesce(rr.reprint_record_count, 0) as reprint_record_count,
-        coalesce(rr.reprint_records, '[]'::jsonb) as reprint_records
+        coalesce(rr.reprint_records, '[]'::jsonb) as reprint_records,
+        rr.latest_reprint_record_at
       from pipeline_rows pr
       left join lateral (
         select
           count(*)::int as reprint_record_count,
+          max(rp.queued_date_time) as latest_reprint_record_at,
           jsonb_agg(
             jsonb_build_object(
               'id', rp.id,
@@ -165,6 +171,8 @@ async function ensureOrderPipelineView(client) {
           from jsonb_array_elements(coalesce(pr.print_files, '[]'::jsonb)) parent_file
           join jsonb_array_elements(coalesce(rp.print_files, '[]'::jsonb)) reprint_file
             on lower(coalesce(parent_file->>'printFilePath', '')) = lower(coalesce(reprint_file->>'printFilePath', ''))
+            or regexp_replace(lower(regexp_replace(coalesce(parent_file->>'printFilePath', ''), '^.*[\\\\/]', '')), '[[:space:]_-]+', '', 'g')
+              = regexp_replace(lower(regexp_replace(coalesce(reprint_file->>'printFilePath', ''), '^.*[\\\\/]', '')), '[[:space:]_-]+', '', 'g')
           where coalesce(parent_file->>'printFilePath', '') <> ''
         )
       ) rr on true
@@ -187,6 +195,7 @@ async function ensureOrderPipelineView(client) {
       pr.source_month,
       pr.reprint_record_count,
       pr.reprint_records,
+      pr.latest_reprint_record_at,
       coalesce(r.reprint_request_count, 0) as reprint_request_count,
       coalesce(r.reprint_pending_count, 0) as reprint_pending_count,
       coalesce(r.reprint_completed_count, 0) as reprint_completed_count,
@@ -229,6 +238,7 @@ function mapPipelineRow(row) {
     sourceMonth: row.source_month || '',
     reprintRecordCount: Number(row.reprint_record_count) || reprintRecords.length,
     reprintRecords,
+    latestReprintRecordAt: toIso(row.latest_reprint_record_at),
     reprintRequestCount: Number(row.reprint_request_count) || 0,
     reprintPendingCount: Number(row.reprint_pending_count) || 0,
     reprintCompletedCount: Number(row.reprint_completed_count) || 0,
@@ -247,7 +257,7 @@ function addDateRangeFilter(where, params, options) {
   const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
   const from = cleanString(options.from);
   const to = cleanString(options.to);
-  const dateExpr = `(coalesce(processed_at, queued_date_time, received_at, api_seen_at) at time zone 'Europe/Prague')::date`;
+  const dateExpr = pipelineDateExpr();
 
   if (preset === 'custom') {
     if (isIsoDate(from)) {
@@ -303,6 +313,7 @@ async function listOrderPipeline(client, options = {}) {
     where.push(`(
       source_month = $${params.length}
       or to_char(coalesce(processed_at, received_at, api_seen_at), 'YYYY-MM') = $${params.length}
+      or to_char(latest_reprint_record_at, 'YYYY-MM') = $${params.length}
     )`);
   }
   if (search) {
@@ -335,7 +346,7 @@ async function listOrderPipeline(client, options = {}) {
       select *
       from v_print_order_pipeline
       ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by coalesce(received_at, api_seen_at, processed_at, queued_date_time) desc nulls last, order_number desc
+      order by coalesce(received_at, api_seen_at, latest_reprint_record_at, processed_at, queued_date_time) desc nulls last, order_number desc
       limit $1
     `,
     params
@@ -346,9 +357,9 @@ async function listOrderPipeline(client, options = {}) {
 async function listPipelineMonths(client) {
   await ensureOrderPipelineView(client);
   const result = await client.query(`
-    select to_char(coalesce(processed_at, received_at, api_seen_at), 'YYYY-MM') as month
+    select to_char(coalesce(processed_at, received_at, api_seen_at, latest_reprint_record_at), 'YYYY-MM') as month
     from v_print_order_pipeline
-    where coalesce(processed_at, received_at, api_seen_at) is not null
+    where coalesce(processed_at, received_at, api_seen_at, latest_reprint_record_at) is not null
     group by month
     order by month desc
     limit 36
