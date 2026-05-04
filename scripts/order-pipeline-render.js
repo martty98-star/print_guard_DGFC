@@ -50,8 +50,15 @@
     return row && row.pipelineStatus === 'received_only' && getPipelineAgeMinutes(row) >= MISSING_PROCESSED_THRESHOLD_MINUTES;
   }
 
+  function isReprintRow(row) {
+    return row && (String(row.orderType || '').toUpperCase() === 'R' || /reprint/i.test(`${row.orderName || ''} ${row.processedOrderName || ''} ${row.xmlFileName || ''}`));
+  }
+
   function renderPipelineBadges(row) {
     const badges = [];
+    if (isReprintRow(row)) {
+      badges.push('<span class="pp-pipeline-badge reprint">RE</span>');
+    }
     if (row.receivedAt || row.apiSeenAt || row.externalOrderId) {
       badges.push('<span class="pp-pipeline-badge received">RECEIVED</span>');
     }
@@ -63,7 +70,7 @@
     }
     if (row.reprintPending || row.pipelineStatus === 'reprint_pending') {
       badges.push('<span class="pp-pipeline-badge reprint">REPRINT PENDING</span>');
-    } else if (row.reprintRequestCount > 0) {
+    } else if (row.reprintRequestCount > 0 || row.reprintRecordCount > 0) {
       badges.push('<span class="pp-pipeline-badge reprint">REPRINT REQUESTED</span>');
     }
     if (isMissingProcessedXml(row)) {
@@ -76,12 +83,18 @@
   }
 
   function getReprintKey(orderId, printFilePath) {
-    return `${orderId || ''}::${printFilePath || ''}`;
+    return `${orderId || ''}::${printFilePath || '__FULL_REPRINT__'}`;
   }
 
   function getFileHistory(orderId, printFilePath, options) {
     const history = options.reprintHistoryByKey && options.reprintHistoryByKey.get(getReprintKey(orderId, printFilePath));
     return Array.isArray(history) ? history : [];
+  }
+
+  function reprintStatusClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'done' || normalized === 'completed' || normalized === 'resolved') return 'done';
+    return 'reprint';
   }
 
   function renderReprintHistory(entries, esc) {
@@ -90,7 +103,7 @@
       <div class="pp-section-label">Reprint history</div>
       ${entries.map((entry) => `<div class="pp-reprint-history-entry">
         <div class="pp-reprint-history-top">
-          <span class="pp-pipeline-badge reprint">${esc(entry.status || 'pending')}</span>
+          <span class="pp-pipeline-badge ${reprintStatusClass(entry.status)}">${esc(entry.status || 'pending')}</span>
           <strong>${esc(entry.reason || '-')}</strong>
         </div>
         <div class="pp-reprint-history-meta">
@@ -133,6 +146,48 @@
     }).join('');
   }
 
+  function renderFullReprintAction(row, options) {
+    const esc = options.esc;
+    const orderId = row.processedOrderId || row.id;
+    const history = getFileHistory(orderId, '', options);
+    const pendingKey = getReprintKey(orderId, '');
+    const pending = history.some((entry) => entry.status === 'pending') || options.reprintPendingKeys.has(pendingKey);
+    const historyHtml = renderReprintHistory(history, esc);
+    if (pending) {
+      return `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="">Mark full reprinted</button>${historyHtml}`;
+    }
+    return `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="" data-print-file-label="Full order" ${orderId ? '' : 'disabled'}>Full reprint</button>${historyHtml}`;
+  }
+
+  function renderProcessedReprintRecords(row, esc) {
+    const records = Array.isArray(row.reprintRecords) ? row.reprintRecords : [];
+    if (!records.length) return '';
+    return `<div class="pp-reprint-records">
+      <div class="pp-section-label">Reprints: ${esc(row.reprintRecordCount || records.length)}</div>
+      ${records.map((record) => {
+        const files = Array.isArray(record.printFiles) ? record.printFiles : [];
+        const fileNames = files
+          .map((file) => fileNameFromPath(file.printFilePath || file.print_file_path || ''))
+          .filter(Boolean)
+          .join(', ');
+        return `<div class="pp-reprint-record">
+          <div class="pp-reprint-history-top">
+            <span class="pp-pipeline-badge reprint">RE</span>
+            <span class="pp-pipeline-badge ${reprintStatusClass(record.status)}">${esc(record.status || '-')}</span>
+            ${record.isFullReprint ? '<span class="pp-pipeline-badge reprint">FULL</span>' : ''}
+            <strong>${esc(record.orderName || record.xmlFileName || 'Reprint')}</strong>
+          </div>
+          <div class="pp-reprint-history-meta">
+            <span>Processed: ${esc(formatPipelineDateTime(record.processedAt || record.queuedDateTime))}</span>
+            ${record.xmlFileName ? `<span>XML: ${esc(record.xmlFileName)}</span>` : ''}
+            ${fileNames ? `<span>PDF: ${esc(fileNames)}</span>` : ''}
+          </div>
+          ${record.sourceXmlPath ? `<div class="pp-reprint-history-note">${esc(record.sourceXmlPath)}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
   function renderOrders(rows, options) {
     const esc = options.esc;
     if (!rows.length) {
@@ -158,6 +213,10 @@
           <span><strong>Type:</strong> ${esc(row.orderType || '-')}</span>
           <span><strong>Size:</strong> ${esc(getPageSizes(row))}</span>
         </div>
+        <div class="pp-file-actions pp-full-reprint-actions">
+          ${renderFullReprintAction(row, options)}
+        </div>
+        ${renderProcessedReprintRecords(row, esc)}
         <div class="pp-pdf-section">
           <div class="pp-section-label">PDF</div>
           ${renderPdfFiles(row, options)}

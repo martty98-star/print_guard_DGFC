@@ -15,18 +15,18 @@
     return raw.split(/[\\/]/).filter(Boolean).pop() || raw;
   }
 
+  function normalizePrintFiles(order, printFile) {
+    if (printFile && (printFile.printFilePath || printFile.print_file_path)) return [printFile];
+    return Array.isArray(order && order.printFiles) ? order.printFiles : [];
+  }
+
   function generateReprintXml(order, printFile) {
     const orderName = order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER';
-    const pageSize = printFile.pageSize || printFile.page_size || '';
-    const printFilePath = printFile.printFilePath || printFile.print_file_path || '';
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<PrintJob>
-  <Name>${escXml(orderName)} - REPRINT</Name>
-  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
-  <Status>Opened</Status>
-  <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
-  <PrintFiles>
-    <PrintFile>
+    const files = normalizePrintFiles(order, printFile);
+    const printFileXml = files.map((file) => {
+      const pageSize = file.pageSize || file.page_size || '';
+      const printFilePath = file.printFilePath || file.print_file_path || '';
+      return `    <PrintFile>
       <FileName>${escXml(printFilePath)}</FileName>
       <Copies>1</Copies>${pageSize ? `
       <Variables>
@@ -35,12 +35,21 @@
           <Value>${escXml(pageSize)}</Value>
         </Variable>
       </Variables>` : ''}
-    </PrintFile>
+    </PrintFile>`;
+    }).join('\n');
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<PrintJob>
+  <Name>${escXml(orderName)} - REPRINT</Name>
+  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
+  <Status>Opened</Status>
+  <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
+  <PrintFiles>
+${printFileXml}
   </PrintFiles>
   <PrinterName>${escXml(order.printerName || order.printer_name || '')}</PrinterName>
   <RunWorkflow>true</RunWorkflow>
   <WorkflowName>${escXml(order.workflowName || order.workflow_name || '')}</WorkflowName>
-  <OrderType>${escXml(order.orderType || order.order_type || '')}</OrderType>
+  <OrderType>R</OrderType>
 </PrintJob>
 `;
   }

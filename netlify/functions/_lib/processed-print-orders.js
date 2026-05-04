@@ -8,6 +8,15 @@ function cleanString(value) {
   return trimmed || null;
 }
 
+function normalizeSearchTerm(value) {
+  const cleaned = cleanString(value);
+  return cleaned ? cleaned.toLowerCase().replace(/[\s_-]+/g, '') : null;
+}
+
+function upperOrEmpty(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function toIsoOrNull(value) {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
@@ -129,6 +138,8 @@ async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
 
 function mapProcessedOrderRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
+  const isReprintRecord = upperOrEmpty(row.order_type) === 'R'
+    || /reprint/i.test(`${row.order_name || ''} ${row.xml_file_name || ''}`);
   return {
     id: Number(row.id),
     orderName: row.order_name,
@@ -140,7 +151,7 @@ function mapProcessedOrderRow(row) {
     printerName: row.printer_name,
     runWorkflow: row.run_workflow,
     workflowName: row.workflow_name,
-    orderType: row.order_type,
+    orderType: isReprintRecord ? 'R' : row.order_type,
     printFiles: files,
     sourceXmlPath: row.source_xml_path,
     sourceXmlHash: row.source_xml_hash,
@@ -175,6 +186,10 @@ async function upsertProcessedPrintOrder(client, input) {
     sourceXmlHash,
     sourceMonth: cleanString(input.sourceMonth),
   };
+  if (upperOrEmpty(order.orderType) === 'R' || /reprint/i.test(`${order.orderName} ${order.xmlFileName || ''}`)) {
+    order.guid = null;
+    order.orderType = 'R';
+  }
   const orderKey = makeOrderKey(order);
 
   const existing = await client.query(
@@ -250,6 +265,7 @@ async function listProcessedPrintOrders(client, options = {}) {
   const limit = Math.min(500, Math.max(1, Number(options.limit) || 500));
   const month = cleanString(options.month);
   const search = cleanString(options.search);
+  const normalizedSearch = normalizeSearchTerm(options.search);
   const params = [limit];
   const where = [];
 
@@ -259,11 +275,25 @@ async function listProcessedPrintOrders(client, options = {}) {
   }
   if (search) {
     params.push(`%${search}%`);
+    params.push(`%${normalizedSearch}%`);
     where.push(`(
-      order_name ilike $${params.length}
-      or coalesce(xml_file_name, '') ilike $${params.length}
-      or coalesce(workflow_name, '') ilike $${params.length}
-      or print_files::text ilike $${params.length}
+      order_name ilike $${params.length - 1}
+      or coalesce(xml_file_name, '') ilike $${params.length - 1}
+      or coalesce(source_xml_path, '') ilike $${params.length - 1}
+      or coalesce(workflow_name, '') ilike $${params.length - 1}
+      or coalesce(order_type, '') ilike $${params.length - 1}
+      or print_files::text ilike $${params.length - 1}
+      or case
+        when upper(coalesce(order_type, '')) = 'R'
+          or order_name ilike '%REPRINT%'
+          or coalesce(xml_file_name, '') ilike '%REPRINT%'
+        then 'REPRINT RE'
+        else ''
+      end ilike $${params.length - 1}
+      or regexp_replace(lower(order_name), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(xml_file_name, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(source_xml_path, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(print_files::text), '[[:space:]_-]+', '', 'g') ilike $${params.length}
     )`);
   }
 
@@ -309,8 +339,7 @@ async function createReprintRequest(client, input) {
     throw error;
   }
 
-  const printFilePath = cleanString(input.printFilePath) ||
-    (((Array.isArray(order.print_files) ? order.print_files : [])[0] || {}).printFilePath || null);
+  const printFilePath = cleanString(input.printFilePath);
   const reason = cleanString(input.reason);
   const note = cleanString(input.note);
   if (!reason) {
@@ -369,7 +398,6 @@ async function resolveReprintRequest(client, input) {
   const orderId = Number(input && input.orderId);
   if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
   const printFilePath = cleanString(input && input.printFilePath);
-  if (!printFilePath) throw new Error('Missing print file path');
 
   const result = await client.query(
     `
@@ -380,7 +408,7 @@ async function resolveReprintRequest(client, input) {
         select id
         from processed_order_reprint_requests
         where order_id = $1
-          and print_file_path = $2
+          and print_file_path is not distinct from $2
           and status = 'pending'
         order by requested_at desc, id desc
         limit 1

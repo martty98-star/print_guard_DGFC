@@ -1172,7 +1172,8 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-pipeline-badge.received { border-color: rgba(92, 128, 184, .35); }
 .pp-pipeline-badge.processed,
 .pp-pipeline-badge.pdf { border-color: rgba(80, 150, 110, .35); }
-.pp-pipeline-badge.reprint,
+.pp-pipeline-badge.reprint { border-color: rgba(92, 128, 184, .55); color: var(--accent); background: var(--accent-bg); }
+.pp-pipeline-badge.done { border-color: var(--ok); color: var(--ok); background: var(--ok-dim); }
 .pp-pipeline-badge.missing { border-color: rgba(180, 95, 80, .4); color: var(--crit); }
 .pp-pipeline-badge.orphan { border-color: rgba(160, 130, 70, .4); }
 .pp-missing-warning {
@@ -1220,10 +1221,26 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   min-width: 190px;
 }
+.pp-full-reprint-actions .pp-reprint-history { flex-basis: 100%; width: 100%; }
 .pp-reprint-history {
   margin-top: 10px;
   display: grid;
   gap: 7px;
+}
+.pp-reprint-records {
+  border-top: 1px solid var(--border);
+  margin-bottom: 12px;
+  padding-top: 8px;
+  display: grid;
+  gap: 7px;
+}
+.pp-reprint-record {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 8px 9px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
 }
 .pp-reprint-history-entry {
   border: 1px solid var(--border);

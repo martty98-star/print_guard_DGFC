@@ -87,6 +87,7 @@
     const id = String(orderId || '');
     for (const row of rows) {
       if (String(getProcessedOrderId(row) || '') !== id) continue;
+      if (!printFilePath) return { row, printFile: null };
       const files = Array.isArray(row.printFiles) ? row.printFiles : [];
       const printFile = files.find((file) => (file.printFilePath || '') === printFilePath);
       if (printFile) return { row, printFile };
@@ -135,7 +136,7 @@
         },
       });
       state.reprintPendingKeys.add(Render.getReprintKey(payload.orderId, payload.printFilePath));
-      if (selected.row && selected.printFile) {
+      if (selected.row) {
         const xml = ReprintXml.generateReprintXml(selected.row, selected.printFile);
         ReprintXml.downloadXml(xml, selected.row.orderName || payload.orderName || payload.orderId);
       }
