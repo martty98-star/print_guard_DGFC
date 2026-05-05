@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="description" content="PrintGuard — Správa skladu a audit spotřeby Canon Colorado">
-  <meta name="theme-color" content="#f5f2ed">
+  <meta name="theme-color" content="#f3efe6">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -15,14 +15,14 @@
         var theme = localStorage.getItem('pg_theme') === 'dark' ? 'dark' : 'light';
         document.documentElement.dataset.theme = theme;
         var metaTheme = document.querySelector('meta[name="theme-color"]');
-        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#171512' : '#f5f2ed');
+        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0f1110' : '#f3efe6');
       } catch (_) {}
     })();
   </script>
   <link rel="manifest" href="manifest.json?v=7.0.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.0.2">
+  <link rel="stylesheet" href="styles.css?v=7.1.0">
   <link rel="icon" href="/icons/icon-192.png?v=7.0.1">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=7.0.1">
   <title>PrintGuard</title>
@@ -867,7 +867,7 @@
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
   </script>
-  <script src="app/config.js?v=7.0.2"></script>
+  <script src="app/config.js?v=7.1.0"></script>
   <script src="app/auth.js?v=7.0.1"></script>
   <script src="app/db.js?v=7.0.1"></script>
   <script src="app/settings-store.js?v=7.0.1"></script>

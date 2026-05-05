@@ -2,7 +2,7 @@
 'use strict';
 
 (function attachPrintGuardAppConfig(global) {
-  const APP_VERSION = 'printguard-7.0.2';
+  const APP_VERSION = 'printguard-7.1.0';
 
   function ls(k, v) {
     if (v !== undefined) { localStorage.setItem(k, String(v)); return v; }
@@ -19,7 +19,7 @@
       global.document.documentElement.dataset.theme = theme;
     }
     const metaTheme = global.document && global.document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#171512' : '#f5f2ed');
+    if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0f1110' : '#f3efe6');
     return theme;
   }
 
