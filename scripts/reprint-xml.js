@@ -49,7 +49,7 @@
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
 <PrintJob xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <Name>${escXml(orderName)} - REPRINT</Name>
+  <Name>${escXml(orderName)}</Name>
   <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
   <Status>Opened</Status>
   <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
