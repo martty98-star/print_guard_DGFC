@@ -20,6 +20,12 @@
     return Array.isArray(order && order.printFiles) ? order.printFiles : [];
   }
 
+  function normalizeOrderName(value) {
+    const cleaned = String(value == null ? '' : value).trim();
+    if (!cleaned) return 'ORDER';
+    return /^\d+$/.test(cleaned) ? `PS${cleaned}` : cleaned;
+  }
+
   function variableXml(name, value) {
     return `    <Variable>
       <Name>${escXml(name)}</Name>
@@ -29,7 +35,7 @@
   }
 
   function generateReprintXml(order, printFile) {
-    const orderName = order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER';
+    const orderName = normalizeOrderName(order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER');
     const poNumber = order.poNumber || order.po_number || order.customerOrderId || order.customer_order_id || order.externalOrderId || order.external_order_id || '';
     const orderInfo = order.orderInfo || order.order_info || '';
     const files = normalizePrintFiles(order, printFile);
