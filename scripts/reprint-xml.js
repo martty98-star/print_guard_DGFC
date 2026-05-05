@@ -22,7 +22,7 @@
 
   function generateReprintXml(order, printFile) {
     const orderName = order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER';
-    const reprintOrderName = `${orderName}_REPRINT`;
+    const baseOrderType = String(order.orderType || order.order_type || '').trim().toUpperCase() === 'C' ? 'C' : 'S';
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
@@ -40,8 +40,8 @@
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
 <PrintJob>
-  <Name>${escXml(reprintOrderName)}</Name>
-  <XmlFileName>${escXml(reprintOrderName)}.xml</XmlFileName>
+  <Name>${escXml(orderName)} - REPRINT</Name>
+  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
   <Status>Opened</Status>
   <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
   <PrintFiles>
@@ -50,7 +50,7 @@ ${printFileXml}
   <PrinterName>${escXml(order.printerName || order.printer_name || '')}</PrinterName>
   <RunWorkflow>true</RunWorkflow>
   <WorkflowName>${escXml(order.workflowName || order.workflow_name || '')}</WorkflowName>
-  <OrderType>R</OrderType>
+  <OrderType>${escXml(baseOrderType)}</OrderType>
 </PrintJob>
 `;
   }
