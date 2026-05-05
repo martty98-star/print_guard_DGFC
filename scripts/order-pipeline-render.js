@@ -1,7 +1,8 @@
 'use strict';
 
 (() => {
-  const MISSING_PROCESSED_THRESHOLD_MINUTES = 30;
+  const XML_EXPECTED_THRESHOLD_MINUTES = 60;
+  const XML_MISSING_THRESHOLD_MINUTES = 90;
 
   function t(key) {
     return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
@@ -50,8 +51,19 @@
     return Number.isFinite(time) ? (Date.now() - time) / 60000 : 0;
   }
 
-  function isMissingProcessedXml(row) {
-    return row && row.pipelineStatus === 'received_only' && getPipelineAgeMinutes(row) >= MISSING_PROCESSED_THRESHOLD_MINUTES;
+  function getXmlStatus(row) {
+    if (!row || row.pipelineStatus !== 'received_only') return '';
+    const ageMinutes = getPipelineAgeMinutes(row);
+    if (ageMinutes < XML_EXPECTED_THRESHOLD_MINUTES) return 'Waiting';
+    if (ageMinutes < XML_MISSING_THRESHOLD_MINUTES) return 'Expected';
+    return 'Missing';
+  }
+
+  function xmlStatusClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'missing') return 'missing';
+    if (normalized === 'expected') return 'reprint';
+    return 'received';
   }
 
   function isReprintRow(row) {
@@ -74,8 +86,9 @@
     } else if (row.reprintRequestCount > 0 || row.reprintRecordCount > 0) {
       badges.push(`<span class="pp-pipeline-badge reprint">${t('processed.badge.reprint-requested')}</span>`);
     }
-    if (isMissingProcessedXml(row)) {
-      badges.push(`<span class="pp-pipeline-badge missing">${t('processed.badge.missing-xml')}</span>`);
+    const xmlStatus = getXmlStatus(row);
+    if (xmlStatus) {
+      badges.push(`<span class="pp-pipeline-badge ${xmlStatusClass(xmlStatus)}">${xmlStatus}</span>`);
     }
     if (row.pipelineStatus === 'processed_without_received') {
       badges.push(`<span class="pp-pipeline-badge orphan">${t('processed.badge.no-api-match')}</span>`);
@@ -85,7 +98,8 @@
 
   function renderActionNeeded(row) {
     if (row.reprintPending) return `<span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span><span>${t('processed.action.reprint-pending-text')}</span>`;
-    if (isMissingProcessedXml(row)) return `<span class="pp-pipeline-badge missing">${t('processed.action.needed')}</span><span>${t('processed.action.missing-text')}</span>`;
+    const xmlStatus = getXmlStatus(row);
+    if (xmlStatus) return `<span class="pp-pipeline-badge ${xmlStatusClass(xmlStatus)}">${xmlStatus}</span>`;
     return `<span class="pp-pipeline-badge done">${t('processed.action.none')}</span><span>${t('processed.action.none-text')}</span>`;
   }
 
@@ -227,7 +241,6 @@
         </section>
         <section class="pp-card-section pp-action-needed">
           ${renderActionNeeded(row)}
-          ${isMissingProcessedXml(row) ? `<div class="pp-missing-warning">${t('processed.warning.missing-xml')}</div>` : ''}
           <div class="pp-file-actions pp-full-reprint-actions">
           ${renderFullReprintAction(row, options)}
           </div>
