@@ -47,6 +47,15 @@ function getTag(xml, tagName) {
   return match ? decodeXml(match[1]) : '';
 }
 
+function getElementAttribute(xml, tagName, attributeName) {
+  const match = String(xml || '').match(new RegExp(`<${tagName}\\b([^>]*)>`, 'i'));
+  if (!match) return '';
+  const attrs = match[1] || '';
+  const attrMatch = attrs.match(new RegExp(`\\b${attributeName}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s"'=<>]+))`, 'i'));
+  if (!attrMatch) return '';
+  return decodeXml(attrMatch[2] || attrMatch[3] || attrMatch[4] || '');
+}
+
 function getBlocks(xml, tagName) {
   const blocks = [];
   const re = new RegExp(`<${tagName}\\b[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
@@ -66,16 +75,32 @@ function getVariable(block, name) {
   return '';
 }
 
+function detectLegacyReprint(orderName, xmlFileName, sourceXmlPath) {
+  return /reprint/i.test(`${orderName || ''} ${xmlFileName || ''} ${sourceXmlPath || ''}`);
+}
+
+function normalizeOrderType(value, orderName, xmlFileName, sourceXmlPath) {
+  const normalized = cleanString(value).toUpperCase();
+  if (normalized === 'R') return 'R';
+  if (normalized === 'N') return 'N';
+  return detectLegacyReprint(orderName, xmlFileName, sourceXmlPath) ? 'R' : 'N';
+}
+
 function parseProcessedPrintOrderXml(xml, sourceXmlPath, sourceMonth) {
   const printFiles = getBlocks(xml, 'PrintFile').map((block) => ({
     printFilePath: getTag(block, 'FileName'),
     copies: Number(getTag(block, 'Copies')) || null,
     pageSize: getVariable(block, 'PageSize'),
   }));
+  const orderName = getTag(xml, 'Name');
+  const xmlFileName = getTag(xml, 'XmlFileName') || path.basename(sourceXmlPath);
+  const orderType = getElementAttribute(xml, 'XmlPrintJob', 'OrderType')
+    || getElementAttribute(xml, 'PrintJob', 'OrderType')
+    || getTag(xml, 'OrderType');
 
   return {
-    orderName: getTag(xml, 'Name'),
-    xmlFileName: getTag(xml, 'XmlFileName') || path.basename(sourceXmlPath),
+    orderName,
+    xmlFileName,
     guid: getTag(xml, 'Guid'),
     status: getTag(xml, 'Status'),
     orderDateTime: getTag(xml, 'OrderDateTime'),
@@ -83,7 +108,7 @@ function parseProcessedPrintOrderXml(xml, sourceXmlPath, sourceMonth) {
     printerName: getTag(xml, 'PrinterName'),
     runWorkflow: getTag(xml, 'RunWorkflow'),
     workflowName: getTag(xml, 'WorkflowName'),
-    orderType: getTag(xml, 'OrderType'),
+    orderType: normalizeOrderType(orderType, orderName, xmlFileName, sourceXmlPath),
     printFiles,
     sourceXmlPath,
     sourceXmlHash: sha256(xml),

@@ -4,11 +4,13 @@ const {
   checkRateLimit,
   json,
   parseRequestBody,
+  requireAdminAccess,
   requirePostPurchaseAccess,
   withClient,
 } = require('./_lib/db');
 const {
   createReprintRequest,
+  deleteReprintRequest,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
   listReprintRequests,
@@ -58,8 +60,25 @@ exports.handler = async function handler(event) {
     if (event.httpMethod === 'POST') {
       const bodyInput = parseRequestBody(event);
       const action = String(bodyInput.action || '').trim().toLowerCase();
-      if (action !== 'reprint' && action !== 'resolve_reprint' && action !== 'mark_reprinted') {
+      if (action !== 'reprint' && action !== 'resolve_reprint' && action !== 'mark_reprinted' && action !== 'cancel_reprint' && action !== 'delete_reprint') {
         return json(400, { ok: false, error: 'Unsupported action' });
+      }
+
+      if (action === 'delete_reprint') {
+        requireAdminAccess(event);
+        const body = await withClient(async (client) => {
+          const request = await deleteReprintRequest(client, { id: bodyInput.id || bodyInput.requestId || bodyInput.request_id });
+          return { ok: true, request };
+        });
+        return json(200, body);
+      }
+
+      if (action === 'cancel_reprint') {
+        const body = await withClient(async (client) => {
+          const request = await deleteReprintRequest(client, { id: bodyInput.id || bodyInput.requestId || bodyInput.request_id, onlyPending: true });
+          return { ok: true, request };
+        });
+        return json(200, body);
       }
 
       if (action === 'resolve_reprint' || action === 'mark_reprinted') {

@@ -17,6 +17,17 @@ function upperOrEmpty(value) {
   return String(value || '').trim().toUpperCase();
 }
 
+function isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) {
+  return /reprint/i.test(`${orderName || ''} ${xmlFileName || ''} ${sourceXmlPath || ''}`);
+}
+
+function normalizeOrderType(value, orderName, xmlFileName, sourceXmlPath) {
+  const normalized = upperOrEmpty(value);
+  if (normalized === 'R') return 'R';
+  if (normalized === 'N') return 'N';
+  return isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) ? 'R' : 'N';
+}
+
 function toIsoOrNull(value) {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
@@ -44,8 +55,10 @@ function makeOrderKey(order) {
   if (guid) return `guid:${guid}`;
   return [
     'fallback',
+    normalizeOrderType(order && order.orderType, order && order.orderName, order && order.xmlFileName, order && order.sourceXmlPath),
     cleanString(order && order.orderName) || '',
     cleanString(order && order.xmlFileName) || '',
+    cleanString(order && order.sourceXmlPath) || '',
     cleanString(order && order.sourceXmlHash) || '',
   ].join('|');
 }
@@ -138,8 +151,7 @@ async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
 
 function mapProcessedOrderRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
-  const isReprintRecord = upperOrEmpty(row.order_type) === 'R'
-    || /reprint/i.test(`${row.order_name || ''} ${row.xml_file_name || ''}`);
+  const orderType = normalizeOrderType(row.order_type, row.order_name, row.xml_file_name, row.source_xml_path);
   return {
     id: Number(row.id),
     orderName: row.order_name,
@@ -151,7 +163,7 @@ function mapProcessedOrderRow(row) {
     printerName: row.printer_name,
     runWorkflow: row.run_workflow,
     workflowName: row.workflow_name,
-    orderType: isReprintRecord ? 'R' : row.order_type,
+    orderType,
     printFiles: files,
     sourceXmlPath: row.source_xml_path,
     sourceXmlHash: row.source_xml_hash,
@@ -180,15 +192,14 @@ async function upsertProcessedPrintOrder(client, input) {
     printerName: cleanString(input.printerName),
     runWorkflow: normalizeBoolean(input.runWorkflow),
     workflowName: cleanString(input.workflowName),
-    orderType: cleanString(input.orderType),
+    orderType: normalizeOrderType(input.orderType, input.orderName, input.xmlFileName, input.sourceXmlPath),
     printFiles: normalizePrintFiles(input.printFiles),
     sourceXmlPath,
     sourceXmlHash,
     sourceMonth: cleanString(input.sourceMonth),
   };
-  if (upperOrEmpty(order.orderType) === 'R' || /reprint/i.test(`${order.orderName} ${order.xmlFileName || ''}`)) {
+  if (order.orderType === 'R') {
     order.guid = null;
-    order.orderType = 'R';
   }
   const orderKey = makeOrderKey(order);
 
@@ -440,6 +451,42 @@ async function resolveReprintRequest(client, input) {
   };
 }
 
+async function deleteReprintRequest(client, input) {
+  await ensureProcessedPrintOrderTables(client);
+  const id = Number(input && input.id);
+  if (!Number.isInteger(id) || id <= 0) throw new Error('Missing reprint request id');
+  const onlyPending = Boolean(input && input.onlyPending);
+
+  const result = await client.query(
+    `
+      delete from processed_order_reprint_requests
+      where id = $1
+        and ($2::boolean = false or status = 'pending')
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, workstation_id, status, note
+    `,
+    [id, onlyPending]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    const error = new Error(onlyPending ? 'Pending reprint request not found' : 'Reprint request not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  return {
+    id: Number(row.id),
+    orderId: Number(row.order_id),
+    orderName: row.order_name,
+    printFilePath: row.print_file_path,
+    reason: row.reason,
+    requestedBy: row.requested_by,
+    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
+    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    workstationId: row.workstation_id,
+    status: row.status,
+    note: row.note,
+  };
+}
+
 async function listReprintRequests(client, orderIds) {
   await ensureProcessedPrintOrderTables(client);
   const ids = Array.from(new Set((Array.isArray(orderIds) ? orderIds : [])
@@ -475,6 +522,7 @@ async function listReprintRequests(client, orderIds) {
 
 module.exports = {
   createReprintRequest,
+  deleteReprintRequest,
   ensureProcessedPrintOrderTables,
   listProcessedOrderMonths,
   listProcessedPrintOrders,

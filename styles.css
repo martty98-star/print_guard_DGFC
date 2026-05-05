@@ -1131,6 +1131,32 @@ textarea { resize: vertical; min-height: 58px; }
   max-width: 100%;
   overflow: hidden;
 }
+.pp-card-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.pp-card-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.pp-action-needed {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  color: var(--text-dim);
+  font-size: .76rem;
+}
+.pp-tech-details summary {
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
 .pp-processed-head {
   display: flex;
   justify-content: space-between;
@@ -1200,6 +1226,12 @@ textarea { resize: vertical; min-height: 58px; }
   border-top: 1px solid var(--border);
   padding-top: 8px;
   min-width: 0;
+}
+.pp-file-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
 }
 .pp-file-title {
   color: var(--text);

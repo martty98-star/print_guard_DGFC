@@ -82,9 +82,24 @@
     return readJsonResponse(res, 'Failed to resolve reprint request');
   }
 
+  async function deleteReprintRequest(options) {
+    const payload = options.payload || {};
+    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
+      method: 'POST',
+      headers: options.headers || {},
+      cache: 'no-store',
+      body: JSON.stringify({
+        action: payload.action || 'delete_reprint',
+        id: payload.id,
+      }),
+    });
+    return readJsonResponse(res, 'Failed to delete reprint request');
+  }
+
   window.PrintGuardOrderPipelineApi = {
     buildOrderPipelineUrl,
     createReprintRequest,
+    deleteReprintRequest,
     loadReprintHistory,
     loadOrderPipeline,
     readJsonResponse,

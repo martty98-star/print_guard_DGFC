@@ -18,6 +18,11 @@ function normalizeSearchTerm(value) {
   return cleaned ? cleaned.toLowerCase().replace(/[\s_-]+/g, '') : null;
 }
 
+function normalizeOrderType(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  return normalized === 'R' ? 'R' : 'N';
+}
+
 function pipelineDateExpr() {
   return `(coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) at time zone 'Europe/Prague')::date`;
 }
@@ -50,11 +55,9 @@ async function ensureOrderPipelineView(client) {
     processed_reprints as (
       select distinct on (coalesce(nullif(source_xml_path, ''), nullif(xml_file_name, ''), id::text))
         p.*,
-        regexp_replace(
-          regexp_replace(lower(coalesce(p.order_name, '')), '([[:space:]_-]*reprint)+$', '', 'i'),
-          '[[:space:]_-]+',
-          '',
-          'g'
+        coalesce(
+          nullif(regexp_replace(regexp_replace(lower(coalesce(p.order_name, '')), '([[:space:]_-]*reprint.*)$', '', 'i'), '[[:space:]_-]+', '', 'g'), ''),
+          nullif(regexp_replace(regexp_replace(lower(coalesce(p.xml_file_name, '')), '([[:space:]_-]*reprint.*|\\.xml)$', '', 'i'), '[[:space:]_-]+', '', 'g'), '')
         ) as parent_match_key
       from processed_print_orders p
       where upper(coalesce(p.order_type, '')) = 'R'
@@ -232,7 +235,7 @@ function mapPipelineRow(row) {
     processedAt: toIso(row.processed_at || row.queued_date_time),
     queuedDateTime: toIso(row.queued_date_time || row.processed_at),
     workflowName: row.workflow_name || '',
-    orderType: row.order_type || '',
+    orderType: normalizeOrderType(row.order_type),
     printFiles: files,
     sourceXmlPath: row.source_xml_path || '',
     sourceMonth: row.source_month || '',

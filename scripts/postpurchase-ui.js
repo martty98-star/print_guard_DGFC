@@ -20,6 +20,7 @@
     esc: null,
     showToast: null,
     applyRoleUI: null,
+    adminJsonHeaders: null,
     postPurchaseHeaders: null,
     postPurchaseJsonHeaders: null,
     postPurchaseErrorMessage: null,
@@ -72,6 +73,7 @@
   function getRenderOptions() {
     return {
       esc: state.esc,
+      isAdmin: Boolean(state.cfg && state.cfg.role === 'admin' && state.cfg.adminPin),
       reprintHistoryByKey: state.reprintHistoryByKey,
       reprintPendingKeys: state.reprintPendingKeys,
       toFileHref: PdfOpen.uncToFileHref,
@@ -165,6 +167,33 @@
     } catch (error) {
       console.error('Resolve reprint request failed', error);
       state.showToast(error && error.message ? error.message : 'Reprint request could not be resolved', 'error');
+      throw error;
+    }
+  }
+
+  async function deleteReprintRequest(payload) {
+    const admin = payload && payload.admin;
+    const confirmed = window.confirm(admin
+      ? 'Delete this reprint record from PrintGuard? Files and orders will not be deleted.'
+      : 'Cancel this pending reprint request? Files and orders will not be deleted.');
+    if (!confirmed) return;
+    try {
+      await Api.deleteReprintRequest({
+        fetchImpl: state.fetchImpl,
+        headers: admin && typeof state.adminJsonHeaders === 'function'
+          ? state.adminJsonHeaders()
+          : state.postPurchaseJsonHeaders(),
+        payload: {
+          id: payload.id,
+          action: admin ? 'delete_reprint' : 'cancel_reprint',
+        },
+      });
+      state.showToast(admin ? 'Reprint record deleted' : 'Reprint request cancelled', 'success');
+      state.S.postPurchaseLoaded = false;
+      await loadPostPurchaseOrders(true);
+    } catch (error) {
+      console.error('Delete reprint request failed', error);
+      state.showToast(error && error.message ? error.message : 'Reprint request could not be deleted', 'error');
       throw error;
     }
   }
@@ -264,6 +293,17 @@
         resolveReprintRequest({
           orderId: button.dataset.resolveReprintOrderId,
           printFilePath: button.dataset.resolvePrintFilePath || '',
+        }).catch(() => {
+          button.disabled = false;
+        });
+      });
+    });
+    wrap.querySelectorAll('[data-delete-reprint-request-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        deleteReprintRequest({
+          id: button.dataset.deleteReprintRequestId,
+          admin: button.dataset.deleteReprintAdmin === 'true',
         }).catch(() => {
           button.disabled = false;
         });
