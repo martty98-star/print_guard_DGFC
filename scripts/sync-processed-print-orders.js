@@ -81,9 +81,10 @@ function detectLegacyReprint(orderName, xmlFileName, sourceXmlPath) {
 
 function normalizeOrderType(value, orderName, xmlFileName, sourceXmlPath) {
   const normalized = cleanString(value).toUpperCase();
+  if (normalized === 'S') return 'S';
+  if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
-  if (normalized === 'N') return 'N';
-  return detectLegacyReprint(orderName, xmlFileName, sourceXmlPath) ? 'R' : 'N';
+  return detectLegacyReprint(orderName, xmlFileName, sourceXmlPath) ? 'R' : '';
 }
 
 function parseProcessedPrintOrderXml(xml, sourceXmlPath, sourceMonth) {

@@ -20,7 +20,10 @@ function normalizeSearchTerm(value) {
 
 function normalizeOrderType(value) {
   const normalized = String(value || '').trim().toUpperCase();
-  return normalized === 'R' ? 'R' : 'N';
+  if (normalized === 'S') return 'S';
+  if (normalized === 'C') return 'C';
+  if (normalized === 'R') return 'R';
+  return '';
 }
 
 function pipelineDateExpr() {

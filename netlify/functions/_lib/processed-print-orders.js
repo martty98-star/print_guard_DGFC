@@ -23,9 +23,10 @@ function isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) {
 
 function normalizeOrderType(value, orderName, xmlFileName, sourceXmlPath) {
   const normalized = upperOrEmpty(value);
+  if (normalized === 'S') return 'S';
+  if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
-  if (normalized === 'N') return 'N';
-  return isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) ? 'R' : 'N';
+  return isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) ? 'R' : null;
 }
 
 function toIsoOrNull(value) {
