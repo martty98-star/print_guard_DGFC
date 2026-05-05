@@ -22,6 +22,7 @@
 
   function generateReprintXml(order, printFile) {
     const orderName = order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER';
+    const reprintOrderName = `${orderName}_REPRINT`;
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
@@ -39,8 +40,8 @@
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
 <PrintJob>
-  <Name>${escXml(orderName)}</Name>
-  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
+  <Name>${escXml(reprintOrderName)}</Name>
+  <XmlFileName>${escXml(reprintOrderName)}.xml</XmlFileName>
   <Status>Opened</Status>
   <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
   <PrintFiles>
