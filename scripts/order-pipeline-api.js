@@ -4,6 +4,10 @@
   const Filters = window.PrintGuardOrderPipelineFilters;
   if (!Filters) throw new Error('Missing PrintGuardOrderPipelineFilters');
 
+  function t(key) {
+    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+  }
+
   async function readJsonResponse(res, fallbackMessage) {
     const text = await res.text().catch(() => '');
     let payload = {};
@@ -15,8 +19,8 @@
       }
     }
     if (!res.ok || payload.ok === false) {
-      const message = payload.error || fallbackMessage || `Request failed (${res.status})`;
-      const error = new Error(res.status >= 500 ? 'Database/API unavailable. Try refresh later.' : message);
+      const message = payload.error || fallbackMessage || `${t('processed.error.request-failed')} (${res.status})`;
+      const error = new Error(res.status >= 500 ? t('processed.error.database') : message);
       error.status = res.status;
       error.payload = payload;
       throw error;
@@ -34,7 +38,7 @@
       headers: options.headers || {},
       cache: 'no-store',
     });
-    return readJsonResponse(res, 'Failed to load order pipeline');
+    return readJsonResponse(res, t('processed.error.pipeline-load'));
   }
 
   async function createReprintRequest(options) {
@@ -53,7 +57,7 @@
         workstationId: payload.workstationId,
       }),
     });
-    return readJsonResponse(res, 'Failed to create reprint request');
+    return readJsonResponse(res, t('processed.toast.reprint-create-failed'));
   }
 
   async function loadReprintHistory(options) {
@@ -64,7 +68,7 @@
       headers: options.headers || {},
       cache: 'no-store',
     });
-    return readJsonResponse(res, 'Failed to load reprint history');
+    return readJsonResponse(res, t('processed.error.reprint-history'));
   }
 
   async function resolveReprintRequest(options) {
@@ -79,7 +83,7 @@
         printFilePath: payload.printFilePath,
       }),
     });
-    return readJsonResponse(res, 'Failed to resolve reprint request');
+    return readJsonResponse(res, t('processed.toast.reprint-resolve-failed'));
   }
 
   async function deleteReprintRequest(options) {
@@ -93,7 +97,7 @@
         id: payload.id,
       }),
     });
-    return readJsonResponse(res, 'Failed to delete reprint request');
+    return readJsonResponse(res, t('processed.toast.reprint-delete-failed'));
   }
 
   window.PrintGuardOrderPipelineApi = {

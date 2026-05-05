@@ -18,6 +18,41 @@ function normalizeSearchTerm(value) {
   return cleaned ? cleaned.toLowerCase().replace(/[\s_-]+/g, '') : null;
 }
 
+function stripXmlExtension(value) {
+  return String(value || '').replace(/\.xml$/i, '');
+}
+
+function stripReprintSuffix(value) {
+  return String(value || '').replace(/([\s_-]*reprint.*)$/i, '');
+}
+
+function isOrderLikeSearch(value) {
+  const normalized = normalizeSearchTerm(stripXmlExtension(stripReprintSuffix(value)));
+  return Boolean(normalized && /^(ps|pod)?\d{4,}$/.test(normalized));
+}
+
+function orderSearchCandidates(value) {
+  const raw = cleanString(value);
+  if (!raw) return { exact: [], normalized: [] };
+  const base = stripReprintSuffix(stripXmlExtension(raw)).trim();
+  const compact = normalizeSearchTerm(base);
+  const exact = new Set([base.toLowerCase()]);
+  const normalized = new Set(compact ? [compact] : []);
+  const digits = compact && compact.match(/^(?:ps|pod)?(\d{4,})$/);
+  if (digits) {
+    exact.add(digits[1]);
+    exact.add(`ps${digits[1]}`);
+    exact.add(`pod${digits[1]}`);
+    normalized.add(digits[1]);
+    normalized.add(`ps${digits[1]}`);
+    normalized.add(`pod${digits[1]}`);
+  }
+  return {
+    exact: Array.from(exact).filter(Boolean),
+    normalized: Array.from(normalized).filter(Boolean),
+  };
+}
+
 function normalizeOrderType(value) {
   const normalized = String(value || '').trim().toUpperCase();
   if (normalized === 'S') return 'S';
@@ -316,7 +351,23 @@ async function listOrderPipeline(client, options = {}) {
       or to_char(latest_reprint_record_at, 'YYYY-MM') = $${params.length}
     )`);
   }
-  if (search) {
+  if (search && isOrderLikeSearch(search)) {
+    const candidates = orderSearchCandidates(search);
+    params.push(candidates.exact);
+    params.push(candidates.normalized);
+    where.push(`(
+      lower(coalesce(order_number, '')) = any($${params.length - 1}::text[])
+      or lower(coalesce(processed_order_name, '')) = any($${params.length - 1}::text[])
+      or lower(coalesce(external_order_id, '')) = any($${params.length - 1}::text[])
+      or lower(coalesce(customer_order_id, '')) = any($${params.length - 1}::text[])
+      or lower(regexp_replace(coalesce(xml_file_name, ''), '\\.xml$', '', 'i')) = any($${params.length - 1}::text[])
+      or regexp_replace(lower(coalesce(order_number, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(coalesce(processed_order_name, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(coalesce(external_order_id, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(coalesce(customer_order_id, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(regexp_replace(coalesce(xml_file_name, ''), '\\.xml$', '', 'i')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+    )`);
+  } else if (search) {
     params.push(`%${search}%`);
     params.push(`%${normalizedSearch}%`);
     where.push(`(

@@ -120,7 +120,7 @@
     </button>
     <button class="nav-item" data-screen="postpurchase-orders">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l1 2h4v16H4V5h4l1-2z"></path><path d="M9 13h6"></path><path d="M9 17h6"></path><path d="M10 7h4"></path></svg>
-      <span>Processed</span>
+      <span data-i18n="nav.processed">Zpracované</span>
     </button>
   </nav>
 
@@ -592,40 +592,40 @@
 
   <main id="screen-postpurchase-orders" class="screen">
     <div class="screen-header">
-      <h1>Processed Print Orders</h1>
-      <div class="header-meta" id="postpurchase-status">Server data</div>
+      <h1 data-i18n="processed.title">Zpracované tiskové objednávky</h1>
+      <div class="header-meta" id="postpurchase-status" data-i18n="processed.status.default">Data ze serveru</div>
     </div>
     <section class="settings-card">
       <div class="checklist-toolbar">
-        <div class="hint">Clean operator view from SubmitTool processed XML files.</div>
+        <div class="hint" data-i18n="processed.hint">Operátorský přehled ze zpracovaných XML v Submit Toolu.</div>
         <div class="checklist-toolbar-actions">
-          <input type="password" id="postpurchase-pin" class="input-sm" placeholder="Operator PIN" autocomplete="off">
-          <button class="btn-sm" id="postpurchase-unlock-btn">Unlock</button>
-          <button class="btn-sm" id="postpurchase-lock-btn">Lock</button>
-          <button class="btn-sm" id="postpurchase-refresh-btn">Refresh</button>
+          <input type="password" id="postpurchase-pin" class="input-sm" placeholder="PIN operátora" autocomplete="off" data-i18n-placeholder="processed.pin.placeholder">
+          <button class="btn-sm" id="postpurchase-unlock-btn" data-i18n="processed.unlock">Odemknout</button>
+          <button class="btn-sm" id="postpurchase-lock-btn" data-i18n="processed.lock">Zamknout</button>
+          <button class="btn-sm" id="postpurchase-refresh-btn" data-i18n="btn.refresh">Obnovit</button>
         </div>
       </div>
       <div class="pp-filter-row">
-        <input type="search" id="postpurchase-search" placeholder="Search order, PDF, XML, page size">
+        <input type="search" id="postpurchase-search" placeholder="Hledat objednávku, PDF, XML, rozměr" data-i18n-placeholder="processed.search.placeholder">
         <select id="postpurchase-date-preset" class="input-sm">
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="this_week">This week</option>
-          <option value="last_week">Last week</option>
-          <option value="this_month" selected>This month</option>
-          <option value="last_month">Last month</option>
-          <option value="custom">Custom range</option>
+          <option value="today" data-i18n="processed.date.today">Dnes</option>
+          <option value="yesterday" data-i18n="processed.date.yesterday">Včera</option>
+          <option value="this_week" data-i18n="processed.date.this-week">Tento týden</option>
+          <option value="last_week" data-i18n="processed.date.last-week">Minulý týden</option>
+          <option value="this_month" selected data-i18n="processed.date.this-month">Tento měsíc</option>
+          <option value="last_month" data-i18n="processed.date.last-month">Minulý měsíc</option>
+          <option value="custom" data-i18n="processed.date.custom">Vlastní rozsah</option>
         </select>
         <input type="date" id="postpurchase-date-from" class="input-sm" aria-label="From date">
         <input type="date" id="postpurchase-date-to" class="input-sm" aria-label="To date">
         <select id="postpurchase-reprint-filter" class="input-sm">
-          <option value="all">All reprints</option>
-          <option value="has_reprint">Has reprint request</option>
-          <option value="pending">Reprint pending</option>
-          <option value="completed">Reprint completed</option>
-          <option value="none">No reprint</option>
+          <option value="all" data-i18n="processed.reprint.all">Všechny reprinty</option>
+          <option value="has_reprint" data-i18n="processed.reprint.has">Má reprint</option>
+          <option value="pending" data-i18n="processed.reprint.pending">Reprint čeká</option>
+          <option value="completed" data-i18n="processed.reprint.completed">Reprint hotový</option>
+          <option value="none" data-i18n="processed.reprint.none">Bez reprintu</option>
         </select>
-        <button class="btn-sm" id="postpurchase-clear-filters">Clear</button>
+        <button class="btn-sm" id="postpurchase-clear-filters" data-i18n="processed.clear">Vyčistit</button>
       </div>
       <div id="postpurchase-orders-wrap" class="table-wrap"></div>
     </section>
@@ -836,7 +836,7 @@
     </div>
   </div>
 
-  <script src="i18n.js"></script>
+  <script src="i18n.js?v=7.0.4"></script>
   <script src="reports/date.js"></script>
   <script src="reports/csv.js"></script>
   <script src="reports/colorado.js"></script>
@@ -858,20 +858,20 @@
   <script src="scripts/checklist-events.js?v=7.0.0"></script>
   <script src="scripts/checklist-ui.js?v=7.0.0"></script>
   <script src="scripts/order-pipeline-filters.js?v=7.0.0"></script>
-  <script src="scripts/order-pipeline-api.js?v=7.0.0"></script>
+  <script src="scripts/order-pipeline-api.js?v=7.0.4"></script>
   <script src="scripts/pdf-open.js?v=7.0.0"></script>
-  <script src="scripts/order-pipeline-render.js?v=7.0.0"></script>
-  <script src="scripts/reprint-modal.js?v=7.0.0"></script>
+  <script src="scripts/order-pipeline-render.js?v=7.0.4"></script>
+  <script src="scripts/reprint-modal.js?v=7.0.4"></script>
   <script src="scripts/reprint-xml.js?v=7.0.3"></script>
-  <script src="scripts/postpurchase-ui.js?v=7.0.3"></script>
+  <script src="scripts/postpurchase-ui.js?v=7.0.4"></script>
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
   </script>
-  <script src="app/config.js?v=7.0.2"></script>
+  <script src="app/config.js?v=7.0.4"></script>
   <script src="app/auth.js?v=7.0.1"></script>
   <script src="app/db.js?v=7.0.1"></script>
   <script src="app/settings-store.js?v=7.0.1"></script>
   <script src="app/push-bridge.js?v=7.0.1"></script>
-  <script src="app.js?v=7.0.1"></script>
+  <script src="app.js?v=7.0.4"></script>
 </body>
 </html>

@@ -144,17 +144,18 @@ function requireAdminPinForScreen(statusId, wrapId) {
 }
 
 function renderPostPurchaseAccessRequired() {
-  elSet('postpurchase-status', 'Operator PIN required');
+  const t = window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t.bind(window.I18N) : (key) => key;
+  elSet('postpurchase-status', t('processed.status.pin-required'));
   const wrap = el('postpurchase-orders-wrap');
   if (wrap) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Processed Orders PIN is required.</p><div class="table-empty-note">Enter the operator PIN above and unlock the orders table.</div></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>${t('processed.pin.required')}</p><div class="table-empty-note">${t('processed.pin.required-note')}</div></div>`;
   }
 }
 
 function requirePostPurchasePinForScreen() {
   if (cfg.postPurchasePin || cfg.adminPin) return true;
   renderPostPurchaseAccessRequired();
-  showToast('Processed Orders PIN is required.', 'error');
+  showToast(window.I18N ? window.I18N.t('processed.pin.required') : 'Processed Orders PIN is required.', 'error');
   return false;
 }
 
@@ -3088,11 +3089,11 @@ el('sync-btn').addEventListener('click', async () => {
   });
   el('postpurchase-unlock-btn')?.addEventListener('click', () => {
     const pin = (el('postpurchase-pin')?.value || '').trim();
-    if (!pin) { showToast('Enter Processed Orders PIN', 'error'); return; }
+    if (!pin) { showToast(window.I18N ? window.I18N.t('processed.pin.enter') : 'Enter Processed Orders PIN', 'error'); return; }
     cfg.postPurchasePin = pin;
     if (el('postpurchase-pin')) el('postpurchase-pin').value = '';
     S.postPurchaseLoaded = false;
-    showToast('Processed orders unlocked', 'success');
+    showToast(window.I18N ? window.I18N.t('processed.toast.unlocked') : 'Processed orders unlocked', 'success');
     loadPostPurchaseOrders(true);
   });
   el('postpurchase-lock-btn')?.addEventListener('click', () => {
@@ -3100,7 +3101,7 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseLoaded = false;
     S.postPurchaseOrders = [];
     renderPostPurchaseAccessRequired();
-    showToast('Processed orders locked', 'success');
+    showToast(window.I18N ? window.I18N.t('processed.toast.locked') : 'Processed orders locked', 'success');
   });
   el('postpurchase-sync-btn')?.addEventListener('click', () => {
     syncPostPurchaseOrdersManual();

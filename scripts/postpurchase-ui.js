@@ -8,6 +8,10 @@
   const ReprintXml = window.PrintGuardReprintXml;
   const PdfOpen = window.PrintGuardPdfOpen;
 
+  function t(key) {
+    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+  }
+
   if (!Api || !Filters || !Render || !ReprintModal || !ReprintXml || !PdfOpen) {
     throw new Error('Missing Processed Print Orders modules');
   }
@@ -42,14 +46,14 @@
     if (typeof state.postPurchaseErrorMessage === 'function') {
       return state.postPurchaseErrorMessage(error);
     }
-    return error && error.message ? error.message : 'Database/API unavailable. Try refresh later.';
+    return error && error.message ? error.message : t('processed.error.database');
   }
 
   function updateMonthFilter(months) {
     const select = state.el('postpurchase-month-filter');
     if (!select) return;
     const current = state.S.postPurchaseMonth || '';
-    const options = ['<option value="">All months</option>']
+    const options = [`<option value="">${t('processed.month.all')}</option>`]
       .concat((months || []).map(month => `<option value="${state.esc(month)}">${state.esc(month)}</option>`));
     select.innerHTML = options.join('');
     select.value = current;
@@ -142,13 +146,13 @@
         const xml = ReprintXml.generateReprintXml(selected.row, selected.printFile);
         ReprintXml.downloadXml(xml, selected.row.orderName || payload.orderName || payload.orderId);
       }
-      state.showToast('Reprint request created', 'success');
+      state.showToast(t('processed.toast.reprint-created'), 'success');
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
       return result;
     } catch (error) {
       console.error('Reprint request failed', error);
-      state.showToast('Reprint request could not be created', 'error');
+      state.showToast(t('processed.toast.reprint-create-failed'), 'error');
       throw error;
     }
   }
@@ -161,12 +165,12 @@
         payload,
       });
       state.reprintPendingKeys.delete(Render.getReprintKey(payload.orderId, payload.printFilePath));
-      state.showToast('Reprint marked as done', 'success');
+      state.showToast(t('processed.toast.reprint-done'), 'success');
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
     } catch (error) {
       console.error('Resolve reprint request failed', error);
-      state.showToast(error && error.message ? error.message : 'Reprint request could not be resolved', 'error');
+      state.showToast(error && error.message ? error.message : t('processed.toast.reprint-resolve-failed'), 'error');
       throw error;
     }
   }
@@ -174,8 +178,8 @@
   async function deleteReprintRequest(payload) {
     const admin = payload && payload.admin;
     const confirmed = window.confirm(admin
-      ? 'Delete this reprint record from PrintGuard? Files and orders will not be deleted.'
-      : 'Cancel this pending reprint request? Files and orders will not be deleted.');
+      ? t('processed.confirm.delete-reprint')
+      : t('processed.confirm.cancel-reprint'));
     if (!confirmed) return;
     try {
       await Api.deleteReprintRequest({
@@ -188,12 +192,12 @@
           action: admin ? 'delete_reprint' : 'cancel_reprint',
         },
       });
-      state.showToast(admin ? 'Reprint record deleted' : 'Reprint request cancelled', 'success');
+      state.showToast(admin ? t('processed.toast.reprint-deleted') : t('processed.toast.reprint-cancelled'), 'success');
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
     } catch (error) {
       console.error('Delete reprint request failed', error);
-      state.showToast(error && error.message ? error.message : 'Reprint request could not be deleted', 'error');
+      state.showToast(error && error.message ? error.message : t('processed.toast.reprint-delete-failed'), 'error');
       throw error;
     }
   }
@@ -207,10 +211,10 @@
     if (!state.requirePostPurchasePinForScreen()) return;
 
     state.S.postPurchaseLoading = true;
-    state.elSet('postpurchase-status', 'Loading...');
+    state.elSet('postpurchase-status', t('processed.status.loading'));
     const wrap = state.el('postpurchase-orders-wrap');
     if (wrap && !(state.S.postPurchaseOrders || []).length) {
-      wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading processed orders...</p></div>`;
+      wrap.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>${t('processed.loading')}</p></div>`;
     }
 
     try {
@@ -225,7 +229,7 @@
       updateMonthFilter(payload.months || []);
       updateFilterControls();
       renderPostPurchaseOrders();
-      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} pipeline orders`);
+      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} ${t('processed.status.rows')}`);
     } catch (error) {
       console.error('Order pipeline load failed', error);
       const message = cleanApiError(error);
@@ -235,7 +239,7 @@
       } else {
         renderPostPurchaseOrders();
       }
-      state.elSet('postpurchase-status', 'Load failed');
+      state.elSet('postpurchase-status', t('processed.status.load-failed'));
       state.showToast(message, 'error');
     } finally {
       state.S.postPurchaseLoading = false;
@@ -255,10 +259,10 @@
       button.addEventListener('click', async () => {
         try {
           await PdfOpen.copyText(button.dataset.copyPath || '');
-          state.showToast('Path copied', 'success');
+          state.showToast(t('processed.toast.path-copied'), 'success');
         } catch (error) {
           console.error('Copy path failed', error);
-          state.showToast('Copy failed', 'error');
+          state.showToast(t('processed.toast.copy-failed'), 'error');
         }
       });
     });
@@ -312,7 +316,7 @@
   }
 
   async function syncPostPurchaseOrdersManual() {
-    state.showToast('Processed XML sync runs on the workstation/server task.', 'error');
+    state.showToast(t('processed.toast.sync-server-task'), 'error');
   }
 
   window.PrintGuardPostPurchaseUI = {

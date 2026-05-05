@@ -15,6 +15,15 @@
   let dialogState = null;
   let submitting = false;
 
+  function t(key) {
+    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+  }
+
+  function reasonLabel(reason) {
+    const key = `processed.reprint.reason.${String(reason || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    return t(key);
+  }
+
   function close() {
     const dialog = document.getElementById('pp-reprint-dialog');
     if (dialog) dialog.remove();
@@ -33,15 +42,15 @@
     const note = String((dialog && dialog.querySelector('#pp-reprint-note')?.value) || '').trim();
 
     if (!operatorName) {
-      if (errorNode) errorNode.textContent = 'Operator name is required.';
+      if (errorNode) errorNode.textContent = t('processed.reprint.error.operator');
       return;
     }
     if (!reason) {
-      if (errorNode) errorNode.textContent = 'Reason is required.';
+      if (errorNode) errorNode.textContent = t('processed.reprint.error.reason');
       return;
     }
     if (reason === 'Other' && !note) {
-      if (errorNode) errorNode.textContent = 'Note is required for Other.';
+      if (errorNode) errorNode.textContent = t('processed.reprint.error.other-note');
       return;
     }
 
@@ -58,7 +67,7 @@
       });
       close();
     } catch (error) {
-      if (errorNode) errorNode.textContent = 'Reprint request could not be created.';
+      if (errorNode) errorNode.textContent = t('processed.toast.reprint-create-failed');
       if (createButton) createButton.disabled = false;
       submitting = false;
     }
@@ -76,7 +85,7 @@
     };
 
     const reasonOptions = REPRINT_REASONS.map((reason) =>
-      `<label class="pp-reprint-reason"><input type="radio" name="pp-reprint-reason" value="${esc(reason)}"> <span>${esc(reason)}</span></label>`
+      `<label class="pp-reprint-reason"><input type="radio" name="pp-reprint-reason" value="${esc(reason)}"> <span>${esc(reasonLabel(reason))}</span></label>`
     ).join('');
 
     const host = document.createElement('div');
@@ -84,20 +93,20 @@
     host.className = 'pp-modal-backdrop';
     host.innerHTML = `<div class="pp-modal" role="dialog" aria-modal="true" aria-labelledby="pp-reprint-title">
       <div class="pp-modal-head">
-        <h2 id="pp-reprint-title">Request reprint</h2>
-        <button class="btn-sm" type="button" data-reprint-cancel="true">Cancel</button>
+        <h2 id="pp-reprint-title">${t('processed.button.request-reprint')}</h2>
+        <button class="btn-sm" type="button" data-reprint-cancel="true">${t('btn.cancel')}</button>
       </div>
       <div class="pp-modal-body">
-        <div class="pp-modal-field"><span>Order</span><strong>${esc(dialogState.orderName || '-')}</strong></div>
+        <div class="pp-modal-field"><span>${t('processed.reprint.order')}</span><strong>${esc(dialogState.orderName || '-')}</strong></div>
         <div class="pp-modal-field"><span>PDF</span><strong>${esc(dialogState.printFileLabel || '-')}</strong><small>${esc(dialogState.printFilePath || '')}</small></div>
-        <label class="pp-modal-field"><span>Operator name</span><input id="pp-reprint-operator" class="input-sm" type="text" value="${esc(dialogState.operatorName || '')}" autocomplete="name"></label>
+        <label class="pp-modal-field"><span>${t('processed.reprint.operator')}</span><input id="pp-reprint-operator" class="input-sm" type="text" value="${esc(dialogState.operatorName || '')}" autocomplete="name"></label>
         <div class="pp-reprint-reasons">${reasonOptions}</div>
-        <textarea id="pp-reprint-note" class="pp-reprint-note" placeholder="Add details if needed"></textarea>
+        <textarea id="pp-reprint-note" class="pp-reprint-note" placeholder="${t('processed.reprint.note-placeholder')}"></textarea>
         <div class="pp-reprint-error" id="pp-reprint-error"></div>
       </div>
       <div class="pp-modal-actions">
-        <button class="btn-sm" type="button" data-reprint-cancel="true">Cancel</button>
-        <button class="btn-sm" type="button" id="pp-reprint-create">Create reprint</button>
+        <button class="btn-sm" type="button" data-reprint-cancel="true">${t('btn.cancel')}</button>
+        <button class="btn-sm" type="button" id="pp-reprint-create">${t('processed.reprint.create')}</button>
       </div>
     </div>`;
     document.body.appendChild(host);
