@@ -17,16 +17,12 @@ function upperOrEmpty(value) {
   return String(value || '').trim().toUpperCase();
 }
 
-function isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) {
-  return /reprint/i.test(`${orderName || ''} ${xmlFileName || ''} ${sourceXmlPath || ''}`);
-}
-
-function normalizeOrderType(value, orderName, xmlFileName, sourceXmlPath) {
+function normalizeOrderType(value) {
   const normalized = upperOrEmpty(value);
   if (normalized === 'S') return 'S';
   if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
-  return isLegacyReprintName(orderName, xmlFileName, sourceXmlPath) ? 'R' : null;
+  return 'S';
 }
 
 function toIsoOrNull(value) {
@@ -56,7 +52,7 @@ function makeOrderKey(order) {
   if (guid) return `guid:${guid}`;
   return [
     'fallback',
-    normalizeOrderType(order && order.orderType, order && order.orderName, order && order.xmlFileName, order && order.sourceXmlPath),
+    normalizeOrderType(order && order.orderType),
     cleanString(order && order.orderName) || '',
     cleanString(order && order.xmlFileName) || '',
     cleanString(order && order.sourceXmlPath) || '',
@@ -152,7 +148,7 @@ async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
 
 function mapProcessedOrderRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
-  const orderType = normalizeOrderType(row.order_type, row.order_name, row.xml_file_name, row.source_xml_path);
+  const orderType = normalizeOrderType(row.order_type);
   return {
     id: Number(row.id),
     orderName: row.order_name,
@@ -193,7 +189,7 @@ async function upsertProcessedPrintOrder(client, input) {
     printerName: cleanString(input.printerName),
     runWorkflow: normalizeBoolean(input.runWorkflow),
     workflowName: cleanString(input.workflowName),
-    orderType: normalizeOrderType(input.orderType, input.orderName, input.xmlFileName, input.sourceXmlPath),
+    orderType: normalizeOrderType(input.orderType),
     printFiles: normalizePrintFiles(input.printFiles),
     sourceXmlPath,
     sourceXmlHash,
@@ -296,10 +292,7 @@ async function listProcessedPrintOrders(client, options = {}) {
       or coalesce(order_type, '') ilike $${params.length - 1}
       or print_files::text ilike $${params.length - 1}
       or case
-        when upper(coalesce(order_type, '')) = 'R'
-          or order_name ilike '%REPRINT%'
-          or coalesce(xml_file_name, '') ilike '%REPRINT%'
-        then 'REPRINT RE'
+        when upper(coalesce(order_type, 'S')) = 'R' then 'REPRINT RE'
         else ''
       end ilike $${params.length - 1}
       or regexp_replace(lower(order_name), '[[:space:]_-]+', '', 'g') ilike $${params.length}

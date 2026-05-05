@@ -38,7 +38,7 @@
     </PrintFile>`;
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
-<XmlPrintJob OrderType="R">
+<PrintJob>
   <Name>${escXml(orderName)}</Name>
   <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
   <Status>Opened</Status>
@@ -49,7 +49,8 @@ ${printFileXml}
   <PrinterName>${escXml(order.printerName || order.printer_name || '')}</PrinterName>
   <RunWorkflow>true</RunWorkflow>
   <WorkflowName>${escXml(order.workflowName || order.workflow_name || '')}</WorkflowName>
-</XmlPrintJob>
+  <OrderType>R</OrderType>
+</PrintJob>
 `;
   }
 

@@ -49,11 +49,7 @@ async function ensureOrderPipelineView(client) {
     processed_normal as (
       select p.*
       from processed_print_orders p
-      where not (
-        upper(coalesce(p.order_type, '')) = 'R'
-        or p.order_name ilike '%REPRINT%'
-        or coalesce(p.xml_file_name, '') ilike '%REPRINT%'
-      )
+      where upper(coalesce(p.order_type, 'S')) <> 'R'
     ),
     processed_reprints as (
       select distinct on (coalesce(nullif(source_xml_path, ''), nullif(xml_file_name, ''), id::text))
@@ -63,9 +59,7 @@ async function ensureOrderPipelineView(client) {
           nullif(regexp_replace(regexp_replace(lower(coalesce(p.xml_file_name, '')), '([[:space:]_-]*reprint.*|\\.xml)$', '', 'i'), '[[:space:]_-]+', '', 'g'), '')
         ) as parent_match_key
       from processed_print_orders p
-      where upper(coalesce(p.order_type, '')) = 'R'
-        or p.order_name ilike '%REPRINT%'
-        or coalesce(p.xml_file_name, '') ilike '%REPRINT%'
+      where upper(coalesce(p.order_type, 'S')) = 'R'
       order by coalesce(nullif(source_xml_path, ''), nullif(xml_file_name, ''), id::text),
         queued_date_time desc nulls last,
         updated_at desc,
