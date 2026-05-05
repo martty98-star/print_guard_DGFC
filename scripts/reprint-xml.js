@@ -20,9 +20,18 @@
     return Array.isArray(order && order.printFiles) ? order.printFiles : [];
   }
 
+  function variableXml(name, value) {
+    return `    <Variable>
+      <Name>${escXml(name)}</Name>
+      <Value xsi:type="xsd:string">${escXml(value)}</Value>
+      <System>false</System>
+    </Variable>`;
+  }
+
   function generateReprintXml(order, printFile) {
     const orderName = order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER';
-    const baseOrderType = String(order.orderType || order.order_type || '').trim().toUpperCase() === 'C' ? 'C' : 'S';
+    const poNumber = order.poNumber || order.po_number || order.customerOrderId || order.customer_order_id || order.externalOrderId || order.external_order_id || '';
+    const orderInfo = order.orderInfo || order.order_info || '';
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
@@ -39,18 +48,23 @@
     </PrintFile>`;
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
-<PrintJob>
+<PrintJob xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Name>${escXml(orderName)} - REPRINT</Name>
   <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
   <Status>Opened</Status>
   <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
+  <Variables>
+${variableXml('%Job.OrderType%', 'R')}
+${variableXml('%Job.PoNumber%', poNumber)}
+${variableXml('%Job.OrderInfo%', orderInfo)}
+  </Variables>
   <PrintFiles>
 ${printFileXml}
   </PrintFiles>
   <PrinterName>${escXml(order.printerName || order.printer_name || '')}</PrinterName>
   <RunWorkflow>true</RunWorkflow>
   <WorkflowName>${escXml(order.workflowName || order.workflow_name || '')}</WorkflowName>
-  <OrderType>${escXml(baseOrderType)}</OrderType>
+  <OrderType>R</OrderType>
 </PrintJob>
 `;
   }
