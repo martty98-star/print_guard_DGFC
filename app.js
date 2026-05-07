@@ -65,14 +65,12 @@ const SettingsUI = (typeof window !== 'undefined' && window.PrintGuardSettingsUI
 if (!SettingsUI) throw new Error('Missing PrintGuardSettingsUI');
 const ExportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUtils) || null;
 if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
-const StockDomain = (typeof window !== 'undefined' && window.PrintGuardStockDomain) || null;
-if (!StockDomain) throw new Error('Missing PrintGuardStockDomain');
 const StockUI = (typeof window !== 'undefined' && window.PrintGuardStockUI) || null;
 if (!StockUI) throw new Error('Missing PrintGuardStockUI');
-const StockController = (typeof window !== 'undefined' && window.PrintGuardStockController) || null;
-if (!StockController) throw new Error('Missing PrintGuardStockController');
 const StockStore = (typeof window !== 'undefined' && window.StockStore) || null;
 if (!StockStore) throw new Error('Missing StockStore');
+const StockFeature = (typeof window !== 'undefined' && window.StockFeature) || null;
+if (!StockFeature) throw new Error('Missing StockFeature');
 const PrintLogUI = (typeof window !== 'undefined' && window.PrintGuardPrintLogUI) || null;
 if (!PrintLogUI) throw new Error('Missing PrintGuardPrintLogUI');
 const ChecklistUI = (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
@@ -333,8 +331,6 @@ const S = {
   syncIntervalId:   null,
 };
 
-let stockController = null;
-
 const SYNC_MIN_INTERVAL_MS = 30 * 60 * 1000;
 const SYNC_ONLINE_RETRY_DELAY_MS = 15 * 1000;
 
@@ -397,7 +393,7 @@ async function loadAll() {
 
 /** Get movements for one article, sorted asc */
 function getMovements(articleNumber) {
-  return StockDomain.getMovementsForArticle(S.movements, articleNumber);
+  return StockFeature.getMovements(articleNumber);
 }
 
 /**
@@ -408,7 +404,7 @@ function getMovements(articleNumber) {
  *   - weeklyConsumption = sum of issues in last N weeks / N
  */
 function computeStock(item) {
-  return StockDomain.computeStockSummary(item, S.movements, cfg, Reports.stock, new Date());
+  return StockFeature.computeStock(item);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -416,19 +412,7 @@ function computeStock(item) {
 // ══════════════════════════════════════════════════════════
 
 function renderStockOverview() {
-  return StockUI.renderStockOverview({
-    S,
-    computeStock,
-    deleteMovement,
-    el,
-    elSet,
-    esc,
-    fmtDays,
-    fmtN,
-    i18n,
-    onOpenStockDetail: openStockDetail,
-    statusLabel,
-  });
+  return StockFeature.renderStockOverview();
 }
 
 // ── Stock Detail ───────────────────────────────────────────
@@ -489,7 +473,7 @@ function openStockDetail(articleNumber) {
       </div>
     </div>`;
 
-  stockController?.bindStockDetailControls(item);
+  StockFeature.bindStockDetailControls(item);
 
   navigate('stock-detail');
 }
@@ -510,15 +494,7 @@ function buildMovementRows(item, moves) {
  * Shows running on-hand after every movement, most recent first.
  */
 function buildStockHistoryTable(item, moves) {
-  return StockUI.buildStockHistoryTable({
-    esc,
-    fmtDT,
-    fmtN,
-    i18n,
-    item,
-    movementLabel,
-    moves,
-  });
+  return StockFeature.renderStockHistory(item, moves);
 }
 
 // Admin-gated verze pro Historie pohybů
@@ -542,17 +518,7 @@ async function deleteMovementAdmin(id) {
 
 // ── Alerts ────────────────────────────────────────────────
 function renderAlerts() {
-  return StockUI.renderAlerts({
-    S,
-    computeStock,
-    el,
-    esc,
-    fmtDays,
-    fmtN,
-    i18n,
-    onOpenStockDetail: openStockDetail,
-    statusLabel,
-  });
+  return StockFeature.renderStockAlerts();
 }
 
 async function saveMovement() {
@@ -580,7 +546,7 @@ async function saveMovement() {
     showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
     el('mov-qty').value  = '';
     el('mov-note').value = '';
-    stockController?.clearMovItem();
+    StockFeature.clearMovementForm();
     renderStockOverview();
     renderAlerts();
     navigate('stock-overview');
@@ -2591,15 +2557,23 @@ el('sync-btn').addEventListener('click', async () => {
   await runSync();
 });
 
-  stockController = StockController.initStockController({
+  StockFeature.initStockFeature({
     S,
+    Reports,
+    cfg,
     computeStock,
+    deleteMovement,
     el,
+    elSet,
     esc,
     exportCSVStockLog,
+    fmtDT,
+    fmtDays,
     fmtN,
     i18n,
+    movementLabel,
     navigate,
+    openStockDetail,
     openItemModal,
     renderStockLog,
     renderStockOverview,
