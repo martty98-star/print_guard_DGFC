@@ -1,7 +1,12 @@
 'use strict';
 
 (() => {
-  const MISSING_PROCESSED_THRESHOLD_MINUTES = 30;
+  const XML_EXPECTED_THRESHOLD_MINUTES = 60;
+  const XML_MISSING_THRESHOLD_MINUTES = 90;
+
+  function t(key) {
+    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+  }
 
   function fileNameFromPath(value) {
     const raw = String(value || '');
@@ -46,37 +51,60 @@
     return Number.isFinite(time) ? (Date.now() - time) / 60000 : 0;
   }
 
-  function isMissingProcessedXml(row) {
-    return row && row.pipelineStatus === 'received_only' && getPipelineAgeMinutes(row) >= MISSING_PROCESSED_THRESHOLD_MINUTES;
+  function getXmlStatus(row) {
+    if (!row || row.pipelineStatus !== 'received_only') return '';
+    const ageMinutes = getPipelineAgeMinutes(row);
+    if (ageMinutes < XML_EXPECTED_THRESHOLD_MINUTES) return 'Waiting';
+    if (ageMinutes < XML_MISSING_THRESHOLD_MINUTES) return 'Expected';
+    return 'Missing';
+  }
+
+  function xmlStatusClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'missing') return 'missing';
+    if (normalized === 'expected') return 'reprint';
+    return 'received';
+  }
+
+  function isReprintRow(row) {
+    return row && String(row.orderType || '').toUpperCase() === 'R';
   }
 
   function renderPipelineBadges(row) {
     const badges = [];
     if (row.receivedAt || row.apiSeenAt || row.externalOrderId) {
-      badges.push('<span class="pp-pipeline-badge received">RECEIVED</span>');
+      badges.push(`<span class="pp-pipeline-badge received">${t('processed.badge.received')}</span>`);
     }
     if (row.processedOrderId || row.queuedDateTime || row.processedAt) {
-      badges.push('<span class="pp-pipeline-badge processed">PROCESSED</span>');
+      badges.push(`<span class="pp-pipeline-badge processed">${t('processed.badge.processed')}</span>`);
     }
     if (Array.isArray(row.printFiles) && row.printFiles.length) {
       badges.push('<span class="pp-pipeline-badge pdf">PDF</span>');
     }
     if (row.reprintPending || row.pipelineStatus === 'reprint_pending') {
-      badges.push('<span class="pp-pipeline-badge reprint">REPRINT PENDING</span>');
-    } else if (row.reprintRequestCount > 0) {
-      badges.push('<span class="pp-pipeline-badge reprint">REPRINT REQUESTED</span>');
+      badges.push(`<span class="pp-pipeline-badge reprint">${t('processed.badge.reprint-pending')}</span>`);
+    } else if (row.reprintRequestCount > 0 || row.reprintRecordCount > 0) {
+      badges.push(`<span class="pp-pipeline-badge reprint">${t('processed.badge.reprint-requested')}</span>`);
     }
-    if (isMissingProcessedXml(row)) {
-      badges.push('<span class="pp-pipeline-badge missing">Missing processed XML</span>');
+    const xmlStatus = getXmlStatus(row);
+    if (xmlStatus) {
+      badges.push(`<span class="pp-pipeline-badge ${xmlStatusClass(xmlStatus)}">${xmlStatus}</span>`);
     }
     if (row.pipelineStatus === 'processed_without_received') {
-      badges.push('<span class="pp-pipeline-badge orphan">NO API MATCH</span>');
+      badges.push(`<span class="pp-pipeline-badge orphan">${t('processed.badge.no-api-match')}</span>`);
     }
     return badges.join('');
   }
 
+  function renderActionNeeded(row) {
+    if (row.reprintPending) return `<span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span><span>${t('processed.action.reprint-pending-text')}</span>`;
+    const xmlStatus = getXmlStatus(row);
+    if (xmlStatus) return `<span class="pp-pipeline-badge ${xmlStatusClass(xmlStatus)}">${xmlStatus}</span>`;
+    return `<span class="pp-pipeline-badge done">${t('processed.action.none')}</span><span>${t('processed.action.none-text')}</span>`;
+  }
+
   function getReprintKey(orderId, printFilePath) {
-    return `${orderId || ''}::${printFilePath || ''}`;
+    return `${orderId || ''}::${printFilePath || '__FULL_REPRINT__'}`;
   }
 
   function getFileHistory(orderId, printFilePath, options) {
@@ -84,21 +112,30 @@
     return Array.isArray(history) ? history : [];
   }
 
-  function renderReprintHistory(entries, esc) {
+  function reprintStatusClass(status) {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'done' || normalized === 'completed' || normalized === 'resolved') return 'done';
+    return 'reprint';
+  }
+
+  function renderReprintHistory(entries, esc, options) {
     if (!entries.length) return '';
     return `<div class="pp-reprint-history">
-      <div class="pp-section-label">Reprint history</div>
       ${entries.map((entry) => `<div class="pp-reprint-history-entry">
         <div class="pp-reprint-history-top">
-          <span class="pp-pipeline-badge reprint">${esc(entry.status || 'pending')}</span>
+          <span class="pp-pipeline-badge ${reprintStatusClass(entry.status)}">${esc(entry.status || 'pending')}</span>
           <strong>${esc(entry.reason || '-')}</strong>
         </div>
         <div class="pp-reprint-history-meta">
-          <span>${esc(entry.requestedBy || '-')}</span>
-          <span>Requested: ${esc(formatPipelineDateTime(entry.requestedAt))}</span>
-          ${entry.confirmedAt ? `<span>Confirmed: ${esc(formatPipelineDateTime(entry.confirmedAt))}</span>` : ''}
+          <span>${t('processed.history.by')}: ${esc(entry.requestedBy || '-')}</span>
+          <span>${t('processed.history.requested')}: ${esc(formatPipelineDateTime(entry.requestedAt))}</span>
+          ${entry.confirmedAt ? `<span>${t('processed.history.confirmed')}: ${esc(formatPipelineDateTime(entry.confirmedAt))}</span>` : ''}
         </div>
         ${entry.note ? `<div class="pp-reprint-history-note">${esc(entry.note)}</div>` : ''}
+        <div class="pp-file-actions">
+          ${entry.status === 'pending' ? `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(entry.orderId || '')}" data-resolve-print-file-path="${esc(entry.printFilePath || '')}">${t('processed.button.mark-reprinted')}</button><button class="btn-sm" type="button" data-delete-reprint-request-id="${esc(entry.id || '')}" data-delete-reprint-admin="false">${t('processed.button.cancel-request')}</button>` : ''}
+          ${options.isAdmin ? `<button class="btn-sm admin-only" type="button" data-delete-reprint-request-id="${esc(entry.id || '')}" data-delete-reprint-admin="true">${t('btn.delete')}</button>` : ''}
+        </div>
       </div>`).join('')}
     </div>`;
   }
@@ -113,65 +150,122 @@
       const href = options.toFileHref(path);
       const orderId = row.processedOrderId || row.id;
       const history = getFileHistory(orderId, path, options);
+      const pendingEntry = history.find((entry) => entry.status === 'pending');
       const pendingKey = getReprintKey(orderId, path);
-      const pending = history.some((entry) => entry.status === 'pending') || options.reprintPendingKeys.has(pendingKey);
+      const pending = Boolean(pendingEntry) || options.reprintPendingKeys.has(pendingKey);
       const reprintDisabled = !orderId || !path;
-      const reprintAction = pending
-        ? `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="${esc(path)}">Mark reprinted</button>`
-        : `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>Reprint request</button>`;
       return `<div class="pp-file-block">
-        <div class="pp-file-title">${esc(label)}</div>
-        <div class="pp-file-path">${esc(path || '-')}</div>
-        <div class="pp-file-actions">
-          <button class="btn-sm" type="button" data-open-pdf-path="${esc(path)}" data-open-pdf-href="${esc(href)}">Open PDF</button>
-          <button class="btn-sm" type="button" data-copy-path="${esc(path)}">Copy path</button>
-          ${pending ? '<button class="btn-sm" type="button" disabled>Reprint pending</button>' : ''}
-          ${reprintAction}
+        <div class="pp-file-row">
+          <div>
+            <div class="pp-file-title">${esc(label)}</div>
+            <div class="pp-file-path">${esc(path || '-')}</div>
+          </div>
+          ${pending ? `<span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span>` : ''}
         </div>
-        ${renderReprintHistory(history, esc)}
+        <div class="pp-file-actions">
+          <button class="btn-sm" type="button" data-open-pdf-path="${esc(path)}" data-open-pdf-href="${esc(href)}">${t('processed.button.open-pdf')}</button>
+          <button class="btn-sm" type="button" data-copy-path="${esc(path)}">${t('processed.button.copy-path')}</button>
+          ${pending ? '' : `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${t('processed.button.request-reprint')}</button>`}
+        </div>
+        ${renderReprintHistory(history, esc, options)}
       </div>`;
     }).join('');
+  }
+
+  function renderFullReprintAction(row, options) {
+    const esc = options.esc;
+    const orderId = row.processedOrderId || row.id;
+    const history = getFileHistory(orderId, '', options);
+    const pendingKey = getReprintKey(orderId, '');
+    const pending = history.some((entry) => entry.status === 'pending') || options.reprintPendingKeys.has(pendingKey);
+    if (pending) {
+      return `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="">${t('processed.button.mark-full-reprinted')}</button>`;
+    }
+    return `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="" data-print-file-label="${t('processed.full-order')}" ${orderId ? '' : 'disabled'}>${t('processed.button.full-reprint')}</button>`;
+  }
+
+  function renderProcessedReprintRecords(row, esc) {
+    const records = Array.isArray(row.reprintRecords) ? row.reprintRecords : [];
+    if (!records.length) return '';
+    return `<div class="pp-reprint-records">
+      <div class="pp-section-label">${t('processed.section.processed-reprint-xml')}: ${esc(row.reprintRecordCount || records.length)}</div>
+      ${records.map((record) => {
+        const files = Array.isArray(record.printFiles) ? record.printFiles : [];
+        const fileNames = files
+          .map((file) => fileNameFromPath(file.printFilePath || file.print_file_path || ''))
+          .filter(Boolean)
+          .join(', ');
+        return `<div class="pp-reprint-record">
+          <div class="pp-reprint-history-top">
+            ${isReprintRow(record) ? '<span class="pp-pipeline-badge reprint">RE</span>' : ''}
+            <span class="pp-pipeline-badge ${reprintStatusClass(record.status)}">${esc(record.status || '-')}</span>
+            ${record.isFullReprint ? '<span class="pp-pipeline-badge reprint">FULL</span>' : ''}
+            <strong>${esc(record.orderName || record.xmlFileName || t('processed.reprint'))}</strong>
+          </div>
+          <div class="pp-reprint-history-meta">
+            <span>${t('processed.history.processed')}: ${esc(formatPipelineDateTime(record.processedAt || record.queuedDateTime))}</span>
+            ${record.xmlFileName ? `<span>XML: ${esc(record.xmlFileName)}</span>` : ''}
+            ${fileNames ? `<span>PDF: ${esc(fileNames)}</span>` : ''}
+          </div>
+          ${record.sourceXmlPath ? `<div class="pp-reprint-history-note">${esc(record.sourceXmlPath)}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
   }
 
   function renderOrders(rows, options) {
     const esc = options.esc;
     if (!rows.length) {
-      return `<div class="empty-state"><div class="empty-state-icon">-</div><p>No orders match the current filters.</p></div>`;
+      return `<div class="empty-state"><div class="empty-state-icon">-</div><p>${t('processed.empty')}</p></div>`;
     }
 
     return `<div class="pp-processed-list">${rows.map((row) => `
       <article class="pp-processed-card">
-        <div class="pp-processed-head">
+        <section class="pp-card-section pp-card-summary">
+          <div class="pp-processed-head">
           <div>
             <div class="pp-order-main">${esc(row.orderName || '-')}</div>
-            <div class="pp-order-sub">${esc([row.externalOrderId, row.customerOrderId, row.xmlFileName].filter(Boolean).join(' · '))}</div>
+            <div class="pp-order-sub">${esc([row.externalOrderId, row.customerOrderId].filter(Boolean).join(' · '))}</div>
           </div>
           <div class="pp-processed-time">
-            <div>SubmitTool processed: ${esc(formatPipelineDateTime(row.processedAt || row.queuedDateTime))}</div>
-            <div>Received at: ${esc(formatPipelineDateTime(row.receivedAt || row.apiSeenAt))}</div>
+            <div>${t('processed.label.submittool-processed')}: ${esc(formatPipelineDateTime(row.processedAt || row.queuedDateTime))}</div>
+            <div>${t('processed.label.received-at')}: ${esc(formatPipelineDateTime(row.receivedAt || row.apiSeenAt))}</div>
           </div>
-        </div>
-        <div class="pp-pipeline-badges">${renderPipelineBadges(row)}</div>
-        ${isMissingProcessedXml(row) ? `<div class="pp-missing-warning">Missing processed XML after ${MISSING_PROCESSED_THRESHOLD_MINUTES} minutes.</div>` : ''}
-        <div class="pp-processed-meta">
-          <span><strong>Workflow:</strong> ${esc(row.workflowName || row.printerName || '-')}</span>
-          <span><strong>Type:</strong> ${esc(row.orderType || '-')}</span>
-          <span><strong>Size:</strong> ${esc(getPageSizes(row))}</span>
-        </div>
-        <div class="pp-pdf-section">
+          </div>
+          <div class="pp-pipeline-badges">${renderPipelineBadges(row)}</div>
+          <div class="pp-processed-meta">
+          <span><strong>${t('processed.label.workflow')}:</strong> ${esc(row.workflowName || row.printerName || '-')}</span>
+          <span><strong>${t('processed.label.type')}:</strong> ${esc(row.orderType || '-')}</span>
+          <span><strong>${t('processed.label.size')}:</strong> ${esc(getPageSizes(row))}</span>
+          </div>
+        </section>
+        <section class="pp-card-section pp-action-needed">
+          ${renderActionNeeded(row)}
+          <div class="pp-file-actions pp-full-reprint-actions">
+          ${renderFullReprintAction(row, options)}
+          </div>
+        </section>
+        <section class="pp-card-section pp-pdf-section">
           <div class="pp-section-label">PDF</div>
           ${renderPdfFiles(row, options)}
-        </div>
-        ${row.sourceXmlPath ? `<div class="pp-xml-source">
-          <span>${esc(fileNameFromPath(row.sourceXmlPath || ''))}</span>
-          <button class="btn-sm" type="button" data-copy-path="${esc(row.sourceXmlPath || '')}">Copy XML path</button>
-        </div>` : ''}
+        </section>
+        <section class="pp-card-section">
+          ${renderProcessedReprintRecords(row, esc) || `<div class="pp-section-label">${t('processed.section.reprint-history')}</div><div class="pp-order-sub">${t('processed.no-reprint-xml')}</div>`}
+        </section>
+        <details class="pp-card-section pp-tech-details">
+          <summary>${t('processed.section.technical-details')}</summary>
+          <div class="pp-xml-source">
+            <span>${esc(row.xmlFileName || '-')}</span>
+            ${row.sourceXmlPath ? `<button class="btn-sm" type="button" data-copy-path="${esc(row.sourceXmlPath || '')}">${t('processed.button.copy-xml-path')}</button>` : ''}
+          </div>
+          ${row.sourceXmlPath ? `<div class="pp-file-path">${esc(row.sourceXmlPath)}</div>` : ''}
+        </details>
       </article>
     `).join('')}</div>`;
   }
 
   function renderError(message, esc) {
-    return `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Processed orders could not be loaded.</p><div class="table-empty-note">${esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">Refresh</button></div>`;
+    return `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>${t('processed.error.load')}</p><div class="table-empty-note">${esc(message)}</div><button class="btn-sm" type="button" data-pp-retry="true">${t('btn.refresh')}</button></div>`;
   }
 
   window.PrintGuardOrderPipelineRender = {

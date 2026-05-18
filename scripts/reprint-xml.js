@@ -15,18 +15,34 @@
     return raw.split(/[\\/]/).filter(Boolean).pop() || raw;
   }
 
+  function normalizePrintFiles(order, printFile) {
+    if (printFile && (printFile.printFilePath || printFile.print_file_path)) return [printFile];
+    return Array.isArray(order && order.printFiles) ? order.printFiles : [];
+  }
+
+  function normalizeOrderName(value) {
+    const cleaned = String(value == null ? '' : value).trim();
+    if (!cleaned) return 'ORDER';
+    return /^\d+$/.test(cleaned) ? `PS${cleaned}` : cleaned;
+  }
+
+  function variableXml(name, value) {
+    return `    <Variable>
+      <Name>${escXml(name)}</Name>
+      <Value xsi:type="xsd:string">${escXml(value)}</Value>
+      <System>false</System>
+    </Variable>`;
+  }
+
   function generateReprintXml(order, printFile) {
-    const orderName = order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER';
-    const pageSize = printFile.pageSize || printFile.page_size || '';
-    const printFilePath = printFile.printFilePath || printFile.print_file_path || '';
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<PrintJob>
-  <Name>${escXml(orderName)} - REPRINT</Name>
-  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
-  <Status>Opened</Status>
-  <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
-  <PrintFiles>
-    <PrintFile>
+    const orderName = normalizeOrderName(order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER');
+    const poNumber = order.poNumber || order.po_number || order.customerOrderId || order.customer_order_id || order.externalOrderId || order.external_order_id || '';
+    const orderInfo = order.orderInfo || order.order_info || '';
+    const files = normalizePrintFiles(order, printFile);
+    const printFileXml = files.map((file) => {
+      const pageSize = file.pageSize || file.page_size || '';
+      const printFilePath = file.printFilePath || file.print_file_path || '';
+      return `    <PrintFile>
       <FileName>${escXml(printFilePath)}</FileName>
       <Copies>1</Copies>${pageSize ? `
       <Variables>
@@ -35,12 +51,26 @@
           <Value>${escXml(pageSize)}</Value>
         </Variable>
       </Variables>` : ''}
-    </PrintFile>
+    </PrintFile>`;
+    }).join('\n');
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<PrintJob xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Name>${escXml(orderName)}</Name>
+  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
+  <Status>Opened</Status>
+  <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
+  <Variables>
+${variableXml('%Job.OrderType%', 'R')}
+${variableXml('%Job.PoNumber%', poNumber)}
+${variableXml('%Job.OrderInfo%', orderInfo)}
+  </Variables>
+  <PrintFiles>
+${printFileXml}
   </PrintFiles>
   <PrinterName>${escXml(order.printerName || order.printer_name || '')}</PrinterName>
   <RunWorkflow>true</RunWorkflow>
   <WorkflowName>${escXml(order.workflowName || order.workflow_name || '')}</WorkflowName>
-  <OrderType>${escXml(order.orderType || order.order_type || '')}</OrderType>
+  <OrderType>R</OrderType>
 </PrintJob>
 `;
   }

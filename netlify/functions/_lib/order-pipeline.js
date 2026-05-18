@@ -13,6 +13,58 @@ function toIso(value) {
   return value instanceof Date ? value.toISOString() : String(value || '');
 }
 
+function normalizeSearchTerm(value) {
+  const cleaned = cleanString(value);
+  return cleaned ? cleaned.toLowerCase().replace(/[\s_-]+/g, '') : null;
+}
+
+function stripXmlExtension(value) {
+  return String(value || '').replace(/\.xml$/i, '');
+}
+
+function stripReprintSuffix(value) {
+  return String(value || '').replace(/([\s_-]*reprint.*)$/i, '');
+}
+
+function isOrderLikeSearch(value) {
+  const normalized = normalizeSearchTerm(stripXmlExtension(stripReprintSuffix(value)));
+  return Boolean(normalized && /^(ps|pod)?\d{4,}$/.test(normalized));
+}
+
+function orderSearchCandidates(value) {
+  const raw = cleanString(value);
+  if (!raw) return { exact: [], normalized: [] };
+  const base = stripReprintSuffix(stripXmlExtension(raw)).trim();
+  const compact = normalizeSearchTerm(base);
+  const exact = new Set([base.toLowerCase()]);
+  const normalized = new Set(compact ? [compact] : []);
+  const digits = compact && compact.match(/^(?:ps|pod)?(\d{4,})$/);
+  if (digits) {
+    exact.add(digits[1]);
+    exact.add(`ps${digits[1]}`);
+    exact.add(`pod${digits[1]}`);
+    normalized.add(digits[1]);
+    normalized.add(`ps${digits[1]}`);
+    normalized.add(`pod${digits[1]}`);
+  }
+  return {
+    exact: Array.from(exact).filter(Boolean),
+    normalized: Array.from(normalized).filter(Boolean),
+  };
+}
+
+function normalizeOrderType(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (normalized === 'S') return 'S';
+  if (normalized === 'C') return 'C';
+  if (normalized === 'R') return 'R';
+  return '';
+}
+
+function pipelineDateExpr() {
+  return `(coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) at time zone 'Europe/Prague')::date`;
+}
+
 async function ensureOrderPipelineView(client) {
   await ensurePrintOrdersTable(client);
   await ensureProcessedPrintOrderTables(client);
@@ -28,6 +80,25 @@ async function ensureOrderPipelineView(client) {
         (array_agg(status order by requested_at desc, id desc))[1] as latest_reprint_status
       from processed_order_reprint_requests
       group by order_id
+    ),
+    processed_normal as (
+      select p.*
+      from processed_print_orders p
+      where upper(coalesce(p.order_type, 'S')) <> 'R'
+    ),
+    processed_reprints as (
+      select distinct on (coalesce(nullif(source_xml_path, ''), nullif(xml_file_name, ''), id::text))
+        p.*,
+        coalesce(
+          nullif(regexp_replace(regexp_replace(lower(coalesce(p.order_name, '')), '([[:space:]_-]*reprint.*)$', '', 'i'), '[[:space:]_-]+', '', 'g'), ''),
+          nullif(regexp_replace(regexp_replace(lower(coalesce(p.xml_file_name, '')), '([[:space:]_-]*reprint.*|\\.xml)$', '', 'i'), '[[:space:]_-]+', '', 'g'), '')
+        ) as parent_match_key
+      from processed_print_orders p
+      where upper(coalesce(p.order_type, 'S')) = 'R'
+      order by coalesce(nullif(source_xml_path, ''), nullif(xml_file_name, ''), id::text),
+        queued_date_time desc nulls last,
+        updated_at desc,
+        id desc
     ),
     incoming_pipeline as (
       select
@@ -49,7 +120,7 @@ async function ensureOrderPipelineView(client) {
       from print_orders_received i
       left join lateral (
         select p.*
-        from processed_print_orders p
+        from processed_normal p
         where p.order_name = any(array_remove(array[
           i.order_number,
           i.external_order_id,
@@ -81,7 +152,7 @@ async function ensureOrderPipelineView(client) {
         p.print_files,
         p.source_xml_path,
         p.source_month
-      from processed_print_orders p
+      from processed_normal p
       where not exists (
         select 1
         from print_orders_received i
@@ -96,6 +167,50 @@ async function ensureOrderPipelineView(client) {
       select * from incoming_pipeline
       union all
       select * from processed_orphans
+    ),
+    pipeline_with_reprints as (
+      select
+        pr.*,
+        coalesce(rr.reprint_record_count, 0) as reprint_record_count,
+        coalesce(rr.reprint_records, '[]'::jsonb) as reprint_records,
+        rr.latest_reprint_record_at
+      from pipeline_rows pr
+      left join lateral (
+        select
+          count(*)::int as reprint_record_count,
+          max(rp.queued_date_time) as latest_reprint_record_at,
+          jsonb_agg(
+            jsonb_build_object(
+              'id', rp.id,
+              'orderName', rp.order_name,
+              'xmlFileName', rp.xml_file_name,
+              'status', rp.status,
+              'orderType', 'R',
+              'processedAt', rp.queued_date_time,
+              'queuedDateTime', rp.queued_date_time,
+              'sourceXmlPath', rp.source_xml_path,
+              'printFiles', rp.print_files,
+              'isFullReprint', jsonb_array_length(coalesce(rp.print_files, '[]'::jsonb)) > 1
+            )
+            order by rp.queued_date_time desc nulls last, rp.id desc
+          ) as reprint_records
+        from processed_reprints rp
+        where rp.parent_match_key = any(array_remove(array[
+          regexp_replace(lower(coalesce(pr.order_number, '')), '[[:space:]_-]+', '', 'g'),
+          regexp_replace(lower(coalesce(pr.processed_order_name, '')), '[[:space:]_-]+', '', 'g'),
+          regexp_replace(lower(coalesce(pr.external_order_id, '')), '[[:space:]_-]+', '', 'g'),
+          regexp_replace(lower(coalesce(pr.customer_order_id, '')), '[[:space:]_-]+', '', 'g')
+        ], ''))
+        or exists (
+          select 1
+          from jsonb_array_elements(coalesce(pr.print_files, '[]'::jsonb)) parent_file
+          join jsonb_array_elements(coalesce(rp.print_files, '[]'::jsonb)) reprint_file
+            on lower(coalesce(parent_file->>'printFilePath', '')) = lower(coalesce(reprint_file->>'printFilePath', ''))
+            or regexp_replace(lower(regexp_replace(coalesce(parent_file->>'printFilePath', ''), '^.*[\\\\/]', '')), '[[:space:]_-]+', '', 'g')
+              = regexp_replace(lower(regexp_replace(coalesce(reprint_file->>'printFilePath', ''), '^.*[\\\\/]', '')), '[[:space:]_-]+', '', 'g')
+          where coalesce(parent_file->>'printFilePath', '') <> ''
+        )
+      ) rr on true
     )
     select
       coalesce(pr.order_number, pr.processed_order_name) as order_number,
@@ -113,11 +228,17 @@ async function ensureOrderPipelineView(client) {
       pr.print_files,
       pr.source_xml_path,
       pr.source_month,
+      pr.reprint_record_count,
+      pr.reprint_records,
+      pr.latest_reprint_record_at,
       coalesce(r.reprint_request_count, 0) as reprint_request_count,
       coalesce(r.reprint_pending_count, 0) as reprint_pending_count,
       coalesce(r.reprint_completed_count, 0) as reprint_completed_count,
       r.latest_reprint_status,
       coalesce(r.reprint_pending_count, 0) > 0 as reprint_pending,
+      (
+        false
+      ) as is_reprint_record,
       case
         when coalesce(r.reprint_pending_count, 0) > 0 then 'reprint_pending'
         when pr.external_order_id is not null and pr.processed_order_id is not null then 'processed'
@@ -125,13 +246,14 @@ async function ensureOrderPipelineView(client) {
         when pr.external_order_id is null and pr.processed_order_id is not null then 'processed_without_received'
         else 'received_only'
       end as pipeline_status
-    from pipeline_rows pr
+    from pipeline_with_reprints pr
     left join reprint_summary r on r.order_id = pr.processed_order_id
   `);
 }
 
 function mapPipelineRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
+  const reprintRecords = Array.isArray(row.reprint_records) ? row.reprint_records : [];
   return {
     orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
     externalOrderId: row.external_order_id || '',
@@ -145,15 +267,19 @@ function mapPipelineRow(row) {
     processedAt: toIso(row.processed_at || row.queued_date_time),
     queuedDateTime: toIso(row.queued_date_time || row.processed_at),
     workflowName: row.workflow_name || '',
-    orderType: row.order_type || '',
+    orderType: normalizeOrderType(row.order_type),
     printFiles: files,
     sourceXmlPath: row.source_xml_path || '',
     sourceMonth: row.source_month || '',
+    reprintRecordCount: Number(row.reprint_record_count) || reprintRecords.length,
+    reprintRecords,
+    latestReprintRecordAt: toIso(row.latest_reprint_record_at),
     reprintRequestCount: Number(row.reprint_request_count) || 0,
     reprintPendingCount: Number(row.reprint_pending_count) || 0,
     reprintCompletedCount: Number(row.reprint_completed_count) || 0,
     latestReprintStatus: row.latest_reprint_status || '',
     reprintPending: Boolean(row.reprint_pending),
+    isReprintRecord: Boolean(row.is_reprint_record),
     pipelineStatus: row.pipeline_status || 'received_only',
   };
 }
@@ -166,7 +292,7 @@ function addDateRangeFilter(where, params, options) {
   const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
   const from = cleanString(options.from);
   const to = cleanString(options.to);
-  const dateExpr = `(coalesce(processed_at, queued_date_time, received_at, api_seen_at) at time zone 'Europe/Prague')::date`;
+  const dateExpr = pipelineDateExpr();
 
   if (preset === 'custom') {
     if (isIsoDate(from)) {
@@ -195,13 +321,13 @@ function addDateRangeFilter(where, params, options) {
 function addReprintFilter(where, value) {
   const reprint = cleanString(value) || 'all';
   if (reprint === 'has_reprint') {
-    where.push(`coalesce(reprint_request_count, 0) > 0`);
+    where.push(`(coalesce(reprint_request_count, 0) > 0 or coalesce(reprint_record_count, 0) > 0)`);
   } else if (reprint === 'pending') {
     where.push(`coalesce(reprint_pending_count, 0) > 0`);
   } else if (reprint === 'completed') {
-    where.push(`coalesce(reprint_completed_count, 0) > 0`);
+    where.push(`(coalesce(reprint_completed_count, 0) > 0 or reprint_records::text ilike '%done%')`);
   } else if (reprint === 'none') {
-    where.push(`coalesce(reprint_request_count, 0) = 0`);
+    where.push(`coalesce(reprint_request_count, 0) = 0 and coalesce(reprint_record_count, 0) = 0`);
   }
 }
 
@@ -210,6 +336,7 @@ async function listOrderPipeline(client, options = {}) {
   const limit = Math.min(500, Math.max(1, Number(options.limit) || 500));
   const month = cleanString(options.month);
   const search = cleanString(options.q || options.search);
+  const normalizedSearch = normalizeSearchTerm(options.q || options.search);
   const params = [limit];
   const where = [];
 
@@ -221,17 +348,47 @@ async function listOrderPipeline(client, options = {}) {
     where.push(`(
       source_month = $${params.length}
       or to_char(coalesce(processed_at, received_at, api_seen_at), 'YYYY-MM') = $${params.length}
+      or to_char(latest_reprint_record_at, 'YYYY-MM') = $${params.length}
     )`);
   }
-  if (search) {
-    params.push(`%${search}%`);
+  if (search && isOrderLikeSearch(search)) {
+    const candidates = orderSearchCandidates(search);
+    params.push(candidates.exact);
+    params.push(candidates.normalized);
     where.push(`(
-      coalesce(order_number, '') ilike $${params.length}
-      or coalesce(external_order_id, '') ilike $${params.length}
-      or coalesce(customer_order_id, '') ilike $${params.length}
-      or coalesce(xml_file_name, '') ilike $${params.length}
-      or coalesce(workflow_name, '') ilike $${params.length}
-      or print_files::text ilike $${params.length}
+      lower(coalesce(order_number, '')) = any($${params.length - 1}::text[])
+      or lower(coalesce(processed_order_name, '')) = any($${params.length - 1}::text[])
+      or lower(coalesce(external_order_id, '')) = any($${params.length - 1}::text[])
+      or lower(coalesce(customer_order_id, '')) = any($${params.length - 1}::text[])
+      or lower(regexp_replace(coalesce(xml_file_name, ''), '\\.xml$', '', 'i')) = any($${params.length - 1}::text[])
+      or regexp_replace(lower(coalesce(order_number, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(coalesce(processed_order_name, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(coalesce(external_order_id, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(coalesce(customer_order_id, '')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+      or regexp_replace(lower(regexp_replace(coalesce(xml_file_name, ''), '\\.xml$', '', 'i')), '[[:space:]_-]+', '', 'g') = any($${params.length}::text[])
+    )`);
+  } else if (search) {
+    params.push(`%${search}%`);
+    params.push(`%${normalizedSearch}%`);
+    where.push(`(
+      coalesce(order_number, '') ilike $${params.length - 1}
+      or coalesce(processed_order_name, '') ilike $${params.length - 1}
+      or coalesce(external_order_id, '') ilike $${params.length - 1}
+      or coalesce(customer_order_id, '') ilike $${params.length - 1}
+      or coalesce(xml_file_name, '') ilike $${params.length - 1}
+      or coalesce(source_xml_path, '') ilike $${params.length - 1}
+      or coalesce(workflow_name, '') ilike $${params.length - 1}
+      or coalesce(order_type, '') ilike $${params.length - 1}
+      or coalesce(latest_reprint_status, '') ilike $${params.length - 1}
+      or reprint_records::text ilike $${params.length - 1}
+      or case when coalesce(reprint_record_count, 0) > 0 then 'REPRINT RE' else '' end ilike $${params.length - 1}
+      or print_files::text ilike $${params.length - 1}
+      or regexp_replace(lower(coalesce(order_number, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(processed_order_name, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(xml_file_name, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(source_xml_path, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(print_files::text), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(reprint_records::text), '[[:space:]_-]+', '', 'g') ilike $${params.length}
     )`);
   }
 
@@ -240,7 +397,7 @@ async function listOrderPipeline(client, options = {}) {
       select *
       from v_print_order_pipeline
       ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by coalesce(received_at, api_seen_at, processed_at, queued_date_time) desc nulls last, order_number desc
+      order by coalesce(received_at, api_seen_at, latest_reprint_record_at, processed_at, queued_date_time) desc nulls last, order_number desc
       limit $1
     `,
     params
@@ -251,9 +408,9 @@ async function listOrderPipeline(client, options = {}) {
 async function listPipelineMonths(client) {
   await ensureOrderPipelineView(client);
   const result = await client.query(`
-    select to_char(coalesce(processed_at, received_at, api_seen_at), 'YYYY-MM') as month
+    select to_char(coalesce(processed_at, received_at, api_seen_at, latest_reprint_record_at), 'YYYY-MM') as month
     from v_print_order_pipeline
-    where coalesce(processed_at, received_at, api_seen_at) is not null
+    where coalesce(processed_at, received_at, api_seen_at, latest_reprint_record_at) is not null
     group by month
     order by month desc
     limit 36

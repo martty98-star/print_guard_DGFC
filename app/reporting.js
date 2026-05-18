@@ -8,7 +8,7 @@
       cfg, csvRow, dlBlob, fetchPrintLogRows, fmtExportDateTime, fmtFileDT,
       fmtN, genId, getPrintLogDirectInk, getPrintLogEstimateInterval, getPrintLogInkDisplay,
       i18n, idbClear, idbPut, loadAll, mapPrinterName, normalizePrintLogRow, printResultLabel,
-      showConfirm, showToast,
+      setSyncDirtyReason, showConfirm, showToast, StockStore, stockDbAdapter,
     } = deps;
 
     function getCurrentMonthExportRange() {
@@ -105,7 +105,7 @@
     }
 
     function exportCSVStock() {
-      const rows = Reports.stock.buildStockMovementLedger(S.items, S.movements);
+      const rows = StockStore.replayStockMovements(S.items, S.movements, Reports);
       const csv = Reports.csv.rowsToCsv(rows, [
         { key: 'timestamp', header: 'timestamp', value: row => fmtExportDateTime(row.timestamp) },
         { key: 'article_number', header: 'article_number', value: row => row.articleNumber },
@@ -220,11 +220,12 @@
         const clears = [idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS)];
         if (hasSettingsPayload) clears.push(idbClear(ST_SETTINGS));
         await Promise.all(clears);
-        for (const it of items) await idbPut(ST_ITEMS, it);
-        for (const m of movements) await idbPut(ST_MOVES, m);
+        for (const it of items) await StockStore.putItem(stockDbAdapter(), it);
+        for (const m of movements) await StockStore.putMovement(stockDbAdapter(), m);
         for (const r of coRecords) await idbPut(ST_CORECS, r);
         for (const s of settings) await idbPut(ST_SETTINGS, s);
         await loadAll();
+        setSyncDirtyReason('all');
         showToast(`Import hotov: ${items.length} pol., ${movements.length} poh.`, 'success');
       });
     }

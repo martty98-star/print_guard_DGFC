@@ -66,16 +66,27 @@ function getVariable(block, name) {
   return '';
 }
 
+function normalizeOrderType(value) {
+  const normalized = cleanString(value).toUpperCase();
+  if (normalized === 'S') return 'S';
+  if (normalized === 'C') return 'C';
+  if (normalized === 'R') return 'R';
+  return 'S';
+}
+
 function parseProcessedPrintOrderXml(xml, sourceXmlPath, sourceMonth) {
   const printFiles = getBlocks(xml, 'PrintFile').map((block) => ({
     printFilePath: getTag(block, 'FileName'),
     copies: Number(getTag(block, 'Copies')) || null,
     pageSize: getVariable(block, 'PageSize'),
   }));
+  const orderName = getTag(xml, 'Name');
+  const xmlFileName = getTag(xml, 'XmlFileName') || path.basename(sourceXmlPath);
+  const orderType = getTag(xml, 'OrderType');
 
   return {
-    orderName: getTag(xml, 'Name'),
-    xmlFileName: getTag(xml, 'XmlFileName') || path.basename(sourceXmlPath),
+    orderName,
+    xmlFileName,
     guid: getTag(xml, 'Guid'),
     status: getTag(xml, 'Status'),
     orderDateTime: getTag(xml, 'OrderDateTime'),
@@ -83,7 +94,7 @@ function parseProcessedPrintOrderXml(xml, sourceXmlPath, sourceMonth) {
     printerName: getTag(xml, 'PrinterName'),
     runWorkflow: getTag(xml, 'RunWorkflow'),
     workflowName: getTag(xml, 'WorkflowName'),
-    orderType: getTag(xml, 'OrderType'),
+    orderType: normalizeOrderType(orderType),
     printFiles,
     sourceXmlPath,
     sourceXmlHash: sha256(xml),

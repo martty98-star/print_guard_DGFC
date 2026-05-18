@@ -99,6 +99,12 @@ const SettingsUI = (typeof window !== 'undefined' && window.PrintGuardSettingsUI
 if (!SettingsUI) throw new Error('Missing PrintGuardSettingsUI');
 const ExportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUtils) || null;
 if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
+const StockUI = (typeof window !== 'undefined' && window.PrintGuardStockUI) || null;
+if (!StockUI) throw new Error('Missing PrintGuardStockUI');
+const StockStore = (typeof window !== 'undefined' && window.StockStore) || null;
+if (!StockStore) throw new Error('Missing StockStore');
+const StockFeature = (typeof window !== 'undefined' && window.StockFeature) || null;
+if (!StockFeature) throw new Error('Missing StockFeature');
 const PrintLogUI = (typeof window !== 'undefined' && window.PrintGuardPrintLogUI) || null;
 if (!PrintLogUI) throw new Error('Missing PrintGuardPrintLogUI');
 const ChecklistUI = (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
@@ -165,17 +171,18 @@ function requireAdminPinForScreen(statusId, wrapId) {
 }
 
 function renderPostPurchaseAccessRequired() {
-  elSet('postpurchase-status', 'Operator PIN required');
+  const t = window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t.bind(window.I18N) : (key) => key;
+  elSet('postpurchase-status', t('processed.status.pin-required'));
   const wrap = el('postpurchase-orders-wrap');
   if (wrap) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Processed Orders PIN is required.</p><div class="table-empty-note">Enter the operator PIN above and unlock the orders table.</div></div>`;
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>${t('processed.pin.required')}</p><div class="table-empty-note">${t('processed.pin.required-note')}</div></div>`;
   }
 }
 
 function requirePostPurchasePinForScreen() {
   if (cfg.postPurchasePin || cfg.adminPin) return true;
   renderPostPurchaseAccessRequired();
-  showToast('Processed Orders PIN is required.', 'error');
+  showToast(window.I18N ? window.I18N.t('processed.pin.required') : 'Processed Orders PIN is required.', 'error');
   return false;
 }
 
@@ -246,21 +253,11 @@ function renderChecklistScreen(force = false) {
 }
 
 function statusLabel(status) {
-  const map = {
-    ok: i18n('status.ok'),
-    warn: i18n('status.warn'),
-    crit: i18n('status.crit'),
-  };
-  return map[status] || status;
+  return StockUI.statusLabel(status, i18n);
 }
 
 function movementLabel(type) {
-  const map = {
-    receipt: i18n('mov.receipt'),
-    issue: i18n('mov.issue'),
-    stocktake: i18n('mov.stocktake'),
-  };
-  return map[type] || type;
+  return StockUI.movementLabel(type, i18n);
 }
 
 // ── App state ──────────────────────────────────────────────
@@ -312,6 +309,8 @@ const S = {
 
 const SYNC_MIN_INTERVAL_MS = 30 * 60 * 1000;
 const SYNC_ONLINE_RETRY_DELAY_MS = 15 * 1000;
+const SYNC_DIRTY_REASONS_KEY = 'pg_sync_dirty_reasons';
+const SYNC_DIRTY_VERSION_KEY = 'pg_sync_dirty_version';
 
 function getLastCloudSyncMs() {
   const value = Number(ls('pg_last_cloud_sync_ms') || 0);
@@ -322,19 +321,74 @@ function markCloudSyncComplete() {
   ls('pg_last_cloud_sync_ms', String(Date.now()));
 }
 
+function getSyncDirtyReasons() {
+  const raw = ls(SYNC_DIRTY_REASONS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter(reason => ['stock', 'colorado', 'all'].includes(reason))
+      : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function setSyncDirtyReason(reason) {
+  if (!['stock', 'colorado', 'all'].includes(reason)) return;
+  const reasons = new Set(getSyncDirtyReasons());
+  reasons.add(reason);
+  ls(SYNC_DIRTY_REASONS_KEY, JSON.stringify([...reasons]));
+  ls(SYNC_DIRTY_VERSION_KEY, String(Date.now()));
+}
+
+function clearSyncDirtyReasons() {
+  localStorage.removeItem(SYNC_DIRTY_REASONS_KEY);
+  localStorage.removeItem(SYNC_DIRTY_VERSION_KEY);
+}
+
+function hasSyncDirtyReasons() {
+  return getSyncDirtyReasons().length > 0;
+}
+
+function getSyncDirtyVersion() {
+  return ls(SYNC_DIRTY_VERSION_KEY) || '';
+}
+
 function shouldRunBackgroundSync() {
-  return (
-    navigator.onLine &&
-    document.visibilityState === 'visible' &&
-    Date.now() - getLastCloudSyncMs() >= SYNC_MIN_INTERVAL_MS
-  );
+  if (document.visibilityState !== 'visible') {
+    console.log('background sync skipped: tab hidden');
+    return false;
+  }
+  if (!hasSyncDirtyReasons()) {
+    console.log('background sync skipped: no local changes');
+    return false;
+  }
+  return navigator.onLine;
+}
+
+function stockDbAdapter() {
+  return {
+    ST_ITEMS,
+    ST_MOVES,
+    idbAll,
+    idbPut,
+    idbDelete,
+  };
+}
+
+function stockApiAdapter() {
+  return {
+    adminJsonHeaders,
+    fetchImpl: fetch,
+  };
 }
 
 // ── Settings IDB persistence ───────────────────────────────
 // ── Load all data ──────────────────────────────────────────
 async function loadAll() {
-  S.items     = await idbAll(ST_ITEMS);
-  S.movements = (await idbAll(ST_MOVES)).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  S.items     = await StockStore.getAllItems(stockDbAdapter());
+  S.movements = (await StockStore.getAllMovements(stockDbAdapter())).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   S.coRecords = (await idbAll(ST_CORECS)).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   await loadSettingsFromIDB();
 
@@ -355,7 +409,7 @@ async function loadAll() {
 
 /** Get movements for one article, sorted asc */
 function getMovements(articleNumber) {
-  return S.movements.filter(m => m.articleNumber === articleNumber);
+  return StockFeature.getMovements(articleNumber);
 }
 
 /**
@@ -366,7 +420,7 @@ function getMovements(articleNumber) {
  *   - weeklyConsumption = sum of issues in last N weeks / N
  */
 function computeStock(item) {
-  return Reports.stock.buildStockSummary(item, S.movements, { weeksN: cfg.weeksN }, new Date());
+  return StockFeature.computeStock(item);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -374,77 +428,7 @@ function computeStock(item) {
 // ══════════════════════════════════════════════════════════
 
 function renderStockOverview() {
-  const q   = S.stockSearch.toLowerCase();
-  const all = S.items.filter(it => it.isActive !== false);
-
-  let ok = 0, warn = 0, crit = 0;
-  all.forEach(it => {
-    const s = computeStock(it).status;
-    if (s === 'ok') ok++; else if (s === 'warn') warn++; else crit++;
-  });
-  elSet('count-ok',   ok);
-  elSet('count-warn', warn);
-  elSet('count-crit', crit);
-
-  const alertCount = warn + crit;
-  const alertsLabel = i18n('nav.alerts');
-  el('alerts-nav-label').textContent = alertCount > 0 ? `${alertsLabel} (${alertCount})` : alertsLabel;
-
-  const filtered = all.filter(it => {
-    const m = computeStock(it);
-    const matchStatus = S.stockFilter === 'all' || m.status === S.stockFilter;
-    const matchSearch = !q
-      || (it.name          || '').toLowerCase().includes(q)
-      || (it.articleNumber || '').toLowerCase().includes(q)
-      || (it.category      || '').toLowerCase().includes(q);
-    return matchStatus && matchSearch;
-  });
-
-  const list = el('stock-list');
-  const lblOnHand = i18n('stock.metric.onhand');
-  const lblCoverage = i18n('stock.metric.coverage');
-  const lblWeekly = i18n('stock.metric.weekly');
-  if (!filtered.length) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="empty-state-icon">📦</div>
-      <p>${all.length ? 'Žádné položky neodpovídají filtru.' : 'Žádné položky.\nPřidejte je v záložce Položky nebo importujte JSON.'}</p>
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(it => {
-    const m = computeStock(it);
-    const dClass = m.status === 'crit' ? 'crit-c' : m.status === 'warn' ? 'warn-c' : '';
-    const statusLbl = statusLabel(m.status);
-    return `<div class="item-card ${m.status}" data-article="${esc(it.articleNumber)}" role="button" tabindex="0">
-      <div class="item-card-top">
-        <div>
-          <div class="item-card-name">${esc(it.name || it.articleNumber)}</div>
-          <div class="item-card-code">${esc(it.articleNumber)}${it.category ? ' · ' + esc(it.category) : ''}</div>
-        </div>
-        <span class="badge ${m.status}">${statusLbl}</span>
-      </div>
-      <div class="item-card-metrics">
-        <div class="metric-mini">
-          <span class="metric-mini-val">${fmtN(m.onHand, 0)} <small>${esc(it.unit || 'ks')}</small></span>
-          <span class="metric-mini-lbl">${lblOnHand}</span>
-        </div>
-        <div class="metric-mini">
-          <span class="metric-mini-val ${dClass}">${fmtDays(m.daysLeft)}</span>
-          <span class="metric-mini-lbl">${lblCoverage}</span>
-        </div>
-        <div class="metric-mini">
-          <span class="metric-mini-val">${m.avgWeekly > 0 ? fmtN(m.avgWeekly, 1) : '—'}</span>
-          <span class="metric-mini-lbl">${lblWeekly}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  list.querySelectorAll('.item-card').forEach(c => {
-    c.addEventListener('click',   () => openStockDetail(c.dataset.article));
-    c.addEventListener('keydown', e => { if (e.key === 'Enter') openStockDetail(c.dataset.article); });
-  });
+  return StockFeature.renderStockOverview();
 }
 
 // ── Stock Detail ───────────────────────────────────────────
@@ -505,58 +489,20 @@ function openStockDetail(articleNumber) {
       </div>
     </div>`;
 
-  el('detail-add-mov-btn')?.addEventListener('click', () => {
-    S.movItem = item;
-    prefillMovItem(item);
-    navigate('stock-movement');
-  });
-
-  // Detail tabs (Pohyby / Stav skladu) — querySelector uvnitř detail-content, ne getElementById
-  const dc = el('detail-content');
-  dc.querySelectorAll('.detail-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      dc.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const which = tab.dataset.tab;
-      dc.querySelector('.detail-tab-pane[data-pane="movements"]')?.classList.toggle('hidden', which !== 'movements');
-      dc.querySelector('.detail-tab-pane[data-pane="history"]')?.classList.toggle('hidden', which !== 'history');
-    });
-  });
-
-  el('detail-content').querySelectorAll('.btn-del').forEach(btn => {
-    btn.addEventListener('click', () => deleteMovement(btn.dataset.id));
-  });
+  StockFeature.bindStockDetailControls(item);
 
   navigate('stock-detail');
 }
 
 function buildMovementRows(item, moves) {
-  // replay to show running stock after each move
-  let running = 0;
-  const rows = [];
-  for (const m of moves) {
-    if (m.movType === 'stocktake') running = m.qty;
-    else if (m.movType === 'receipt') running += m.qty;
-    else if (m.movType === 'issue')   running = Math.max(0, running - m.qty);
-    rows.push({ m, after: running });
-  }
-  return [...rows].reverse().slice(0, 50).map(({ m, after }) => {
-    const typeLabel = ({
-      receipt: `↑ ${movementLabel('receipt')}`,
-      issue: `↓ ${movementLabel('issue')}`,
-      stocktake: `= ${movementLabel('stocktake')}`,
-    })[m.movType] || movementLabel(m.movType);
-    const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' }[m.movType] || '';
-    const qtySign   = m.movType === 'issue' ? `−${fmtN(m.qty, 0)}` : m.movType === 'receipt' ? `+${fmtN(m.qty, 0)}` : `=${fmtN(m.qty, 0)}`;
-    return `<tr>
-      <td>${fmtDT(m.timestamp)}</td>
-      <td class="${typeClass}">${typeLabel}</td>
-      <td class="num ${typeClass}">${qtySign} ${esc(item.unit || 'ks')}</td>
-      <td class="num">${fmtN(after, 0)} ${esc(item.unit || 'ks')}</td>
-      <td class="note-td">${esc(m.note || '—')}</td>
-      <td><button class="btn-del" data-id="${esc(m.id)}" title="Smazat">✕</button></td>
-    </tr>`;
-  }).join('');
+  return StockUI.buildMovementRows({
+    esc,
+    fmtDT,
+    fmtN,
+    item,
+    movementLabel,
+    moves,
+  });
 }
 
 /**
@@ -564,52 +510,7 @@ function buildMovementRows(item, moves) {
  * Shows running on-hand after every movement, most recent first.
  */
 function buildStockHistoryTable(item, moves) {
-  if (!moves.length) {
-    return '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby — history není k dispozici.</p></div>';
-  }
-  // replay from beginning
-  let running = 0;
-  const rows = [];
-  for (const m of moves) {
-    let delta;
-    if (m.movType === 'stocktake') { delta = m.qty - running; running = m.qty; }
-    else if (m.movType === 'receipt') { delta = m.qty; running += m.qty; }
-    else if (m.movType === 'issue') { delta = -m.qty; running = Math.max(0, running - m.qty); }
-    else { delta = 0; }
-    rows.push({ m, after: running, delta });
-  }
-  const typeLabel = {
-    receipt: `↑ ${movementLabel('receipt')}`,
-    issue: `↓ ${movementLabel('issue')}`,
-    stocktake: `= ${movementLabel('stocktake')}`,
-  };
-  const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
-  const html = [...rows].reverse().slice(0, 100).map(({ m, after, delta }) => {
-    const sign = delta > 0 ? `+${fmtN(delta,0)}` : delta < 0 ? `${fmtN(delta,0)}` : `=${fmtN(m.qty,0)}`;
-    const dClass = delta > 0 ? 'receipt-c' : delta < 0 ? 'issue-c' : 'stocktake-c';
-    return `<tr>
-      <td>${fmtDT(m.timestamp)}</td>
-      <td class="${typeClass[m.movType]||''}">${typeLabel[m.movType]||m.movType}</td>
-      <td class="num ${dClass}">${sign} ${esc(item.unit||'ks')}</td>
-      <td class="num"><strong>${fmtN(after,0)}</strong> ${esc(item.unit||'ks')}</td>
-      <td class="note-td">${esc(m.note||'—')}</td>
-    </tr>`;
-  }).join('');
-  return `<table class="data-table">
-    <thead><tr><th>${i18n('table.date')}</th><th>${i18n('table.type')}</th><th>${i18n('table.change')}</th><th>${i18n('table.after')}</th><th>${i18n('table.note')}</th></tr></thead>
-    <tbody>${html}</tbody>
-  </table>`;
-}
-
-async function deleteMovement(id) {
-  showConfirm('Smazat tento pohyb skladu?', async () => {
-    await idbDelete(ST_MOVES, id);
-    S.movements = S.movements.filter(m => m.id !== id);
-    renderStockOverview();
-    renderAlerts();
-    if (S.detailArticle) openStockDetail(S.detailArticle);
-    showToast('Pohyb smazán');
-  });
+  return StockFeature.renderStockHistory(item, moves);
 }
 
 // Admin-gated verze pro Historie pohybů
@@ -617,15 +518,8 @@ async function deleteMovementAdmin(id) {
   if (!isAdmin()) { showToast('Mazání pohybů — jen admin', 'error'); return; }
   showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
     try {
-      const res = await fetch('/.netlify/functions/delete-stock-movement', {
-        method: 'DELETE',
-        headers: adminJsonHeaders(),
-        cache: 'no-store',
-        body: JSON.stringify({ id }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
-      await idbDelete(ST_MOVES, id);
+      await StockStore.deleteMovementRemote(id, stockApiAdapter());
+      await StockStore.deleteMovementLocal(stockDbAdapter(), id);
       S.movements = S.movements.filter(m => m.id !== id);
       renderStockOverview();
       renderAlerts();
@@ -640,185 +534,7 @@ async function deleteMovementAdmin(id) {
 
 // ── Alerts ────────────────────────────────────────────────
 function renderAlerts() {
-  const alertItems = S.items
-    .filter(it => it.isActive !== false && computeStock(it).status !== 'ok')
-    .sort((a, b) => computeStock(a).daysLeft - computeStock(b).daysLeft);
-
-  const list = el('alerts-list');
-  const lblOnHand = i18n('stock.metric.onhand');
-  const lblCoverage = i18n('stock.metric.coverage');
-  if (!alertItems.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✓</div><p>${i18n('msg.no-alerts')}</p></div>`;
-    return;
-  }
-  list.innerHTML = alertItems.map(it => {
-    const m = computeStock(it);
-    const lbl = statusLabel(m.status);
-    return `<div class="item-card ${m.status}" data-article="${esc(it.articleNumber)}" role="button" tabindex="0">
-      <div class="item-card-top">
-        <div>
-          <div class="item-card-name">${esc(it.name || it.articleNumber)}</div>
-          <div class="item-card-code">${esc(it.articleNumber)}</div>
-        </div>
-        <span class="badge ${m.status}">${lbl}</span>
-      </div>
-      <div class="item-card-metrics">
-        <div class="metric-mini">
-          <span class="metric-mini-val">${fmtN(m.onHand, 0)} <small>${esc(it.unit || 'ks')}</small></span>
-          <span class="metric-mini-lbl">${lblOnHand}</span>
-        </div>
-        <div class="metric-mini">
-          <span class="metric-mini-val ${m.status === 'crit' ? 'crit-c' : 'warn-c'}">${fmtDays(m.daysLeft)}</span>
-          <span class="metric-mini-lbl">${lblCoverage}</span>
-        </div>
-        <div class="metric-mini">
-          <span class="metric-mini-val">${it.leadTimeDays || '—'}</span>
-          <span class="metric-mini-lbl">Dod. lhůta</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  list.querySelectorAll('.item-card').forEach(c => {
-    c.addEventListener('click', () => openStockDetail(c.dataset.article));
-  });
-}
-
-// ══════════════════════════════════════════════════════════
-//  STOCK — MOVEMENT ENTRY (příjem / výdej / inventura)
-// ══════════════════════════════════════════════════════════
-
-function setupMovementEntry() {
-  // Type buttons
-  document.querySelectorAll('.mov-type-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.mov-type-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      S.movType = btn.dataset.type;
-      updateMovQtyLabel();
-      updateMovPreview();
-    });
-  });
-
-  // Item search
-  const searchEl  = el('mov-item-search');
-  const resultsEl = el('mov-item-results');
-
-  searchEl.addEventListener('input', () => {
-    const q = searchEl.value.toLowerCase();
-    if (!q) { resultsEl.classList.add('hidden'); return; }
-    const matches = S.items
-      .filter(it => it.isActive !== false)
-      .filter(it =>
-        (it.articleNumber || '').toLowerCase().includes(q) ||
-        (it.name          || '').toLowerCase().includes(q) ||
-        (it.category      || '').toLowerCase().includes(q)
-      ).slice(0, 8);
-
-    if (!matches.length) {
-      resultsEl.innerHTML = '<div class="dropdown-item"><span class="di-name">Nic nenalezeno</span></div>';
-    } else {
-      const lblOnHand = i18n('stock.metric.onhand');
-      resultsEl.innerHTML = matches.map(it => {
-        const m = computeStock(it);
-        return `<div class="dropdown-item" data-a="${esc(it.articleNumber)}">
-          <span class="di-name">${esc(it.name || it.articleNumber)}</span>
-          <span class="di-code">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')}</span>
-          <span class="di-stock">${lblOnHand}: ${fmtN(m.onHand, 0)} ${esc(it.unit || 'ks')}</span>
-        </div>`;
-      }).join('');
-    }
-    resultsEl.classList.remove('hidden');
-    resultsEl.querySelectorAll('[data-a]').forEach(d => {
-      d.addEventListener('click', () => {
-        const item = S.items.find(it => it.articleNumber === d.dataset.a);
-        if (item) selectMovItem(item);
-      });
-    });
-  });
-
-  document.addEventListener('click', e => {
-    if (!resultsEl.contains(e.target) && e.target !== searchEl)
-      resultsEl.classList.add('hidden');
-  });
-
-  el('mov-minus').addEventListener('click', () => {
-    const v = parseFloat(el('mov-qty').value || '0');
-    if (v > 0) { el('mov-qty').value = Math.max(0, v - 1); updateMovPreview(); }
-  });
-  el('mov-plus').addEventListener('click', () => {
-    el('mov-qty').value = parseFloat(el('mov-qty').value || '0') + 1;
-    updateMovPreview();
-  });
-  el('mov-qty').addEventListener('input', updateMovPreview);
-  el('mov-save-btn').addEventListener('click', saveMovement);
-}
-
-function prefillMovItem(item) {
-  const chip = el('mov-item-selected');
-  chip.classList.remove('hidden');
-  chip.innerHTML = `
-    <div>
-      <div class="sc-name">${esc(item.name || item.articleNumber)}</div>
-      <div class="sc-code">${esc(item.articleNumber)}</div>
-    </div>
-    <button class="sc-clear" id="mov-sc-clear">✕</button>`;
-  el('mov-sc-clear').addEventListener('click', clearMovItem);
-  el('mov-item-search').value = '';
-  el('mov-unit-hint').textContent = 'Jednotka: ' + (item.unit || 'ks');
-  el('mov-save-btn').disabled = false;
-  updateMovQtyLabel();
-  updateMovPreview();
-}
-
-function selectMovItem(item) {
-  S.movItem = item;
-  el('mov-item-results').classList.add('hidden');
-  prefillMovItem(item);
-}
-
-function clearMovItem() {
-  S.movItem = null;
-  el('mov-item-selected').classList.add('hidden');
-  el('mov-preview').classList.add('hidden');
-  el('mov-save-btn').disabled = true;
-  el('mov-unit-hint').textContent = '';
-}
-
-function updateMovQtyLabel() {
-  const labels = { receipt: 'Přijímaný počet kusů *', issue: 'Vydávaný počet kusů *', stocktake: 'Aktuální stav na skladě (nová hodnota) *' };
-  el('mov-qty-label').textContent = labels[S.movType] || 'Množství *';
-}
-
-function updateMovPreview() {
-  if (!S.movItem) return;
-  const qty = parseFloat(el('mov-qty').value) || 0;
-  const cur = computeStock(S.movItem).onHand;
-  let after;
-  if (S.movType === 'receipt')   after = cur + qty;
-  else if (S.movType === 'issue') after = Math.max(0, cur - qty);
-  else                             after = qty; // stocktake
-
-  const unit = S.movItem.unit || 'ks';
-
-  // simulate
-  const fakeMove = { articleNumber: S.movItem.articleNumber, movType: S.movType, qty, timestamp: new Date().toISOString(), id: '__tmp__' };
-  const fakeMoves = [...S.movements, fakeMove];
-  const origMoves = S.movements;
-  S.movements = fakeMoves;
-  const nm = computeStock(S.movItem);
-  S.movements = origMoves;
-
-  el('mov-prev-current').textContent = `${fmtN(cur, 0)} ${unit}`;
-  el('mov-prev-after').textContent   = `${fmtN(after, 0)} ${unit}`;
-  const statusLbl = ({
-    ok: `${statusLabel('ok')} ✓`,
-    warn: `⚠ ${statusLabel('warn')}`,
-    crit: `🔴 ${statusLabel('crit')}`,
-  })[nm.status] || statusLabel(nm.status);
-  const statusEl  = el('mov-prev-status');
-  statusEl.textContent = statusLbl;
-  statusEl.style.color = { ok: 'var(--ok)', warn: 'var(--warn)', crit: 'var(--crit)' }[nm.status];
-  el('mov-preview').classList.remove('hidden');
+  return StockFeature.renderStockAlerts();
 }
 
 async function saveMovement() {
@@ -839,14 +555,15 @@ async function saveMovement() {
   el('mov-save-btn').disabled = true;
   try {
     const notifyItem = S.movItem;
-    await idbPut(ST_MOVES, move);
+    await StockStore.putMovement(stockDbAdapter(), move);
     S.movements.push(move);
+    setSyncDirtyReason('stock');
     S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const typeLabel = movementLabel(S.movType);
     showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
     el('mov-qty').value  = '';
     el('mov-note').value = '';
-    clearMovItem();
+    StockFeature.clearMovementForm();
     renderStockOverview();
     renderAlerts();
     navigate('stock-overview');
@@ -953,9 +670,10 @@ async function saveItemModal() {
     isActive: true,
   };
 
-  await idbPut(ST_ITEMS, item);
+  await StockStore.putItem(stockDbAdapter(), item);
   const idx = S.items.findIndex(it => it.articleNumber === article);
   if (idx >= 0) S.items[idx] = item; else S.items.push(item);
+  setSyncDirtyReason('stock');
 
   el('item-modal').classList.add('hidden');
   renderItemsMgmt();
@@ -970,11 +688,11 @@ async function deleteItem(articleNumber) {
   showConfirm(`Smazat položku "${articleNumber}" včetně všech pohybů?`, async () => {
     try {
       await cloudDelete('item', articleNumber);
-      await idbDelete(ST_ITEMS, articleNumber);
-      const toDelete = S.movements.filter(m => m.articleNumber === articleNumber);
-      for (const m of toDelete) await idbDelete(ST_MOVES, m.id);
+      await StockStore.deleteItem(stockDbAdapter(), articleNumber);
+      await StockStore.deleteMovementsForArticle(stockDbAdapter(), S.movements, articleNumber);
       S.items     = S.items.filter(it => it.articleNumber !== articleNumber);
       S.movements = S.movements.filter(m  => m.articleNumber !== articleNumber);
+      setSyncDirtyReason('stock');
       renderItemsMgmt();
       renderStockOverview();
       renderAlerts();
@@ -1289,6 +1007,7 @@ async function saveCoEntry() {
   try {
     await idbPut(ST_CORECS, rec);
     S.coRecords.push(rec);
+    setSyncDirtyReason('colorado');
     S.coRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const machineLabel = MACHINES.find(machine => machine.id === machineId)?.label || machineId;
     showToast('Záznam Colorado uložen', 'success');
@@ -1992,8 +1711,11 @@ const reportingApi = PrintGuardReporting.createReporting({
   mapPrinterName,
   normalizePrintLogRow,
   printResultLabel,
+  setSyncDirtyReason,
   showConfirm,
   showToast,
+  StockStore,
+  stockDbAdapter,
 });
 const {
   exportCSVCombinedLifetimeCo,
@@ -2075,7 +1797,7 @@ function renderStockLog() {
 }
 
 function exportCSVStockLog() {
-  const rows = Reports.stock.buildStockMovementLedger(S.items, S.movements);
+  const rows = StockStore.replayStockMovements(S.items, S.movements, Reports);
   const csv = Reports.csv.rowsToCsv(rows, [
     { key: 'timestamp', header: 'timestamp', value: row => fmtExportDateTime(row.timestamp) },
     { key: 'article_number', header: 'article_number', value: row => row.articleNumber },
@@ -2179,18 +1901,12 @@ async function cloudDelete(kind, key) {
   return j;
 }
 
+// Canonical movement deletion. This preserves the previously effective hoisted implementation.
 async function deleteMovement(id) {
   showConfirm('Smazat tento pohyb skladu?', async () => {
     try {
-      const res = await fetch('/.netlify/functions/delete-stock-movement', {
-        method: 'DELETE',
-        headers: adminJsonHeaders(),
-        cache: 'no-store',
-        body: JSON.stringify({ id }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
-      await idbDelete(ST_MOVES, id);
+      await StockStore.deleteMovementRemote(id, stockApiAdapter());
+      await StockStore.deleteMovementLocal(stockDbAdapter(), id);
       S.movements = S.movements.filter(m => m.id !== id);
       renderStockOverview();
       renderAlerts();
@@ -2205,6 +1921,8 @@ async function deleteMovement(id) {
 async function runSync(options = {}) {
   const { silent = false } = options;
   const btn = el('sync-btn');
+  const dirtyReasonsBeforeSync = getSyncDirtyReasons();
+  const dirtyVersionBeforeSync = getSyncDirtyVersion();
   if (S.syncRunning) return false;
   if (!navigator.onLine) {
     if (!silent) showToast('Jsi offline — sync nejde.', 'error');
@@ -2301,8 +2019,8 @@ async function runSync(options = {}) {
 
     await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
 
-    for (const it of goodItems) await idbPut(ST_ITEMS, it);
-    for (const m  of goodMoves) await idbPut(ST_MOVES, m);
+    for (const it of goodItems) await StockStore.putItem(stockDbAdapter(), it);
+    for (const m  of goodMoves) await StockStore.putMovement(stockDbAdapter(), m);
     for (const r  of goodCo)    await idbPut(ST_CORECS, r);
     for (const s of rawSettings) {
       if (s?.key) await idbPut(ST_SETTINGS, s);
@@ -2310,7 +2028,11 @@ async function runSync(options = {}) {
 
     await loadAll();
 
-    await sendStockNotifications({ silent: true, trigger: 'sync' });
+    if (dirtyReasonsBeforeSync.includes('stock') || dirtyReasonsBeforeSync.includes('all')) {
+      await sendStockNotifications({ silent: true, trigger: 'sync' });
+    } else {
+      console.log('stock alerts skipped: no stock dirty reason');
+    }
 
     const dropped = badItems.length + badMoves.length + badCo.length;
     if (!silent) {
@@ -2321,6 +2043,9 @@ async function runSync(options = {}) {
       );
     }
     markCloudSyncComplete();
+    if (getSyncDirtyVersion() === dirtyVersionBeforeSync) {
+      clearSyncDirtyReasons();
+    }
     return true;
   } catch (e) {
     console.error('[SYNC] Error:', e);
@@ -2346,9 +2071,7 @@ function setupBackgroundSync() {
   });
 
   if (S.syncIntervalId) clearInterval(S.syncIntervalId);
-  S.syncIntervalId = setInterval(() => {
-    if (shouldRunBackgroundSync()) runSync({ silent: true });
-  }, SYNC_MIN_INTERVAL_MS);
+  S.syncIntervalId = null;
 }
 
 async function enablePushNotifications() {
@@ -2520,7 +2243,6 @@ async function init() {
     b.addEventListener('click', () => navigate(b.dataset.screen || 'stock-overview')));
 
   // FABs
-  el('fab-movement').addEventListener('click',  () => navigate('stock-movement'));
   el('fab-co-entry').addEventListener('click',  () => navigate('co-entry'));
 
   // Topbar
@@ -2532,36 +2254,35 @@ el('sync-btn').addEventListener('click', async () => {
   await runSync();
 });
 
-  // Stock search + filter
-  el('stock-search').addEventListener('input', e => {
-    S.stockSearch = e.target.value; renderStockOverview();
+  StockFeature.initStockFeature({
+    S,
+    Reports,
+    cfg,
+    computeStock,
+    deleteMovement,
+    el,
+    elSet,
+    esc,
+    exportCSVStockLog,
+    fmtDT,
+    fmtDays,
+    fmtN,
+    i18n,
+    movementLabel,
+    navigate,
+    openStockDetail,
+    openItemModal,
+    renderStockLog,
+    renderStockOverview,
+    saveItemModal,
+    saveMovement,
+    statusLabel,
   });
-  document.querySelectorAll('.pill').forEach(p =>
-    p.addEventListener('click', () => {
-      document.querySelectorAll('.pill').forEach(pp => pp.classList.remove('active'));
-      p.classList.add('active');
-      S.stockFilter = p.dataset.filter;
-      renderStockOverview();
-    }));
-  document.querySelectorAll('.stat-chip').forEach(chip =>
-    chip.addEventListener('click', () => {
-      const f = chip.dataset.filter;
-      document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.filter === f));
-      S.stockFilter = f;
-      renderStockOverview();
-    }));
-
-  // Item modal
-  el('add-item-btn').addEventListener('click',      () => openItemModal(null));
-  el('item-modal-close').addEventListener('click',  () => el('item-modal').classList.add('hidden'));
-  el('item-modal-cancel').addEventListener('click', () => el('item-modal').classList.add('hidden'));
-  el('item-modal-save').addEventListener('click',   saveItemModal);
 
   // Colorado history tabs
   document.querySelectorAll('.hist-tab').forEach(b =>
     b.addEventListener('click', () => { S.coHistMachine = b.dataset.machine; renderCoHistory(); }));
 
-  setupMovementEntry();
   setupCoEntry();
   ChecklistUI.initChecklistUI({
     applyRoleUI,
@@ -2629,28 +2350,6 @@ el('sync-btn').addEventListener('click', async () => {
       }
     });
   }
-
-  // Stock log search + filter
-  el('stock-log-search').addEventListener('input', e => {
-    S.logSearch = e.target.value; renderStockLog();
-  });
-  document.querySelectorAll('[data-logfilter]').forEach(p =>
-    p.addEventListener('click', () => {
-      document.querySelectorAll('[data-logfilter]').forEach(pp => pp.classList.remove('active'));
-      p.classList.add('active');
-      S.logFilter = p.dataset.logfilter;
-      renderStockLog();
-    }));
-  el('stock-log-export-btn').addEventListener('click', exportCSVStockLog);
-
-  // Stock log date range
-  el('stock-log-from').addEventListener('change', e => { S.logDateFrom = e.target.value; renderStockLog(); });
-  el('stock-log-to').addEventListener('change',   e => { S.logDateTo   = e.target.value; renderStockLog(); });
-  el('stock-log-clear-dates').addEventListener('click', () => {
-    S.logDateFrom = ''; S.logDateTo = '';
-    el('stock-log-from').value = ''; el('stock-log-to').value = '';
-    renderStockLog();
-  });
 
   // Colorado history date range
   el('co-hist-from').addEventListener('change', e => { S.coDateFrom = e.target.value; renderCoHistory(); });
@@ -2731,11 +2430,11 @@ el('sync-btn').addEventListener('click', async () => {
   });
   el('postpurchase-unlock-btn')?.addEventListener('click', () => {
     const pin = (el('postpurchase-pin')?.value || '').trim();
-    if (!pin) { showToast('Enter Processed Orders PIN', 'error'); return; }
+    if (!pin) { showToast(window.I18N ? window.I18N.t('processed.pin.enter') : 'Enter Processed Orders PIN', 'error'); return; }
     cfg.postPurchasePin = pin;
     if (el('postpurchase-pin')) el('postpurchase-pin').value = '';
     S.postPurchaseLoaded = false;
-    showToast('Processed orders unlocked', 'success');
+    showToast(window.I18N ? window.I18N.t('processed.toast.unlocked') : 'Processed orders unlocked', 'success');
     loadPostPurchaseOrders(true);
   });
   el('postpurchase-lock-btn')?.addEventListener('click', () => {
@@ -2743,7 +2442,7 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseLoaded = false;
     S.postPurchaseOrders = [];
     renderPostPurchaseAccessRequired();
-    showToast('Processed orders locked', 'success');
+    showToast(window.I18N ? window.I18N.t('processed.toast.locked') : 'Processed orders locked', 'success');
   });
   el('postpurchase-sync-btn')?.addEventListener('click', () => {
     syncPostPurchaseOrdersManual();

@@ -1131,6 +1131,32 @@ textarea { resize: vertical; min-height: 58px; }
   max-width: 100%;
   overflow: hidden;
 }
+.pp-card-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.pp-card-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.pp-action-needed {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  color: var(--text-dim);
+  font-size: .76rem;
+}
+.pp-tech-details summary {
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
 .pp-processed-head {
   display: flex;
   justify-content: space-between;
@@ -1172,7 +1198,8 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-pipeline-badge.received { border-color: rgba(92, 128, 184, .35); }
 .pp-pipeline-badge.processed,
 .pp-pipeline-badge.pdf { border-color: rgba(80, 150, 110, .35); }
-.pp-pipeline-badge.reprint,
+.pp-pipeline-badge.reprint { border-color: rgba(92, 128, 184, .55); color: var(--accent); background: var(--accent-bg); }
+.pp-pipeline-badge.done { border-color: var(--ok); color: var(--ok); background: var(--ok-dim); }
 .pp-pipeline-badge.missing { border-color: rgba(180, 95, 80, .4); color: var(--crit); }
 .pp-pipeline-badge.orphan { border-color: rgba(160, 130, 70, .4); }
 .pp-missing-warning {
@@ -1200,6 +1227,12 @@ textarea { resize: vertical; min-height: 58px; }
   padding-top: 8px;
   min-width: 0;
 }
+.pp-file-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
 .pp-file-title {
   color: var(--text);
   font-size: .78rem;
@@ -1220,10 +1253,26 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   min-width: 190px;
 }
+.pp-full-reprint-actions .pp-reprint-history { flex-basis: 100%; width: 100%; }
 .pp-reprint-history {
   margin-top: 10px;
   display: grid;
   gap: 7px;
+}
+.pp-reprint-records {
+  border-top: 1px solid var(--border);
+  margin-bottom: 12px;
+  padding-top: 8px;
+  display: grid;
+  gap: 7px;
+}
+.pp-reprint-record {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 8px 9px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
 }
 .pp-reprint-history-entry {
   border: 1px solid var(--border);

@@ -8,6 +8,23 @@ function cleanString(value) {
   return trimmed || null;
 }
 
+function normalizeSearchTerm(value) {
+  const cleaned = cleanString(value);
+  return cleaned ? cleaned.toLowerCase().replace(/[\s_-]+/g, '') : null;
+}
+
+function upperOrEmpty(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizeOrderType(value) {
+  const normalized = upperOrEmpty(value);
+  if (normalized === 'S') return 'S';
+  if (normalized === 'C') return 'C';
+  if (normalized === 'R') return 'R';
+  return 'S';
+}
+
 function toIsoOrNull(value) {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
@@ -35,8 +52,10 @@ function makeOrderKey(order) {
   if (guid) return `guid:${guid}`;
   return [
     'fallback',
+    normalizeOrderType(order && order.orderType),
     cleanString(order && order.orderName) || '',
     cleanString(order && order.xmlFileName) || '',
+    cleanString(order && order.sourceXmlPath) || '',
     cleanString(order && order.sourceXmlHash) || '',
   ].join('|');
 }
@@ -129,6 +148,7 @@ async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
 
 function mapProcessedOrderRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
+  const orderType = normalizeOrderType(row.order_type);
   return {
     id: Number(row.id),
     orderName: row.order_name,
@@ -140,7 +160,7 @@ function mapProcessedOrderRow(row) {
     printerName: row.printer_name,
     runWorkflow: row.run_workflow,
     workflowName: row.workflow_name,
-    orderType: row.order_type,
+    orderType,
     printFiles: files,
     sourceXmlPath: row.source_xml_path,
     sourceXmlHash: row.source_xml_hash,
@@ -169,12 +189,15 @@ async function upsertProcessedPrintOrder(client, input) {
     printerName: cleanString(input.printerName),
     runWorkflow: normalizeBoolean(input.runWorkflow),
     workflowName: cleanString(input.workflowName),
-    orderType: cleanString(input.orderType),
+    orderType: normalizeOrderType(input.orderType),
     printFiles: normalizePrintFiles(input.printFiles),
     sourceXmlPath,
     sourceXmlHash,
     sourceMonth: cleanString(input.sourceMonth),
   };
+  if (order.orderType === 'R') {
+    order.guid = null;
+  }
   const orderKey = makeOrderKey(order);
 
   const existing = await client.query(
@@ -250,6 +273,7 @@ async function listProcessedPrintOrders(client, options = {}) {
   const limit = Math.min(500, Math.max(1, Number(options.limit) || 500));
   const month = cleanString(options.month);
   const search = cleanString(options.search);
+  const normalizedSearch = normalizeSearchTerm(options.search);
   const params = [limit];
   const where = [];
 
@@ -259,11 +283,22 @@ async function listProcessedPrintOrders(client, options = {}) {
   }
   if (search) {
     params.push(`%${search}%`);
+    params.push(`%${normalizedSearch}%`);
     where.push(`(
-      order_name ilike $${params.length}
-      or coalesce(xml_file_name, '') ilike $${params.length}
-      or coalesce(workflow_name, '') ilike $${params.length}
-      or print_files::text ilike $${params.length}
+      order_name ilike $${params.length - 1}
+      or coalesce(xml_file_name, '') ilike $${params.length - 1}
+      or coalesce(source_xml_path, '') ilike $${params.length - 1}
+      or coalesce(workflow_name, '') ilike $${params.length - 1}
+      or coalesce(order_type, '') ilike $${params.length - 1}
+      or print_files::text ilike $${params.length - 1}
+      or case
+        when upper(coalesce(order_type, 'S')) = 'R' then 'REPRINT RE'
+        else ''
+      end ilike $${params.length - 1}
+      or regexp_replace(lower(order_name), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(xml_file_name, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(source_xml_path, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(print_files::text), '[[:space:]_-]+', '', 'g') ilike $${params.length}
     )`);
   }
 
@@ -309,8 +344,7 @@ async function createReprintRequest(client, input) {
     throw error;
   }
 
-  const printFilePath = cleanString(input.printFilePath) ||
-    (((Array.isArray(order.print_files) ? order.print_files : [])[0] || {}).printFilePath || null);
+  const printFilePath = cleanString(input.printFilePath);
   const reason = cleanString(input.reason);
   const note = cleanString(input.note);
   if (!reason) {
@@ -369,7 +403,6 @@ async function resolveReprintRequest(client, input) {
   const orderId = Number(input && input.orderId);
   if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
   const printFilePath = cleanString(input && input.printFilePath);
-  if (!printFilePath) throw new Error('Missing print file path');
 
   const result = await client.query(
     `
@@ -380,7 +413,7 @@ async function resolveReprintRequest(client, input) {
         select id
         from processed_order_reprint_requests
         where order_id = $1
-          and print_file_path = $2
+          and print_file_path is not distinct from $2
           and status = 'pending'
         order by requested_at desc, id desc
         limit 1
@@ -397,6 +430,42 @@ async function resolveReprintRequest(client, input) {
     throw error;
   }
 
+  return {
+    id: Number(row.id),
+    orderId: Number(row.order_id),
+    orderName: row.order_name,
+    printFilePath: row.print_file_path,
+    reason: row.reason,
+    requestedBy: row.requested_by,
+    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
+    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    workstationId: row.workstation_id,
+    status: row.status,
+    note: row.note,
+  };
+}
+
+async function deleteReprintRequest(client, input) {
+  await ensureProcessedPrintOrderTables(client);
+  const id = Number(input && input.id);
+  if (!Number.isInteger(id) || id <= 0) throw new Error('Missing reprint request id');
+  const onlyPending = Boolean(input && input.onlyPending);
+
+  const result = await client.query(
+    `
+      delete from processed_order_reprint_requests
+      where id = $1
+        and ($2::boolean = false or status = 'pending')
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, workstation_id, status, note
+    `,
+    [id, onlyPending]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    const error = new Error(onlyPending ? 'Pending reprint request not found' : 'Reprint request not found');
+    error.statusCode = 404;
+    throw error;
+  }
   return {
     id: Number(row.id),
     orderId: Number(row.order_id),
@@ -447,6 +516,7 @@ async function listReprintRequests(client, orderIds) {
 
 module.exports = {
   createReprintRequest,
+  deleteReprintRequest,
   ensureProcessedPrintOrderTables,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
