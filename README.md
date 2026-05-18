@@ -7,7 +7,7 @@ Post Purchase integration
 Required environment variables:
 - POST_PURCHASE_API_BASE_URL
 - POST_PURCHASE_API_TOKEN
-- NEON_DATABASE_URL
+- NETLIFY_DATABASE_URL (preferred) or DATABASE_URL or NEON_DATABASE_URL
 - ADMIN_API_KEY
 - ADMIN_PIN
 - POSTPURCHASE_OPERATOR_PIN
@@ -17,6 +17,14 @@ Optional environment variables:
 - POST_PURCHASE_API_ORDERS_PATH
 - POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE
 - SUBMIT_TOOL_LOG_DAYS
+
+Database connection precedence in the runtime code is:
+
+```text
+NETLIFY_DATABASE_URL -> DATABASE_URL -> NEON_DATABASE_URL
+```
+
+If more than one of these keys exists in Netlify, the first non-empty value wins. Keep only the intended production value in sync across deploy contexts, or preferably use a single canonical key, to avoid silent mismatches after credential or ownership migrations.
 
 Admin API authentication
 
@@ -33,6 +41,8 @@ POSTPURCHASE_OPERATOR_PIN=operator_orders_pin
 `ADMIN_PIN` is for browser admin mode. The browser sends the entered PIN as `x-admin-pin`; the Netlify Function validates it server-side. Do not commit either value to Git.
 
 `POSTPURCHASE_OPERATOR_PIN` is for operators who only need to view and update Post Purchase order lifecycle states. The browser sends it as `x-postpurchase-pin`; it does not unlock admin-only destructive actions.
+
+After changing any Netlify environment variable used by Functions, trigger a fresh production deploy so the new value is present in the deployed runtime.
 
 Post Purchase API examples:
 
