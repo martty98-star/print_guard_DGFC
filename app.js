@@ -333,6 +333,8 @@ const S = {
 
 const SYNC_MIN_INTERVAL_MS = 30 * 60 * 1000;
 const SYNC_ONLINE_RETRY_DELAY_MS = 15 * 1000;
+const SYNC_DIRTY_REASONS_KEY = 'pg_sync_dirty_reasons';
+const SYNC_DIRTY_VERSION_KEY = 'pg_sync_dirty_version';
 
 function getLastCloudSyncMs() {
   const value = Number(ls('pg_last_cloud_sync_ms') || 0);
@@ -343,12 +345,50 @@ function markCloudSyncComplete() {
   ls('pg_last_cloud_sync_ms', String(Date.now()));
 }
 
+function getSyncDirtyReasons() {
+  const raw = ls(SYNC_DIRTY_REASONS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter(reason => ['stock', 'colorado', 'all'].includes(reason))
+      : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function setSyncDirtyReason(reason) {
+  if (!['stock', 'colorado', 'all'].includes(reason)) return;
+  const reasons = new Set(getSyncDirtyReasons());
+  reasons.add(reason);
+  ls(SYNC_DIRTY_REASONS_KEY, JSON.stringify([...reasons]));
+  ls(SYNC_DIRTY_VERSION_KEY, String(Date.now()));
+}
+
+function clearSyncDirtyReasons() {
+  localStorage.removeItem(SYNC_DIRTY_REASONS_KEY);
+  localStorage.removeItem(SYNC_DIRTY_VERSION_KEY);
+}
+
+function hasSyncDirtyReasons() {
+  return getSyncDirtyReasons().length > 0;
+}
+
+function getSyncDirtyVersion() {
+  return ls(SYNC_DIRTY_VERSION_KEY) || '';
+}
+
 function shouldRunBackgroundSync() {
-  return (
-    navigator.onLine &&
-    document.visibilityState === 'visible' &&
-    Date.now() - getLastCloudSyncMs() >= SYNC_MIN_INTERVAL_MS
-  );
+  if (document.visibilityState !== 'visible') {
+    console.log('background sync skipped: tab hidden');
+    return false;
+  }
+  if (!hasSyncDirtyReasons()) {
+    console.log('background sync skipped: no local changes');
+    return false;
+  }
+  return navigator.onLine;
 }
 
 function stockDbAdapter() {
@@ -541,6 +581,7 @@ async function saveMovement() {
     const notifyItem = S.movItem;
     await StockStore.putMovement(stockDbAdapter(), move);
     S.movements.push(move);
+    setSyncDirtyReason('stock');
     S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const typeLabel = movementLabel(S.movType);
     showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
@@ -656,6 +697,7 @@ async function saveItemModal() {
   await StockStore.putItem(stockDbAdapter(), item);
   const idx = S.items.findIndex(it => it.articleNumber === article);
   if (idx >= 0) S.items[idx] = item; else S.items.push(item);
+  setSyncDirtyReason('stock');
 
   el('item-modal').classList.add('hidden');
   renderItemsMgmt();
@@ -674,6 +716,7 @@ async function deleteItem(articleNumber) {
       await StockStore.deleteMovementsForArticle(stockDbAdapter(), S.movements, articleNumber);
       S.items     = S.items.filter(it => it.articleNumber !== articleNumber);
       S.movements = S.movements.filter(m  => m.articleNumber !== articleNumber);
+      setSyncDirtyReason('stock');
       renderItemsMgmt();
       renderStockOverview();
       renderAlerts();
@@ -988,6 +1031,7 @@ async function saveCoEntry() {
   try {
     await idbPut(ST_CORECS, rec);
     S.coRecords.push(rec);
+    setSyncDirtyReason('colorado');
     S.coRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const machineLabel = MACHINES.find(machine => machine.id === machineId)?.label || machineId;
     showToast('Záznam Colorado uložen', 'success');
@@ -1942,6 +1986,7 @@ async function handleImportJSON(e) {
     for (const r  of coRecords) await idbPut(ST_CORECS, r);
     for (const s  of settings) await idbPut(ST_SETTINGS, s);
     await loadAll();
+    setSyncDirtyReason('all');
     showToast(`Import hotov: ${items.length} pol., ${movements.length} poh.`, 'success');
   });
 }
@@ -2207,6 +2252,8 @@ async function deleteMovement(id) {
 async function runSync(options = {}) {
   const { silent = false } = options;
   const btn = el('sync-btn');
+  const dirtyReasonsBeforeSync = getSyncDirtyReasons();
+  const dirtyVersionBeforeSync = getSyncDirtyVersion();
   if (S.syncRunning) return false;
   if (!navigator.onLine) {
     if (!silent) showToast('Jsi offline — sync nejde.', 'error');
@@ -2312,7 +2359,11 @@ async function runSync(options = {}) {
 
     await loadAll();
 
-    await sendStockNotifications({ silent: true, trigger: 'sync' });
+    if (dirtyReasonsBeforeSync.includes('stock') || dirtyReasonsBeforeSync.includes('all')) {
+      await sendStockNotifications({ silent: true, trigger: 'sync' });
+    } else {
+      console.log('stock alerts skipped: no stock dirty reason');
+    }
 
     const dropped = badItems.length + badMoves.length + badCo.length;
     if (!silent) {
@@ -2323,6 +2374,9 @@ async function runSync(options = {}) {
       );
     }
     markCloudSyncComplete();
+    if (getSyncDirtyVersion() === dirtyVersionBeforeSync) {
+      clearSyncDirtyReasons();
+    }
     return true;
   } catch (e) {
     console.error('[SYNC] Error:', e);
@@ -2348,9 +2402,7 @@ function setupBackgroundSync() {
   });
 
   if (S.syncIntervalId) clearInterval(S.syncIntervalId);
-  S.syncIntervalId = setInterval(() => {
-    if (shouldRunBackgroundSync()) runSync({ silent: true });
-  }, SYNC_MIN_INTERVAL_MS);
+  S.syncIntervalId = null;
 }
 
 function applyRoleUI() {

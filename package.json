@@ -3,6 +3,7 @@
   "private": true,
   "version": "7.0.0",
   "scripts": {
+    "db:audit": "node scripts/audit-db-schema.js",
     "export:colorado-monthly": "node scripts/export-colorado-monthly.js",
     "sync:postpurchase-orders": "node scripts/sync-postpurchase-orders.js",
     "sync:submit-tool-logs": "node scripts/sync-submit-tool-logs.js",
