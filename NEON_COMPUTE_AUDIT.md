@@ -18,22 +18,25 @@
 
 ## Queries likely to run often
 
-- Frontend stock sync calls `/.netlify/functions/sync`. Before this change it ran once on app load and every 5 minutes while visible. It performs full-table reads and used per-row upserts.
+- Frontend stock sync still calls `/.netlify/functions/sync` for manual sync and for background sync when the tab is visible, the browser is online, and the local dirty flag says data changed.
+- `/.netlify/functions/sync` still does full-table reads on pull and full upserts on push. That preserves behavior but is the main remaining compute hotspot.
 - Print-log screen calls `print-log-summary`, `print-log-rows`, and `print-log-arrivals` together. These aggregate over accounting rows and can be expensive without date/printer filters and indexes.
 - Push alert evaluation reads all `pg_items` and ordered `pg_movements`, then reads active subscriptions and notification state.
-- Checklist list/completion endpoints run small indexed queries, but previously repeated schema DDL checks on every warm invocation.
-- Post Purchase sync fetches external API pages and upserts received orders. It previously upserted each order individually.
-- Colorado importer scans local normalized JSON files and previously upserted each row individually.
+- Checklist list/completion endpoints run small indexed queries, but schema DDL checks should stay cached per warm instance.
+- Post Purchase sync fetches external API pages and upserts received orders.
+- Colorado importer scans local normalized JSON files and upserts accounting rows.
 
 ## Functions that may keep Neon awake
 
-- `setupBackgroundSync()` in `app.js` was the main recurring wake source. It no longer syncs immediately on page load, only syncs while the tab is visible, and uses a 30-minute minimum interval.
+- `setupBackgroundSync()` in `app/sync.js` is no longer timer-driven by default. It only runs on online/visibility events when dirty reasons are present.
 - No serverless function defines a background interval.
-- No persistent `Pool` is used. Existing functions create a `Client` per invocation and close it in `finally`; this is safe for Neon scale-to-zero as long as invocations are not frequent.
+- No persistent `Pool` is used. Existing functions create a `Client` per invocation and close it in `finally`; this remains Neon-friendly as long as invocations are not frequent.
 
-## Changes made
+## Changes already made
 
-- Reduced frontend background sync from every 5 minutes to a 30-minute minimum, skipped hidden tabs, and kept manual refresh intact.
+- Reduced frontend background sync to dirty-flagged, online/visible triggers only.
+- Kept manual refresh intact.
+- Skipped stock-alert evaluation when the dirty reasons do not include `stock` or `all`.
 - Batched stock sync upserts in `netlify/functions/sync.js`.
 - Batched Post Purchase order upserts in `netlify/functions/_lib/postpurchase-orders.js`.
 - Batched Colorado accounting row and ACL metadata upserts in `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js`.
@@ -46,4 +49,5 @@
 - `/.netlify/functions/sync` still returns all local stock JSON blobs on pull. That preserves behavior but can be expensive as history grows.
 - Print-log summary still performs heavy aggregate CTEs. The new indexes help, but the UI should keep date filters active for normal use.
 - Push stock alerts still load all stock movements to compute candidates in JavaScript.
-- Applying too many indexes to tiny tables is unnecessary, but the migration is focused on tables that are queried repeatedly or can grow with imports.
+- Legacy DB aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`) still exist in several helpers. A stale alias can still point a workload at the wrong database.
+- Full-state sync still cannot represent deletions cleanly. Delta sync / tombstones are still the next major architecture step.

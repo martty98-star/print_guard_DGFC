@@ -1,27 +1,29 @@
 # PrintGuard Architecture Notes
 
-PrintGuard is an offline-first production helper app for DGFC print operations. The frontend is a vanilla JavaScript PWA, while server-side integrations run through Netlify Functions and scheduled Node scripts. Persistent operational data is stored in Neon PostgreSQL.
+PrintGuard is an offline-first production helper app for DGFC print operations. The frontend is a classic-script vanilla JavaScript PWA. Server-side integrations run through Netlify Functions and a few Windows/Node support scripts. Persistent operational data lives in Neon PostgreSQL.
 
-This document describes the current project shape and a practical path for modularizing the app without a risky rewrite.
+This document reflects the current repo after the latest modularization passes and the Neon wake-up reduction work.
 
-## Current Runtime Shape
+For the complete env / secret / path inventory, see `docs/configuration.generated.md`.
 
-- `index.html` contains the main application screens and static markup.
-- `app.js` is the main browser orchestrator. It owns global state, screen routing, event binding, local persistence, and many inventory/Colorado workflows.
-- `styles.css` contains global app styling.
-- `sw.js` is the service worker for PWA caching and notification click behavior.
-- `reports/` contains mostly reusable domain/reporting utilities that can run in browser and Node.
-- `scripts/` contains browser UI modules and server/workstation sync scripts.
+## Current runtime shape
+
+- `index.html` contains the shell screens and loads scripts in classic order.
+- `app.js` is still the browser orchestrator, but it is now narrower and delegates to modules in `app/`.
+- `sw.js` is the PWA service worker for caching and notification click behavior.
+- `reports/` contains domain/reporting utilities that run in both browser and Node.
+- `scripts/` contains browser UI modules plus sync/export helpers.
 - `netlify/functions/` contains HTTP endpoints.
 - `netlify/functions/_lib/` contains shared backend helpers.
-- `sql/` contains schema/view migrations.
-- `SubmitTool-sync/`, `server-postpurchase/`, and `SERVER_BACKEND/` are operational/server-side support areas.
+- `SubmitTool-sync/`, `server-postpurchase/`, and `SERVER_BACKEND/` contain machine-specific operational scripts.
+- `sql/` contains schema and view SQL.
 
-## Top-Level Structure
+## Top-level structure
 
 ```text
 .
-├─ app.js                         Main browser app shell and legacy orchestration
+├─ app.js                         Main browser orchestrator
+├─ app/                           Browser modules exposed on window.PrintGuard*
 ├─ index.html                     Static screens and script loading
 ├─ styles.css                     Global styling
 ├─ sw.js                          Service worker
@@ -31,119 +33,162 @@ This document describes the current project shape and a practical path for modul
 ├─ netlify/functions/             Netlify HTTP endpoints
 ├─ netlify/functions/_lib/        Backend shared modules
 ├─ sql/                           Database schema and view SQL
-├─ SubmitTool-sync/               SubmitTool sync support
-├─ server-postpurchase/           Post Purchase sync/server support
-└─ SERVER_BACKEND/                Local/backend operational support files
+├─ SubmitTool-sync/               Submit Tool log sync support
+├─ server-postpurchase/           Post Purchase sync support
+└─ SERVER_BACKEND/                Colorado / server-side operational support
 ```
 
-## Important Frontend Areas
+## Frontend module map
 
-### App Shell
+### App bootstrap and shared globals
 
-- `app.js`
-  - Global config/state.
-  - Screen navigation.
-  - Admin/operator PIN handling.
-  - Inventory flows.
-  - Colorado accounting flows.
-  - Print log flows.
-  - Delegates some newer screens to modules in `scripts/`.
+- `app/config.js`
+  - localStorage/sessionStorage-backed app config.
+  - exposes `PrintGuardAppConfig`.
+- `app/utils.js`
+  - pure DOM/formatting helpers.
+  - exposes `PrintGuardUtils`.
+- `app/admin-auth.js`
+  - admin/operator authorization helpers.
+  - exposes `PrintGuardAdminAuth`.
+- `app/navigation.js`
+  - screen routing and mode switching.
+  - exposes `PrintGuardNavigation`.
+- `app/sync.js`
+  - cloud push/pull orchestration, dirty flags, and background sync.
+  - exposes `PrintGuardSync`.
+- `app/push.js`
+  - push enablement and stock-alert dispatch.
+  - exposes `PrintGuardPush`.
+- `app/push-bridge.js`
+  - small push-related bridge helpers.
+  - exposes `PrintGuardPushBridge`.
+- `app/settings-store.js`
+  - persistence for settings data.
+  - exposes `PrintGuardSettingsStore`.
+- `app/db.js`, `app/auth.js`, `app/reporting.js`, `app/print-log.js`, `app/date-filters.js`, `app/update-checks.js`
+  - shared browser-side service modules used by `app.js` and feature UI modules.
 
-### Browser UI Modules
+### Browser feature modules under `scripts/`
 
-- `scripts/checklist-api.js`
-  - Checklist API client.
-- `scripts/checklist-ui.js`
-  - Checklist browser UI.
-- `scripts/postpurchase-ui.js`
-  - Processed Print Orders / Order Pipeline UI.
-  - PDF open/copy actions.
-  - Reprint request modal.
+The newer feature slices already live outside `app.js`:
+
+- `scripts/stock-domain.js`, `stock-store.js`, `stock-controller.js`, `stock-feature.js`, `stock-ui.js`
+- `scripts/checklist-api.js`, `checklist-state.js`, `checklist-events.js`, `checklist-render.js`, `checklist-ui.js`
+- `scripts/order-pipeline-api.js`, `order-pipeline-filters.js`, `order-pipeline-render.js`
 - `scripts/print-log-ui.js`
-  - Print log UI.
 - `scripts/settings-ui.js`
-  - Settings UI.
-- `scripts/core-utils.js`, `scripts/dom-utils.js`, `scripts/export-utils.js`, `scripts/push-utils.js`
-  - Shared frontend helpers.
+- `scripts/postpurchase-ui.js`
+- `scripts/reprint-modal.js`, `scripts/reprint-xml.js`
+- `scripts/push-utils.js`
+- `scripts/dom-utils.js`, `scripts/core-utils.js`, `scripts/export-utils.js`
+- `scripts/pdf-open.js`, `scripts/pdf-open-helper.js`
+- `scripts/export-colorado-monthly.js`
+- `scripts/sync-postpurchase-orders.js`
+- `scripts/sync-processed-print-orders.js`
+- `scripts/sync-submit-tool-logs.js`
+- `scripts/audit-db-schema.js`
 
-### Domain/Report Modules
+### Domain / report modules
 
-- `reports/checklist-domain.js` / `reports/checklist-domain.ts`
-  - Checklist recurrence, local date keys, occurrence keys, weekday normalization.
-- `reports/csv.js`
-  - CSV formatting helpers.
-- `reports/date.js`
-  - Date/range helpers.
 - `reports/stock.js`
-  - Stock calculations.
+  - stock calculations and thresholds.
 - `reports/colorado.js`
   - Colorado accounting/report calculations.
 - `reports/printLog.js`
-  - Print log domain logic.
+  - print-log domain logic.
+- `reports/date.js`
+  - date/range helpers.
+- `reports/csv.js`
+  - CSV formatting helpers.
+- `reports/checklist-domain.js`
+  - checklist recurrence and occurrence helpers.
 - `reports/notification-*`
-  - Notification event/model/rule helpers.
+  - notification event/model/rule helpers.
 
-These modules are the best examples of the direction the codebase should move toward: pure functions, narrow inputs/outputs, and little or no direct DOM access.
+These modules are the model for new code: narrow inputs, small outputs, minimal DOM coupling, and no framework dependency.
 
-## Backend / API Areas
+## Backend / API areas
 
 ### Netlify Functions
 
 - `netlify/functions/sync.js`
-  - General sync endpoint.
+  - stock cloud sync endpoint.
 - `netlify/functions/postpurchase-orders.js`
-  - Incoming Post Purchase orders endpoint and sync trigger.
+  - incoming Post Purchase orders endpoint and sync trigger.
 - `netlify/functions/processed-print-orders.js`
-  - Processed XML order listing and reprint request handling.
+  - processed XML order listing and reprint request handling.
 - `netlify/functions/order-pipeline.js`
-  - Joined incoming/processed pipeline endpoint.
+  - combined incoming/processed pipeline endpoint.
 - `netlify/functions/checklist-*.js`
-  - Checklist items, completions, evaluation.
+  - checklist items, completions, evaluation.
 - `netlify/functions/print-log-*.js`
-  - Print log endpoints.
+  - print log endpoints.
 - `netlify/functions/save-subscription.js`, `send-*.js`
-  - Push notification endpoints.
+  - push notification endpoints.
 
-### Backend Shared Modules
+### Shared backend modules
 
 - `netlify/functions/_lib/db.js`
   - Neon connection, auth/rate-limit helpers, JSON response helper.
 - `netlify/functions/_lib/postpurchase-orders.js`
   - Post Purchase API ingestion and `print_orders_received` storage.
 - `netlify/functions/_lib/processed-print-orders.js`
-  - Processed XML order tables, listing, reprint requests.
+  - processed XML table helpers, listing, reprint requests.
 - `netlify/functions/_lib/order-pipeline.js`
-  - `v_print_order_pipeline` view creation and query filters.
+  - `v_print_order_pipeline` view creation and filters.
 - `netlify/functions/_lib/checklist-store.js`
-  - Checklist persistence.
+  - checklist persistence.
 - `netlify/functions/_lib/checklist-reminders.js`
-  - Reminder occurrence evaluation.
+  - reminder occurrence evaluation.
 - `netlify/functions/_lib/push-delivery.js`
-  - Push delivery helpers.
+  - push delivery helpers.
 
-## Scheduled / Workstation Scripts
+## Scheduled / workstation scripts
 
 - `scripts/sync-postpurchase-orders.js`
-  - Pulls incoming orders from Post Purchase API into Neon.
+  - pulls incoming orders from Post Purchase API into Neon.
 - `scripts/sync-processed-print-orders.js`
-  - Scans SubmitTool processed XML files on NAS and upserts `processed_print_orders`.
+  - scans NAS processed XML files and upserts `processed_print_orders`.
 - `scripts/sync-submit-tool-logs.js`
-  - Legacy SubmitTool lifecycle log scanner for workflow confirmation/debugging.
+  - Submit Tool JobQueue log scanner for workflow confirmation/debugging.
 - `scripts/pdf-open-helper.js`
-  - Local helper for opening NAS PDF paths from browser UI.
+  - local helper for opening NAS PDF paths from the browser UI.
 - `scripts/export-colorado-monthly.js`
   - Colorado export helper.
+- `scripts/audit-db-schema.js`
+  - read-only schema documentation generator.
 
-Windows task wrappers:
+Windows task / batch wrappers:
 
 - `run-postpurchase-sync.bat`
 - `run-processed-print-orders-sync.bat`
 - `run-submit-tool-sync.bat`
 - `run-pdf-open-helper.bat`
+- `SERVER_BACKEND/script_server/run_colorado_pipeline.bat`
+- `SERVER_BACKEND/script_server/Colorado Pipeline.xml`
 
-## Core Data Flows
+## Core data flows
 
-### Incoming Orders
+### 1) Stock / inventory sync
+
+```text
+local IDB / UI state
+  -> cloudPush() / cloudPull() in app/sync.js
+  -> /.netlify/functions/sync
+  -> pg_items + pg_movements + pg_co_records
+```
+
+Current behavior:
+- manual sync still works
+- background sync is no longer timer-driven by default
+- background sync only runs when the tab is visible, the browser is online, and the local dirty flag says something changed
+- stock alerts are only evaluated when the dirty reasons include `stock` or `all`
+- the sync still uses full-state reads/writes; delta sync is still future work
+
+This preserves behavior while reducing unnecessary Neon wake-ups.
+
+### 2) Post Purchase orders
 
 ```text
 Post Purchase API
@@ -151,9 +196,9 @@ Post Purchase API
   -> print_orders_received
 ```
 
-The incoming API payload is stored in Neon. Orders are upserted by `external_order_id`.
+Incoming API payloads are stored in Neon and upserted by `external_order_id`.
 
-### Processed Orders
+### 3) Processed orders
 
 ```text
 NAS processed XML folder
@@ -164,7 +209,7 @@ NAS processed XML folder
 
 The processed XML table is the source of truth for operator-facing processed orders. Re-running the sync is idempotent.
 
-### Order Pipeline
+### 4) Order pipeline
 
 ```text
 print_orders_received
@@ -177,7 +222,7 @@ print_orders_received
 
 The UI should not restore manual Submit Tool / Onyx / Colorado checkbox state. The pipeline is read-only except for explicit reprint requests.
 
-### Checklist
+### 5) Checklist
 
 ```text
 Checklist UI
@@ -188,226 +233,64 @@ Checklist UI
 
 Checklist date/occurrence logic lives in the domain module. Keep timezone and occurrence key generation centralized there.
 
-### Inventory / Colorado / Print Log
-
-These areas are still more tightly coupled to `app.js` than the newer modules. They are good candidates for gradual extraction.
-
-## Current Coupling Hotspots
-
-- `app.js` is still too broad:
-  - state model
-  - routing
-  - DOM binding
-  - business logic
-  - API calls
-  - rendering
-- `index.html` contains all screens in one file.
-- `styles.css` is global and screen styles are interleaved.
-- Some features have both legacy code in `app.js` and newer module code in `scripts/`.
-- Backend schema creation is partly in SQL files and partly in `_lib/*` ensure functions.
-
-## Modularization Goals
-
-The safest direction is incremental extraction, not a framework rewrite.
-
-Target module boundaries:
+### 6) Submit Tool lifecycle sync
 
 ```text
-features/
-  inventory/
-  checklist/
-  processed-orders/
-  order-pipeline/
-  print-log/
-  colorado/
-  settings/
-
-shared/
-  api/
-  dom/
-  date/
-  csv/
-  auth/
-  state/
-  notifications/
+NAS JobQueue logs
+  -> scripts/sync-submit-tool-logs.js
+  -> print_lifecycle_events
+  -> print_orders_received.submit_tool_*
 ```
 
-The immediate goal is not to move everything at once. The first goal is to stop adding new logic to `app.js` when a feature module already exists.
+This is the operational log bridge between the print server and Neon.
 
-## Suggested Future Structure
+### 7) Colorado pipeline
 
 ```text
-src/
-├─ app/
-│  ├─ bootstrap.js
-│  ├─ router.js
-│  ├─ state.js
-│  └─ config.js
-├─ shared/
-│  ├─ api/
-│  ├─ dom/
-│  ├─ date/
-│  ├─ csv/
-│  └─ auth/
-├─ features/
-│  ├─ checklist/
-│  │  ├─ checklist-domain.js
-│  │  ├─ checklist-api.js
-│  │  └─ checklist-ui.js
-│  ├─ processed-orders/
-│  │  ├─ processed-orders-api.js
-│  │  ├─ processed-orders-ui.js
-│  │  └─ pdf-open.js
-│  ├─ order-pipeline/
-│  │  ├─ order-pipeline-api.js
-│  │  └─ order-pipeline-ui.js
-│  ├─ inventory/
-│  ├─ colorado/
-│  ├─ print-log/
-│  └─ settings/
-└─ styles/
-   ├─ base.css
-   ├─ layout.css
-   ├─ components.css
-   └─ features/
+ColoradoAccounting files
+  -> SERVER_BACKEND/script_server/run_colorado_pipeline.bat
+  -> ColoradoSync_server.ps1 + Parse-Colorado*.ps1
+  -> colorado-upsert/upsert-colorado-json.js
+  -> print_accounting_rows + print_accounting_acl_files
 ```
 
-This can be done with plain browser modules first. A bundler can come later if needed.
+Colorado data lives outside the repo under `C:\PrintGuard\ColoradoAccounting` by default.
 
-## Practical Modularization Plan
-
-### Phase 1: Stabilize Existing Boundaries
-
-- Keep `reports/` as domain logic.
-- Keep `scripts/*-ui.js` as browser feature modules.
-- Keep `netlify/functions/_lib/` as backend domain/data modules.
-- Avoid adding new feature logic directly into `app.js`.
-- Move only one screen at a time.
-
-Recommended first targets:
-
-1. Processed Print Orders / Order Pipeline
-2. Checklist
-3. Print Log
-4. Settings
-5. Colorado
-6. Inventory
-
-### Phase 2: Extract API Clients
-
-Create narrow frontend API modules:
+### 8) Push notifications
 
 ```text
-scripts/api/
-  checklist-api.js
-  order-pipeline-api.js
-  processed-print-orders-api.js
-  print-log-api.js
+browser subscription
+  -> save-subscription / send-test-push / send-stock-alerts
+  -> VAPID keys + Neon subscription state
 ```
 
-Rules:
+The browser uses the public VAPID key from `index.html`; the server uses the private key from Netlify env vars.
 
-- API modules call `fetch`.
-- UI modules do not construct endpoint URLs manually.
-- UI modules receive data and render.
-- Error normalization lives in API/shared helpers.
+## Operational boundaries
 
-### Phase 3: Split Rendering From Events
+- Classic script loading is still the runtime contract. No bundler, no Vite, no TypeScript migration yet.
+- `app.js` remains the bootstrap/orchestrator for legacy glue, but new logic should continue moving into `app/*` or `scripts/*` modules.
+- `sw.js` can cache the shell and static assets; stale service-worker caches can make an old deploy look healthy after a migration.
+- The canonical env / secret inventory now lives in `docs/configuration.generated.md`.
 
-For each feature:
+## Current coupling hotspots
 
-```text
-feature-ui.js       render and event binding
-feature-api.js      HTTP calls
-feature-domain.js   pure logic
-```
+- `app.js` still owns some broad orchestration and legacy feature glue.
+- Several features still exist in both legacy and modular form.
+- `sync.js` is intentionally still full-state; it is not delta sync yet.
+- Push alert evaluation still scans enough stock state to be meaningful work.
+- Colorado support remains a separate operational pipeline rather than a browser module.
 
-Example:
+## Recommended direction
 
-```text
-processed-orders-ui.js
-processed-orders-api.js
-processed-orders-domain.js
-pdf-open.js
-```
+Keep modularizing by feature boundary, not by framework.
 
-### Phase 4: Reduce `app.js`
+Good next slices:
 
-`app.js` should eventually only:
+1. continue shrinking `app.js` glue
+2. move any remaining shared browser helpers into `app/*`
+3. keep current classic script loading until the module boundaries are stable
+4. only then consider a bundler or ES-module migration
 
-- initialize config
-- initialize shared state
-- register screens
-- wire top-level navigation
-- initialize feature modules
+The key rule is the same: do not add new feature logic to `app.js` if a dedicated module already exists.
 
-Anything screen-specific should move out.
-
-### Phase 5: CSS Split
-
-Move CSS by responsibility:
-
-```text
-styles/
-  tokens.css
-  base.css
-  layout.css
-  components/buttons.css
-  components/forms.css
-  features/checklist.css
-  features/processed-orders.css
-  features/colorado.css
-```
-
-Do this after JS boundaries are clearer, otherwise selectors become hard to reason about.
-
-## Rules For Safe Refactors
-
-- Do not change schema and UI behavior in the same refactor unless required.
-- Move code first, then improve it in a second step.
-- Keep old function names as wrappers during transition when possible.
-- Add small smoke checks with `node --check` for touched JS files.
-- Keep feature modules independent of unrelated global state.
-- Prefer pure functions for date, CSV, formatting, matching, and status logic.
-- Keep all API endpoints returning stable JSON shapes.
-
-## Current High-Value Seams
-
-Good places to start extracting without breaking behavior:
-
-- `scripts/postpurchase-ui.js`
-  - Already mostly isolated.
-  - Can be split into API, render, reprint modal, PDF open helper.
-- `reports/checklist-domain.js`
-  - Already pure domain logic.
-  - Can become the canonical checklist schedule module.
-- `netlify/functions/_lib/order-pipeline.js`
-  - Already backend-domain-like.
-  - Keep SQL/view/query logic here.
-- `reports/csv.js`, `reports/date.js`
-  - Good shared utility modules.
-
-Riskier areas:
-
-- Inventory logic inside `app.js`.
-- Colorado accounting UI inside `app.js`.
-- Global event listeners in `app.js`.
-- Shared global state `S`.
-
-## Deployment / Runtime Notes
-
-- Frontend is static PWA assets plus Netlify Functions.
-- Neon DB access should stay server-side only.
-- Workstation/NAS sync scripts require machine environment variables.
-- Browser PDF opening of UNC paths depends on local helper or browser policy.
-- Service worker cache version must be bumped after frontend JS/CSS changes.
-
-## Recommended Next Step
-
-Start by turning the Processed Print Orders / Order Pipeline area into the template for future modularization:
-
-1. Create `scripts/order-pipeline-api.js`.
-2. Move endpoint URL/query construction out of `scripts/postpurchase-ui.js`.
-3. Create `scripts/pdf-open.js`.
-4. Keep `scripts/postpurchase-ui.js` as render/event orchestration only.
-5. Once stable, repeat the same pattern for Checklist.

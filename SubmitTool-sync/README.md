@@ -4,6 +4,8 @@ Server-side sync for Submit Tool JobQueue logs.
 
 It reads logs from NAS and writes lifecycle events into Neon/Postgres.
 
+Canonical DB env: `NEON_DATABASE_URL`. Legacy aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`) still work in the shared helper, but keep them aligned during cutover.
+
 Recommended server folder:
 
 ```text
@@ -196,3 +198,6 @@ Check unmatched list in:
 ```text
 C:\PrintGuard\logs\submit-tool-sync.log
 ```
+
+
+

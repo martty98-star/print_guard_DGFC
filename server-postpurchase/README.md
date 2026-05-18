@@ -2,6 +2,8 @@
 
 Minimal standalone package for syncing Post Purchase orders from the API into Neon/Postgres on a Windows print server.
 
+Canonical DB env: `NEON_DATABASE_URL`. Legacy aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`) still work in the shared helper, but keep them aligned during cutover.
+
 ## Contents
 
 - `package.json`
@@ -42,3 +44,5 @@ Windows Task Scheduler:
 - `POST_PURCHASE_API_BASE_URL` should stay as `https://post-purchase.desen.io`
 - `POST_PURCHASE_API_ORDERS_PATH` should stay as `/api/purchase-order/get`
 - `POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE` should stay as `desenio_dgfc_printer`
+
+
