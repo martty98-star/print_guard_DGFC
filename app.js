@@ -47,6 +47,36 @@ const PrintGuardPushBridge = typeof window !== 'undefined' && window.PrintGuardP
 if (!PrintGuardPushBridge) throw new Error('Missing PrintGuardPushBridge');
 const { getPushEndpointSuffix } = PrintGuardPushBridge;
 
+const PrintGuardUtils = typeof window !== 'undefined' && window.PrintGuardUtils;
+if (!PrintGuardUtils) throw new Error('Missing PrintGuardUtils');
+const {
+  el,
+  elSet,
+  esc,
+  fmtN,
+  fmtDays,
+  fmtDT,
+  toLocalDT,
+  toISOfromDT,
+  ds,
+  csvEsc,
+  csvRow,
+  fmtFileDT,
+  dlBlob,
+} = PrintGuardUtils;
+
+const PrintGuardAppUpdates = typeof window !== 'undefined' && window.PrintGuardAppUpdates;
+if (!PrintGuardAppUpdates) throw new Error('Missing PrintGuardAppUpdates');
+const {
+  showPendingUpdateToast,
+  setupAppUpdateChecks,
+} = PrintGuardAppUpdates;
+
+const PrintGuardAdminAuth = typeof window !== 'undefined' && window.PrintGuardAdminAuth;
+if (!PrintGuardAdminAuth) throw new Error('Missing PrintGuardAdminAuth');
+const PrintGuardNavigation = typeof window !== 'undefined' && window.PrintGuardNavigation;
+if (!PrintGuardNavigation) throw new Error('Missing PrintGuardNavigation');
+
 function i18n(key) {
   if (typeof window !== 'undefined' && window.I18N && typeof window.I18N.t === 'function') {
     return window.I18N.t(key);
@@ -72,23 +102,14 @@ if (!ChecklistUI) throw new Error('Missing PrintGuardChecklistUI');
 const PostPurchaseUI = (typeof window !== 'undefined' && window.PrintGuardPostPurchaseUI) || null;
 if (!PostPurchaseUI) throw new Error('Missing PrintGuardPostPurchaseUI');
 const {
-  ds,
-  esc,
-  fmtDays,
-  fmtDT,
   fmtDuration,
   fmtDurationSeconds,
   fmtInt,
   fmtMeasure,
-  fmtN,
   genId,
   getNullableNumber,
-  toISOfromDT,
-  toLocalDT,
 } = CoreUtils;
 const {
-  el,
-  elSet,
   showToast,
 } = DomUtils;
 const {
@@ -103,11 +124,7 @@ const {
   setupSettings: setupSettingsUI,
 } = SettingsUI;
 const {
-  csvEsc,
-  csvRow,
-  dlBlob,
   fmtExportDateTime,
-  fmtFileDT,
 } = ExportUtils;
 const {
   getPrintLogTodayQueueBasisLabel: getPrintLogTodayQueueBasisLabelUI,
@@ -156,51 +173,6 @@ function requirePostPurchasePinForScreen() {
   renderPostPurchaseAccessRequired();
   showToast('Processed Orders PIN is required.', 'error');
   return false;
-}
-
-function showPendingUpdateToast() {
-  if (sessionStorage.getItem('pg_sw_updated') === '1') {
-    sessionStorage.removeItem('pg_sw_updated');
-    const message = `Nová verze aplikace byla načtena (${APP_VERSION})`;
-    showToast(message, 'success');
-    if ('Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification('PrintGuard update', {
-          body: message,
-          icon: '/icons/icon-192.png',
-        });
-      } catch (_) {}
-    }
-  }
-}
-
-function setupAppUpdateChecks() {
-  if (!('serviceWorker' in navigator)) {
-    return;
-  }
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    sessionStorage.setItem('pg_sw_updated', '1');
-    window.location.reload();
-  });
-
-  const requestUpdate = () => {
-    navigator.serviceWorker.getRegistration().then((registration) => {
-      if (registration) {
-        registration.update().catch(() => {});
-      }
-    }).catch(() => {});
-  };
-
-  window.addEventListener('focus', requestUpdate);
-  window.addEventListener('online', requestUpdate);
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      requestUpdate();
-    }
-  });
-
-  requestUpdate();
 }
 
 function printLogRangeLabel() {
@@ -2380,90 +2352,46 @@ function exportCSVStockLog() {
 }
 
 // ══════════════════════════════════════════════════════════
-//  NAVIGATION + MODE
+//  NAVIGATION + ADMIN AUTH
 // ══════════════════════════════════════════════════════════
 
-const LAST_SCREEN_KEY = 'pg_last_screen';
-const DEFAULT_SCREEN = 'stock-overview';
+let navigationApi;
+const adminAuth = PrintGuardAdminAuth.createAdminAuth({
+  cfg,
+  el,
+  navigate: (...args) => navigationApi.navigate(...args),
+  showToast,
+});
+const {
+  applyRoleUI,
+  isAdmin,
+  setupAdminAuthHandlers,
+} = adminAuth;
 
-function isValidScreen(screenId) {
-  return Boolean(screenId && el('screen-' + screenId));
-}
-
-function getInitialScreen() {
-  const params = new URLSearchParams(window.location.search);
-  const urlScreen = params.get('screen');
-  if (isValidScreen(urlScreen)) return urlScreen;
-
-  const storedScreen = ls(LAST_SCREEN_KEY);
-  if (isValidScreen(storedScreen)) return storedScreen;
-
-  return isValidScreen('home') ? 'home' : DEFAULT_SCREEN;
-}
-
-function getModeForScreen(screenId) {
-  return ['co-dashboard', 'co-entry', 'co-history', 'print-log', 'postpurchase-orders'].includes(screenId)
-    ? 'colorado'
-    : 'stock';
-}
-
-function applyModeUI(mode) {
-  S.mode = mode === 'colorado' ? 'colorado' : 'stock';
-  document.querySelectorAll('.mode-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.mode === S.mode));
-  el('stock-nav')?.classList.toggle('hidden', S.mode !== 'stock');
-  el('colorado-nav')?.classList.toggle('hidden', S.mode !== 'colorado');
-}
-
-function persistScreenRoute(screenId, options = {}) {
-  if (!isValidScreen(screenId)) return;
-  ls(LAST_SCREEN_KEY, screenId);
-
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('screen') === screenId && !options.replace) return;
-  params.set('screen', screenId);
-  const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash || ''}`;
-  const state = { screen: screenId };
-  if (options.replace) window.history.replaceState(state, '', nextUrl);
-  else window.history.pushState(state, '', nextUrl);
-}
-
-function navigate(screenId, options = {}) {
-  if (!isValidScreen(screenId)) screenId = DEFAULT_SCREEN;
-  applyModeUI(getModeForScreen(screenId));
-
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  el('screen-' + screenId)?.classList.add('active');
-
-  // vždycky přepni active podle data-screen (napříč oběma navy)
-  document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(b =>
-    b.classList.toggle('active', b.dataset.screen === screenId)
-  );
-
-  if (screenId === 'stock-alerts')  renderAlerts();
-  if (screenId === 'checklist')     renderChecklistScreen();
-  if (screenId === 'stock-items')   renderItemsMgmt();
-  if (screenId === 'stock-log')     renderStockLog();
-  if (screenId === 'co-history')    renderCoHistory();
-  if (screenId === 'print-log')     loadPrintLog();
-  if (screenId === 'postpurchase-orders') loadPostPurchaseOrders();
-  if (screenId === 'settings')      loadSettingsUI();
-
-  persistScreenRoute(screenId, options);
-  window.scrollTo(0, 0);
-  applyRoleUI(); // ✅ IMPORTANT
-}
-
-function setMode(mode) {
-  applyModeUI(mode);
-  navigate(mode === 'stock' ? 'stock-overview' : 'co-dashboard');
-}
+navigationApi = PrintGuardNavigation.createNavigation({
+  applyRoleUI,
+  el,
+  loadPostPurchaseOrders,
+  loadPrintLog,
+  loadSettingsUI,
+  ls,
+  renderAlerts,
+  renderChecklistScreen,
+  renderCoHistory,
+  renderItemsMgmt,
+  renderStockLog,
+  state: S,
+});
+const {
+  getInitialScreen,
+  navigate,
+  setMode,
+  updateOfflineBanner,
+} = navigationApi;
 
 // ══════════════════════════════════════════════════════════
 //  UTILITIES
 // ══════════════════════════════════════════════════════════
-
-function isAdmin() { return cfg.role === 'admin' && Boolean(cfg.adminPin); }
 
 async function cloudPull() {
   const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
@@ -2683,30 +2611,6 @@ function setupBackgroundSync() {
     if (shouldRunBackgroundSync()) runSync({ silent: true });
   }, SYNC_MIN_INTERVAL_MS);
 }
-
-function applyRoleUI() {
-  const admin = isAdmin();
-
-  // schovej/ukaž stock "Položky" v bottom nav
-  const itemsBtn = document.querySelector('#stock-nav .nav-item[data-screen="stock-items"]');
-  if (itemsBtn) itemsBtn.style.display = admin ? '' : 'none';
-
-  // schovej/ukaž tlačítko "+ Přidat položku" na obrazovce stock-items
-  const addBtn = el('add-item-btn');
-  if (addBtn) addBtn.style.display = admin ? '' : 'none';
-
-  // všechny .admin-only elementy (✕ mazání, 🛒 objednat, …)
-  document.querySelectorAll('.admin-only').forEach(node => {
-    node.style.display = admin ? '' : 'none';
-  });
-
-  // když nejsi admin a někdo se tam dostane přes URL param, vrať ho pryč
-  if (!admin) {
-    const itemsScreen = el('screen-stock-items');
-    if (itemsScreen?.classList.contains('active')) navigate('stock-overview');
-  }
-}
-
 
 async function enablePushNotifications() {
   try {
@@ -3122,23 +3026,7 @@ el('sync-btn').addEventListener('click', async () => {
   document.querySelectorAll('.dr-preset').forEach(btn =>
     btn.addEventListener('click', () => applyPreset(btn.dataset.range, btn.dataset.target)));
 
-  // ✅ Admin unlock/lock listenery musí být až po DOM ready (tady)
-  el('admin-unlock-btn')?.addEventListener('click', () => {
-    const pin = (el('admin-pin')?.value || '').trim();
-    if (!pin) { showToast('Zadejte PIN', 'error'); return; }
-    cfg.adminPin = pin;
-    cfg.role = 'admin';
-    if (el('admin-pin')) el('admin-pin').value = '';
-    applyRoleUI();
-    showToast('Admin režim odemčen', 'success');
-  });
-
-  el('admin-lock-btn')?.addEventListener('click', () => {
-    cfg.adminPin = '';
-    cfg.role = 'operator';
-    applyRoleUI();
-    showToast('Operator režim aktivní', 'success');
-  });
+  setupAdminAuthHandlers();
 
   window.addEventListener('online',  updateOfflineBanner);
   window.addEventListener('offline', updateOfflineBanner);
@@ -3178,9 +3066,5 @@ window.addEventListener('i18n:changed', () => {
   try { renderPostPurchaseOrders(); } catch (_) {}
   try { renderChecklistScreen(false); } catch (_) {}
 });
-
-function updateOfflineBanner() {
-  el('offline-banner')?.classList.toggle('hidden', navigator.onLine);
-}
 
 document.addEventListener('DOMContentLoaded', init);
