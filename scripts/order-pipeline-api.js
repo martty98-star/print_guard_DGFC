@@ -20,7 +20,13 @@
     }
     if (!res.ok || payload.ok === false) {
       const message = payload.error || fallbackMessage || `${t('processed.error.request-failed')} (${res.status})`;
-      const error = new Error(res.status >= 500 ? t('processed.error.database') : message);
+      const diagnostics = payload && payload.diagnostics ? payload.diagnostics : null;
+      const diagnosticMessage = diagnostics && diagnostics.message ? diagnostics.message : '';
+      const error = new Error(
+        res.status >= 500
+          ? (diagnosticMessage || t('processed.error.database'))
+          : message
+      );
       error.status = res.status;
       error.payload = payload;
       throw error;

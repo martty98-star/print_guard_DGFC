@@ -19,6 +19,15 @@ function cleanApiError(error) {
   return 'Order pipeline could not be loaded.';
 }
 
+function getErrorDiagnostics(error) {
+  return {
+    message: error && error.message ? error.message : '',
+    code: error && error.code ? error.code : '',
+    detail: error && error.detail ? error.detail : '',
+    hint: error && error.hint ? error.hint : '',
+  };
+}
+
 exports.handler = async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return json(204, {});
@@ -62,6 +71,7 @@ exports.handler = async function handler(event) {
     return json(500, {
       ok: false,
       error: cleanApiError(error),
+      diagnostics: getErrorDiagnostics(error),
     });
   }
 };
