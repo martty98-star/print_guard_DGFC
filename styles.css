@@ -598,7 +598,7 @@ textarea { resize: vertical; min-height: 58px; }
   padding: 8px 10px;
   outline: none;
 }
-.pp-filter-row input[type=search] { min-width: 240px; flex: 1; }
+.pp-filter-row input[type=search] { min-width: min(100%, 360px); flex: 2 1 420px; }
 .pp-filter-row input[type=date] { min-width: 145px; }
 .pp-filter-row select { min-width: 150px; }
 .pp-filter-row input:focus,
@@ -1897,6 +1897,21 @@ textarea { resize: vertical; min-height: 58px; }
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+.pp-orders-toolbar {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+.pp-orders-toolbar .checklist-toolbar-actions {
+  flex: 1;
+  justify-content: flex-end;
+}
+.pp-orders-toolbar #postpurchase-pin {
+  flex: 1 1 190px;
+  max-width: 260px;
+}
+.pp-orders-toolbar .btn-sm {
+  flex: 0 1 auto;
 }
 .checklist-form-head {
   padding: 0;
