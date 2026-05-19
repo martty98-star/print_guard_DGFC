@@ -34,6 +34,7 @@ exports.handler = async function handler(event) {
     const query = event.queryStringParameters || {};
     const body = await withClient((client) => buildDailyProductionReport(client, {
       date: query.date,
+      thresholdMinutes: query.thresholdMinutes || query.slaMinutes,
     }));
     return json(200, body);
   } catch (error) {

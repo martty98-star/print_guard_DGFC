@@ -1,7 +1,7 @@
 'use strict';
 
 const TIMEZONE = 'Europe/Prague';
-const XML_EXPECTED_DELAY_MINUTES = 90;
+const DEFAULT_XML_EXPECTED_DELAY_MINUTES = 90;
 
 function cleanDate(value) {
   const raw = String(value || '').trim();
@@ -21,6 +21,12 @@ function pragueToday() {
 
 function selectedDate(value) {
   return cleanDate(value) || pragueToday();
+}
+
+function thresholdMinutes(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_XML_EXPECTED_DELAY_MINUTES;
+  return Math.min(1440, Math.max(15, Math.trunc(parsed)));
 }
 
 function num(value) {
@@ -141,19 +147,18 @@ async function loadMachineOutput(client, date) {
   };
 }
 
-async function loadPipelineSummary(client, date) {
+async function loadPipelineSummary(client, date, slaMinutes) {
   const processedDateColumn = processedDayExpr();
   const match = orderMatchCondition('i', 'p');
 
   const [
     processedRows,
     apiRows,
-    todayWaitingRows,
     olderWaitingRows,
     processedUnmatchedRows,
     unmatchedBacklogRows,
     reprintRows,
-    delayedTodayRows,
+    slaWaitingRows,
   ] = await Promise.all([
     client.query(`
       select
@@ -166,28 +171,9 @@ async function loadPipelineSummary(client, date) {
     `, [date, TIMEZONE]),
     client.query(`
       select
-        count(*)::int as received_today,
-        count(*) filter (
-          where exists (
-            select 1
-            from public.processed_print_orders p
-            where upper(coalesce(p.order_type, 'S')) <> 'R'
-              and ${match}
-          )
-        )::int as processed_from_today
+        count(*)::int as received_today
       from public.print_orders_received i
       where ${zonedTimestamptzDayFilter('coalesce(i.received_at, i.api_seen_at)')}
-    `, [date, TIMEZONE]),
-    client.query(`
-      select count(*)::int as count
-      from public.print_orders_received i
-      where ${zonedTimestamptzDayFilter('coalesce(i.received_at, i.api_seen_at)')}
-        and not exists (
-          select 1
-          from public.processed_print_orders p
-          where upper(coalesce(p.order_type, 'S')) <> 'R'
-            and ${match}
-        )
     `, [date, TIMEZONE]),
     client.query(`
       select count(*)::int as count
@@ -243,7 +229,7 @@ async function loadPipelineSummary(client, date) {
           where upper(coalesce(p.order_type, 'S')) <> 'R'
             and ${match}
         )
-    `, [date, TIMEZONE, XML_EXPECTED_DELAY_MINUTES]),
+    `, [date, TIMEZONE, slaMinutes]),
   ]);
 
   const processed = processedRows.rows[0] || {};
@@ -255,24 +241,22 @@ async function loadPipelineSummary(client, date) {
 
   return {
     receivedToday: int(api.received_today),
-    apiProcessedToday: int(api.processed_from_today),
     processedToday: int(processed.total),
     processedNormalToday: single + combi,
     processedSingleToday: single,
     processedCombiToday: combi,
     processedReprintXmlToday: reprintXml,
-    waitingToday: int(todayWaitingRows.rows[0] && todayWaitingRows.rows[0].count),
+    slaWaitingToday: int(slaWaitingRows.rows[0] && slaWaitingRows.rows[0].count),
     olderWaitingBacklog: int(olderWaitingRows.rows[0] && olderWaitingRows.rows[0].count),
     processedWithoutApiToday: int(processedUnmatchedRows.rows[0] && processedUnmatchedRows.rows[0].count),
     processedWithoutApiBacklog: int(unmatchedBacklogRows.rows[0] && unmatchedBacklogRows.rows[0].count),
     reprintsRequestedToday: int(reprint.requested_today),
     reprintCompletedToday: int(reprint.completed_today),
     reprintPendingBacklog: int(reprint.pending_backlog),
-    delayedWaitingToday: int(delayedTodayRows.rows[0] && delayedTodayRows.rows[0].count),
   };
 }
 
-function buildWarnings(machineOutput, pipeline) {
+function buildWarnings(machineOutput, pipeline, slaMinutes) {
   const warnings = [];
   const failedMachineJobs = machineOutput.abortedJobs + machineOutput.deletedJobs;
 
@@ -282,8 +266,8 @@ function buildWarnings(machineOutput, pipeline) {
   if (failedMachineJobs > 0) {
     warnings.push(`${failedMachineJobs} Colorado machine jobs were aborted/deleted.`);
   }
-  if (pipeline.delayedWaitingToday > 0) {
-    warnings.push(`API orders from today older than ${XML_EXPECTED_DELAY_MINUTES} minutes without processed XML: ${pipeline.delayedWaitingToday}.`);
+  if (pipeline.slaWaitingToday > 0) {
+    warnings.push(`API orders from today older than ${slaMinutes} minutes without processed XML: ${pipeline.slaWaitingToday}.`);
   }
   if (pipeline.processedWithoutApiToday > 0) {
     warnings.push(`Processed XML today without matching API: ${pipeline.processedWithoutApiToday}.`);
@@ -309,7 +293,7 @@ function buildEmail(report) {
     ? machine.printers.map((printer) => `- ${printer.printerName}: ${printer.doneJobs} done · ${printer.abortedJobs} aborted · ${printer.deletedJobs} deleted · ${fmtNumber(printer.printedAreaM2, 2)} m2 · ${fmtNumber(printer.mediaLengthM, 2)} m`)
     : ['- No Colorado machine output rows for this date.'];
   const warningLines = [
-    `- API orders from today older than ${XML_EXPECTED_DELAY_MINUTES} minutes without processed XML: ${pipeline.delayedWaitingToday}`,
+    `- API orders from today older than ${report.slaMinutes} minutes without processed XML: ${pipeline.slaWaitingToday}`,
     `- Processed XML today without matching API: ${pipeline.processedWithoutApiToday}`,
     `- Pending reprint backlog: ${pipeline.reprintPendingBacklog}`,
   ];
@@ -323,20 +307,29 @@ function buildEmail(report) {
     subject,
     '',
     'TL;DR',
-    `- Processed by Submit Tool today: ${pipeline.processedToday}`,
     `- API orders received today: ${pipeline.receivedToday}`,
-    `- Waiting from today: ${pipeline.waitingToday}`,
+    `- XML processed today: ${pipeline.processedToday}`,
+    `- Normal XML processed today: ${pipeline.processedNormalToday}`,
     `- Reprint XML processed today: ${pipeline.processedReprintXmlToday}`,
+    `- Orders older than ${report.slaMinutes}m still missing XML: ${pipeline.slaWaitingToday}`,
     `- Machine output: ${fmtNumber(machine.printedAreaM2, 2)} m2 / ${fmtNumber(machine.mediaLengthM, 2)} m`,
     '',
-    'Production pipeline',
-    `- Received from API today: ${pipeline.receivedToday}`,
-    `- API orders from today already processed: ${pipeline.apiProcessedToday}`,
+    'Today intake',
+    `- API orders received today: ${pipeline.receivedToday}`,
+    '',
+    'Production throughput today',
     `- Processed XML today: ${pipeline.processedToday}`,
-    `- Normal processed: ${pipeline.processedNormalToday} (S: ${pipeline.processedSingleToday}, C: ${pipeline.processedCombiToday})`,
+    `- Normal XML: ${pipeline.processedNormalToday} (S: ${pipeline.processedSingleToday}, C: ${pipeline.processedCombiToday})`,
     `- Reprint XML processed: ${pipeline.processedReprintXmlToday}`,
-    `- Waiting from today: ${pipeline.waitingToday}`,
+    '- Note: Processed XML today represents production throughput and may include backlog or previous-day API orders.',
+    '- Note: Submit Tool throughput and API intake are asynchronous and may not match within the same day.',
+    '',
+    'Waiting / SLA',
+    `- API orders older than ${report.slaMinutes}m still missing XML: ${pipeline.slaWaitingToday}`,
+    '',
+    'Backlog',
     `- Older waiting backlog: ${pipeline.olderWaitingBacklog}`,
+    `- Pending reprint backlog: ${pipeline.reprintPendingBacklog}`,
     '',
     'Machine output today',
     ...machineLines,
@@ -360,20 +353,29 @@ function buildEmail(report) {
   const html = [
     `<h2>${escapeHtml(subject)}</h2>`,
     section('TL;DR', [
-      `Processed by Submit Tool today: ${pipeline.processedToday}`,
       `API orders received today: ${pipeline.receivedToday}`,
-      `Waiting from today: ${pipeline.waitingToday}`,
+      `XML processed today: ${pipeline.processedToday}`,
+      `Normal XML processed today: ${pipeline.processedNormalToday}`,
       `Reprint XML processed today: ${pipeline.processedReprintXmlToday}`,
+      `Orders older than ${report.slaMinutes}m still missing XML: ${pipeline.slaWaitingToday}`,
       `Machine output: ${fmtNumber(machine.printedAreaM2, 2)} m2 / ${fmtNumber(machine.mediaLengthM, 2)} m`,
     ]),
-    section('Production pipeline', [
-      `Received from API today: ${pipeline.receivedToday}`,
-      `API orders from today already processed: ${pipeline.apiProcessedToday}`,
+    section('Today intake', [
+      `API orders received today: ${pipeline.receivedToday}`,
+    ]),
+    section('Production throughput today', [
       `Processed XML today: ${pipeline.processedToday}`,
-      `Normal processed: ${pipeline.processedNormalToday} (S: ${pipeline.processedSingleToday}, C: ${pipeline.processedCombiToday})`,
+      `Normal XML: ${pipeline.processedNormalToday} (S: ${pipeline.processedSingleToday}, C: ${pipeline.processedCombiToday})`,
       `Reprint XML processed: ${pipeline.processedReprintXmlToday}`,
-      `Waiting from today: ${pipeline.waitingToday}`,
+      'Processed XML today represents production throughput and may include backlog or previous-day API orders.',
+      'Submit Tool throughput and API intake are asynchronous and may not match within the same day.',
+    ]),
+    section('Waiting / SLA', [
+      `API orders older than ${report.slaMinutes}m still missing XML: ${pipeline.slaWaitingToday}`,
+    ]),
+    section('Backlog', [
       `Older waiting backlog: ${pipeline.olderWaitingBacklog}`,
+      `Pending reprint backlog: ${pipeline.reprintPendingBacklog}`,
     ]),
     section('Machine output today', machineLines.concat([
       `Total machine output: ${fmtNumber(machine.printedAreaM2, 2)} m2 / ${fmtNumber(machine.mediaLengthM, 2)} m`,
@@ -393,15 +395,17 @@ function buildEmail(report) {
 
 async function buildDailyProductionReport(client, options = {}) {
   const date = selectedDate(options.date);
+  const slaMinutes = thresholdMinutes(options.thresholdMinutes || options.slaMinutes);
   const [machineOutput, pipeline] = await Promise.all([
     loadMachineOutput(client, date),
-    loadPipelineSummary(client, date),
+    loadPipelineSummary(client, date, slaMinutes),
   ]);
-  const warnings = buildWarnings(machineOutput, pipeline);
+  const warnings = buildWarnings(machineOutput, pipeline, slaMinutes);
   const base = {
     ok: true,
     date,
     timezone: TIMEZONE,
+    slaMinutes,
     print: {
       doneJobs: machineOutput.doneJobs,
       abortedJobs: machineOutput.abortedJobs,
@@ -422,14 +426,14 @@ async function buildDailyProductionReport(client, options = {}) {
     },
     pipeline: {
       receivedToday: pipeline.receivedToday,
-      apiProcessedToday: pipeline.apiProcessedToday,
       processedToday: pipeline.processedToday,
       processedNormalToday: pipeline.processedNormalToday,
       processedSingleToday: pipeline.processedSingleToday,
       processedCombiToday: pipeline.processedCombiToday,
       processedReprintXmlToday: pipeline.processedReprintXmlToday,
-      waiting: pipeline.waitingToday,
-      waitingToday: pipeline.waitingToday,
+      waiting: pipeline.slaWaitingToday,
+      waitingToday: pipeline.slaWaitingToday,
+      slaWaitingToday: pipeline.slaWaitingToday,
       olderWaitingBacklog: pipeline.olderWaitingBacklog,
       processedWithoutApi: pipeline.processedWithoutApiToday,
       processedWithoutApiToday: pipeline.processedWithoutApiToday,
@@ -438,7 +442,7 @@ async function buildDailyProductionReport(client, options = {}) {
       reprintCompletedToday: pipeline.reprintCompletedToday,
       reprintPending: pipeline.reprintPendingBacklog,
       reprintPendingBacklog: pipeline.reprintPendingBacklog,
-      delayedWaitingToday: pipeline.delayedWaitingToday,
+      delayedWaitingToday: pipeline.slaWaitingToday,
     },
     warnings,
     generatedAt: new Date().toISOString(),
@@ -453,4 +457,5 @@ module.exports = {
   TIMEZONE,
   buildDailyProductionReport,
   selectedDate,
+  thresholdMinutes,
 };
