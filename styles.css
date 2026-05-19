@@ -1061,6 +1061,7 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .modal-box p { font-family: var(--font-d); font-size: 1.05rem; font-weight: 500; margin-bottom: 20px; line-height: 1.5; }
 .modal-lg { max-width: 560px; padding: 0; }
+.modal-xl { max-width: 860px; padding: 0; }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 20px; border-bottom: 1px solid var(--border);
@@ -1073,6 +1074,66 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .modal-footer .btn-secondary, .modal-footer .btn-primary { flex: 1; width: auto; }
 .modal-box .modal-footer { padding: 0; border: none; margin-top: 0; }
+
+.daily-report-modal-box {
+  max-height: min(88vh, 820px);
+  display: flex;
+  flex-direction: column;
+}
+.daily-report-modal-body {
+  overflow: auto;
+}
+.daily-report-meta {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.daily-report-meta .form-group {
+  margin-bottom: 0;
+}
+.daily-report-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.daily-report-preview-tabs textarea {
+  width: 100%;
+  min-height: 320px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .72rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+.daily-report-html-preview {
+  margin-top: 12px;
+}
+.daily-report-html-preview summary {
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
+.daily-report-html-content {
+  border: 1px solid var(--border);
+  padding: 12px;
+  margin-top: 8px;
+  background: var(--bg3);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+.daily-report-actions {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+.daily-report-actions a {
+  text-align: center;
+  text-decoration: none;
+}
 
 /* Info note */
 .info-note {
@@ -1930,6 +1991,14 @@ textarea { resize: vertical; min-height: 58px; }
   color: var(--text-dim);
 }
 @media (max-width: 720px) {
+  .daily-report-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .daily-report-meta,
+  .daily-report-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .checklist-summary-row,
   .checklist-form-grid {
     grid-template-columns: 1fr;
