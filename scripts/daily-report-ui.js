@@ -73,10 +73,10 @@
           <button class="btn-sm" type="button" id="daily-report-reload">${esc(t('daily-report.reload'))}</button>
         </div>
         <div class="daily-report-grid">
-          <div class="metric-block"><span class="metric-big">${esc(report.print.doneJobs)}</span><span class="metric-unit">${esc(t('daily-report.metric.printed'))}</span></div>
-          <div class="metric-block"><span class="metric-big">${esc(report.print.abortedJobs + report.print.deletedJobs)}</span><span class="metric-unit">${esc(t('daily-report.metric.failed'))}</span></div>
+          <div class="metric-block"><span class="metric-big">${esc(report.pipeline.processedToday)}</span><span class="metric-unit">${esc(t('daily-report.metric.processed'))}</span></div>
           <div class="metric-block"><span class="metric-big">${esc(report.pipeline.receivedToday)}</span><span class="metric-unit">${esc(t('daily-report.metric.received'))}</span></div>
-          <div class="metric-block"><span class="metric-big">${esc(report.pipeline.waiting)}</span><span class="metric-unit">${esc(t('daily-report.metric.waiting'))}</span></div>
+          <div class="metric-block"><span class="metric-big">${esc(report.pipeline.waitingToday || report.pipeline.waiting)}</span><span class="metric-unit">${esc(t('daily-report.metric.waiting-today'))}</span></div>
+          <div class="metric-block"><span class="metric-big">${esc(report.pipeline.processedReprintXmlToday || 0)}</span><span class="metric-unit">${esc(t('daily-report.metric.reprint-xml'))}</span></div>
         </div>
         <div class="daily-report-preview-tabs">
           <div class="pp-section-label">${esc(t('daily-report.preview.text'))}</div>
