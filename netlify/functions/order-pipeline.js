@@ -7,6 +7,7 @@ const {
   withClient,
 } = require('./_lib/db');
 const {
+  getOrderPipelineDetail,
   listOrderPipeline,
   listPipelineMonths,
 } = require('./_lib/order-pipeline');
@@ -34,8 +35,17 @@ exports.handler = async function handler(event) {
 
     const query = event.queryStringParameters || {};
     const body = await withClient(async (client) => {
-      const rows = await listOrderPipeline(client, {
+      if (query.detail === '1' || query.detail === 'true' || query.id || query.orderNumber) {
+        const row = await getOrderPipelineDetail(client, {
+          id: query.id,
+          orderNumber: query.orderNumber,
+        });
+        return { ok: true, row };
+      }
+
+      const page = await listOrderPipeline(client, {
         limit: query.limit,
+        offset: query.offset,
         month: query.month,
         search: query.search,
         q: query.q,
@@ -44,8 +54,8 @@ exports.handler = async function handler(event) {
         to: query.to,
         reprint: query.reprint,
       });
-      const months = await listPipelineMonths(client);
-      return { ok: true, rows, months };
+      const months = query.includeMonths === '1' ? await listPipelineMonths(client) : [];
+      return { ok: true, ...page, months };
     });
     return json(200, body);
   } catch (error) {

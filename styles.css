@@ -1124,6 +1124,11 @@ textarea { resize: vertical; min-height: 58px; }
   flex-direction: column;
   gap: 12px;
 }
+.pp-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 4px;
+}
 .pp-processed-card {
   border: 1px solid var(--border);
   background: var(--bg4);

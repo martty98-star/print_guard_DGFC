@@ -85,7 +85,7 @@
   }
 
   function getVisibleOrders() {
-    return Filters.filterRows(state.S.postPurchaseOrders || [], state.S.postPurchaseSearch || '');
+    return state.S.postPurchaseOrders || [];
   }
 
   function getProcessedOrderId(row) {
@@ -115,7 +115,10 @@
   }
 
   async function loadVisibleReprintHistory() {
-    const orderIds = (state.S.postPurchaseOrders || []).map(getProcessedOrderId).filter(Boolean);
+    const orderIds = (state.S.postPurchaseOrders || [])
+      .filter((row) => row && row.hasDetail)
+      .map(getProcessedOrderId)
+      .filter(Boolean);
     if (!orderIds.length) {
       storeReprintHistory([]);
       return;
@@ -206,14 +209,44 @@
     }
   }
 
-  async function loadPostPurchaseOrders(force = false) {
+  async function loadOrderDetail(orderId, orderNumber) {
+    const rows = state.S.postPurchaseOrders || [];
+    const index = rows.findIndex((row) => {
+      const sameId = orderId && String(getProcessedOrderId(row) || '') === String(orderId);
+      const sameOrder = orderNumber && String(row.orderName || '') === String(orderNumber);
+      return sameId || sameOrder;
+    });
+    if (index < 0) return;
+
+    try {
+      const payload = await Api.loadOrderPipelineDetail({
+        fetchImpl: state.fetchImpl,
+        headers: state.postPurchaseHeaders(),
+        id: orderId,
+        orderNumber,
+      });
+      if (payload.row) {
+        rows[index] = { ...rows[index], ...payload.row, hasDetail: true };
+        state.S.postPurchaseOrders = rows;
+        await loadVisibleReprintHistory();
+        renderPostPurchaseOrders();
+      }
+    } catch (error) {
+      console.error('Order pipeline detail load failed', error);
+      state.showToast(cleanApiError(error), 'error');
+    }
+  }
+
+  async function loadPostPurchaseOrders(force = false, options = {}) {
+    const append = Boolean(options.append);
     if (state.S.postPurchaseLoading) return;
-    if (state.S.postPurchaseLoaded && !force) {
+    if (state.S.postPurchaseLoaded && !force && !append) {
       renderPostPurchaseOrders();
       return;
     }
     if (!state.requirePostPurchasePinForScreen()) return;
 
+    if (!append) state.S.postPurchaseOffset = 0;
     state.S.postPurchaseLoading = true;
     state.elSet('postpurchase-status', t('processed.status.loading'));
     const wrap = state.el('postpurchase-orders-wrap');
@@ -227,7 +260,10 @@
         headers: state.postPurchaseHeaders(),
         filters: Filters.getFiltersFromState(state.S),
       });
-      state.S.postPurchaseOrders = Array.isArray(payload.rows) ? payload.rows : [];
+      const rows = Array.isArray(payload.rows) ? payload.rows : [];
+      state.S.postPurchaseOrders = append ? (state.S.postPurchaseOrders || []).concat(rows) : rows;
+      state.S.postPurchaseOffset = Number(payload.nextOffset) || state.S.postPurchaseOrders.length;
+      state.S.postPurchaseHasMore = Boolean(payload.hasMore);
       await loadVisibleReprintHistory();
       state.S.postPurchaseLoaded = true;
       updateMonthFilter(payload.months || []);
@@ -253,12 +289,14 @@
     const wrap = state.el('postpurchase-orders-wrap');
     if (!wrap) return;
     const rows = getVisibleOrders();
-    const totalRows = Array.isArray(state.S.postPurchaseOrders) ? state.S.postPurchaseOrders.length : 0;
     const searchActive = Boolean((state.S.postPurchaseSearch || '').trim());
-    wrap.innerHTML = Render.renderOrders(rows, getRenderOptions());
+    wrap.innerHTML = Render.renderOrders(rows, getRenderOptions())
+      + (state.S.postPurchaseHasMore
+        ? `<div class="pp-load-more-wrap"><button class="btn-sm" type="button" data-pp-load-more="true">${t('processed.button.load-more')}</button></div>`
+        : '');
     bindProcessedOrderActions(wrap);
     state.elSet('postpurchase-status', searchActive
-      ? `${rows.length}/${totalRows} ${t('processed.status.rows')}`
+      ? `${rows.length} ${t('processed.status.search-results')}`
       : `${rows.length} ${t('processed.status.rows')}`);
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
@@ -273,6 +311,23 @@
           console.error('Copy path failed', error);
           state.showToast(t('processed.toast.copy-failed'), 'error');
         }
+      });
+    });
+    wrap.querySelectorAll('[data-load-order-detail-id], [data-load-order-detail-number]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        button.textContent = t('processed.status.loading');
+        loadOrderDetail(button.dataset.loadOrderDetailId, button.dataset.loadOrderDetailNumber).finally(() => {
+          button.disabled = false;
+        });
+      });
+    });
+    wrap.querySelector('[data-pp-load-more="true"]')?.addEventListener('click', (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = t('processed.status.loading');
+      loadPostPurchaseOrders(true, { append: true }).finally(() => {
+        button.disabled = false;
       });
     });
     wrap.querySelectorAll('[data-open-pdf-path]').forEach((button) => {

@@ -41,6 +41,17 @@
     return readJsonResponse(res, t('processed.error.pipeline-load'));
   }
 
+  async function loadOrderPipelineDetail(options) {
+    const params = new URLSearchParams({ detail: '1' });
+    if (options.id) params.set('id', options.id);
+    if (options.orderNumber) params.set('orderNumber', options.orderNumber);
+    const res = await options.fetchImpl('/.netlify/functions/order-pipeline?' + params.toString(), {
+      headers: options.headers || {},
+      cache: 'no-store',
+    });
+    return readJsonResponse(res, t('processed.error.pipeline-load'));
+  }
+
   async function createReprintRequest(options) {
     const payload = options.payload || {};
     const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
@@ -106,6 +117,7 @@
     deleteReprintRequest,
     loadReprintHistory,
     loadOrderPipeline,
+    loadOrderPipelineDetail,
     readJsonResponse,
     resolveReprintRequest,
   };

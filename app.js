@@ -242,6 +242,10 @@ const S = {
   postPurchaseLoaded: false,
   postPurchaseFilter: 'open',
   postPurchaseSearch: '',
+  postPurchaseSearchTimer: null,
+  postPurchaseLimit: '50',
+  postPurchaseOffset: 0,
+  postPurchaseHasMore: false,
   postPurchaseMonth: '',
   postPurchaseDatePreset: 'this_month',
   postPurchaseDateFrom: '',
@@ -1469,11 +1473,11 @@ el('sync-btn').addEventListener('click', async () => {
   });
   el('postpurchase-search')?.addEventListener('input', e => {
     S.postPurchaseSearch = e.target.value || '';
-    if (S.postPurchaseLoaded && window.PrintGuardPostPurchaseUI && typeof window.PrintGuardPostPurchaseUI.renderPostPurchaseOrders === 'function') {
-      window.PrintGuardPostPurchaseUI.renderPostPurchaseOrders();
-    } else {
+    if (S.postPurchaseSearchTimer) clearTimeout(S.postPurchaseSearchTimer);
+    if (S.postPurchaseLoaded) elSet('postpurchase-status', window.I18N ? window.I18N.t('processed.status.searching') : 'Searching…');
+    S.postPurchaseSearchTimer = setTimeout(() => {
       loadPostPurchaseOrders(true);
-    }
+    }, 300);
   });
   el('postpurchase-date-preset')?.addEventListener('change', e => {
     S.postPurchaseDatePreset = e.target.value || 'this_month';

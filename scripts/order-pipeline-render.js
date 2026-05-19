@@ -34,6 +34,7 @@
   }
 
   function getPageSizes(row) {
+    if (row && row.pageSizes) return row.pageSizes;
     const values = (Array.isArray(row && row.printFiles) ? row.printFiles : [])
       .map(file => file.pageSize)
       .filter(Boolean);
@@ -142,6 +143,9 @@
 
   function renderPdfFiles(row, options) {
     const esc = options.esc;
+    if (!row.hasDetail) {
+      return `<div class="pp-file-block"><button class="btn-sm" type="button" data-load-order-detail-id="${esc(row.processedOrderId || row.id || '')}" data-load-order-detail-number="${esc(row.orderName || '')}">${t('processed.button.load-details')}</button></div>`;
+    }
     const files = normalizePrintFiles(row);
     if (!files.length) return '<div class="pp-file-block"><span class="pp-file-name">-</span></div>';
     return files.map((file, index) => {
@@ -174,6 +178,9 @@
 
   function renderFullReprintAction(row, options) {
     const esc = options.esc;
+    if (!row.hasDetail) {
+      return `<button class="btn-sm" type="button" data-load-order-detail-id="${esc(row.processedOrderId || row.id || '')}" data-load-order-detail-number="${esc(row.orderName || '')}">${t('processed.button.load-details')}</button>`;
+    }
     const orderId = row.processedOrderId || row.id;
     const history = getFileHistory(orderId, '', options);
     const pendingKey = getReprintKey(orderId, '');
@@ -185,6 +192,9 @@
   }
 
   function renderProcessedReprintRecords(row, esc) {
+    if (!row.hasDetail && row.reprintRecordCount > 0) {
+      return `<div class="pp-reprint-records"><div class="pp-section-label">${t('processed.section.processed-reprint-xml')}: ${esc(row.reprintRecordCount)}</div><button class="btn-sm" type="button" data-load-order-detail-id="${esc(row.processedOrderId || row.id || '')}" data-load-order-detail-number="${esc(row.orderName || '')}">${t('processed.button.load-details')}</button></div>`;
+    }
     const records = Array.isArray(row.reprintRecords) ? row.reprintRecords : [];
     if (!records.length) return '';
     return `<div class="pp-reprint-records">

@@ -63,6 +63,14 @@ function normalizeOrderType(value) {
   return '';
 }
 
+function clampLimit(value) {
+  return Math.min(100, Math.max(1, Number(value) || 50));
+}
+
+function clampOffset(value) {
+  return Math.max(0, Number(value) || 0);
+}
+
 function pipelineDateExpr() {
   return `(coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) at time zone 'Europe/Prague')::date`;
 }
@@ -302,6 +310,39 @@ function mapPipelineRow(row) {
   };
 }
 
+function mapPipelineListRow(row) {
+  return {
+    orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    externalOrderId: row.external_order_id || '',
+    customerOrderId: row.customer_order_id || '',
+    receivedAt: toIso(row.received_at),
+    apiSeenAt: toIso(row.api_seen_at),
+    id: row.processed_order_id == null ? null : Number(row.processed_order_id),
+    processedOrderId: row.processed_order_id == null ? null : Number(row.processed_order_id),
+    processedOrderName: row.processed_order_name || '',
+    xmlFileName: row.xml_file_name || '',
+    processedAt: toIso(row.processed_at || row.queued_date_time),
+    queuedDateTime: toIso(row.queued_date_time || row.processed_at),
+    workflowName: row.workflow_name || '',
+    orderType: normalizeOrderType(row.order_type),
+    printFiles: [],
+    printFileCount: Number(row.print_file_count) || 0,
+    pageSizes: row.page_sizes || '',
+    sourceMonth: row.source_month || '',
+    reprintRecordCount: Number(row.reprint_record_count) || 0,
+    reprintRecords: [],
+    latestReprintRecordAt: toIso(row.latest_reprint_record_at),
+    reprintRequestCount: Number(row.reprint_request_count) || 0,
+    reprintPendingCount: Number(row.reprint_pending_count) || 0,
+    reprintCompletedCount: Number(row.reprint_completed_count) || 0,
+    latestReprintStatus: row.latest_reprint_status || '',
+    reprintPending: Boolean(row.reprint_pending),
+    isReprintRecord: Boolean(row.is_reprint_record),
+    pipelineStatus: row.pipeline_status || 'received_only',
+    hasDetail: false,
+  };
+}
+
 function isIsoDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
 }
@@ -351,11 +392,12 @@ function addReprintFilter(where, value) {
 
 async function listOrderPipeline(client, options = {}) {
   await ensureOrderPipelineView(client);
-  const limit = Math.min(500, Math.max(1, Number(options.limit) || 500));
+  const limit = clampLimit(options.limit);
+  const offset = clampOffset(options.offset);
   const month = cleanString(options.month);
   const search = cleanString(options.q || options.search);
   const normalizedSearch = normalizeSearchTerm(options.q || options.search);
-  const params = [limit];
+  const params = [];
   const where = [];
 
   addDateRangeFilter(where, params, options);
@@ -395,32 +437,102 @@ async function listOrderPipeline(client, options = {}) {
       or coalesce(customer_order_id, '') ilike $${params.length - 1}
       or coalesce(xml_file_name, '') ilike $${params.length - 1}
       or coalesce(source_xml_path, '') ilike $${params.length - 1}
-      or coalesce(workflow_name, '') ilike $${params.length - 1}
-      or coalesce(order_type, '') ilike $${params.length - 1}
-      or coalesce(latest_reprint_status, '') ilike $${params.length - 1}
-      or reprint_records::text ilike $${params.length - 1}
-      or case when coalesce(reprint_record_count, 0) > 0 then 'REPRINT RE' else '' end ilike $${params.length - 1}
-      or print_files::text ilike $${params.length - 1}
       or regexp_replace(lower(coalesce(order_number, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
       or regexp_replace(lower(coalesce(processed_order_name, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(external_order_id, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
+      or regexp_replace(lower(coalesce(customer_order_id, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
       or regexp_replace(lower(coalesce(xml_file_name, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
       or regexp_replace(lower(coalesce(source_xml_path, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
-      or regexp_replace(lower(print_files::text), '[[:space:]_-]+', '', 'g') ilike $${params.length}
-      or regexp_replace(lower(reprint_records::text), '[[:space:]_-]+', '', 'g') ilike $${params.length}
     )`);
+  }
+
+  params.push(limit + 1);
+  const limitParam = params.length;
+  params.push(offset);
+  const offsetParam = params.length;
+
+  const result = await client.query(
+    `
+      select
+        order_number,
+        external_order_id,
+        customer_order_id,
+        received_at,
+        api_seen_at,
+        processed_order_id,
+        processed_order_name,
+        xml_file_name,
+        processed_at,
+        queued_date_time,
+        workflow_name,
+        order_type,
+        source_month,
+        reprint_record_count,
+        latest_reprint_record_at,
+        reprint_request_count,
+        reprint_pending_count,
+        reprint_completed_count,
+        latest_reprint_status,
+        reprint_pending,
+        is_reprint_record,
+        pipeline_status,
+        jsonb_array_length(coalesce(print_files, '[]'::jsonb)) as print_file_count,
+        (
+          select string_agg(distinct nullif(file_item->>'pageSize', ''), ', ')
+          from jsonb_array_elements(coalesce(print_files, '[]'::jsonb)) file_item
+        ) as page_sizes
+      from v_print_order_pipeline
+      ${where.length ? `where ${where.join(' and ')}` : ''}
+      order by coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+        order_number desc
+      limit $${limitParam}
+      offset $${offsetParam}
+    `,
+    params
+  );
+  const rows = result.rows.slice(0, limit).map(mapPipelineListRow);
+  return {
+    rows,
+    limit,
+    offset,
+    hasMore: result.rows.length > limit,
+    nextOffset: offset + rows.length,
+  };
+}
+
+async function getOrderPipelineDetail(client, options = {}) {
+  await ensureOrderPipelineView(client);
+  const id = Number(options.id || options.processedOrderId || 0);
+  const orderNumber = cleanString(options.orderNumber || options.order_number);
+  if (!id && !orderNumber) {
+    const error = new Error('Missing order id or orderNumber');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const params = [];
+  const where = [];
+  if (id) {
+    params.push(id);
+    where.push(`processed_order_id = $${params.length}`);
+  }
+  if (orderNumber) {
+    params.push(orderNumber);
+    where.push(`order_number = $${params.length}`);
   }
 
   const result = await client.query(
     `
       select *
       from v_print_order_pipeline
-      ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by coalesce(received_at, api_seen_at, latest_reprint_record_at, processed_at, queued_date_time) desc nulls last, order_number desc
-      limit $1
+      where ${where.join(' or ')}
+      order by coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+        order_number desc
+      limit 1
     `,
     params
   );
-  return result.rows.map(mapPipelineRow);
+  return result.rows[0] ? mapPipelineRow(result.rows[0]) : null;
 }
 
 async function listPipelineMonths(client) {
@@ -437,6 +549,7 @@ async function listPipelineMonths(client) {
 }
 
 module.exports = {
+  getOrderPipelineDetail,
   ensureOrderPipelineView,
   listOrderPipeline,
   listPipelineMonths,

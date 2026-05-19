@@ -62,12 +62,14 @@
 
   function getFiltersFromState(S) {
     return {
-      limit: '500',
+      limit: S.postPurchaseLimit || '50',
+      offset: String(S.postPurchaseOffset || 0),
       datePreset: S.postPurchaseDatePreset || 'this_month',
       from: S.postPurchaseDateFrom || '',
       to: S.postPurchaseDateTo || '',
       reprint: S.postPurchaseReprint || 'all',
       month: S.postPurchaseMonth || '',
+      q: getSearchFromState(S),
     };
   }
 
@@ -77,7 +79,8 @@
 
   function toQueryParams(filters) {
     const params = new URLSearchParams();
-    params.set('limit', filters.limit || '500');
+    params.set('limit', filters.limit || '50');
+    params.set('offset', filters.offset || '0');
     params.set('datePreset', filters.datePreset || 'this_month');
     params.set('reprint', filters.reprint || 'all');
     if (filters.q) params.set('q', filters.q);
