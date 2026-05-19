@@ -179,7 +179,7 @@
   function renderFullReprintAction(row, options) {
     const esc = options.esc;
     if (!row.hasDetail) {
-      return `<button class="btn-sm" type="button" data-load-order-detail-id="${esc(row.processedOrderId || row.id || '')}" data-load-order-detail-number="${esc(row.orderName || '')}">${t('processed.button.load-details')}</button>`;
+      return '';
     }
     const orderId = row.processedOrderId || row.id;
     const history = getFileHistory(orderId, '', options);
@@ -193,7 +193,7 @@
 
   function renderProcessedReprintRecords(row, esc) {
     if (!row.hasDetail && row.reprintRecordCount > 0) {
-      return `<div class="pp-reprint-records"><div class="pp-section-label">${t('processed.section.processed-reprint-xml')}: ${esc(row.reprintRecordCount)}</div><button class="btn-sm" type="button" data-load-order-detail-id="${esc(row.processedOrderId || row.id || '')}" data-load-order-detail-number="${esc(row.orderName || '')}">${t('processed.button.load-details')}</button></div>`;
+      return `<div class="pp-reprint-records"><div class="pp-section-label">${t('processed.section.processed-reprint-xml')}: ${esc(row.reprintRecordCount)}</div></div>`;
     }
     const records = Array.isArray(row.reprintRecords) ? row.reprintRecords : [];
     if (!records.length) return '';
