@@ -84,6 +84,10 @@
     };
   }
 
+  function getVisibleOrders() {
+    return Filters.filterRows(state.S.postPurchaseOrders || [], state.S.postPurchaseSearch || '');
+  }
+
   function getProcessedOrderId(row) {
     return row && (row.processedOrderId || row.id);
   }
@@ -229,7 +233,6 @@
       updateMonthFilter(payload.months || []);
       updateFilterControls();
       renderPostPurchaseOrders();
-      state.elSet('postpurchase-status', `${state.S.postPurchaseOrders.length} ${t('processed.status.rows')}`);
     } catch (error) {
       console.error('Order pipeline load failed', error);
       const message = cleanApiError(error);
@@ -249,8 +252,14 @@
   function renderPostPurchaseOrders() {
     const wrap = state.el('postpurchase-orders-wrap');
     if (!wrap) return;
-    wrap.innerHTML = Render.renderOrders(state.S.postPurchaseOrders || [], getRenderOptions());
+    const rows = getVisibleOrders();
+    const totalRows = Array.isArray(state.S.postPurchaseOrders) ? state.S.postPurchaseOrders.length : 0;
+    const searchActive = Boolean((state.S.postPurchaseSearch || '').trim());
+    wrap.innerHTML = Render.renderOrders(rows, getRenderOptions());
     bindProcessedOrderActions(wrap);
+    state.elSet('postpurchase-status', searchActive
+      ? `${rows.length}/${totalRows} ${t('processed.status.rows')}`
+      : `${rows.length} ${t('processed.status.rows')}`);
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
 

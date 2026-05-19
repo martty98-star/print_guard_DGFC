@@ -3,6 +3,8 @@
 const { ensurePrintOrdersTable } = require('./postpurchase-orders');
 const { ensureProcessedPrintOrderTables } = require('./processed-print-orders');
 
+let orderPipelineViewReady = false;
+
 function cleanString(value) {
   if (value == null) return null;
   const trimmed = String(value).trim();
@@ -66,11 +68,11 @@ function pipelineDateExpr() {
 }
 
 async function ensureOrderPipelineView(client) {
+  if (orderPipelineViewReady) return;
   await ensurePrintOrdersTable(client);
   await ensureProcessedPrintOrderTables(client);
-  await client.query(`drop view if exists v_print_order_pipeline`);
   await client.query(`
-    create view v_print_order_pipeline as
+    create or replace view v_print_order_pipeline as
     with reprint_summary as (
       select
         order_id,
@@ -249,6 +251,7 @@ async function ensureOrderPipelineView(client) {
     from pipeline_with_reprints pr
     left join reprint_summary r on r.order_id = pr.processed_order_id
   `);
+  orderPipelineViewReady = true;
 }
 
 function mapPipelineRow(row) {

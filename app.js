@@ -1469,7 +1469,11 @@ el('sync-btn').addEventListener('click', async () => {
   });
   el('postpurchase-search')?.addEventListener('input', e => {
     S.postPurchaseSearch = e.target.value || '';
-    loadPostPurchaseOrders(true);
+    if (S.postPurchaseLoaded && window.PrintGuardPostPurchaseUI && typeof window.PrintGuardPostPurchaseUI.renderPostPurchaseOrders === 'function') {
+      window.PrintGuardPostPurchaseUI.renderPostPurchaseOrders();
+    } else {
+      loadPostPurchaseOrders(true);
+    }
   });
   el('postpurchase-date-preset')?.addEventListener('change', e => {
     S.postPurchaseDatePreset = e.target.value || 'this_month';
