@@ -119,12 +119,15 @@
   }
 
   async function loadAndShowReport(date) {
-    const button = document.getElementById('daily-report-btn');
-    if (button) {
-      button.disabled = true;
-      button.dataset.originalText = button.dataset.originalText || button.textContent || '';
-      button.textContent = t('daily-report.loading');
-    }
+    const buttons = Array.from(document.querySelectorAll('[data-daily-report-trigger="true"]'));
+    const setButtons = (disabled, label) => {
+      buttons.forEach((button) => {
+        button.disabled = disabled;
+        button.dataset.originalText = button.dataset.originalText || button.textContent || '';
+        button.textContent = label || button.dataset.originalText || t('daily-report.button');
+      });
+    };
+    setButtons(true, t('daily-report.loading'));
     try {
       const report = await Api.loadDailyReport({
         fetchImpl: Auth.appFetch,
@@ -136,18 +139,17 @@
       console.error('Daily report load failed', error);
       toast(errorMessage(error), 'error');
     } finally {
-      if (button) {
-        button.disabled = false;
-        button.textContent = button.dataset.originalText || t('daily-report.button');
-      }
+      setButtons(false);
     }
   }
 
   function initDailyReportUI() {
     const dateInput = document.getElementById('daily-report-date');
     if (dateInput && !dateInput.value) dateInput.value = todayInputValue();
-    document.getElementById('daily-report-btn')?.addEventListener('click', () => {
-      loadAndShowReport(dateInput?.value || todayInputValue());
+    document.querySelectorAll('[data-daily-report-trigger="true"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        loadAndShowReport(button.id === 'daily-report-btn' ? (dateInput?.value || todayInputValue()) : todayInputValue());
+      });
     });
   }
 

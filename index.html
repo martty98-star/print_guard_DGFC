@@ -603,6 +603,7 @@
           <button class="btn-sm" id="postpurchase-unlock-btn" data-i18n="processed.unlock">Odemknout</button>
           <button class="btn-sm" id="postpurchase-lock-btn" data-i18n="processed.lock">Zamknout</button>
           <button class="btn-sm" id="postpurchase-refresh-btn" data-i18n="btn.refresh">Obnovit</button>
+          <button class="btn-sm" id="daily-report-orders-btn" type="button" data-daily-report-trigger="true" data-i18n="daily-report.button">Denní report</button>
         </div>
       </div>
       <div class="pp-filter-row">
@@ -703,7 +704,7 @@
           <label for="daily-report-date" data-i18n="daily-report.date">Date</label>
           <input type="date" id="daily-report-date" class="input-sm">
         </div>
-        <button class="btn-secondary" id="daily-report-btn" data-i18n="daily-report.button">Daily report</button>
+        <button class="btn-secondary" id="daily-report-btn" data-daily-report-trigger="true" data-i18n="daily-report.button">Daily report</button>
         <div class="hint" data-i18n="daily-report.settings.hint">Generates an operator report from Colorado print logs, API orders, Submit Tool XML and reprints. No email is sent automatically.</div>
       </section>
 
@@ -885,7 +886,7 @@
   <script src="app/config.js?v=7.0.5"></script>
   <script src="app/auth.js?v=7.0.1"></script>
   <script src="scripts/daily-report-api.js?v=7.0.0"></script>
-  <script src="scripts/daily-report-ui.js?v=7.0.0"></script>
+  <script src="scripts/daily-report-ui.js?v=7.0.1"></script>
   <script src="app/db.js?v=7.0.1"></script>
   <script src="app/settings-store.js?v=7.0.1"></script>
   <script src="app/push-bridge.js?v=7.0.1"></script>
