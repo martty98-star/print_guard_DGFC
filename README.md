@@ -18,6 +18,14 @@ For the complete environment / secret / path inventory, see `docs/configuration.
 The canonical Neon DB variable is `NEON_DATABASE_URL`.
 Legacy aliases `DATABASE_URL` and `NETLIFY_DATABASE_URL` still exist in some helpers, so keep them aligned until those call sites are normalized.
 
+Runtime database precedence is:
+
+```text
+NETLIFY_DATABASE_URL -> DATABASE_URL -> NEON_DATABASE_URL
+```
+
+If more than one of these keys exists in Netlify, the first non-empty value wins. Keep only the intended production value in sync across deploy contexts, or preferably use a single canonical key, to avoid silent mismatches after credential or ownership migrations.
+
 Other commonly required vars:
 
 - `ADMIN_API_KEY`
@@ -85,6 +93,8 @@ Windows Task Scheduler example:
 - Program/script: `node`
 - Add arguments: `C:\PrintGuard\print_guard_DGFC\scripts\sync-postpurchase-orders.js`
 - Start in: `C:\PrintGuard\print_guard_DGFC`
+
+After changing any Netlify environment variable used by Functions, trigger a fresh production deploy so the new value is present in the deployed runtime.
 
 ## Submit Tool JobQueue sync
 

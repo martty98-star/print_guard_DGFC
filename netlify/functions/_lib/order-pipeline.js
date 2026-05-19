@@ -71,6 +71,21 @@ async function ensureOrderPipelineView(client) {
   if (orderPipelineViewReady) return;
   await ensurePrintOrdersTable(client);
   await ensureProcessedPrintOrderTables(client);
+  const existingView = await client.query(`
+    select 1
+    from pg_catalog.pg_class c
+    join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = current_schema()
+      and c.relname = 'v_print_order_pipeline'
+      and c.relkind = 'v'
+    limit 1
+  `);
+
+  if (existingView.rows.length) {
+    orderPipelineViewReady = true;
+    return;
+  }
+
   await client.query(`
     create or replace view v_print_order_pipeline as
     with reprint_summary as (
