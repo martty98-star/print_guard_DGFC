@@ -20,58 +20,75 @@
     return Array.isArray(order && order.printFiles) ? order.printFiles : [];
   }
 
-  function normalizeOrderName(value) {
+  function cleanValue(value) {
     const cleaned = String(value == null ? '' : value).trim();
-    if (!cleaned) return 'ORDER';
-    return /^\d+$/.test(cleaned) ? `PS${cleaned}` : cleaned;
+    return cleaned || '';
   }
 
-  function variableXml(name, value) {
-    return `    <Variable>
-      <Name>${escXml(name)}</Name>
-      <Value xsi:type="xsd:string">${escXml(value)}</Value>
-      <System>false</System>
-    </Variable>`;
+  function pickOriginalOrderId(order) {
+    const candidates = [
+      order && order.originalOrderId,
+      order && order.OrderId,
+      order && order.orderId,
+      order && order.order_id,
+      order && order.apiOrderId,
+      order && order.api_order_id,
+      order && order.processedOrderName,
+      order && order.orderName,
+      order && order.order_number,
+      order && order.externalOrderId,
+      order && order.external_order_id,
+      order && order.customerOrderId,
+      order && order.customer_order_id,
+      order && order.id,
+    ];
+    for (const candidate of candidates) {
+      const value = cleanValue(candidate);
+      if (value) return value;
+    }
+    return 'ORDER';
+  }
+
+  function normalizePoNumber(order) {
+    const raw = cleanValue(
+      order && (
+        order.PoNumber ||
+        order.poNumber ||
+        order.po_number ||
+        order.originalPoNumber ||
+        order.original_po_number ||
+        order.customerOrderId ||
+        order.customer_order_id ||
+        order.externalOrderId ||
+        order.external_order_id ||
+        order.orderName ||
+        order.order_number
+      )
+    ) || pickOriginalOrderId(order);
+    return raw.endsWith('_REPRINT') ? raw : `${raw}_REPRINT`;
+  }
+
+  function xmlDocument(pageSize, copies, printFilePath) {
+    const localFileName = fileNameFromPath(printFilePath);
+    return `  <XmlPrintDocument LocalFileName="${escXml(localFileName)}" FullPath="${escXml(printFilePath)}">
+    <XmlPrintPage PageSize="${escXml(pageSize || '')}" Copies="${escXml(String(copies || 1))}"/>
+  </XmlPrintDocument>`;
   }
 
   function generateReprintXml(order, printFile) {
-    const orderName = normalizeOrderName(order.processedOrderName || order.orderName || order.order_number || order.id || 'ORDER');
-    const poNumber = order.poNumber || order.po_number || order.customerOrderId || order.customer_order_id || order.externalOrderId || order.external_order_id || '';
-    const orderInfo = order.orderInfo || order.order_info || '';
+    const orderId = pickOriginalOrderId(order);
+    const poNumber = normalizePoNumber(order);
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
       const printFilePath = file.printFilePath || file.print_file_path || '';
-      return `    <PrintFile>
-      <FileName>${escXml(printFilePath)}</FileName>
-      <Copies>1</Copies>${pageSize ? `
-      <Variables>
-        <Variable>
-          <Name>PageSize</Name>
-          <Value>${escXml(pageSize)}</Value>
-        </Variable>
-      </Variables>` : ''}
-    </PrintFile>`;
+      const copies = file.copies == null || file.copies === '' ? 1 : file.copies;
+      return xmlDocument(pageSize, copies, printFilePath);
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
-<PrintJob xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <Name>${escXml(orderName)}</Name>
-  <XmlFileName>${escXml(orderName)}_REPRINT.xml</XmlFileName>
-  <Status>Opened</Status>
-  <OrderDateTime>${escXml(new Date().toISOString())}</OrderDateTime>
-  <Variables>
-${variableXml('%Job.OrderType%', 'R')}
-${variableXml('%Job.PoNumber%', poNumber)}
-${variableXml('%Job.OrderInfo%', orderInfo)}
-  </Variables>
-  <PrintFiles>
+<XmlPrintJob OrderId="${escXml(orderId)}" PoNumber="${escXml(poNumber)}" OrderDate="${escXml(new Date().toISOString())}" OrderType="R">
 ${printFileXml}
-  </PrintFiles>
-  <PrinterName>${escXml(order.printerName || order.printer_name || '')}</PrinterName>
-  <RunWorkflow>true</RunWorkflow>
-  <WorkflowName>${escXml(order.workflowName || order.workflow_name || '')}</WorkflowName>
-  <OrderType>R</OrderType>
-</PrintJob>
+</XmlPrintJob>
 `;
   }
 
@@ -93,5 +110,6 @@ ${printFileXml}
     downloadXml,
     fileNameFromPath,
     generateReprintXml,
+    pickOriginalOrderId,
   };
 })();
