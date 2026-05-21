@@ -65,11 +65,15 @@
     const from = state.el('postpurchase-date-from');
     const to = state.el('postpurchase-date-to');
     const reprint = state.el('postpurchase-reprint-filter');
+    const unprocessedQuick = state.el('postpurchase-only-unprocessed-btn');
+    const reprintQuick = state.el('postpurchase-reprint-backlog-btn');
     if (preset) preset.value = state.S.postPurchaseDatePreset || 'this_month';
     if (status) status.value = state.S.postPurchaseStatus || 'all';
     if (from) from.value = state.S.postPurchaseDateFrom || '';
     if (to) to.value = state.S.postPurchaseDateTo || '';
     if (reprint) reprint.value = state.S.postPurchaseReprint || 'all';
+    if (unprocessedQuick) unprocessedQuick.classList.toggle('active', state.S.postPurchaseStatus === 'received_only');
+    if (reprintQuick) reprintQuick.classList.toggle('active', state.S.postPurchaseStatus === 'reprint_pending');
   }
 
   function getOperatorName() {

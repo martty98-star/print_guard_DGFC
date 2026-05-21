@@ -516,7 +516,13 @@ async function listOrderPipeline(client, options = {}) {
         ) as page_sizes
       from v_print_order_pipeline
       ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+      order by case
+          when pipeline_status = 'received_only' then 0
+          when pipeline_status = 'processed_without_received' then 1
+          when pipeline_status = 'reprint_pending' then 2
+          else 3
+        end,
+        coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
         order_number desc
       limit $${limitParam}
       offset $${offsetParam}

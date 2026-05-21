@@ -71,6 +71,56 @@
     return row && String(row.orderType || '').toUpperCase() === 'R';
   }
 
+  function getAttentionState(row) {
+    const status = String(row && row.pipelineStatus || '').toLowerCase();
+    if (status === 'received_only') return 'unprocessed';
+    if (status === 'processed_without_received') return 'orphan';
+    if (status === 'reprint_pending' || Boolean(row && row.reprintPending)) return 'reprint';
+    return '';
+  }
+
+  function getAttentionPriority(row) {
+    const state = getAttentionState(row);
+    if (state === 'unprocessed') return 0;
+    if (state === 'orphan') return 1;
+    if (state === 'reprint') return 2;
+    return 3;
+  }
+
+  function getPipelineSummary(rows) {
+    const summary = {
+      unprocessed: 0,
+      reprintBacklog: 0,
+      needsAttention: 0,
+    };
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      const state = getAttentionState(row);
+      if (state === 'unprocessed') summary.unprocessed += 1;
+      if (state === 'reprint') summary.reprintBacklog += 1;
+      if (state === 'unprocessed' || state === 'orphan' || state === 'reprint') summary.needsAttention += 1;
+    });
+    return summary;
+  }
+
+  function renderPipelineSummary(rows) {
+    const summary = getPipelineSummary(rows);
+    if (!summary.unprocessed && !summary.reprintBacklog && !summary.needsAttention) return '';
+    return `<div class="pp-status-summary">
+      <div class="pp-status-summary-item is-unprocessed">
+        <span class="pp-status-summary-label">${t('processed.summary.unprocessed')}</span>
+        <strong>${summary.unprocessed}</strong>
+      </div>
+      <div class="pp-status-summary-item is-reprint">
+        <span class="pp-status-summary-label">${t('processed.summary.reprint-backlog')}</span>
+        <strong>${summary.reprintBacklog}</strong>
+      </div>
+      <div class="pp-status-summary-item is-attention">
+        <span class="pp-status-summary-label">${t('processed.summary.needs-attention')}</span>
+        <strong>${summary.needsAttention}</strong>
+      </div>
+    </div>`;
+  }
+
   function renderPipelineBadges(row) {
     const badges = [];
     if (row.receivedAt || row.apiSeenAt || row.externalOrderId) {
@@ -225,12 +275,34 @@
 
   function renderOrders(rows, options) {
     const esc = options.esc;
-    if (!rows.length) {
+    const orderedRows = Array.isArray(rows)
+      ? rows.slice().sort((a, b) => {
+        const priority = getAttentionPriority(a) - getAttentionPriority(b);
+        if (priority !== 0) return priority;
+        const aTime = new Date(a.processedAt || a.queuedDateTime || a.receivedAt || a.apiSeenAt || a.latestReprintRecordAt || 0).getTime();
+        const bTime = new Date(b.processedAt || b.queuedDateTime || b.receivedAt || b.apiSeenAt || b.latestReprintRecordAt || 0).getTime();
+        if (Number.isFinite(bTime) && Number.isFinite(aTime) && bTime !== aTime) return bTime - aTime;
+        return String(b.orderName || '').localeCompare(String(a.orderName || ''));
+      })
+      : [];
+    if (!orderedRows.length) {
       return `<div class="empty-state"><div class="empty-state-icon">-</div><p>${t('processed.empty')}</p></div>`;
     }
 
-    return `<div class="pp-processed-list">${rows.map((row) => `
-      <article class="pp-processed-card">
+    return `<div class="pp-processed-list">
+      ${renderPipelineSummary(orderedRows)}
+      ${orderedRows.map((row) => {
+        const attentionState = getAttentionState(row);
+        const cardClass = attentionState ? ` pp-processed-card--${attentionState}` : '';
+        const attentionNote = attentionState === 'unprocessed'
+          ? t('processed.status.unprocessed')
+          : attentionState === 'reprint'
+            ? t('processed.status.reprint-pending')
+            : attentionState === 'orphan'
+              ? t('processed.status.no-api-match')
+              : '';
+        return `
+      <article class="pp-processed-card${cardClass}">
         <section class="pp-card-section pp-card-summary">
           <div class="pp-processed-head">
           <div>
@@ -243,6 +315,7 @@
           </div>
           </div>
           <div class="pp-pipeline-badges">${renderPipelineBadges(row)}</div>
+          ${attentionNote ? `<div class="pp-attention-note">${esc(attentionNote)}</div>` : ''}
           <div class="pp-processed-meta">
           <span><strong>${t('processed.label.workflow')}:</strong> ${esc(row.workflowName || row.printerName || '-')}</span>
           <span><strong>${t('processed.label.type')}:</strong> ${esc(row.orderType || '-')}</span>
@@ -271,7 +344,7 @@
           ${row.sourceXmlPath ? `<div class="pp-file-path">${esc(row.sourceXmlPath)}</div>` : ''}
         </details>
       </article>
-    `).join('')}</div>`;
+    `; }).join('')}</div>`;
   }
 
   function renderError(message, esc) {

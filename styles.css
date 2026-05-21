@@ -523,6 +523,11 @@ textarea { resize: vertical; min-height: 58px; }
   padding: 5px 13px; transition: all var(--tr); white-space: nowrap;
 }
 .btn-sm:hover { background: var(--accent-bg); border-color: var(--accent-light); }
+.btn-sm.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-light);
+  color: var(--text);
+}
 .input-sm {
   background: var(--bg); border: 1px solid var(--border); color: var(--text);
   font-family: var(--font-ui); font-size: .72rem;
@@ -1185,6 +1190,45 @@ textarea { resize: vertical; min-height: 58px; }
   flex-direction: column;
   gap: 12px;
 }
+.pp-status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.pp-status-summary-item {
+  min-width: 120px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  padding: 9px 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pp-status-summary-label {
+  color: var(--text-faint);
+  font-size: .56rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
+.pp-status-summary-item strong {
+  font-size: 1rem;
+  line-height: 1;
+}
+.pp-status-summary-item.is-unprocessed {
+  border-color: rgba(180, 130, 60, .5);
+  background: var(--warning-dim);
+}
+.pp-status-summary-item.is-reprint {
+  border-color: rgba(92, 128, 184, .55);
+  background: var(--accent-bg);
+}
+.pp-status-summary-item.is-attention {
+  border-color: rgba(155, 58, 47, .4);
+  background: var(--crit-dim);
+}
 .pp-load-more-wrap {
   display: flex;
   justify-content: center;
@@ -1196,6 +1240,18 @@ textarea { resize: vertical; min-height: 58px; }
   padding: 14px;
   max-width: 100%;
   overflow: hidden;
+}
+.pp-processed-card.pp-processed-card--unprocessed {
+  border-color: rgba(180, 130, 60, .5);
+  box-shadow: inset 3px 0 0 rgba(180, 130, 60, .35);
+}
+.pp-processed-card.pp-processed-card--orphan {
+  border-color: rgba(160, 130, 70, .45);
+  box-shadow: inset 3px 0 0 rgba(160, 130, 70, .32);
+}
+.pp-processed-card.pp-processed-card--reprint {
+  border-color: rgba(92, 128, 184, .45);
+  box-shadow: inset 3px 0 0 rgba(92, 128, 184, .3);
 }
 .pp-card-section {
   border-top: 1px solid var(--border);
@@ -1251,6 +1307,20 @@ textarea { resize: vertical; min-height: 58px; }
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 10px;
+}
+.pp-attention-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(180, 130, 60, .4);
+  background: var(--warning-dim);
+  color: var(--text);
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  margin-bottom: 10px;
+  padding: 5px 8px;
+  text-transform: uppercase;
 }
 .pp-pipeline-badge {
   border: 1px solid var(--border);
@@ -1912,6 +1982,11 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .pp-orders-toolbar .btn-sm {
   flex: 0 1 auto;
+}
+.pp-quick-filter-actions {
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 6px;
 }
 .checklist-form-head {
   padding: 0;
