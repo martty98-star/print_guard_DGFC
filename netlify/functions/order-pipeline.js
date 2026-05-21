@@ -8,6 +8,7 @@ const {
 } = require('./_lib/db');
 const {
   getOrderPipelineDetail,
+  getOrderPipelineStats,
   listOrderPipeline,
   listPipelineMonths,
 } = require('./_lib/order-pipeline');
@@ -43,7 +44,7 @@ exports.handler = async function handler(event) {
         return { ok: true, row };
       }
 
-      const page = await listOrderPipeline(client, {
+      const filters = {
         limit: query.limit,
         offset: query.offset,
         month: query.month,
@@ -54,9 +55,26 @@ exports.handler = async function handler(event) {
         to: query.to,
         status: query.status,
         reprint: query.reprint,
-      });
+      };
+      const page = await listOrderPipeline(client, filters);
+      const stats = await getOrderPipelineStats(client, filters);
       const months = query.includeMonths === '1' ? await listPipelineMonths(client) : [];
-      return { ok: true, ...page, months };
+      return {
+        ok: true,
+        rows: page.rows,
+        page: {
+          limit: page.limit,
+          offset: page.offset,
+          hasMore: page.hasMore,
+          nextOffset: page.nextOffset,
+        },
+        stats,
+        months,
+        limit: page.limit,
+        offset: page.offset,
+        hasMore: page.hasMore,
+        nextOffset: page.nextOffset,
+      };
     });
     return json(200, body);
   } catch (error) {

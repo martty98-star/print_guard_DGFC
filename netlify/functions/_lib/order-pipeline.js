@@ -422,10 +422,7 @@ function addStatusFilter(where, value) {
   }
 }
 
-async function listOrderPipeline(client, options = {}) {
-  await ensureOrderPipelineView(client);
-  const limit = clampLimit(options.limit);
-  const offset = clampOffset(options.offset);
+function buildOrderPipelineFilters(options = {}) {
   const month = cleanString(options.month);
   const search = cleanString(options.q || options.search);
   const normalizedSearch = normalizeSearchTerm(options.q || options.search);
@@ -478,6 +475,64 @@ async function listOrderPipeline(client, options = {}) {
       or regexp_replace(lower(coalesce(source_xml_path, '')), '[[:space:]_-]+', '', 'g') ilike $${params.length}
     )`);
   }
+
+  return { params, where };
+}
+
+function mapPipelineStats(row) {
+  return {
+    total: Number(row && row.total) || 0,
+    needsAttention: Number(row && row.needs_attention) || 0,
+    unprocessed: Number(row && row.unprocessed) || 0,
+    noApiMatch: Number(row && row.no_api_match) || 0,
+    reprintBacklog: Number(row && row.reprint_backlog) || 0,
+    processed: Number(row && row.processed) || 0,
+    hasReprint: Number(row && row.has_reprint) || 0,
+  };
+}
+
+async function queryPipelineStats(client, filters) {
+  const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
+  const result = await client.query(
+    `
+      select
+        count(*)::int as total,
+        count(*) filter (
+          where pipeline_status = 'received_only'
+            or pipeline_status = 'processed_without_received'
+            or coalesce(reprint_pending_count, 0) > 0
+        )::int as needs_attention,
+        count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
+        count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
+        count(*) filter (where coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
+        count(*) filter (where processed_order_id is not null)::int as processed,
+        count(*) filter (
+          where coalesce(reprint_request_count, 0) > 0
+            or coalesce(reprint_record_count, 0) > 0
+        )::int as has_reprint
+      from v_print_order_pipeline
+      ${whereSql}
+    `,
+    filters.params
+  );
+  return mapPipelineStats(result.rows[0]);
+}
+
+async function getOrderPipelineStats(client, options = {}) {
+  await ensureOrderPipelineView(client);
+  const generatedAt = new Date().toISOString();
+  const global = await queryPipelineStats(client, { params: [], where: [] });
+  const scope = await queryPipelineStats(client, buildOrderPipelineFilters(options));
+  return { global, scope, generatedAt };
+}
+
+async function listOrderPipeline(client, options = {}) {
+  await ensureOrderPipelineView(client);
+  const limit = clampLimit(options.limit);
+  const offset = clampOffset(options.offset);
+  const filters = buildOrderPipelineFilters(options);
+  const params = filters.params.slice();
+  const where = filters.where;
 
   params.push(limit + 1);
   const limitParam = params.length;
@@ -589,6 +644,7 @@ async function listPipelineMonths(client) {
 
 module.exports = {
   getOrderPipelineDetail,
+  getOrderPipelineStats,
   ensureOrderPipelineView,
   listOrderPipeline,
   listPipelineMonths,

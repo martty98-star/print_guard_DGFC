@@ -87,37 +87,33 @@
     return 3;
   }
 
-  function getPipelineSummary(rows) {
-    const summary = {
-      unprocessed: 0,
-      reprintBacklog: 0,
-      needsAttention: 0,
-    };
-    (Array.isArray(rows) ? rows : []).forEach((row) => {
-      const state = getAttentionState(row);
-      if (state === 'unprocessed') summary.unprocessed += 1;
-      if (state === 'reprint') summary.reprintBacklog += 1;
-      if (state === 'unprocessed' || state === 'orphan' || state === 'reprint') summary.needsAttention += 1;
-    });
-    return summary;
+  function statNumber(stats, key) {
+    const value = Number(stats && stats[key]);
+    return Number.isFinite(value) ? value : 0;
   }
 
-  function renderPipelineSummary(rows) {
-    const summary = getPipelineSummary(rows);
-    if (!summary.unprocessed && !summary.reprintBacklog && !summary.needsAttention) return '';
+  function renderStatItem(stats, key, labelKey, className) {
+    const global = stats && stats.global;
+    const scope = stats && stats.scope;
+    const globalValue = statNumber(global, key);
+    const scopeValue = statNumber(scope, key);
+    const scopeHtml = scope && scopeValue !== globalValue
+      ? `<small>${t('processed.summary.scope')}: ${scopeValue}</small>`
+      : '';
+    return `<div class="pp-status-summary-item ${className}">
+      <span class="pp-status-summary-label">${t(labelKey)}</span>
+      <strong>${globalValue}</strong>
+      ${scopeHtml}
+    </div>`;
+  }
+
+  function renderPipelineStats(stats) {
+    if (!stats || !stats.global) return '';
     return `<div class="pp-status-summary">
-      <div class="pp-status-summary-item is-unprocessed">
-        <span class="pp-status-summary-label">${t('processed.summary.unprocessed')}</span>
-        <strong>${summary.unprocessed}</strong>
-      </div>
-      <div class="pp-status-summary-item is-reprint">
-        <span class="pp-status-summary-label">${t('processed.summary.reprint-backlog')}</span>
-        <strong>${summary.reprintBacklog}</strong>
-      </div>
-      <div class="pp-status-summary-item is-attention">
-        <span class="pp-status-summary-label">${t('processed.summary.needs-attention')}</span>
-        <strong>${summary.needsAttention}</strong>
-      </div>
+      ${renderStatItem(stats, 'unprocessed', 'processed.summary.unprocessed', 'is-unprocessed')}
+      ${renderStatItem(stats, 'reprintBacklog', 'processed.summary.reprint-backlog', 'is-reprint')}
+      ${renderStatItem(stats, 'needsAttention', 'processed.summary.needs-attention', 'is-attention')}
+      ${renderStatItem(stats, 'noApiMatch', 'processed.summary.no-api-match', 'is-orphan')}
     </div>`;
   }
 
@@ -275,6 +271,7 @@
 
   function renderOrders(rows, options) {
     const esc = options.esc;
+    const summary = renderPipelineStats(options.stats);
     const orderedRows = Array.isArray(rows)
       ? rows.slice().sort((a, b) => {
         const priority = getAttentionPriority(a) - getAttentionPriority(b);
@@ -286,11 +283,11 @@
       })
       : [];
     if (!orderedRows.length) {
-      return `<div class="empty-state"><div class="empty-state-icon">-</div><p>${t('processed.empty')}</p></div>`;
+      return `${summary}<div class="empty-state"><div class="empty-state-icon">-</div><p>${t('processed.empty')}</p></div>`;
     }
 
     return `<div class="pp-processed-list">
-      ${renderPipelineSummary(orderedRows)}
+      ${summary}
       ${orderedRows.map((row) => {
         const attentionState = getAttentionState(row);
         const cardClass = attentionState ? ` pp-processed-card--${attentionState}` : '';

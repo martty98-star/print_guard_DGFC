@@ -86,6 +86,7 @@
       isAdmin: Boolean(state.cfg && state.cfg.role === 'admin' && state.cfg.adminPin),
       reprintHistoryByKey: state.reprintHistoryByKey,
       reprintPendingKeys: state.reprintPendingKeys,
+      stats: state.S.postPurchaseStats,
       toFileHref: PdfOpen.uncToFileHref,
     };
   }
@@ -268,8 +269,9 @@
       });
       const rows = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseOrders = append ? (state.S.postPurchaseOrders || []).concat(rows) : rows;
-      state.S.postPurchaseOffset = Number(payload.nextOffset) || state.S.postPurchaseOrders.length;
-      state.S.postPurchaseHasMore = Boolean(payload.hasMore);
+      state.S.postPurchaseOffset = Number(payload.page?.nextOffset ?? payload.nextOffset) || state.S.postPurchaseOrders.length;
+      state.S.postPurchaseHasMore = Boolean(payload.page?.hasMore ?? payload.hasMore);
+      if (payload.stats) state.S.postPurchaseStats = payload.stats;
       await loadVisibleReprintHistory();
       state.S.postPurchaseLoaded = true;
       updateMonthFilter(payload.months || []);

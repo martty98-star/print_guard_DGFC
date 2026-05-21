@@ -247,6 +247,7 @@ const S = {
   postPurchaseLimit: '50',
   postPurchaseOffset: 0,
   postPurchaseHasMore: false,
+  postPurchaseStats: null,
   postPurchaseMonth: '',
   postPurchaseDatePreset: 'this_month',
   postPurchaseDateFrom: '',

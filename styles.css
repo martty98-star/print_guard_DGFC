@@ -1201,10 +1201,10 @@ textarea { resize: vertical; min-height: 58px; }
   border: 1px solid var(--border);
   background: var(--bg3);
   padding: 9px 12px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
 }
 .pp-status-summary-label {
   color: var(--text-faint);
@@ -1217,6 +1217,11 @@ textarea { resize: vertical; min-height: 58px; }
   font-size: 1rem;
   line-height: 1;
 }
+.pp-status-summary-item small {
+  grid-column: 1 / -1;
+  color: var(--text-faint);
+  font-size: .58rem;
+}
 .pp-status-summary-item.is-unprocessed {
   border-color: rgba(180, 130, 60, .5);
   background: var(--warning-dim);
@@ -1228,6 +1233,9 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-status-summary-item.is-attention {
   border-color: rgba(155, 58, 47, .4);
   background: var(--crit-dim);
+}
+.pp-status-summary-item.is-orphan {
+  border-color: rgba(160, 130, 70, .45);
 }
 .pp-load-more-wrap {
   display: flex;
