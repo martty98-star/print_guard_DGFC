@@ -153,20 +153,28 @@ async function batchUpsertCoRecords(client, coRecords) {
     const params = [];
     const valuesSql = chunk.map((record, index) => {
       const base = index * 4;
+      const effectiveUpdatedAt = record.updatedAt || record.updated_at || record.deletedAt || record.createdAt || record.timestamp || new Date().toISOString();
+      const normalized = {
+        ...record,
+        updatedAt: record.updatedAt || effectiveUpdatedAt,
+      };
       params.push(
-        record.id,
-        record.machineId || "",
-        record.timestamp || new Date().toISOString(),
-        JSON.stringify(record)
+        normalized.id,
+        normalized.machineId || "",
+        normalized.timestamp || effectiveUpdatedAt,
+        JSON.stringify(normalized),
+        effectiveUpdatedAt
       );
-      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::jsonb, now())`;
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::jsonb, $${base + 5}::timestamptz)`;
     }).join(",");
 
     await client.query(
       `insert into public.pg_co_records(id, machine_id, timestamp, data, updated_at)
        values ${valuesSql}
        on conflict (id) do update
-       set data = excluded.data, updated_at = now()`,
+       set data = excluded.data, updated_at = excluded.updated_at
+       where coalesce(nullif((excluded.data ->> 'updatedAt'), '')::timestamptz, excluded.updated_at)
+         >= coalesce(nullif((public.pg_co_records.data ->> 'updatedAt'), '')::timestamptz, public.pg_co_records.updated_at)`,
       params
     );
   }
@@ -201,7 +209,10 @@ export async function handler(event) {
     if (event.httpMethod === "GET") {
       const items = (await client.query("select data from public.pg_items")).rows.map(r => r.data);
       const movements = (await client.query("select data from public.pg_movements order by timestamp asc")).rows.map(r => r.data);
-      const coRecords = (await client.query("select data from public.pg_co_records order by timestamp asc")).rows.map(r => r.data);
+      const coRecords = (await client.query("select data, updated_at from public.pg_co_records order by timestamp asc")).rows.map((r) => ({
+        ...(r.data || {}),
+        updatedAt: r.data?.updatedAt || r.updated_at || null,
+      }));
 
       return resp(200, { ok: true, items, movements, coRecords });
     }
@@ -241,7 +252,32 @@ export async function handler(event) {
       if (kind === "movement") {
         await client.query(`delete from public.pg_movements where id = $1`, [key]);
       } else if (kind === "coRecord") {
-        await client.query(`delete from public.pg_co_records where id = $1`, [key]);
+        const existing = await client.query(`select data, updated_at from public.pg_co_records where id = $1`, [key]);
+        if (!existing.rowCount) {
+          await client.query("rollback");
+          return resp(404, { ok: false, error: "Record not found" });
+        }
+        const row = existing.rows[0] || {};
+        const current = row.data || {};
+        const deletedAt = new Date().toISOString();
+        const tombstone = {
+          ...current,
+          deletedAt,
+          updatedAt: deletedAt,
+        };
+        await client.query(
+          `insert into public.pg_co_records(id, machine_id, timestamp, data, updated_at)
+           values ($1, $2, $3, $4::jsonb, $5::timestamptz)
+           on conflict (id) do update
+           set data = excluded.data, updated_at = excluded.updated_at`,
+          [
+            key,
+            current.machineId || "",
+            current.timestamp || deletedAt,
+            JSON.stringify(tombstone),
+            deletedAt,
+          ]
+        );
       } else if (kind === "item") {
         await client.query(`delete from public.pg_movements where article_number = $1`, [key]);
         await client.query(`delete from public.pg_items where article_number = $1`, [key]);

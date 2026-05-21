@@ -11,6 +11,7 @@
       S, ST_CORECS, ST_ITEMS, ST_MOVES, ST_SETTINGS, StockStore, adminHeaders,
       applyRoleUI, cfg, el, idbClear, idbPut, loadAll, ls, sendStockNotifications,
       showToast, stockDbAdapter, updateOfflineBanner,
+      idbAll,
     } = deps;
 
     function getLastCloudSyncMs() {
@@ -50,6 +51,12 @@
       return ls(SYNC_DIRTY_VERSION_KEY) || '';
     }
 
+    function getCoRecordUpdatedAtMs(record) {
+      const value = record?.updatedAt || record?.updated_at || record?.deletedAt || record?.createdAt || record?.timestamp || '';
+      const ms = Date.parse(value);
+      return Number.isFinite(ms) ? ms : 0;
+    }
+
     function shouldRunBackgroundSync() {
       if (document.visibilityState !== 'visible') {
         console.log('background sync skipped: tab hidden');
@@ -70,6 +77,12 @@
     }
 
     async function cloudPush() {
+      const lastSyncMs = getLastCloudSyncMs();
+      const rawCoRecords = await idbAll(ST_CORECS);
+      const coRecords = rawCoRecords.filter(record => {
+        const updatedMs = getCoRecordUpdatedAtMs(record);
+        return !lastSyncMs || updatedMs > lastSyncMs;
+      });
       const res = await fetch('/.netlify/functions/sync', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -77,7 +90,7 @@
         body: JSON.stringify({
           items: S.items,
           movements: S.movements,
-          coRecords: S.coRecords,
+          coRecords,
           settings: [{
             key: 'config',
             weeksN: cfg.weeksN,

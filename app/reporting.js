@@ -198,7 +198,15 @@
       try { data = JSON.parse(text); } catch { showToast('Neplatný JSON soubor', 'error'); return; }
       let items = Array.isArray(data.items) ? data.items.filter(it => it?.articleNumber) : [];
       let movements = Array.isArray(data.movements) ? data.movements.filter(m => m?.id && m?.articleNumber) : [];
-      let coRecords = Array.isArray(data.coRecords) ? data.coRecords.filter(r => r?.id && r?.machineId) : [];
+      const importedAt = new Date().toISOString();
+      let coRecords = Array.isArray(data.coRecords)
+        ? data.coRecords
+          .filter(r => r?.id && r?.machineId)
+          .map(r => ({
+            ...r,
+            updatedAt: importedAt,
+          }))
+        : [];
       const settings = Array.isArray(data.settings) ? data.settings.filter(s => s?.key) : [];
       const hasSettingsPayload = Array.isArray(data.settings);
       if (Array.isArray(data.snapshots)) {

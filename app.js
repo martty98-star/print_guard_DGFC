@@ -277,7 +277,15 @@ function stockApiAdapter() {
 async function loadAll() {
   S.items     = await StockStore.getAllItems(stockDbAdapter());
   S.movements = (await StockStore.getAllMovements(stockDbAdapter())).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  S.coRecords = (await idbAll(ST_CORECS)).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  S.coRecords = (await idbAll(ST_CORECS))
+    .map(record => record && typeof record === 'object'
+      ? {
+          ...record,
+          updatedAt: record.updatedAt || record.updated_at || record.createdAt || record.timestamp || null,
+        }
+      : record)
+    .filter(record => record && !record.deletedAt)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   await loadSettingsFromIDB();
 
   const ts = new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
@@ -657,7 +665,7 @@ function getColoradoFormatEstimates() {
 }
 
 function getCoRecs(machineId) {
-  return S.coRecords.filter(r => r.machineId === machineId)
+  return S.coRecords.filter(r => r.machineId === machineId && !r.deletedAt)
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
@@ -881,14 +889,16 @@ async function saveCoEntry() {
   if (isNaN(inkVal)   || inkVal   < 0) { showToast('Zadejte platnou hodnotu inkoustu', 'error'); return; }
   if (isNaN(mediaVal) || mediaVal < 0) { showToast('Zadejte platnou hodnotu média', 'error'); return; }
 
+  const now = new Date().toISOString();
   const rec = {
     id: genId('co'),
     machineId,
-    timestamp:       toISOfromDT(el('co-timestamp').value) || new Date().toISOString(),
+    timestamp:       toISOfromDT(el('co-timestamp').value) || now,
     inkTotalLiters:  inkVal,
     mediaTotalM2:    mediaVal,
     note:            el('co-note').value.trim() || undefined,
-    createdAt:       new Date().toISOString(),
+    createdAt:       now,
+    updatedAt:       now,
   };
 
   el('co-save-btn').disabled = true;
@@ -981,12 +991,24 @@ async function deleteCoRecord(id) {
   if (!isAdmin()) { showToast('Mazání záznamů Colorado — jen admin', 'error'); return; }
   showConfirm('Smazat tento záznam Colorado? (Admin)', async () => {
     try {
-      await cloudDelete('coRecord', id);
-      await idbDelete(ST_CORECS, id);
+      const now = new Date().toISOString();
+      const current = S.coRecords.find(r => r.id === id);
+      if (!current) {
+        showToast('Záznam už není v lokální paměti.', 'error');
+        return;
+      }
+      const tombstone = {
+        ...current,
+        deletedAt: now,
+        updatedAt: now,
+      };
+      await idbPut(ST_CORECS, tombstone);
+      setSyncDirtyReason('colorado');
       S.coRecords = S.coRecords.filter(r => r.id !== id);
       renderCoDashboard();
       renderCoHistory();
       showToast('Záznam smazán');
+      if (navigator.onLine) void runSync({ silent: true });
     } catch (err) {
       showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
     }
@@ -1081,6 +1103,7 @@ const syncApi = PrintGuardSync.createSync({
   cfg,
   el,
   idbClear,
+  idbAll,
   idbPut,
   loadAll,
   ls,
