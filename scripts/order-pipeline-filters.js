@@ -86,6 +86,7 @@
     if (filters.status && filters.status !== 'all') params.set('status', filters.status);
     params.set('reprint', filters.reprint || 'all');
     if (filters.q) params.set('q', filters.q);
+    if (filters.includeStats) params.set('includeStats', filters.includeStats);
     if (filters.month) params.set('month', filters.month);
     if ((filters.datePreset || '') === 'custom') {
       if (filters.from) params.set('from', filters.from);

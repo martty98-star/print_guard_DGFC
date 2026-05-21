@@ -243,6 +243,7 @@ const S = {
   postPurchaseFilter: 'open',
   postPurchaseSearch: '',
   postPurchaseSearchTimer: null,
+  postPurchaseAbortController: null,
   postPurchaseStatus: 'all',
   postPurchaseLimit: '50',
   postPurchaseOffset: 0,

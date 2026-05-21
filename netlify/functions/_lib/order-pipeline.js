@@ -4,6 +4,8 @@ const { ensurePrintOrdersTable } = require('./postpurchase-orders');
 const { ensureProcessedPrintOrderTables } = require('./processed-print-orders');
 
 let orderPipelineViewReady = false;
+const GLOBAL_STATS_TTL_MS = 45 * 1000;
+let globalStatsCache = null;
 
 function cleanString(value) {
   if (value == null) return null;
@@ -521,9 +523,44 @@ async function queryPipelineStats(client, filters) {
 async function getOrderPipelineStats(client, options = {}) {
   await ensureOrderPipelineView(client);
   const generatedAt = new Date().toISOString();
-  const global = await queryPipelineStats(client, { params: [], where: [] });
-  const scope = await queryPipelineStats(client, buildOrderPipelineFilters(options));
-  return { global, scope, generatedAt };
+  const includeGlobal = options.includeGlobal !== false;
+  const includeScope = Boolean(options.includeScope);
+  const timings = options.timings || null;
+  const stats = { generatedAt };
+
+  if (includeGlobal) {
+    const now = Date.now();
+    if (globalStatsCache && now < globalStatsCache.expiresAt) {
+      stats.global = globalStatsCache.value;
+      stats.globalCacheHit = true;
+      if (timings) {
+        timings.globalStatsMs = 0;
+        timings.globalStatsCacheHit = true;
+      }
+    } else {
+      const started = Date.now();
+      stats.global = await queryPipelineStats(client, { params: [], where: [] });
+      const duration = Date.now() - started;
+      globalStatsCache = {
+        value: stats.global,
+        generatedAt,
+        expiresAt: Date.now() + GLOBAL_STATS_TTL_MS,
+      };
+      stats.globalCacheHit = false;
+      if (timings) {
+        timings.globalStatsMs = duration;
+        timings.globalStatsCacheHit = false;
+      }
+    }
+  }
+
+  if (includeScope) {
+    const started = Date.now();
+    stats.scope = await queryPipelineStats(client, buildOrderPipelineFilters(options));
+    if (timings) timings.scopeStatsMs = Date.now() - started;
+  }
+
+  return stats;
 }
 
 async function listOrderPipeline(client, options = {}) {
@@ -539,6 +576,7 @@ async function listOrderPipeline(client, options = {}) {
   params.push(offset);
   const offsetParam = params.length;
 
+  const started = Date.now();
   const result = await client.query(
     `
       select
@@ -584,6 +622,7 @@ async function listOrderPipeline(client, options = {}) {
     `,
     params
   );
+  if (options.timings) options.timings.rowsMs = Date.now() - started;
   const rows = result.rows.slice(0, limit).map(mapPipelineListRow);
   return {
     rows,

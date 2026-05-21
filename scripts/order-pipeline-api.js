@@ -37,6 +37,7 @@
     const res = await fetchImpl(buildOrderPipelineUrl(options.filters || {}), {
       headers: options.headers || {},
       cache: 'no-store',
+      signal: options.signal,
     });
     return readJsonResponse(res, t('processed.error.pipeline-load'));
   }

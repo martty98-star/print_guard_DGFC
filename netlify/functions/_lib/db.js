@@ -196,7 +196,7 @@ function requireAdminPin(event) {
   return requireAdminAccess(event);
 }
 
-async function withClient(run) {
+async function withClient(run, options = {}) {
   const connectionString = getConnectionString();
   if (!connectionString) {
     throw new Error('Missing database connection string');
@@ -207,7 +207,11 @@ async function withClient(run) {
     ssl: { rejectUnauthorized: false },
   });
 
+  const connectStart = Date.now();
   await client.connect();
+  if (options && typeof options.onTiming === 'function') {
+    options.onTiming('dbConnectMs', Date.now() - connectStart);
+  }
 
   try {
     return await run(client);

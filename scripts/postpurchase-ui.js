@@ -95,6 +95,30 @@
     return state.S.postPurchaseOrders || [];
   }
 
+  function hasScopedStatsFilter(filters) {
+    return Boolean(
+      (filters.q || '').trim() ||
+      filters.status !== 'all' ||
+      filters.reprint !== 'all' ||
+      filters.month ||
+      filters.datePreset !== 'this_month' ||
+      filters.from ||
+      filters.to
+    );
+  }
+
+  function buildOrderPipelineFilters(append) {
+    const filters = Filters.getFiltersFromState(state.S);
+    if (append) {
+      filters.includeStats = 'none';
+    } else if (hasScopedStatsFilter(filters)) {
+      filters.includeStats = 'global,scope';
+    } else {
+      filters.includeStats = 'global';
+    }
+    return filters;
+  }
+
   function getProcessedOrderId(row) {
     return row && (row.processedOrderId || row.id);
   }
@@ -246,7 +270,10 @@
 
   async function loadPostPurchaseOrders(force = false, options = {}) {
     const append = Boolean(options.append);
-    if (state.S.postPurchaseLoading) return;
+    if (state.S.postPurchaseLoading) {
+      if (append) return;
+      if (state.S.postPurchaseAbortController) state.S.postPurchaseAbortController.abort();
+    }
     if (state.S.postPurchaseLoaded && !force && !append) {
       renderPostPurchaseOrders();
       return;
@@ -254,6 +281,8 @@
     if (!state.requirePostPurchasePinForScreen()) return;
 
     if (!append) state.S.postPurchaseOffset = 0;
+    const controller = !append && typeof AbortController !== 'undefined' ? new AbortController() : null;
+    if (controller) state.S.postPurchaseAbortController = controller;
     state.S.postPurchaseLoading = true;
     state.elSet('postpurchase-status', t('processed.status.loading'));
     const wrap = state.el('postpurchase-orders-wrap');
@@ -265,7 +294,8 @@
       const payload = await Api.loadOrderPipeline({
         fetchImpl: state.fetchImpl,
         headers: state.postPurchaseHeaders(),
-        filters: Filters.getFiltersFromState(state.S),
+        filters: buildOrderPipelineFilters(append),
+        signal: controller ? controller.signal : undefined,
       });
       const rows = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseOrders = append ? (state.S.postPurchaseOrders || []).concat(rows) : rows;
@@ -278,6 +308,7 @@
       updateFilterControls();
       renderPostPurchaseOrders();
     } catch (error) {
+      if (error && error.name === 'AbortError') return;
       console.error('Order pipeline load failed', error);
       const message = cleanApiError(error);
       if (wrap && !(state.S.postPurchaseOrders || []).length) {
@@ -289,7 +320,10 @@
       state.elSet('postpurchase-status', t('processed.status.load-failed'));
       state.showToast(message, 'error');
     } finally {
-      state.S.postPurchaseLoading = false;
+      if (!controller || state.S.postPurchaseAbortController === controller) {
+        state.S.postPurchaseLoading = false;
+        if (controller) state.S.postPurchaseAbortController = null;
+      }
     }
   }
 
