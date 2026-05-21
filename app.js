@@ -243,6 +243,7 @@ const S = {
   postPurchaseFilter: 'open',
   postPurchaseSearch: '',
   postPurchaseSearchTimer: null,
+  postPurchaseStatus: 'all',
   postPurchaseLimit: '50',
   postPurchaseOffset: 0,
   postPurchaseHasMore: false,
@@ -1506,6 +1507,10 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseDatePreset = e.target.value || 'this_month';
     loadPostPurchaseOrders(true);
   });
+  el('postpurchase-status-filter')?.addEventListener('change', e => {
+    S.postPurchaseStatus = e.target.value || 'all';
+    loadPostPurchaseOrders(true);
+  });
   el('postpurchase-date-from')?.addEventListener('change', e => {
     S.postPurchaseDateFrom = e.target.value || '';
     if (S.postPurchaseDateFrom || S.postPurchaseDateTo) S.postPurchaseDatePreset = 'custom';
@@ -1528,9 +1533,11 @@ el('sync-btn').addEventListener('click', async () => {
     S.postPurchaseDatePreset = 'this_month';
     S.postPurchaseDateFrom = '';
     S.postPurchaseDateTo = '';
+    S.postPurchaseStatus = 'all';
     S.postPurchaseReprint = 'all';
     if (el('postpurchase-search')) el('postpurchase-search').value = '';
     if (el('postpurchase-date-preset')) el('postpurchase-date-preset').value = 'this_month';
+    if (el('postpurchase-status-filter')) el('postpurchase-status-filter').value = 'all';
     if (el('postpurchase-date-from')) el('postpurchase-date-from').value = '';
     if (el('postpurchase-date-to')) el('postpurchase-date-to').value = '';
     if (el('postpurchase-reprint-filter')) el('postpurchase-reprint-filter').value = 'all';

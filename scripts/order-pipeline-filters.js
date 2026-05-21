@@ -67,6 +67,7 @@
       datePreset: S.postPurchaseDatePreset || 'this_month',
       from: S.postPurchaseDateFrom || '',
       to: S.postPurchaseDateTo || '',
+      status: S.postPurchaseStatus || 'all',
       reprint: S.postPurchaseReprint || 'all',
       month: S.postPurchaseMonth || '',
       q: getSearchFromState(S),
@@ -82,6 +83,7 @@
     params.set('limit', filters.limit || '50');
     params.set('offset', filters.offset || '0');
     params.set('datePreset', filters.datePreset || 'this_month');
+    if (filters.status && filters.status !== 'all') params.set('status', filters.status);
     params.set('reprint', filters.reprint || 'all');
     if (filters.q) params.set('q', filters.q);
     if (filters.month) params.set('month', filters.month);

@@ -52,6 +52,7 @@ exports.handler = async function handler(event) {
         datePreset: query.datePreset,
         from: query.from,
         to: query.to,
+        status: query.status,
         reprint: query.reprint,
       });
       const months = query.includeMonths === '1' ? await listPipelineMonths(client) : [];

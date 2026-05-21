@@ -390,6 +390,38 @@ function addReprintFilter(where, value) {
   }
 }
 
+function addStatusFilter(where, value) {
+  const status = cleanString(value) || 'all';
+  if (status === 'all') return;
+  if (status === 'needs_attention') {
+    where.push(`(
+      pipeline_status = 'received_only'
+      or pipeline_status = 'processed_without_received'
+      or coalesce(reprint_pending_count, 0) > 0
+    )`);
+    return;
+  }
+  if (status === 'received_only' || status === 'unprocessed') {
+    where.push(`pipeline_status = 'received_only'`);
+    return;
+  }
+  if (status === 'processed') {
+    where.push(`processed_order_id is not null`);
+    return;
+  }
+  if (status === 'reprint_pending') {
+    where.push(`coalesce(reprint_pending_count, 0) > 0`);
+    return;
+  }
+  if (status === 'no_api_match') {
+    where.push(`pipeline_status = 'processed_without_received'`);
+    return;
+  }
+  if (status === 'has_reprint') {
+    where.push(`(coalesce(reprint_request_count, 0) > 0 or coalesce(reprint_record_count, 0) > 0)`);
+  }
+}
+
 async function listOrderPipeline(client, options = {}) {
   await ensureOrderPipelineView(client);
   const limit = clampLimit(options.limit);
@@ -401,6 +433,7 @@ async function listOrderPipeline(client, options = {}) {
   const where = [];
 
   addDateRangeFilter(where, params, options);
+  addStatusFilter(where, options.status);
   addReprintFilter(where, options.reprint);
 
   if (month) {

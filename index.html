@@ -616,10 +616,19 @@
           <option value="last_month" data-i18n="processed.date.last-month">Minulý měsíc</option>
           <option value="custom" data-i18n="processed.date.custom">Vlastní rozsah</option>
         </select>
+        <select id="postpurchase-status-filter" class="input-sm">
+          <option value="all" data-i18n="processed.status.all">Všechny objednávky</option>
+          <option value="needs_attention" data-i18n="processed.status.needs-attention">K řešení</option>
+          <option value="received_only" data-i18n="processed.status.unprocessed">Nezpracované</option>
+          <option value="processed" data-i18n="processed.status.processed">Zpracované</option>
+          <option value="reprint_pending" data-i18n="processed.status.reprint-pending">Reprint čeká</option>
+          <option value="no_api_match" data-i18n="processed.status.no-api-match">Bez API páru</option>
+          <option value="has_reprint" data-i18n="processed.status.has-reprint">Má reprint</option>
+        </select>
         <input type="date" id="postpurchase-date-from" class="input-sm" aria-label="From date">
         <input type="date" id="postpurchase-date-to" class="input-sm" aria-label="To date">
         <select id="postpurchase-reprint-filter" class="input-sm">
-          <option value="all" data-i18n="processed.reprint.all">Všechny reprinty</option>
+          <option value="all" data-i18n="processed.reprint.all">Všechny objednávky</option>
           <option value="has_reprint" data-i18n="processed.reprint.has">Má reprint</option>
           <option value="pending" data-i18n="processed.reprint.pending">Reprint čeká</option>
           <option value="completed" data-i18n="processed.reprint.completed">Reprint hotový</option>

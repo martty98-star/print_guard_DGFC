@@ -61,10 +61,12 @@
 
   function updateFilterControls() {
     const preset = state.el('postpurchase-date-preset');
+    const status = state.el('postpurchase-status-filter');
     const from = state.el('postpurchase-date-from');
     const to = state.el('postpurchase-date-to');
     const reprint = state.el('postpurchase-reprint-filter');
     if (preset) preset.value = state.S.postPurchaseDatePreset || 'this_month';
+    if (status) status.value = state.S.postPurchaseStatus || 'all';
     if (from) from.value = state.S.postPurchaseDateFrom || '';
     if (to) to.value = state.S.postPurchaseDateTo || '';
     if (reprint) reprint.value = state.S.postPurchaseReprint || 'all';
@@ -290,14 +292,18 @@
     if (!wrap) return;
     const rows = getVisibleOrders();
     const searchActive = Boolean((state.S.postPurchaseSearch || '').trim());
+    const statusSelect = state.el('postpurchase-status-filter');
+    const activeStatusLabel = state.S.postPurchaseStatus && state.S.postPurchaseStatus !== 'all'
+      ? String(statusSelect && statusSelect.selectedOptions && statusSelect.selectedOptions[0] ? statusSelect.selectedOptions[0].textContent : '').trim()
+      : '';
     wrap.innerHTML = Render.renderOrders(rows, getRenderOptions())
       + (state.S.postPurchaseHasMore
         ? `<div class="pp-load-more-wrap"><button class="btn-sm" type="button" data-pp-load-more="true">${t('processed.button.load-more')}</button></div>`
         : '');
     bindProcessedOrderActions(wrap);
     state.elSet('postpurchase-status', searchActive
-      ? `${rows.length} ${t('processed.status.search-results')}`
-      : `${rows.length} ${t('processed.status.rows')}`);
+      ? `${rows.length} ${t('processed.status.search-results')}${activeStatusLabel ? ` · ${activeStatusLabel}` : ''}`
+      : `${rows.length} ${t('processed.status.rows')}${activeStatusLabel ? ` · ${activeStatusLabel}` : ''}`);
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
 
