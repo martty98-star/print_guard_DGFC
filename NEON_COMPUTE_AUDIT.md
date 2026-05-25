@@ -49,5 +49,5 @@
 - `/.netlify/functions/sync` still returns all local stock JSON blobs on pull. That preserves behavior but can be expensive as history grows.
 - Print-log summary still performs heavy aggregate CTEs. The new indexes help, but the UI should keep date filters active for normal use.
 - Push stock alerts still load all stock movements to compute candidates in JavaScript.
-- Legacy DB aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`) still exist in several helpers. A stale alias can still point a workload at the wrong database.
+- Legacy DB aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`) still exist in several helpers after `NEON_DATABASE_URL`. A stale alias can still point a workload at the wrong database if the canonical key is missing.
 - Full-state sync still cannot represent deletions cleanly. Delta sync / tombstones are still the next major architecture step.

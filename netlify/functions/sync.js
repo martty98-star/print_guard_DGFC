@@ -182,8 +182,8 @@ async function batchUpsertCoRecords(client, coRecords) {
 }
 
 export async function handler(event) {
-  const conn = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
-  if (!conn) return resp(500, { ok: false, error: "Missing NETLIFY_DATABASE_URL" });
+  const conn = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+  if (!conn) return resp(500, { ok: false, error: "Missing NEON_DATABASE_URL" });
 
   if (event.httpMethod === "DELETE") {
     try {

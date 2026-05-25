@@ -4,9 +4,9 @@ const { Client } = require('pg');
 
 function getConnectionString() {
   const value =
-    process.env.NETLIFY_DATABASE_URL ||
-    process.env.DATABASE_URL ||
     process.env.NEON_DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    process.env.NETLIFY_DATABASE_URL ||
     '';
 
   return typeof value === 'string' ? value.trim() : '';

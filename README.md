@@ -21,7 +21,7 @@ Legacy aliases `DATABASE_URL` and `NETLIFY_DATABASE_URL` still exist in some hel
 Runtime database precedence is:
 
 ```text
-NETLIFY_DATABASE_URL -> DATABASE_URL -> NEON_DATABASE_URL
+NEON_DATABASE_URL -> DATABASE_URL -> NETLIFY_DATABASE_URL
 ```
 
 If more than one of these keys exists in Netlify, the first non-empty value wins. Keep only the intended production value in sync across deploy contexts, or preferably use a single canonical key, to avoid silent mismatches after credential or ownership migrations.

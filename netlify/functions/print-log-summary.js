@@ -15,9 +15,9 @@ function resp(statusCode, body) {
 
 async function withClient(run) {
   const conn =
-    process.env.NETLIFY_DATABASE_URL ||
+    process.env.NEON_DATABASE_URL ||
     process.env.DATABASE_URL ||
-    process.env.NEON_DATABASE_URL;
+    process.env.NETLIFY_DATABASE_URL;
   if (!conn) throw new Error("Missing database connection string");
   const client = new Client({
     connectionString: conn,

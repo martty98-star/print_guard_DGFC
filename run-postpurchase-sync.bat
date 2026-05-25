@@ -6,7 +6,6 @@ rem Fill in the values below before running on the target server.
 
 set "POST_PURCHASE_API_BASE_URL=https://post-purchase.desen.io"
 set "POST_PURCHASE_API_TOKEN=REPLACE_WITH_POST_PURCHASE_API_TOKEN"
-set "NEON_DATABASE_URL=REPLACE_WITH_NEON_DATABASE_URL"
 set "POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE=desenio_dgfc_printer"
 
 set "POST_PURCHASE_API_ORDERS_PATH=/api/purchase-order/get"
@@ -22,6 +21,12 @@ echo [%date% %time%] Post Purchase sync start >> "%LOG_FILE%"
 echo [%date% %time%] POST_PURCHASE_API_BASE_URL=%POST_PURCHASE_API_BASE_URL% >> "%LOG_FILE%"
 echo [%date% %time%] POST_PURCHASE_API_ORDERS_PATH=%POST_PURCHASE_API_ORDERS_PATH% >> "%LOG_FILE%"
 echo [%date% %time%] POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE=%POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE% >> "%LOG_FILE%"
+
+if "%NEON_DATABASE_URL%"=="" (
+  echo [%date% %time%] ERROR: NEON_DATABASE_URL is not configured >> "%LOG_FILE%"
+  echo NEON_DATABASE_URL is not configured. Check "%LOG_FILE%".
+  exit /b 1
+)
 
 cd /d "%ROOT_DIR%"
 where node >> "%LOG_FILE%" 2>&1
