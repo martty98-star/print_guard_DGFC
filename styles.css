@@ -586,6 +586,75 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   margin: 14px 0 10px;
 }
+.pp-filter-panel {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 4px;
+}
+.pp-filter-search-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pp-filter-search-row input[type=search] {
+  flex: 1 1 340px;
+  min-width: min(100%, 340px);
+}
+.pp-filter-search-row .btn-sm {
+  flex: 0 0 auto;
+}
+.pp-filter-chip-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pp-filter-chip {
+  border-color: var(--border-2);
+  background: var(--bg4);
+  color: var(--text-dim);
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: none;
+}
+.pp-filter-chip.active,
+.pp-filter-chip[aria-pressed="true"] {
+  border-color: var(--accent-light);
+  color: var(--text);
+  background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1px rgba(92, 128, 184, .12);
+}
+.pp-filter-advanced {
+  border: 1px solid var(--border);
+  background: var(--bg4);
+  padding: 10px 12px;
+}
+.pp-filter-advanced summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
+.pp-advanced-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.pp-advanced-grid .form-group {
+  min-width: 0;
+}
+.pp-advanced-grid .form-group label {
+  font-size: .58rem;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
+.pp-advanced-grid .input-sm,
+.pp-advanced-grid select,
+.pp-advanced-grid input[type=date] {
+  width: 100%;
+}
 .pp-filter-row {
   display: flex;
   gap: 8px;
@@ -1294,6 +1363,24 @@ textarea { resize: vertical; min-height: 58px; }
   border-color: rgba(92, 128, 184, .45);
   box-shadow: inset 3px 0 0 rgba(92, 128, 184, .3);
 }
+.pp-processed-card.pp-processed-card--resolving,
+.pp-processed-card.pipeline-card--resolving {
+  border-color: rgba(92, 128, 184, .5);
+  box-shadow: inset 3px 0 0 rgba(92, 128, 184, .48);
+  background: linear-gradient(180deg, rgba(92, 128, 184, .06) 0%, var(--bg4) 24%);
+}
+.pp-processed-card.pp-processed-card--resolved,
+.pp-processed-card.pipeline-card--resolved {
+  border-color: rgba(58, 142, 93, .65);
+  box-shadow: inset 3px 0 0 rgba(58, 142, 93, .55);
+  background: linear-gradient(180deg, rgba(58, 142, 93, .08) 0%, var(--bg4) 24%);
+}
+.pp-processed-card.pp-processed-card--error,
+.pp-processed-card.pipeline-card--error {
+  border-color: rgba(180, 95, 80, .65);
+  box-shadow: inset 3px 0 0 rgba(180, 95, 80, .56);
+  background: linear-gradient(180deg, rgba(180, 95, 80, .08) 0%, var(--bg4) 24%);
+}
 .pp-card-section {
   border-top: 1px solid var(--border);
   padding-top: 12px;
@@ -1311,6 +1398,22 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
   color: var(--text-dim);
   font-size: .76rem;
+}
+.pp-reprint-action-state {
+  display: flex;
+  align-items: center;
+  gap: 8px 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.pp-reprint-action-state span:last-of-type {
+  color: var(--text-dim);
+}
+.pp-reprint-action-state.error span:last-of-type {
+  color: var(--crit);
+}
+.pp-reprint-action-state button {
+  flex: 0 0 auto;
 }
 .pp-tech-details summary {
   color: var(--text-faint);
@@ -1377,6 +1480,7 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-pipeline-badge.pdf { border-color: rgba(80, 150, 110, .35); }
 .pp-pipeline-badge.reprint { border-color: rgba(92, 128, 184, .55); color: var(--accent); background: var(--accent-bg); }
 .pp-pipeline-badge.done { border-color: var(--ok); color: var(--ok); background: var(--ok-dim); }
+.pp-pipeline-badge.error { border-color: var(--crit); color: var(--crit); background: var(--crit-dim); }
 .pp-pipeline-badge.missing { border-color: rgba(180, 95, 80, .4); color: var(--crit); }
 .pp-pipeline-badge.orphan { border-color: rgba(160, 130, 70, .4); }
 .pp-missing-warning {
@@ -1778,6 +1882,9 @@ textarea { resize: vertical; min-height: 58px; }
     flex-direction: column;
     align-items: stretch;
   }
+  .pp-advanced-grid {
+    grid-template-columns: 1fr;
+  }
   .pp-processed-time {
     white-space: normal;
   }
@@ -2023,11 +2130,6 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .pp-orders-toolbar .btn-sm {
   flex: 0 1 auto;
-}
-.pp-quick-filter-actions {
-  justify-content: flex-start;
-  gap: 8px;
-  margin-top: 6px;
 }
 .checklist-form-head {
   padding: 0;

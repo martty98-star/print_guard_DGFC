@@ -33,6 +33,9 @@
     fetchImpl: null,
     reprintPendingKeys: new Set(),
     reprintHistoryByKey: new Map(),
+    reprintActionStateByKey: new Map(),
+    reprintStateTimers: new Map(),
+    reprintRefreshTimer: null,
   };
 
   function initPostPurchaseUI(deps) {
@@ -40,6 +43,10 @@
     if (!state.S || !state.cfg || !state.el || !state.elSet) {
       throw new Error('Missing Processed Print Orders UI dependencies');
     }
+    if (!(state.reprintPendingKeys instanceof Set)) state.reprintPendingKeys = new Set();
+    if (!(state.reprintHistoryByKey instanceof Map)) state.reprintHistoryByKey = new Map();
+    if (!(state.reprintActionStateByKey instanceof Map)) state.reprintActionStateByKey = new Map();
+    if (!(state.reprintStateTimers instanceof Map)) state.reprintStateTimers = new Map();
   }
 
   function cleanApiError(error) {
@@ -61,19 +68,127 @@
 
   function updateFilterControls() {
     const preset = state.el('postpurchase-date-preset');
-    const status = state.el('postpurchase-status-filter');
+    const month = state.el('postpurchase-month-filter');
     const from = state.el('postpurchase-date-from');
     const to = state.el('postpurchase-date-to');
     const reprint = state.el('postpurchase-reprint-filter');
-    const unprocessedQuick = state.el('postpurchase-only-unprocessed-btn');
-    const reprintQuick = state.el('postpurchase-reprint-backlog-btn');
+    const advanced = document.querySelector('.pp-filter-advanced');
     if (preset) preset.value = state.S.postPurchaseDatePreset || 'this_month';
-    if (status) status.value = state.S.postPurchaseStatus || 'all';
+    if (month) month.value = state.S.postPurchaseMonth || '';
     if (from) from.value = state.S.postPurchaseDateFrom || '';
     if (to) to.value = state.S.postPurchaseDateTo || '';
     if (reprint) reprint.value = state.S.postPurchaseReprint || 'all';
-    if (unprocessedQuick) unprocessedQuick.classList.toggle('active', state.S.postPurchaseStatus === 'received_only');
-    if (reprintQuick) reprintQuick.classList.toggle('active', state.S.postPurchaseStatus === 'reprint_pending');
+    if (advanced) {
+      advanced.open = Boolean(
+        (state.S.postPurchaseReprint || 'all') !== 'all' ||
+        Boolean(state.S.postPurchaseMonth) ||
+        Boolean(state.S.postPurchaseDateFrom) ||
+        Boolean(state.S.postPurchaseDateTo) ||
+        (state.S.postPurchaseDatePreset || 'this_month') !== 'this_month'
+      );
+    }
+    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
+      const active = (button.dataset.postpurchaseStatus || 'all') === (state.S.postPurchaseStatus || 'all');
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function getQuickFilterLabel(status) {
+    const normalized = String(status || 'all');
+    const labels = {
+      all: 'processed.quick.all',
+      needs_attention: 'processed.quick.attention',
+      received_only: 'processed.quick.unprocessed',
+      reprint_pending: 'processed.quick.reprint-backlog',
+      no_api_match: 'processed.quick.no-api-match',
+    };
+    return t(labels[normalized] || labels.all);
+  }
+
+  function getReprintFilterLabel(reprint) {
+    const normalized = String(reprint || 'all');
+    const labels = {
+      all: 'processed.reprint.all',
+      has_reprint: 'processed.reprint.has',
+      pending: 'processed.reprint.pending',
+      completed: 'processed.reprint.completed',
+      none: 'processed.reprint.none',
+    };
+    return t(labels[normalized] || labels.all);
+  }
+
+  function getActiveFilterLabel(filters) {
+    if (!filters) return '';
+    if (filters.status && filters.status !== 'all') return getQuickFilterLabel(filters.status);
+    if (filters.reprint && filters.reprint !== 'all') return getReprintFilterLabel(filters.reprint);
+    if (filters.month) return `${t('processed.filters.month')}: ${filters.month}`;
+    if ((filters.datePreset || 'this_month') !== 'this_month') return t(`processed.date.${String(filters.datePreset || '').replace(/_/g, '-')}`) || String(filters.datePreset || '');
+    return '';
+  }
+
+  function setReprintActionState(key, nextState, options = {}) {
+    if (!key) return;
+    const current = state.reprintActionStateByKey.get(key) || {};
+    const value = {
+      ...current,
+      ...nextState,
+      updatedAt: Date.now(),
+    };
+    state.reprintActionStateByKey.set(key, value);
+    if (options.clearAfterMs != null) {
+      const existingTimer = state.reprintStateTimers.get(key);
+      if (existingTimer) clearTimeout(existingTimer);
+      const timer = setTimeout(() => {
+        state.reprintActionStateByKey.delete(key);
+        state.reprintStateTimers.delete(key);
+        renderPostPurchaseOrders();
+      }, options.clearAfterMs);
+      state.reprintStateTimers.set(key, timer);
+    }
+  }
+
+  function clearReprintActionState(key) {
+    if (!key) return;
+    const existingTimer = state.reprintStateTimers.get(key);
+    if (existingTimer) clearTimeout(existingTimer);
+    state.reprintStateTimers.delete(key);
+    state.reprintActionStateByKey.delete(key);
+  }
+
+  function markReprintHistoryDone(request) {
+    if (!request) return;
+    const key = Render.getReprintKey(request.orderId, request.printFilePath);
+    const history = state.reprintHistoryByKey.get(key);
+    if (Array.isArray(history)) {
+      history.forEach((entry) => {
+        if (entry && String(entry.status || '').toLowerCase() === 'pending') {
+          entry.status = request.status || 'done';
+          if (!entry.confirmedAt) entry.confirmedAt = request.confirmedAt || new Date().toISOString();
+        }
+      });
+      state.reprintHistoryByKey.set(key, history);
+    }
+    state.reprintPendingKeys.delete(key);
+  }
+
+  function adjustStatsAfterReprintResolve() {
+    const stats = state.S.postPurchaseStats;
+    if (!stats) return;
+    for (const bucket of ['global', 'scope']) {
+      const current = stats[bucket];
+      if (!current) continue;
+      current.reprintBacklog = Math.max(0, Number(current.reprintBacklog || 0) - 1);
+      current.needsAttention = Math.max(0, Number(current.needsAttention || 0) - 1);
+    }
+  }
+
+  function schedulePostPurchaseRefresh(delayMs = 1200) {
+    if (state.reprintRefreshTimer) clearTimeout(state.reprintRefreshTimer);
+    state.reprintRefreshTimer = setTimeout(() => {
+      state.reprintRefreshTimer = null;
+      loadPostPurchaseOrders(true);
+    }, delayMs);
   }
 
   function getOperatorName() {
@@ -84,6 +199,7 @@
     return {
       esc: state.esc,
       isAdmin: Boolean(state.cfg && state.cfg.role === 'admin' && state.cfg.adminPin),
+      reprintActionStateByKey: state.reprintActionStateByKey,
       reprintHistoryByKey: state.reprintHistoryByKey,
       reprintPendingKeys: state.reprintPendingKeys,
       stats: state.S.postPurchaseStats,
@@ -196,18 +312,35 @@
   }
 
   async function resolveReprintRequest(payload) {
+    const key = Render.getReprintKey(payload.orderId, payload.printFilePath);
+    setReprintActionState(key, {
+      state: 'resolving',
+      message: t('processed.action.reprint-resolving-text'),
+    });
+    renderPostPurchaseOrders();
     try {
-      await Api.resolveReprintRequest({
+      const result = await Api.resolveReprintRequest({
         fetchImpl: state.fetchImpl,
         headers: state.postPurchaseJsonHeaders(),
         payload,
       });
-      state.reprintPendingKeys.delete(Render.getReprintKey(payload.orderId, payload.printFilePath));
+      markReprintHistoryDone(result.request);
+      adjustStatsAfterReprintResolve();
       state.showToast(t('processed.toast.reprint-done'), 'success');
-      state.S.postPurchaseLoaded = false;
-      await loadPostPurchaseOrders(true);
+      setReprintActionState(key, {
+        state: 'resolved',
+        message: t('processed.action.reprint-resolved-text'),
+      }, { clearAfterMs: 2500 });
+      renderPostPurchaseOrders();
+      schedulePostPurchaseRefresh(1200);
+      return result;
     } catch (error) {
       console.error('Resolve reprint request failed', error);
+      setReprintActionState(key, {
+        state: 'error',
+        message: error && error.message ? error.message : t('processed.toast.reprint-resolve-failed'),
+      });
+      renderPostPurchaseOrders();
       state.showToast(error && error.message ? error.message : t('processed.toast.reprint-resolve-failed'), 'error');
       throw error;
     }
@@ -332,18 +465,15 @@
     if (!wrap) return;
     const rows = getVisibleOrders();
     const searchActive = Boolean((state.S.postPurchaseSearch || '').trim());
-    const statusSelect = state.el('postpurchase-status-filter');
-    const activeStatusLabel = state.S.postPurchaseStatus && state.S.postPurchaseStatus !== 'all'
-      ? String(statusSelect && statusSelect.selectedOptions && statusSelect.selectedOptions[0] ? statusSelect.selectedOptions[0].textContent : '').trim()
-      : '';
+    const activeFilterLabel = getActiveFilterLabel(Filters.getFiltersFromState(state.S));
     wrap.innerHTML = Render.renderOrders(rows, getRenderOptions())
       + (state.S.postPurchaseHasMore
         ? `<div class="pp-load-more-wrap"><button class="btn-sm" type="button" data-pp-load-more="true">${t('processed.button.load-more')}</button></div>`
         : '');
     bindProcessedOrderActions(wrap);
     state.elSet('postpurchase-status', searchActive
-      ? `${rows.length} ${t('processed.status.search-results')}${activeStatusLabel ? ` · ${activeStatusLabel}` : ''}`
-      : `${rows.length} ${t('processed.status.rows')}${activeStatusLabel ? ` · ${activeStatusLabel}` : ''}`);
+      ? `${rows.length} ${t('processed.status.search-results')}${activeFilterLabel ? ` · ${activeFilterLabel}` : ''}`
+      : `${rows.length} ${t('processed.status.rows')}${activeFilterLabel ? ` · ${activeFilterLabel}` : ''}`);
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
 
@@ -403,12 +533,9 @@
     });
     wrap.querySelectorAll('[data-resolve-reprint-order-id]').forEach((button) => {
       button.addEventListener('click', () => {
-        button.disabled = true;
         resolveReprintRequest({
           orderId: button.dataset.resolveReprintOrderId,
           printFilePath: button.dataset.resolvePrintFilePath || '',
-        }).catch(() => {
-          button.disabled = false;
         });
       });
     });

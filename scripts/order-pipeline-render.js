@@ -165,10 +165,16 @@
     return badges.join('');
   }
 
-  function renderActionNeeded(row) {
-    if (row.reprintPending) return `<span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span><span>${t('processed.action.reprint-pending-text')}</span>`;
+  function renderActionNeeded(row, options) {
+    const state = getRowReprintState(row, options);
+    if (state.state === 'resolving' || state.state === 'resolved' || state.state === 'error') {
+      return renderReprintStateBlock(row, state, options);
+    }
+    if (state.state === 'pending' || row.reprintPending) {
+      return `<span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span><span>${t('processed.action.reprint-pending-text')}</span>`;
+    }
     const xmlStatus = getXmlStatus(row);
-    if (xmlStatus) return `<span class="pp-pipeline-badge ${xmlStatusClass(xmlStatus)}">${xmlStatus}</span>`;
+    if (xmlStatus) return `<span class="pp-pipeline-badge ${xmlStatusClass(xmlStatus)}">${xmlStatus}</span><span>${t('processed.action.none-text')}</span>`;
     return `<span class="pp-pipeline-badge done">${t('processed.action.none')}</span><span>${t('processed.action.none-text')}</span>`;
   }
 
@@ -181,10 +187,90 @@
     return Array.isArray(history) ? history : [];
   }
 
+  function getReprintActionState(orderId, printFilePath, options) {
+    const key = getReprintKey(orderId, printFilePath);
+    const local = options.reprintActionStateByKey && options.reprintActionStateByKey.get(key);
+    if (local && local.state) {
+      return {
+        key,
+        printFilePath: printFilePath || '',
+        state: local.state,
+        message: local.message || '',
+      };
+    }
+
+    const history = getFileHistory(orderId, printFilePath, options);
+    const pending = history.some((entry) => String(entry.status || '').toLowerCase() === 'pending')
+      || Boolean(options.reprintPendingKeys && options.reprintPendingKeys.has(key));
+    if (pending) {
+      return { key, printFilePath: printFilePath || '', state: 'pending', message: '' };
+    }
+
+    return { key, printFilePath: printFilePath || '', state: 'idle', message: '' };
+  }
+
+  function getRowReprintState(row, options) {
+    const orderId = row && (row.processedOrderId || row.id);
+    if (!orderId) return { state: 'idle', key: '' };
+
+    const candidates = [{ key: getReprintKey(orderId, ''), printFilePath: '' }];
+    if (Array.isArray(row && row.printFiles)) {
+      row.printFiles.forEach((file) => {
+        candidates.push({ key: getReprintKey(orderId, file && file.printFilePath), printFilePath: file && file.printFilePath || '' });
+      });
+    }
+
+    const states = candidates.map((candidate) => getReprintActionState(orderId, candidate.printFilePath, options));
+    const precedence = ['error', 'resolving', 'resolved', 'pending', 'idle'];
+    for (const stateName of precedence) {
+      const found = states.find((entry) => entry.state === stateName);
+      if (found) return found;
+    }
+    return { state: 'idle', key: getReprintKey(orderId, ''), printFilePath: '' };
+  }
+
   function reprintStatusClass(status) {
     const normalized = String(status || '').toLowerCase();
     if (normalized === 'done' || normalized === 'completed' || normalized === 'resolved') return 'done';
     return 'reprint';
+  }
+
+  function renderReprintActionState(row, printFilePath, options) {
+    const esc = options.esc;
+    const orderId = row.processedOrderId || row.id;
+    const actionState = getReprintActionState(orderId, printFilePath, options);
+    return renderReprintStateBlock(row, actionState, options);
+  }
+
+  function renderReprintStateBlock(row, actionState, options) {
+    const esc = options.esc;
+    const orderId = row.processedOrderId || row.id;
+    if (actionState.state === 'resolving') {
+      return `<div class="pp-reprint-action-state resolving">
+        <span class="pp-pipeline-badge reprint">${t('processed.status.resolving')}</span>
+        <span>${esc(actionState.message || t('processed.action.reprint-resolving-text'))}</span>
+      </div>`;
+    }
+    if (actionState.state === 'resolved') {
+      return `<div class="pp-reprint-action-state resolved">
+        <span class="pp-pipeline-badge done">${t('processed.status.resolved')}</span>
+        <span>${esc(actionState.message || t('processed.action.reprint-resolved-text'))}</span>
+      </div>`;
+    }
+    if (actionState.state === 'error') {
+      return `<div class="pp-reprint-action-state error">
+        <span class="pp-pipeline-badge error">${t('processed.status.resolve-failed')}</span>
+        <span>${esc(actionState.message || t('processed.action.reprint-error-text'))}</span>
+        <button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="${esc(actionState.printFilePath || '')}">${t('processed.action.retry-resolve')}</button>
+      </div>`;
+    }
+    if (actionState.state === 'pending') {
+      return `<div class="pp-reprint-action-state pending">
+        <span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span>
+        <span>${t('processed.action.reprint-pending-text')}</span>
+      </div>`;
+    }
+    return '';
   }
 
   function renderReprintHistory(entries, esc, options) {
@@ -202,7 +288,14 @@
         </div>
         ${entry.note ? `<div class="pp-reprint-history-note">${esc(entry.note)}</div>` : ''}
         <div class="pp-file-actions">
-          ${entry.status === 'pending' ? `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(entry.orderId || '')}" data-resolve-print-file-path="${esc(entry.printFilePath || '')}">${t('processed.button.mark-reprinted')}</button><button class="btn-sm" type="button" data-delete-reprint-request-id="${esc(entry.id || '')}" data-delete-reprint-admin="false">${t('processed.button.cancel-request')}</button>` : ''}
+          ${entry.status === 'pending' ? (() => {
+            const actionState = getReprintActionState(entry.orderId, entry.printFilePath, options);
+            const buttonLabel = actionState.state === 'resolving'
+              ? t('processed.status.resolving')
+              : t('processed.button.mark-reprinted');
+            const buttonDisabled = actionState.state === 'resolving' ? 'disabled' : '';
+            return `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(entry.orderId || '')}" data-resolve-print-file-path="${esc(entry.printFilePath || '')}" ${buttonDisabled}>${buttonLabel}</button><button class="btn-sm" type="button" data-delete-reprint-request-id="${esc(entry.id || '')}" data-delete-reprint-admin="false">${t('processed.button.cancel-request')}</button>`;
+          })() : ''}
           ${options.isAdmin ? `<button class="btn-sm admin-only" type="button" data-delete-reprint-request-id="${esc(entry.id || '')}" data-delete-reprint-admin="true">${t('btn.delete')}</button>` : ''}
         </div>
       </div>`).join('')}
@@ -222,9 +315,10 @@
       const href = options.toFileHref(path);
       const orderId = row.processedOrderId || row.id;
       const history = getFileHistory(orderId, path, options);
-      const pendingEntry = history.find((entry) => entry.status === 'pending');
-      const pendingKey = getReprintKey(orderId, path);
-      const pending = Boolean(pendingEntry) || options.reprintPendingKeys.has(pendingKey);
+      const actionState = getReprintActionState(orderId, path, options);
+      const pending = actionState.state === 'pending' || actionState.state === 'resolving';
+      const resolved = actionState.state === 'resolved';
+      const errored = actionState.state === 'error';
       const reprintDisabled = !orderId || !path;
       return `<div class="pp-file-block">
         <div class="pp-file-row">
@@ -232,12 +326,14 @@
             <div class="pp-file-title">${esc(label)}</div>
             <div class="pp-file-path">${esc(path || '-')}</div>
           </div>
-          ${pending ? `<span class="pp-pipeline-badge reprint">${t('processed.action.reprint-pending')}</span>` : ''}
+          ${pending ? `<span class="pp-pipeline-badge reprint">${t(actionState.state === 'resolving' ? 'processed.status.resolving' : 'processed.action.reprint-pending')}</span>` : ''}
+          ${resolved ? `<span class="pp-pipeline-badge done">${t('processed.status.resolved')}</span>` : ''}
+          ${errored ? `<span class="pp-pipeline-badge error">${t('processed.status.resolve-failed')}</span>` : ''}
         </div>
         <div class="pp-file-actions">
           <button class="btn-sm" type="button" data-open-pdf-path="${esc(path)}" data-open-pdf-href="${esc(href)}">${t('processed.button.open-pdf')}</button>
           <button class="btn-sm" type="button" data-copy-path="${esc(path)}">${t('processed.button.copy-path')}</button>
-          ${pending ? '' : `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${t('processed.button.request-reprint')}</button>`}
+          ${actionState.state === 'idle' ? `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${t('processed.button.request-reprint')}</button>` : ''}
         </div>
         ${renderReprintHistory(history, esc, options)}
       </div>`;
@@ -249,13 +345,11 @@
     if (!row.hasDetail) {
       return '';
     }
-    const orderId = row.processedOrderId || row.id;
-    const history = getFileHistory(orderId, '', options);
-    const pendingKey = getReprintKey(orderId, '');
-    const pending = history.some((entry) => entry.status === 'pending') || options.reprintPendingKeys.has(pendingKey);
-    if (pending) {
-      return `<button class="btn-sm" type="button" data-resolve-reprint-order-id="${esc(orderId || '')}" data-resolve-print-file-path="">${t('processed.button.mark-full-reprinted')}</button>`;
+    const rowState = getRowReprintState(row, options);
+    if (rowState.state !== 'idle') {
+      return '';
     }
+    const orderId = row.processedOrderId || row.id;
     return `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="" data-print-file-label="${t('processed.full-order')}" ${orderId ? '' : 'disabled'}>${t('processed.button.full-reprint')}</button>`;
   }
 
@@ -312,7 +406,12 @@
       ${summary}
       ${orderedRows.map((row) => {
         const attentionState = getAttentionState(row);
-        const cardClass = attentionState ? ` pp-processed-card--${attentionState}` : '';
+        const reprintState = getRowReprintState(row, options);
+        const cardClass = [
+          attentionState ? `pp-processed-card--${attentionState}` : '',
+          reprintState.state && reprintState.state !== 'idle' ? `pp-processed-card--${reprintState.state}` : '',
+          reprintState.state && reprintState.state !== 'idle' ? `pipeline-card--${reprintState.state}` : '',
+        ].filter(Boolean).map((value) => ` ${value}`).join('');
         const attentionNote = attentionState === 'unprocessed'
           ? t('processed.status.unprocessed')
           : attentionState === 'reprint'
@@ -342,7 +441,7 @@
           </div>
         </section>
         <section class="pp-card-section pp-action-needed">
-          ${renderActionNeeded(row)}
+          ${renderActionNeeded(row, options)}
           <div class="pp-file-actions pp-full-reprint-actions">
           ${renderFullReprintAction(row, options)}
           </div>
