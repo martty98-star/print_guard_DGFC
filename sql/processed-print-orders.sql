@@ -12,16 +12,29 @@ create table if not exists processed_print_orders (
   workflow_name text null,
   order_type text null,
   print_files jsonb not null default '[]'::jsonb,
+  order_dedupe_key text null,
   source_xml_path text not null,
   source_xml_hash text not null,
+  ignored boolean not null default false,
+  ignore_reason text null,
   source_month text null,
   imported_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create unique index if not exists processed_print_orders_guid_idx
-  on processed_print_orders (guid)
-  where guid is not null;
+alter table processed_print_orders
+  add column if not exists order_dedupe_key text null;
+
+alter table processed_print_orders
+  add column if not exists ignored boolean not null default false;
+
+alter table processed_print_orders
+  add column if not exists ignore_reason text null;
+
+drop index if exists processed_print_orders_guid_idx;
+
+create index if not exists processed_print_orders_dedupe_key_idx
+  on processed_print_orders (order_dedupe_key);
 
 create index if not exists processed_print_orders_queued_idx
   on processed_print_orders (queued_date_time desc nulls last, id desc);

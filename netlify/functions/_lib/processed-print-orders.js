@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 let processedOrdersSchemaReady = false;
 
 function cleanString(value) {
@@ -47,17 +49,31 @@ function normalizePrintFiles(files) {
   })).filter((file) => file.printFilePath || file.pageSize);
 }
 
+function normalizePrintFilesForDedupe(files) {
+  return normalizePrintFiles(files)
+    .map((file) => ({
+      pageSize: file.pageSize,
+      copies: file.copies,
+      printFilePath: file.printFilePath,
+    }))
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+}
+
+function sha256(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function makeOrderDedupeKey(order) {
+  const payload = {
+    orderName: cleanString(order && order.orderName) || '',
+    orderType: normalizeOrderType(order && order.orderType),
+    printFiles: normalizePrintFilesForDedupe(order && order.printFiles),
+  };
+  return `stable:v1:${sha256(JSON.stringify(payload))}`;
+}
+
 function makeOrderKey(order) {
-  const guid = cleanString(order && order.guid);
-  if (guid) return `guid:${guid}`;
-  return [
-    'fallback',
-    normalizeOrderType(order && order.orderType),
-    cleanString(order && order.orderName) || '',
-    cleanString(order && order.xmlFileName) || '',
-    cleanString(order && order.sourceXmlPath) || '',
-    cleanString(order && order.sourceXmlHash) || '',
-  ].join('|');
+  return makeOrderDedupeKey(order);
 }
 
 async function ensureProcessedPrintOrderTables(client) {
@@ -78,14 +94,21 @@ async function ensureProcessedPrintOrderTables(client) {
       workflow_name text null,
       order_type text null,
       print_files jsonb not null default '[]'::jsonb,
+      order_dedupe_key text null,
       source_xml_path text not null,
       source_xml_hash text not null,
+      ignored boolean not null default false,
+      ignore_reason text null,
       source_month text null,
       imported_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
   `);
-  await client.query(`create unique index if not exists processed_print_orders_guid_idx on processed_print_orders (guid) where guid is not null`);
+  await client.query(`alter table processed_print_orders add column if not exists order_dedupe_key text null`);
+  await client.query(`alter table processed_print_orders add column if not exists ignored boolean not null default false`);
+  await client.query(`alter table processed_print_orders add column if not exists ignore_reason text null`);
+  await client.query(`drop index if exists processed_print_orders_guid_idx`);
+  await client.query(`create index if not exists processed_print_orders_dedupe_key_idx on processed_print_orders (order_dedupe_key)`);
   await client.query(`create index if not exists processed_print_orders_queued_idx on processed_print_orders (queued_date_time desc nulls last, id desc)`);
   await client.query(`create index if not exists processed_print_orders_source_month_idx on processed_print_orders (source_month)`);
   await client.query(`create index if not exists processed_print_orders_source_path_idx on processed_print_orders (source_xml_path)`);
@@ -164,6 +187,9 @@ function mapProcessedOrderRow(row) {
     printFiles: files,
     sourceXmlPath: row.source_xml_path,
     sourceXmlHash: row.source_xml_hash,
+    orderDedupeKey: row.order_dedupe_key,
+    ignored: Boolean(row.ignored),
+    ignoreReason: row.ignore_reason,
     sourceMonth: row.source_month,
     importedAt: row.imported_at instanceof Date ? row.imported_at.toISOString() : String(row.imported_at || ''),
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
@@ -198,7 +224,8 @@ async function upsertProcessedPrintOrder(client, input) {
   if (order.orderType === 'R') {
     order.guid = null;
   }
-  const orderKey = makeOrderKey(order);
+  const orderDedupeKey = makeOrderDedupeKey(order);
+  const orderKey = orderDedupeKey;
 
   const existing = await client.query(
     `select source_xml_hash from processed_print_orders where order_key = $1 limit 1`,
@@ -210,13 +237,13 @@ async function upsertProcessedPrintOrder(client, input) {
     `
       insert into processed_print_orders (
         order_key, order_name, xml_file_name, guid, status, order_date_time, queued_date_time,
-        printer_name, run_workflow, workflow_name, order_type, print_files,
-        source_xml_path, source_xml_hash, source_month, imported_at, updated_at
+        printer_name, run_workflow, workflow_name, order_type, print_files, order_dedupe_key,
+        source_xml_path, source_xml_hash, ignored, ignore_reason, source_month, imported_at, updated_at
       )
       values (
         $1, $2, $3, $4, $5, $6::timestamptz, $7::timestamptz,
-        $8, $9, $10, $11, $12::jsonb,
-        $13, $14, $15, now(), now()
+        $8, $9, $10, $11, $12::jsonb, $13,
+        $14, $15, false, null, $16, now(), now()
       )
       on conflict (order_key) do update
       set
@@ -225,12 +252,13 @@ async function upsertProcessedPrintOrder(client, input) {
         guid = excluded.guid,
         status = excluded.status,
         order_date_time = excluded.order_date_time,
-        queued_date_time = excluded.queued_date_time,
+        queued_date_time = least(processed_print_orders.queued_date_time, excluded.queued_date_time),
         printer_name = excluded.printer_name,
         run_workflow = excluded.run_workflow,
         workflow_name = excluded.workflow_name,
         order_type = excluded.order_type,
         print_files = excluded.print_files,
+        order_dedupe_key = excluded.order_dedupe_key,
         source_xml_path = excluded.source_xml_path,
         source_xml_hash = excluded.source_xml_hash,
         source_month = excluded.source_month,
@@ -253,6 +281,7 @@ async function upsertProcessedPrintOrder(client, input) {
       order.workflowName,
       order.orderType,
       JSON.stringify(order.printFiles),
+      orderDedupeKey,
       order.sourceXmlPath,
       order.sourceXmlHash,
       order.sourceMonth,
@@ -281,6 +310,7 @@ async function listProcessedPrintOrders(client, options = {}) {
     params.push(month);
     where.push(`source_month = $${params.length}`);
   }
+  where.push(`coalesce(ignored, false) = false`);
   if (search) {
     params.push(`%${search}%`);
     params.push(`%${normalizedSearch}%`);
@@ -321,6 +351,7 @@ async function listProcessedOrderMonths(client) {
     select source_month
     from processed_print_orders
     where source_month is not null
+      and coalesce(ignored, false) = false
     group by source_month
     order by source_month desc
     limit 36
@@ -334,7 +365,7 @@ async function createReprintRequest(client, input) {
   if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
 
   const orderResult = await client.query(
-    `select id, order_name, print_files from processed_print_orders where id = $1 limit 1`,
+    `select id, order_name, print_files from processed_print_orders where id = $1 and coalesce(ignored, false) = false limit 1`,
     [orderId]
   );
   const order = orderResult.rows[0];
@@ -518,6 +549,8 @@ module.exports = {
   createReprintRequest,
   deleteReprintRequest,
   ensureProcessedPrintOrderTables,
+  makeOrderDedupeKey,
+  makeOrderKey,
   listProcessedOrderMonths,
   listProcessedPrintOrders,
   listKnownProcessedXmlHashes,

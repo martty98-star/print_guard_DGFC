@@ -32,7 +32,8 @@ incoming_pipeline as (
   left join lateral (
     select p.*
     from processed_print_orders p
-    where p.order_name = any(array_remove(array[
+    where coalesce(p.ignored, false) = false
+      and p.order_name = any(array_remove(array[
       i.order_number,
       i.external_order_id,
       i.customer_order_id
@@ -64,7 +65,8 @@ processed_orphans as (
     p.source_xml_path,
     p.source_month
   from processed_print_orders p
-  where not exists (
+  where coalesce(p.ignored, false) = false
+    and not exists (
     select 1
     from print_orders_received i
     where p.order_name = any(array_remove(array[

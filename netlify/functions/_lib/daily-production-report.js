@@ -168,6 +168,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
         count(*) filter (where upper(coalesce(order_type, 'S')) = 'R')::int as reprint_xml_count
       from public.processed_print_orders
       where ${zonedTimestamptzDayFilter(processedDateColumn)}
+        and coalesce(ignored, false) = false
     `, [date, TIMEZONE]),
     client.query(`
       select
@@ -183,6 +184,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
           select 1
           from public.processed_print_orders p
           where upper(coalesce(p.order_type, 'S')) <> 'R'
+            and coalesce(p.ignored, false) = false
             and ${match}
         )
     `, [date, TIMEZONE]),
@@ -190,6 +192,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
       select count(*)::int as count
       from public.processed_print_orders p
       where ${zonedTimestamptzDayFilter(processedDateColumn)}
+        and coalesce(p.ignored, false) = false
         and upper(coalesce(p.order_type, 'S')) <> 'R'
         and not exists (
           select 1
@@ -201,6 +204,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
       select count(*)::int as count
       from public.processed_print_orders p
       where upper(coalesce(p.order_type, 'S')) <> 'R'
+        and coalesce(p.ignored, false) = false
         and not exists (
           select 1
           from public.print_orders_received i
@@ -227,6 +231,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
           select 1
           from public.processed_print_orders p
           where upper(coalesce(p.order_type, 'S')) <> 'R'
+            and coalesce(p.ignored, false) = false
             and ${match}
         )
     `, [date, TIMEZONE, slaMinutes]),
