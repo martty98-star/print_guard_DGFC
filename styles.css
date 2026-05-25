@@ -595,13 +595,47 @@ textarea { resize: vertical; min-height: 58px; }
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-}
-.pp-filter-search-row input[type=search] {
-  flex: 1 1 340px;
-  min-width: min(100%, 340px);
+  align-items: center;
 }
 .pp-filter-search-row .btn-sm {
   flex: 0 0 auto;
+}
+.pp-search-field {
+  display: flex;
+  align-items: center;
+  flex: 1 1 360px;
+  min-width: min(100%, 360px);
+  background: var(--bg4);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+}
+.pp-search-field:focus-within {
+  border-color: var(--accent-light);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.pp-search-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  color: var(--text-faint);
+}
+.pp-search-field input[type=search] {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: .78rem;
+  padding: 8px 10px 8px 0;
+  outline: none;
+  box-shadow: none;
+}
+.pp-search-field input[type=search]::placeholder {
+  color: var(--text-faint);
 }
 .pp-filter-chip-group {
   display: flex;
@@ -1882,6 +1916,22 @@ textarea { resize: vertical; min-height: 58px; }
     flex-direction: column;
     align-items: stretch;
   }
+  .pp-orders-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pp-toolbar-pin,
+  .pp-toolbar-actions {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .pp-toolbar-actions {
+    justify-content: flex-start;
+  }
+  .pp-toolbar-pin .input-sm {
+    width: 100%;
+    max-width: none;
+  }
   .pp-advanced-grid {
     grid-template-columns: 1fr;
   }
@@ -2117,19 +2167,26 @@ textarea { resize: vertical; min-height: 58px; }
   flex-wrap: wrap;
 }
 .pp-orders-toolbar {
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 0;
 }
-.pp-orders-toolbar .checklist-toolbar-actions {
-  flex: 1;
+.pp-toolbar-pin {
+  flex: 0 1 260px;
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+}
+.pp-toolbar-pin .input-sm {
+  width: min(100%, 260px);
+}
+.pp-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   justify-content: flex-end;
-}
-.pp-orders-toolbar #postpurchase-pin {
-  flex: 1 1 190px;
-  max-width: 260px;
-}
-.pp-orders-toolbar .btn-sm {
-  flex: 0 1 auto;
+  align-items: center;
+  flex: 1 1 auto;
 }
 .checklist-form-head {
   padding: 0;

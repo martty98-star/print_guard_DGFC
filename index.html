@@ -597,8 +597,10 @@
     </div>
     <section class="settings-card">
       <div class="checklist-toolbar pp-orders-toolbar">
-        <div class="checklist-toolbar-actions">
+        <div class="pp-toolbar-pin">
           <input type="password" id="postpurchase-pin" class="input-sm" placeholder="PIN operátora" autocomplete="off" data-i18n-placeholder="processed.pin.placeholder">
+        </div>
+        <div class="pp-toolbar-actions">
           <button class="btn-sm" id="postpurchase-unlock-btn" data-i18n="processed.unlock">Odemknout</button>
           <button class="btn-sm" id="postpurchase-lock-btn" data-i18n="processed.lock">Zamknout</button>
           <button class="btn-sm" id="postpurchase-refresh-btn" data-i18n="btn.refresh">Obnovit</button>
@@ -607,7 +609,15 @@
       </div>
       <div class="pp-filter-panel">
         <div class="pp-filter-search-row">
-          <input type="search" id="postpurchase-search" placeholder="Hledat objednávku, PDF, XML, rozměr" data-i18n-placeholder="processed.search.placeholder">
+          <div class="pp-search-field">
+            <span class="pp-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                <path d="M16 16l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+              </svg>
+            </span>
+            <input type="search" id="postpurchase-search" placeholder="Hledat" aria-label="Hledat objednávku, PDF, XML, rozměr" data-i18n-placeholder="processed.search.placeholder">
+          </div>
           <button class="btn-sm" id="postpurchase-clear-filters" data-i18n="processed.clear">Vyčistit</button>
         </div>
         <div class="pp-filter-chip-group" role="tablist" aria-label="Rychlé filtry">
