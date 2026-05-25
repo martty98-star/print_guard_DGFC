@@ -388,16 +388,7 @@
   function renderOrders(rows, options) {
     const esc = options.esc;
     const summary = renderPipelineStats(options.stats, options);
-    const orderedRows = Array.isArray(rows)
-      ? rows.slice().sort((a, b) => {
-        const priority = getAttentionPriority(a) - getAttentionPriority(b);
-        if (priority !== 0) return priority;
-        const aTime = new Date(a.processedAt || a.queuedDateTime || a.receivedAt || a.apiSeenAt || a.latestReprintRecordAt || 0).getTime();
-        const bTime = new Date(b.processedAt || b.queuedDateTime || b.receivedAt || b.apiSeenAt || b.latestReprintRecordAt || 0).getTime();
-        if (Number.isFinite(bTime) && Number.isFinite(aTime) && bTime !== aTime) return bTime - aTime;
-        return String(b.orderName || '').localeCompare(String(a.orderName || ''));
-      })
-      : [];
+    const orderedRows = Array.isArray(rows) ? rows.slice() : [];
     if (!orderedRows.length) {
       return `${summary}<div class="empty-state"><div class="empty-state-icon">-</div><p>${t('processed.empty')}</p></div>`;
     }
