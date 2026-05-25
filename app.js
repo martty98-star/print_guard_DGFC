@@ -731,6 +731,7 @@ function renderColoradoRollTracker() {
       staleMinutes: COLORADO_ROLL_STALE_MINUTES,
       nowMs: Date.now(),
     });
+    const compactLabel = label.replace(/^Colorado\s+/i, 'C');
     const bucketLabel = summary.status === 'width_not_set'
       ? 'WIDTH'
       : summary.status === 'waiting'
@@ -747,7 +748,7 @@ function renderColoradoRollTracker() {
     return `<div class="co-roll-item" data-roll-machine="${esc(id)}">
       <div class="co-roll-chip is-${esc(summary.status)}" role="group" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
         <div class="co-roll-chip-head">
-          <span class="co-roll-chip-machine">${esc(label)}</span>
+          <span class="co-roll-chip-machine">${esc(compactLabel)}</span>
           <span class="co-roll-chip-status">${esc(bucketLabel)}</span>
         </div>
         <div class="co-roll-battery" aria-hidden="true">

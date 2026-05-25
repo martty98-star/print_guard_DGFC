@@ -130,7 +130,7 @@ html { scrollbar-gutter: stable; }
 }
 .topbar-left  { display: flex; align-items: center; gap: 0; flex: 0 1 auto; min-width: 0; }
 .topbar-center { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
-.topbar-right  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: nowrap; }
+.topbar-right  { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; justify-content: flex-end; flex-wrap: nowrap; }
 
 .co-roll-tracker {
   display: flex;
@@ -138,6 +138,8 @@ html { scrollbar-gutter: stable; }
   gap: 8px;
   flex-wrap: nowrap;
   min-width: 0;
+  max-width: min(48vw, 360px);
+  overflow: hidden;
 }
 .co-roll-item {
   display: flex;
@@ -146,9 +148,9 @@ html { scrollbar-gutter: stable; }
   min-width: 0;
 }
 .co-roll-chip {
-  min-width: 138px;
-  max-width: 168px;
-  padding: 7px 10px 8px;
+  min-width: 104px;
+  max-width: 122px;
+  padding: 6px 8px 7px;
   border: 1px solid var(--border);
   background: var(--bg3);
   color: var(--text);
@@ -188,7 +190,7 @@ html { scrollbar-gutter: stable; }
 }
 .co-roll-chip-machine {
   min-width: 0;
-  font-size: .57rem;
+  font-size: .53rem;
   font-weight: 700;
   letter-spacing: var(--wide);
   text-transform: uppercase;
