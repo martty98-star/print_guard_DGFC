@@ -1191,13 +1191,14 @@ textarea { resize: vertical; min-height: 58px; }
   gap: 12px;
 }
 .pp-status-summary {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 4px;
+  max-width: 390px;
 }
 .pp-status-summary-item {
-  min-width: 120px;
+  min-width: 0;
   border: 1px solid var(--border);
   background: var(--bg3);
   padding: 9px 12px;
@@ -1236,6 +1237,38 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .pp-status-summary-item.is-orphan {
   border-color: rgba(160, 130, 70, .45);
+}
+.pp-debug-summary {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  padding: 8px 10px;
+}
+.pp-debug-summary summary {
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+}
+.pp-debug-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.pp-debug-stat {
+  border-top: 1px solid var(--border);
+  padding-top: 7px;
+  display: grid;
+  gap: 3px;
+}
+.pp-debug-stat span {
+  color: var(--text-faint);
+  font-size: .6rem;
+}
+.pp-debug-stat strong {
+  font-size: .9rem;
 }
 .pp-load-more-wrap {
   display: flex;

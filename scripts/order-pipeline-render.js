@@ -107,14 +107,36 @@
     </div>`;
   }
 
-  function renderPipelineStats(stats) {
+  function renderDebugStatItem(stats, key, labelKey) {
+    const global = stats && stats.global;
+    const scope = stats && stats.scope;
+    const globalValue = statNumber(global, key);
+    const scopeValue = statNumber(scope, key);
+    const scopeHtml = scope && scopeValue !== globalValue
+      ? `<span>${t('processed.summary.scope')}: ${scopeValue}</span>`
+      : '';
+    return `<div class="pp-debug-stat">
+      <span>${t(labelKey)}</span>
+      <strong>${globalValue}</strong>
+      ${scopeHtml}
+    </div>`;
+  }
+
+  function renderPipelineStats(stats, options) {
     if (!stats || !stats.global) return '';
-    return `<div class="pp-status-summary">
+    const debugMetrics = options && options.isAdmin
+      ? `<details class="pp-debug-summary admin-only">
+          <summary>${t('processed.summary.debug')}</summary>
+          <div class="pp-debug-summary-grid">
+            ${renderDebugStatItem(stats, 'needsAttention', 'processed.summary.legacy-technical')}
+            ${renderDebugStatItem(stats, 'noApiMatch', 'processed.summary.no-api-match')}
+          </div>
+        </details>`
+      : '';
+    return `<div class="pp-status-summary" aria-label="${t('processed.summary.operational')}">
       ${renderStatItem(stats, 'unprocessed', 'processed.summary.unprocessed', 'is-unprocessed')}
       ${renderStatItem(stats, 'reprintBacklog', 'processed.summary.reprint-backlog', 'is-reprint')}
-      ${renderStatItem(stats, 'needsAttention', 'processed.summary.needs-attention', 'is-attention')}
-      ${renderStatItem(stats, 'noApiMatch', 'processed.summary.no-api-match', 'is-orphan')}
-    </div>`;
+    </div>${debugMetrics}`;
   }
 
   function renderPipelineBadges(row) {
@@ -271,7 +293,7 @@
 
   function renderOrders(rows, options) {
     const esc = options.esc;
-    const summary = renderPipelineStats(options.stats);
+    const summary = renderPipelineStats(options.stats, options);
     const orderedRows = Array.isArray(rows)
       ? rows.slice().sort((a, b) => {
         const priority = getAttentionPriority(a) - getAttentionPriority(b);

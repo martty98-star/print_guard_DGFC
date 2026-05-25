@@ -26,6 +26,7 @@ function cleanApiError(error) {
 }
 
 exports.handler = async function handler(event) {
+  const started = Date.now();
   if (event.httpMethod === 'OPTIONS') {
     return json(204, {});
   }
@@ -36,13 +37,17 @@ exports.handler = async function handler(event) {
 
     if (event.httpMethod === 'GET') {
       const query = event.queryStringParameters || {};
+      let rowCount = 0;
+      let mode = 'list';
       const body = await withClient(async (client) => {
         if (query.reprintHistoryOrderIds) {
+          mode = 'reprint-history';
           const orderIds = String(query.reprintHistoryOrderIds || '')
             .split(',')
             .map((value) => value.trim())
             .filter(Boolean);
           const requests = await listReprintRequests(client, orderIds);
+          rowCount = requests.length;
           return { ok: true, requests };
         }
 
@@ -52,7 +57,21 @@ exports.handler = async function handler(event) {
           search: query.search,
         });
         const months = await listProcessedOrderMonths(client);
+        rowCount = rows.length;
         return { ok: true, rows, months };
+      });
+      console.log('processed-print-orders timing', {
+        endpoint: 'processed-print-orders',
+        method: 'GET',
+        mode,
+        rowCount,
+        duration_ms: Date.now() - started,
+        filters: {
+          limit: query.limit || '500',
+          hasMonth: Boolean(query.month),
+          hasSearch: Boolean(query.search),
+          searchLength: String(query.search || '').length,
+        },
       });
       return json(200, body);
     }
@@ -70,6 +89,13 @@ exports.handler = async function handler(event) {
           const request = await deleteReprintRequest(client, { id: bodyInput.id || bodyInput.requestId || bodyInput.request_id });
           return { ok: true, request };
         });
+        console.log('processed-print-orders timing', {
+          endpoint: 'processed-print-orders',
+          method: 'POST',
+          action,
+          rowCount: 1,
+          duration_ms: Date.now() - started,
+        });
         return json(200, body);
       }
 
@@ -77,6 +103,13 @@ exports.handler = async function handler(event) {
         const body = await withClient(async (client) => {
           const request = await deleteReprintRequest(client, { id: bodyInput.id || bodyInput.requestId || bodyInput.request_id, onlyPending: true });
           return { ok: true, request };
+        });
+        console.log('processed-print-orders timing', {
+          endpoint: 'processed-print-orders',
+          method: 'POST',
+          action,
+          rowCount: 1,
+          duration_ms: Date.now() - started,
         });
         return json(200, body);
       }
@@ -88,6 +121,13 @@ exports.handler = async function handler(event) {
             printFilePath: bodyInput.printFilePath || bodyInput.print_file_path,
           });
           return { ok: true, request };
+        });
+        console.log('processed-print-orders timing', {
+          endpoint: 'processed-print-orders',
+          method: 'POST',
+          action,
+          rowCount: 1,
+          duration_ms: Date.now() - started,
         });
         return json(200, body);
       }
@@ -102,6 +142,13 @@ exports.handler = async function handler(event) {
           note: bodyInput.note,
         });
         return { ok: true, request };
+      });
+      console.log('processed-print-orders timing', {
+        endpoint: 'processed-print-orders',
+        method: 'POST',
+        action,
+        rowCount: 1,
+        duration_ms: Date.now() - started,
       });
       return json(200, body);
     }
