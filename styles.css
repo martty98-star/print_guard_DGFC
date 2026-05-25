@@ -86,15 +86,17 @@ html { font-size: 15px; -webkit-tap-highlight-color: transparent; }
 body {
   background: var(--bg); color: var(--text);
   font-family: var(--font-ui); font-weight: 400;
-  min-height: 100dvh; overflow-x: hidden;
+  min-height: 100dvh; overflow-x: hidden; overflow-y: scroll;
   padding-top: var(--topbar-h);
   /* důležité: necháme prostor pro bottom bar i na desktopu */
   padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
   letter-spacing: .01em;
 }
-::-webkit-scrollbar { width: 3px; height: 3px; }
+html { scrollbar-gutter: stable; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-2); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-light); border: 2px solid transparent; background-clip: padding-box; }
 
 /* Čísla a metriky: tabulární číslice (nepřeskakuje šířka) */
 .stat-num,

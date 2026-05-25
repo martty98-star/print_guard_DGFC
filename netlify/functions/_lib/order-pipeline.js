@@ -85,6 +85,7 @@ function pipelineSortExpr() {
           else 3
         end,
         coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+        nullif(regexp_replace(coalesce(order_number, ''), '[^0-9]+', '', 'g'), '')::bigint desc nulls last,
         order_number desc`;
 }
 
@@ -1011,6 +1012,7 @@ async function getOrderPipelineDetail(client, options = {}) {
       from v_print_order_pipeline
       where ${where.join(' or ')}
       order by coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+        nullif(regexp_replace(coalesce(order_number, ''), '[^0-9]+', '', 'g'), '')::bigint desc nulls last,
         order_number desc
       limit 1
     `,
