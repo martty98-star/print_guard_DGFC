@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "architecture_scan_capture", "target": "architecture_submit_tool_sync", "relation": "conceptually_related_to", "confidence": "INFERRED", "confidence_score": 0.7, "source_file": "scan-capture/README.md"}], "hyperedges": []}
