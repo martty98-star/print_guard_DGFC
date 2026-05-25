@@ -7,3 +7,4 @@ coverage/
 .env.local
 *.log
 preview-*.txt
+processed_print_orders.json
