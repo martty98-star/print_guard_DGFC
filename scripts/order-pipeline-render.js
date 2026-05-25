@@ -71,6 +71,27 @@
     return row && String(row.orderType || '').toUpperCase() === 'R';
   }
 
+  function getPrimaryOrderLabel(row) {
+    const external = String(row && row.externalOrderId || '').trim();
+    const customer = String(row && row.customerOrderId || '').trim();
+    const orderName = String(row && row.orderName || '').trim();
+    const processed = String(row && row.processedOrderName || '').trim();
+    return external || customer || orderName || processed || '';
+  }
+
+  function getSecondaryOrderLabels(row, primaryLabel) {
+    const labels = [
+      String(row && row.externalOrderId || '').trim(),
+      String(row && row.customerOrderId || '').trim(),
+      String(row && row.orderName || '').trim(),
+      String(row && row.processedOrderName || '').trim(),
+    ]
+      .filter(Boolean)
+      .filter((value, index, list) => list.indexOf(value) === index)
+      .filter((value) => value !== primaryLabel);
+    return labels;
+  }
+
   function getAttentionState(row) {
     const status = String(row && row.pipelineStatus || '').toLowerCase();
     if (status === 'received_only') return 'unprocessed';
@@ -320,6 +341,7 @@
       const resolved = actionState.state === 'resolved';
       const errored = actionState.state === 'error';
       const reprintDisabled = !orderId || !path;
+      const displayOrderName = getPrimaryOrderLabel(row);
       return `<div class="pp-file-block">
         <div class="pp-file-row">
           <div>
@@ -333,7 +355,7 @@
         <div class="pp-file-actions">
           <button class="btn-sm" type="button" data-open-pdf-path="${esc(path)}" data-open-pdf-href="${esc(href)}">${t('processed.button.open-pdf')}</button>
           <button class="btn-sm" type="button" data-copy-path="${esc(path)}">${t('processed.button.copy-path')}</button>
-          ${actionState.state === 'idle' ? `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${t('processed.button.request-reprint')}</button>` : ''}
+          ${actionState.state === 'idle' ? `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(displayOrderName || row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${t('processed.button.request-reprint')}</button>` : ''}
         </div>
         ${renderReprintHistory(history, esc, options)}
       </div>`;
@@ -350,7 +372,8 @@
       return '';
     }
     const orderId = row.processedOrderId || row.id;
-    return `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(row.orderName || '')}" data-print-file-path="" data-print-file-label="${t('processed.full-order')}" ${orderId ? '' : 'disabled'}>${t('processed.button.full-reprint')}</button>`;
+    const displayOrderName = getPrimaryOrderLabel(row);
+    return `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(displayOrderName || row.orderName || '')}" data-print-file-path="" data-print-file-label="${t('processed.full-order')}" ${orderId ? '' : 'disabled'}>${t('processed.button.full-reprint')}</button>`;
   }
 
   function renderProcessedReprintRecords(row, esc) {
@@ -398,6 +421,8 @@
       ${orderedRows.map((row) => {
         const attentionState = getAttentionState(row);
         const reprintState = getRowReprintState(row, options);
+        const primaryLabel = getPrimaryOrderLabel(row);
+        const secondaryLabels = getSecondaryOrderLabels(row, primaryLabel);
         const cardClass = [
           attentionState ? `pp-processed-card--${attentionState}` : '',
           reprintState.state && reprintState.state !== 'idle' ? `pp-processed-card--${reprintState.state}` : '',
@@ -415,8 +440,8 @@
         <section class="pp-card-section pp-card-summary">
           <div class="pp-processed-head">
           <div>
-            <div class="pp-order-main">${esc(row.orderName || '-')}</div>
-            <div class="pp-order-sub">${esc([row.externalOrderId, row.customerOrderId].filter(Boolean).join(' · '))}</div>
+            <div class="pp-order-main">${esc(primaryLabel || '-')}</div>
+            <div class="pp-order-sub">${esc(secondaryLabels.join(' · '))}</div>
           </div>
           <div class="pp-processed-time">
             <div>${t('processed.label.submittool-processed')}: ${esc(formatPipelineDateTime(row.processedAt || row.queuedDateTime))}</div>

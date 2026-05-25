@@ -296,9 +296,10 @@
         },
       });
       state.reprintPendingKeys.add(Render.getReprintKey(payload.orderId, payload.printFilePath));
+      const downloadOrderName = payload.orderName || (selected.row && (selected.row.externalOrderId || selected.row.customerOrderId || selected.row.orderName)) || payload.orderId;
       if (selected.row) {
         const xml = ReprintXml.generateReprintXml(selected.row, selected.printFile);
-        ReprintXml.downloadXml(xml, selected.row.orderName || payload.orderName || payload.orderId);
+        ReprintXml.downloadXml(xml, downloadOrderName);
       }
       state.showToast(t('processed.toast.reprint-created'), 'success');
       state.S.postPurchaseLoaded = false;
