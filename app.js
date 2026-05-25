@@ -625,6 +625,19 @@ const CO_FORMATS = [
 const COLORADO_ROLL_STORAGE_KEY = 'pg_colorado_roll_state_v1';
 const COLORADO_ROLL_EVENTS_STORAGE_KEY = 'pg_colorado_roll_events_v1';
 const COLORADO_ROLL_LENGTH_M = 130;
+
+function getConfiguredColoradoRollWidthMm(currentState = null) {
+  const currentWidth = currentState && Number(currentState.mediaWidthMm);
+  if (Number.isFinite(currentWidth) && currentWidth > 0) return currentWidth;
+
+  const candidates = [cfg.coloradoRollWidthMm, cfg.coloradoMediaWidthMm, cfg.mediaWidthMm];
+  for (const candidate of candidates) {
+    const width = Number(candidate);
+    if (Number.isFinite(width) && width > 0) return width;
+  }
+
+  return null;
+}
 const COLORADO_ROLL_STALE_MINUTES = 90;
 
 function getLatestCoRecord(machineId) {
@@ -986,10 +999,7 @@ async function saveColoradoRollModal() {
   const activeRollId = genId('roll');
   const baselineKnown = Boolean(latest);
   const currentState = getColoradoRollState(machine.id);
-  const configuredWidth = normalizePositiveNumber(
-    currentState && currentState.mediaWidthMm,
-    normalizePositiveNumber(cfg.coloradoRollWidthMm || cfg.coloradoMediaWidthMm || cfg.mediaWidthMm, null)
-  );
+  const configuredWidth = getConfiguredColoradoRollWidthMm(currentState);
   const previousState = currentState ? normalizeColoradoRollState(machine.id, currentState, false) : null;
   const loadEventId = genId('co-roll-loaded');
   const nextState = normalizeColoradoRollState(machine.id, {
@@ -1032,9 +1042,7 @@ function undoColoradoRollLoad(machineId) {
     return;
   }
 
-  const preservedWidth = Number.isFinite(current.mediaWidthMm)
-    ? current.mediaWidthMm
-    : normalizePositiveNumber(cfg.coloradoRollWidthMm || cfg.coloradoMediaWidthMm || cfg.mediaWidthMm, null);
+  const preservedWidth = getConfiguredColoradoRollWidthMm(current);
   const restored = current.previousState
     ? normalizeColoradoRollState(machineId, current.previousState)
     : normalizeColoradoRollState(machineId, {
@@ -1055,9 +1063,7 @@ function undoColoradoRollLoad(machineId) {
 
 function resetColoradoRollState(machineId) {
   const before = getColoradoRollState(machineId);
-  const preservedWidth = before && Number.isFinite(before.mediaWidthMm)
-    ? before.mediaWidthMm
-    : normalizePositiveNumber(cfg.coloradoRollWidthMm || cfg.coloradoMediaWidthMm || cfg.mediaWidthMm, null);
+  const preservedWidth = getConfiguredColoradoRollWidthMm(before);
   const next = normalizeColoradoRollState(machineId, {
     machineName: getColoradoRollMachineLabel(machineId),
     mediaWidthMm: preservedWidth,
