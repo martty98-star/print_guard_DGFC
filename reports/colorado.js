@@ -36,8 +36,8 @@
 
   function formatApproxRemainingMeters(remainingM) {
     if (!Number.isFinite(remainingM)) return '';
-    if (remainingM <= 5) return '≤ 5 m';
-    return `~${Math.max(10, Math.round(remainingM / 10) * 10)} m`;
+    if (remainingM <= 5) return '≤5m';
+    return `~${Math.max(10, Math.round(remainingM / 10) * 10)}m`;
   }
 
   function formatApproxAgeLabel(minutes) {

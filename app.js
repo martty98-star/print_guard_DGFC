@@ -641,6 +641,7 @@ function normalizeColoradoRollState(machineId, input) {
   const baselineMediaTotalM2 = Number(source.baselineMediaTotalM2);
   return {
     machineId,
+    machineName: String(source.machineName || getColoradoRollMachineLabel(machineId)).trim() || getColoradoRollMachineLabel(machineId),
     activeRollId: String(source.activeRollId || '').trim() || null,
     rollLengthM: Number.isFinite(rollLengthM) && rollLengthM > 0 ? rollLengthM : COLORADO_ROLL_LENGTH_M,
     mediaWidthMm: Number.isFinite(mediaWidthMm) && mediaWidthMm > 0 ? mediaWidthMm : null,
@@ -713,6 +714,86 @@ function hydrateColoradoRollBaselines() {
   return changed;
 }
 
+function getColoradoRollUiClass(status) {
+  switch (status) {
+    case 'ok':
+      return 'roll-ok';
+    case 'warn':
+      return 'roll-warn';
+    case 'low':
+      return 'roll-low';
+    case 'critical':
+      return 'roll-critical';
+    case 'empty':
+      return 'roll-empty';
+    case 'stale':
+      return 'roll-stale';
+    default:
+      return 'roll-unknown';
+  }
+}
+
+function getColoradoRollStatusText(summary) {
+  if (!summary) return 'load roll';
+  if (summary.status === 'stale') return 'stale';
+  if (summary.status === 'width_not_set') return 'width not set';
+  if (summary.status === 'waiting') return summary.hasActiveRoll ? 'waiting for next sync' : 'load roll';
+  return summary.remainingLabel || '—';
+}
+
+function getColoradoRollFreshnessText(summary) {
+  if (!summary || !summary.freshnessLabel) return '';
+  if (summary.status === 'waiting' || summary.status === 'width_not_set') return '';
+  return summary.freshnessLabel;
+}
+
+function getColoradoRollAggregate(summaries) {
+  const rank = { stale: 6, empty: 5, critical: 4, low: 3, warn: 2, ok: 1, width_not_set: 0, waiting: 0 };
+  const worst = [...(summaries || [])].sort((a, b) => (rank[b.status] || 0) - (rank[a.status] || 0))[0] || null;
+  const hasWarning = Boolean((summaries || []).find(summary => summary && summary.status !== 'ok'));
+  return {
+    status: worst ? worst.status : 'waiting',
+    uiClass: worst ? getColoradoRollUiClass(worst.status) : 'roll-unknown',
+    hasWarning,
+    title: worst
+      ? `${worst.machineId || 'Colorado'} · ${getColoradoRollStatusText(worst)}`
+      : 'Papír',
+  };
+}
+
+function renderColoradoRollSheet(summaries) {
+  const wrap = el('roll-sheet-body');
+  if (!wrap) return;
+
+  wrap.innerHTML = (summaries || []).map(summary => {
+    const rollClass = getColoradoRollUiClass(summary.status);
+    const statusText = getColoradoRollStatusText(summary);
+    const freshnessText = getColoradoRollFreshnessText(summary);
+    const machineLabel = MACHINES.find(machine => machine.id === summary.machineId)?.label || summary.machineId || 'Colorado';
+    const compactLabel = machineLabel.replace(/^Colorado\s+/i, 'C');
+    return `<div class="roll-sheet-row ${esc(rollClass)}">
+      <div class="roll-sheet-head">
+        <span class="roll-sheet-machine">${esc(compactLabel)}</span>
+        <span class="roll-sheet-status">${esc(statusText)}</span>
+      </div>
+      <div class="roll-battery" aria-hidden="true" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${summary.fillPercent}%` : '--roll-fill:0%'}">
+        <span class="roll-battery-fill"></span>
+      </div>
+      ${freshnessText ? `<div class="roll-sheet-meta">${esc(freshnessText)}</div>` : ''}
+      <div class="roll-sheet-actions">
+        <button class="btn-secondary btn-sm" type="button" data-roll-load="${esc(summary.machineId)}">+ Nová role</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('[data-roll-load]').forEach(button => {
+    button.addEventListener('click', () => {
+      closeColoradoRollSheet();
+      openColoradoRollModal(button.dataset.rollLoad);
+    });
+  });
+}
+
 function renderColoradoRollTracker() {
   hydrateColoradoRollBaselines();
   const wrap = el('co-roll-tracker');
@@ -725,52 +806,86 @@ function renderColoradoRollTracker() {
     return;
   }
 
-  wrap.innerHTML = MACHINES.map(({ id, label }) => {
+  const summaries = MACHINES.map(({ id, label }) => {
     const rollState = getColoradoRollState(id);
     const summary = helper(S.coRecords || [], rollState || { machineId: id }, {
       staleMinutes: COLORADO_ROLL_STALE_MINUTES,
       nowMs: Date.now(),
     });
-    const compactLabel = label.replace(/^Colorado\s+/i, 'C');
-    const bucketLabel = summary.status === 'width_not_set'
-      ? 'WIDTH'
-      : summary.status === 'waiting'
-        ? (summary.hasActiveRoll ? 'WAIT' : 'LOAD')
-        : summary.status === 'stale'
-          ? 'STALE'
-          : summary.status.toUpperCase();
+    return {
+      ...summary,
+      machineLabel: label,
+    };
+  });
+
+  wrap.innerHTML = summaries.map(summary => {
+    const rollClass = getColoradoRollUiClass(summary.status);
+    const compactLabel = (summary.machineLabel || summary.machineId || 'Colorado').replace(/^Colorado\s+/i, 'C');
+    const statusText = getColoradoRollStatusText(summary);
+    const freshnessText = getColoradoRollFreshnessText(summary);
     const fillPercent = Number.isFinite(summary.fillPercent) ? summary.fillPercent : 0;
     const ariaLabel = [
-      label,
-      summary.remainingLabel,
-      summary.freshnessLabel,
+      summary.machineLabel || summary.machineId,
+      statusText,
+      freshnessText,
     ].filter(Boolean).join(' · ');
-    return `<div class="co-roll-item" data-roll-machine="${esc(id)}">
-      <div class="co-roll-chip is-${esc(summary.status)}" role="group" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
-        <div class="co-roll-chip-head">
-          <span class="co-roll-chip-machine">${esc(compactLabel)}</span>
-          <span class="co-roll-chip-status">${esc(bucketLabel)}</span>
+    return `<div class="roll-group" data-roll-machine="${esc(summary.machineId)}">
+      <div class="roll-chip ${esc(rollClass)}" role="group" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
+        <div class="roll-chip-main">
+          <div class="roll-chip-head">
+            <span class="roll-chip-machine">${esc(compactLabel)}</span>
+            <span class="roll-chip-status">${esc(statusText)}</span>
+          </div>
+          <div class="roll-battery" aria-hidden="true">
+            <span class="roll-battery-fill"></span>
+          </div>
         </div>
-        <div class="co-roll-battery" aria-hidden="true">
-          <span class="co-roll-battery-fill"></span>
-        </div>
-        <div class="co-roll-chip-foot">
-          <span class="co-roll-chip-remaining">${esc(summary.remainingLabel || '—')}</span>
-          <span class="co-roll-chip-meta">${esc(summary.freshnessLabel || '')}</span>
-        </div>
+        ${freshnessText ? `<div class="roll-chip-meta">${esc(freshnessText)}</div>` : ''}
       </div>
-      <button class="icon-btn co-roll-add" type="button" data-roll-load="${esc(id)}" title="Nová role" data-i18n-title="colorado.roll.load">+</button>
+      <button class="icon-btn roll-action-button" type="button" data-roll-load="${esc(summary.machineId)}" title="Nová role" data-i18n-title="colorado.roll.load" aria-label="Nová role">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
     </div>`;
   }).join('');
 
   wrap.querySelectorAll('[data-roll-load]').forEach(button => {
     button.addEventListener('click', () => openColoradoRollModal(button.dataset.rollLoad));
   });
+
+  const mobileEntry = el('roll-mobile-entry');
+  const mobileToggle = el('roll-mobile-toggle');
+  const mobileDot = el('roll-mobile-dot');
+  if (mobileEntry && mobileToggle && mobileDot) {
+    const aggregate = getColoradoRollAggregate(summaries);
+    mobileToggle.className = `icon-btn roll-mobile-toggle ${aggregate.uiClass}`;
+    mobileToggle.title = aggregate.title;
+    mobileToggle.setAttribute('aria-label', aggregate.title);
+    mobileToggle.setAttribute('aria-expanded', mobileEntry.classList.contains('hidden') ? 'false' : 'true');
+    mobileDot.classList.toggle('hidden', !aggregate.hasWarning);
+  }
+
+  renderColoradoRollSheet(summaries);
 }
 
 function closeColoradoRollModal() {
   const modal = el('roll-modal');
   if (modal) modal.classList.add('hidden');
+}
+
+function closeColoradoRollSheet() {
+  const sheet = el('roll-sheet');
+  const toggle = el('roll-mobile-toggle');
+  if (sheet) sheet.classList.add('hidden');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+
+function openColoradoRollSheet() {
+  const sheet = el('roll-sheet');
+  const toggle = el('roll-mobile-toggle');
+  if (!sheet) return;
+  renderColoradoRollTracker();
+  sheet.classList.remove('hidden');
+  if (toggle) toggle.setAttribute('aria-expanded', 'true');
 }
 
 function openColoradoRollModal(machineId) {
@@ -782,12 +897,11 @@ function openColoradoRollModal(machineId) {
   const latest = getLatestCoRecord(machine.id);
   const latestStamp = latest ? fmtDT(latest.timestamp) : '—';
   const summary = latest
-    ? `Poslední Colorado sample: ${latestStamp} · média celkem ${fmtN(latest.mediaTotalM2, 1)} m²`
-    : 'Zatím není k dispozici Colorado sample. Role lze uložit a systém počká na další sync.';
+    ? `Poslední Colorado stav: ${latestStamp} · celkem ${fmtN(latest.mediaTotalM2, 1)} m²`
+    : 'Zatím nemáme poslední stav z Colorada. Roli lze uložit, výpočet se spustí po dalším syncu.';
 
-  elSet('roll-modal-title', 'Nová role');
+  elSet('roll-modal-title', `Nová role  ${machine.label}`);
   elSet('roll-modal-summary', summary);
-  elSet('roll-modal-machine', machine.label);
   el('roll-modal-width').value = state && state.mediaWidthMm ? String(state.mediaWidthMm) : '';
   el('roll-modal-note').value = state && state.note ? state.note : '';
   modal.dataset.machineId = machine.id;
@@ -824,6 +938,7 @@ async function saveColoradoRollModal() {
     baselineRecordedAt: baselineKnown ? latest.timestamp : null,
     loadedAt: now,
     loadedBy: cfg.userName || cfg.deviceId,
+    machineName: machine.label,
     note,
   });
 
@@ -1569,6 +1684,12 @@ async function init() {
     button.addEventListener('click', closeColoradoRollModal));
   el('roll-modal')?.addEventListener('click', event => {
     if (event.target === el('roll-modal')) closeColoradoRollModal();
+  });
+  el('roll-mobile-toggle')?.addEventListener('click', () => openColoradoRollSheet());
+  document.querySelectorAll('[data-roll-sheet-cancel]').forEach(button =>
+    button.addEventListener('click', closeColoradoRollSheet));
+  el('roll-sheet')?.addEventListener('click', event => {
+    if (event.target === el('roll-sheet')) closeColoradoRollSheet();
   });
   window.addEventListener('storage', event => {
     if (event.key !== COLORADO_ROLL_STORAGE_KEY) return;

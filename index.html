@@ -58,6 +58,15 @@
     </div>
     <div class="topbar-right">
       <div class="co-roll-tracker" id="co-roll-tracker" aria-label="Stav papírových rolí"></div>
+      <div class="roll-mobile-entry hidden" id="roll-mobile-entry">
+        <button id="roll-mobile-toggle" class="icon-btn roll-mobile-toggle" type="button" aria-expanded="false" aria-controls="roll-sheet" title="Papír">
+          <span class="roll-mobile-battery" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="16" height="10" rx="2"></rect><path d="M21 11v2"></path></svg>
+          </span>
+          <span class="roll-mobile-label">Papír</span>
+          <span class="roll-mobile-dot hidden" id="roll-mobile-dot" aria-hidden="true"></span>
+        </button>
+      </div>
       <button id="sync-btn" class="icon-btn" title="Obnovit" data-i18n-title="btn.refresh">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       </button>
@@ -897,14 +906,15 @@
       </div>
       <div class="modal-body roll-modal-body">
         <div class="roll-modal-summary" id="roll-modal-summary">—</div>
+        <div class="roll-modal-rollinfo">
+          <span class="roll-modal-rollinfo-label">Délka role</span>
+          <strong>130 m</strong>
+        </div>
         <div class="roll-modal-grid">
-          <div class="roll-modal-field">
-            <label for="roll-modal-machine">Tiskárna</label>
-            <input id="roll-modal-machine" class="input-sm" type="text" readonly>
-          </div>
-          <div class="roll-modal-field">
-            <label for="roll-modal-width">Šířka média (mm) *</label>
-            <input id="roll-modal-width" class="input-sm" type="number" min="1" step="1" inputmode="numeric" placeholder="např. 1625">
+          <div class="roll-modal-field span2">
+            <label for="roll-modal-width">Šířka role pro výpočet *</label>
+            <input id="roll-modal-width" class="input-sm" type="number" min="1" step="1" inputmode="numeric" placeholder="např. 1625 mm">
+            <div class="roll-modal-helper">Colorado reportuje spotřebu v m². Šířka je potřeba jen pro přepočet na běžné metry.</div>
           </div>
           <div class="roll-modal-field span2">
             <label for="roll-modal-note">Poznámka <span class="opt">(volitelné)</span></label>
@@ -914,7 +924,20 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" type="button" data-roll-cancel="true">Zrušit</button>
-        <button class="btn-primary" type="button" id="roll-modal-save">Uložit roli</button>
+        <button class="btn-primary" type="button" id="roll-modal-save">Uložit novou roli</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="roll-sheet" class="modal-overlay roll-sheet-overlay hidden">
+    <div class="modal-box roll-sheet-box">
+      <div class="modal-header">
+        <h2>Papírové role</h2>
+        <button class="modal-x" type="button" data-roll-sheet-cancel="true" aria-label="Zavřít">×</button>
+      </div>
+      <div class="modal-body roll-sheet-body" id="roll-sheet-body"></div>
+      <div class="modal-footer roll-sheet-footer">
+        <button class="btn-secondary" type="button" data-roll-sheet-cancel="true">Zavřít</button>
       </div>
     </div>
   </div>
