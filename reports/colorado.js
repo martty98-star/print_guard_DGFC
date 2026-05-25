@@ -15,8 +15,141 @@
     return [...records].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
 
+  function normalizePositiveNumber(value, fallback = null) {
+    const num = Number(value);
+    return Number.isFinite(num) && num > 0 ? num : fallback;
+  }
+
+  function bucketRemainingState(remainingM) {
+    if (!Number.isFinite(remainingM)) return 'waiting';
+    if (remainingM <= 5) return 'empty';
+    if (remainingM <= 15) return 'critical';
+    if (remainingM <= 30) return 'low';
+    if (remainingM <= 60) return 'warn';
+    return 'ok';
+  }
+
+  function bucketFillPercent(remainingPct) {
+    if (!Number.isFinite(remainingPct)) return null;
+    return Math.max(0, Math.min(100, Math.round(remainingPct * 10) * 10));
+  }
+
+  function formatApproxRemainingMeters(remainingM) {
+    if (!Number.isFinite(remainingM)) return '';
+    if (remainingM <= 5) return '≤ 5 m';
+    return `~${Math.max(10, Math.round(remainingM / 10) * 10)} m`;
+  }
+
+  function formatApproxAgeLabel(minutes) {
+    if (!Number.isFinite(minutes)) return 'waiting for next sync';
+    if (minutes < 15) return 'updated just now';
+    if (minutes < 60) return `updated ~${Math.max(15, Math.round(minutes / 15) * 15)} min ago`;
+    const hours = Math.max(1, Math.round(minutes / 60));
+    return `updated ~${hours} h ago`;
+  }
+
   function getColoradoRecords(records, machineId) {
     return sortByTimestampAsc((records || []).filter(record => record.machineId === machineId));
+  }
+
+  function buildColoradoRollSummary(records, rollState, options) {
+    const cfg = options || {};
+    const state = rollState || {};
+    const machineId = String(state.machineId || '');
+    const latest = machineId ? getLatestColoradoRecord(records, machineId) : null;
+    const nowMs = Number.isFinite(Number(cfg.nowMs)) ? Number(cfg.nowMs) : Date.now();
+    const rollLengthM = normalizePositiveNumber(state.rollLengthM, 130) || 130;
+    const mediaWidthMm = normalizePositiveNumber(state.mediaWidthMm, null);
+    const widthM = mediaWidthMm ? mediaWidthMm / 1000 : null;
+    const baselineMediaTotalM2 = Number(state.baselineMediaTotalM2);
+    const hasBaseline = Number.isFinite(baselineMediaTotalM2);
+    const loadedAtMs = state.loadedAt ? new Date(state.loadedAt).getTime() : null;
+    const latestSampleAtMs = latest && latest.timestamp ? new Date(latest.timestamp).getTime() : null;
+    const staleMinutes = Math.max(1, Number(cfg.staleMinutes) || 90);
+    const sampleAgeMinutes = Number.isFinite(latestSampleAtMs) ? (nowMs - latestSampleAtMs) / 60000 : null;
+    const hasActiveRoll = Boolean(
+      state.activeRollId
+      || state.loadedAt
+      || hasBaseline
+      || mediaWidthMm
+    );
+    const canHydrateBaseline = Boolean(
+      latest
+      && !hasBaseline
+      && Number.isFinite(loadedAtMs)
+      && Number.isFinite(latestSampleAtMs)
+      && latestSampleAtMs >= loadedAtMs
+      && Number.isFinite(widthM)
+    );
+
+    let status = 'waiting';
+    let usedAreaM2 = null;
+    let usedLinearM = null;
+    let remainingM = null;
+    let remainingPct = null;
+    let bucketStatus = 'waiting';
+
+    if (!mediaWidthMm) {
+      status = 'width_not_set';
+    } else if (!hasBaseline) {
+      status = 'waiting';
+    } else if (!latest) {
+      status = 'waiting';
+    } else {
+      usedAreaM2 = Math.max(0, toNumber(latest.mediaTotalM2) - baselineMediaTotalM2);
+      usedLinearM = widthM ? usedAreaM2 / widthM : null;
+      remainingM = Number.isFinite(usedLinearM) ? Math.max(0, rollLengthM - usedLinearM) : null;
+      remainingPct = Number.isFinite(remainingM) && rollLengthM > 0 ? remainingM / rollLengthM : null;
+      bucketStatus = bucketRemainingState(remainingM);
+      status = bucketStatus;
+      if (Number.isFinite(sampleAgeMinutes) && sampleAgeMinutes > staleMinutes) {
+        status = 'stale';
+      }
+    }
+
+    const canEstimate = Boolean(mediaWidthMm && hasBaseline && latest);
+    const fillPercent = canEstimate ? bucketFillPercent(remainingPct) : null;
+    const remainingLabel = !hasActiveRoll
+      ? 'load roll'
+      : !mediaWidthMm
+      ? 'width not set'
+      : !hasBaseline
+        ? 'waiting for next sync'
+        : formatApproxRemainingMeters(remainingM);
+
+    return {
+      machineId,
+      activeRollId: state.activeRollId || '',
+      rollLengthM,
+      mediaWidthMm,
+      baselineMediaTotalM2: hasBaseline ? baselineMediaTotalM2 : null,
+      baselineRecordedAt: state.baselineRecordedAt || null,
+      loadedAt: state.loadedAt || null,
+      loadedBy: state.loadedBy || '',
+      note: state.note || '',
+      latestSampleAt: latest && latest.timestamp ? latest.timestamp : null,
+      sampleAgeMinutes,
+      status,
+      bucketStatus,
+      hasActiveRoll,
+      fillPercent,
+      hasWidth: Boolean(mediaWidthMm),
+      hasBaseline,
+      canHydrateBaseline,
+      canEstimate,
+      rollLengthRemainingM: remainingM,
+      usedAreaM2,
+      usedLinearM,
+      remainingM,
+      remainingPct,
+      remainingLabel,
+      freshnessLabel: latest
+        ? formatApproxAgeLabel(sampleAgeMinutes)
+        : hasActiveRoll
+          ? 'waiting for next sync'
+          : 'no active roll',
+      latest,
+    };
   }
 
   function buildColoradoIntervals(records, config) {
@@ -248,6 +381,7 @@
 
   const api = {
     DEFAULT_MACHINES,
+    buildColoradoRollSummary,
     getColoradoRecords,
     getLatestColoradoRecord,
     buildColoradoIntervals,

@@ -209,6 +209,7 @@ const S = {
   items:       [],     // catalog
   movements:   [],     // sorted by timestamp asc
   coRecords:   [],     // sorted by timestamp asc
+  coloradoRolls: {},
   mode:        'stock',
   stockFilter: 'all',
   stockSearch: '',
@@ -620,9 +621,215 @@ const CO_FORMATS = [
   { key: '70x100', widthCm: 70, heightCm: 100 },
 ];
 
+const COLORADO_ROLL_STORAGE_KEY = 'pg_colorado_roll_state_v1';
+const COLORADO_ROLL_LENGTH_M = 130;
+const COLORADO_ROLL_STALE_MINUTES = 90;
+
 function getLatestCoRecord(machineId) {
   const recs = getCoRecs(machineId);
   return recs.length ? recs[recs.length - 1] : null;
+}
+
+function getColoradoRollMachineLabel(machineId) {
+  return MACHINES.find(machine => machine.id === machineId)?.label || machineId || 'Colorado';
+}
+
+function normalizeColoradoRollState(machineId, input) {
+  const source = input && typeof input === 'object' ? input : {};
+  const rollLengthM = Number(source.rollLengthM);
+  const mediaWidthMm = Number(source.mediaWidthMm);
+  const baselineMediaTotalM2 = Number(source.baselineMediaTotalM2);
+  return {
+    machineId,
+    activeRollId: String(source.activeRollId || '').trim() || null,
+    rollLengthM: Number.isFinite(rollLengthM) && rollLengthM > 0 ? rollLengthM : COLORADO_ROLL_LENGTH_M,
+    mediaWidthMm: Number.isFinite(mediaWidthMm) && mediaWidthMm > 0 ? mediaWidthMm : null,
+    baselineMediaTotalM2: Number.isFinite(baselineMediaTotalM2) ? baselineMediaTotalM2 : null,
+    baselineRecordedAt: String(source.baselineRecordedAt || '').trim() || null,
+    loadedAt: String(source.loadedAt || '').trim() || null,
+    loadedBy: String(source.loadedBy || '').trim() || '',
+    note: String(source.note || '').trim() || '',
+  };
+}
+
+function loadColoradoRollStates() {
+  try {
+    const raw = ls(COLORADO_ROLL_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const state = {};
+    MACHINES.forEach(({ id }) => {
+      state[id] = normalizeColoradoRollState(id, parsed && parsed[id]);
+    });
+    return state;
+  } catch (error) {
+    console.warn('Colorado roll state load failed', error);
+    return {};
+  }
+}
+
+function saveColoradoRollStates() {
+  try {
+    ls(COLORADO_ROLL_STORAGE_KEY, JSON.stringify(S.coloradoRolls || {}));
+  } catch (error) {
+    console.warn('Colorado roll state save failed', error);
+  }
+}
+
+function getColoradoRollState(machineId) {
+  if (!machineId) return null;
+  return normalizeColoradoRollState(machineId, S.coloradoRolls && S.coloradoRolls[machineId]);
+}
+
+function setColoradoRollState(machineId, input) {
+  if (!machineId) return null;
+  const normalized = normalizeColoradoRollState(machineId, input);
+  S.coloradoRolls = {
+    ...(S.coloradoRolls || {}),
+    [machineId]: normalized,
+  };
+  saveColoradoRollStates();
+  return normalized;
+}
+
+function hydrateColoradoRollBaselines() {
+  let changed = false;
+  MACHINES.forEach(({ id }) => {
+    const state = getColoradoRollState(id);
+    if (!state || !state.loadedAt || state.baselineMediaTotalM2 !== null) return;
+    const latest = getLatestCoRecord(id);
+    if (!latest) return;
+    const loadedAtMs = new Date(state.loadedAt).getTime();
+    const latestAtMs = new Date(latest.timestamp).getTime();
+    if (!Number.isFinite(loadedAtMs) || !Number.isFinite(latestAtMs) || latestAtMs < loadedAtMs) return;
+    S.coloradoRolls[id] = {
+      ...state,
+      baselineMediaTotalM2: Number(latest.mediaTotalM2),
+      baselineRecordedAt: latest.timestamp,
+    };
+    changed = true;
+  });
+  if (changed) saveColoradoRollStates();
+  return changed;
+}
+
+function renderColoradoRollTracker() {
+  hydrateColoradoRollBaselines();
+  const wrap = el('co-roll-tracker');
+  if (!wrap) return;
+  const helper = Reports.colorado && typeof Reports.colorado.buildColoradoRollSummary === 'function'
+    ? Reports.colorado.buildColoradoRollSummary
+    : null;
+  if (!helper) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = MACHINES.map(({ id, label }) => {
+    const rollState = getColoradoRollState(id);
+    const summary = helper(S.coRecords || [], rollState || { machineId: id }, {
+      staleMinutes: COLORADO_ROLL_STALE_MINUTES,
+      nowMs: Date.now(),
+    });
+    const bucketLabel = summary.status === 'width_not_set'
+      ? 'WIDTH'
+      : summary.status === 'waiting'
+        ? (summary.hasActiveRoll ? 'WAIT' : 'LOAD')
+        : summary.status === 'stale'
+          ? 'STALE'
+          : summary.status.toUpperCase();
+    const fillPercent = Number.isFinite(summary.fillPercent) ? summary.fillPercent : 0;
+    const ariaLabel = [
+      label,
+      summary.remainingLabel,
+      summary.freshnessLabel,
+    ].filter(Boolean).join(' · ');
+    return `<div class="co-roll-item" data-roll-machine="${esc(id)}">
+      <div class="co-roll-chip is-${esc(summary.status)}" role="group" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
+        <div class="co-roll-chip-head">
+          <span class="co-roll-chip-machine">${esc(label)}</span>
+          <span class="co-roll-chip-status">${esc(bucketLabel)}</span>
+        </div>
+        <div class="co-roll-battery" aria-hidden="true">
+          <span class="co-roll-battery-fill"></span>
+        </div>
+        <div class="co-roll-chip-foot">
+          <span class="co-roll-chip-remaining">${esc(summary.remainingLabel || '—')}</span>
+          <span class="co-roll-chip-meta">${esc(summary.freshnessLabel || '')}</span>
+        </div>
+      </div>
+      <button class="icon-btn co-roll-add" type="button" data-roll-load="${esc(id)}" title="Nová role" data-i18n-title="colorado.roll.load">+</button>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('[data-roll-load]').forEach(button => {
+    button.addEventListener('click', () => openColoradoRollModal(button.dataset.rollLoad));
+  });
+}
+
+function closeColoradoRollModal() {
+  const modal = el('roll-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openColoradoRollModal(machineId) {
+  const modal = el('roll-modal');
+  if (!modal) return;
+  const machine = MACHINES.find(item => item.id === machineId) || MACHINES[0];
+  if (!machine) return;
+  const state = getColoradoRollState(machine.id);
+  const latest = getLatestCoRecord(machine.id);
+  const latestStamp = latest ? fmtDT(latest.timestamp) : '—';
+  const summary = latest
+    ? `Poslední Colorado sample: ${latestStamp} · média celkem ${fmtN(latest.mediaTotalM2, 1)} m²`
+    : 'Zatím není k dispozici Colorado sample. Role lze uložit a systém počká na další sync.';
+
+  elSet('roll-modal-title', 'Nová role');
+  elSet('roll-modal-summary', summary);
+  elSet('roll-modal-machine', machine.label);
+  el('roll-modal-width').value = state && state.mediaWidthMm ? String(state.mediaWidthMm) : '';
+  el('roll-modal-note').value = state && state.note ? state.note : '';
+  modal.dataset.machineId = machine.id;
+  modal.classList.remove('hidden');
+  el('roll-modal-width').focus();
+}
+
+async function saveColoradoRollModal() {
+  const modal = el('roll-modal');
+  if (!modal) return;
+  const machineId = modal.dataset.machineId || '';
+  const machine = MACHINES.find(item => item.id === machineId);
+  if (!machine) {
+    showToast('Vyberte tiskárnu', 'error');
+    return;
+  }
+
+  const mediaWidthMm = parseInt(el('roll-modal-width').value, 10);
+  const note = el('roll-modal-note').value.trim();
+  if (!Number.isFinite(mediaWidthMm) || mediaWidthMm <= 0) {
+    showToast('Zadejte šířku média v mm', 'error');
+    return;
+  }
+
+  const latest = getLatestCoRecord(machine.id);
+  const now = new Date().toISOString();
+  const activeRollId = genId('roll');
+  const baselineKnown = Boolean(latest);
+  const nextState = normalizeColoradoRollState(machine.id, {
+    activeRollId,
+    rollLengthM: COLORADO_ROLL_LENGTH_M,
+    mediaWidthMm,
+    baselineMediaTotalM2: baselineKnown ? Number(latest.mediaTotalM2) : null,
+    baselineRecordedAt: baselineKnown ? latest.timestamp : null,
+    loadedAt: now,
+    loadedBy: cfg.userName || cfg.deviceId,
+    note,
+  });
+
+  setColoradoRollState(machine.id, nextState);
+  closeColoradoRollModal();
+  renderColoradoRollTracker();
+  showToast(baselineKnown ? 'Nová role uložena' : 'Role uložena, čekám na další sync', 'success');
 }
 
 function getCombinedCoLifetimeInkBasis() {
@@ -688,6 +895,7 @@ function computeCoStats(machineId) {
 }
 
 function renderCoDashboard() {
+  renderColoradoRollTracker();
   MACHINES.forEach(({ id, label }) => renderMachineCard(id, label));
   renderCombinedCard();
 }
@@ -1332,6 +1540,7 @@ async function init() {
     window.I18N.init();
   }
   setDb(await openDB());
+  S.coloradoRolls = loadColoradoRollStates();
 
   // Mode toggle
   document.querySelectorAll('.mode-btn').forEach(b =>
@@ -1354,6 +1563,17 @@ async function init() {
 
   // Topbar
   el('nav-settings').addEventListener('click', () => navigate('settings'));
+  el('roll-modal-save')?.addEventListener('click', () => saveColoradoRollModal());
+  document.querySelectorAll('[data-roll-cancel]').forEach(button =>
+    button.addEventListener('click', closeColoradoRollModal));
+  el('roll-modal')?.addEventListener('click', event => {
+    if (event.target === el('roll-modal')) closeColoradoRollModal();
+  });
+  window.addEventListener('storage', event => {
+    if (event.key !== COLORADO_ROLL_STORAGE_KEY) return;
+    S.coloradoRolls = loadColoradoRollStates();
+    renderColoradoRollTracker();
+  });
 
 // ✅ SYNC (cloud push + pull + overwrite local)
 // ✅ SYNC (cloud push + pull + overwrite local) — HARDENED

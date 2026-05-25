@@ -130,7 +130,150 @@ html { scrollbar-gutter: stable; }
 }
 .topbar-left  { display: flex; align-items: center; gap: 0; flex: 0 1 auto; min-width: 0; }
 .topbar-center { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
-.topbar-right  { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+.topbar-right  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: nowrap; }
+
+.co-roll-tracker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.co-roll-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.co-roll-chip {
+  min-width: 138px;
+  max-width: 168px;
+  padding: 7px 10px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  align-items: center;
+  overflow: hidden;
+}
+.co-roll-chip.is-stale {
+  border-style: dashed;
+  border-color: rgba(180, 130, 60, .55);
+}
+.co-roll-chip.is-warn {
+  border-color: rgba(180, 130, 60, .45);
+}
+.co-roll-chip.is-low {
+  border-color: rgba(180, 95, 80, .45);
+}
+.co-roll-chip.is-critical,
+.co-roll-chip.is-empty {
+  border-color: rgba(180, 95, 80, .7);
+}
+.co-roll-chip.is-width_not_set {
+  border-color: rgba(160, 130, 70, .45);
+}
+.co-roll-chip.is-waiting {
+  border-color: var(--border);
+}
+.co-roll-chip-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.co-roll-chip-machine {
+  min-width: 0;
+  font-size: .57rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.co-roll-chip-status {
+  flex: 0 0 auto;
+  font-size: .54rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  color: var(--text-dim);
+  background: var(--bg4);
+}
+.co-roll-chip.is-ok .co-roll-chip-status { color: var(--ok); }
+.co-roll-chip.is-warn .co-roll-chip-status { color: var(--accent); }
+.co-roll-chip.is-low .co-roll-chip-status,
+.co-roll-chip.is-critical .co-roll-chip-status,
+.co-roll-chip.is-empty .co-roll-chip-status { color: var(--crit); }
+.co-roll-chip.is-stale .co-roll-chip-status { color: var(--accent); }
+.co-roll-chip.is-width_not_set .co-roll-chip-status,
+.co-roll-chip.is-waiting .co-roll-chip-status { color: var(--text-faint); }
+.co-roll-battery {
+  grid-column: 1 / -1;
+  height: 12px;
+  padding: 1px;
+  border: 1px solid var(--border);
+  background: var(--bg4);
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.co-roll-battery-fill {
+  display: block;
+  height: 100%;
+  width: var(--roll-fill, 0%);
+  background: var(--ok);
+  transition: width var(--tr), background var(--tr);
+}
+.co-roll-chip.is-warn .co-roll-battery-fill { background: var(--accent); }
+.co-roll-chip.is-low .co-roll-battery-fill,
+.co-roll-chip.is-critical .co-roll-battery-fill,
+.co-roll-chip.is-empty .co-roll-battery-fill { background: var(--crit); }
+.co-roll-chip.is-stale .co-roll-battery-fill { background: var(--accent-light); }
+.co-roll-chip.is-width_not_set .co-roll-battery-fill,
+.co-roll-chip.is-waiting .co-roll-battery-fill { background: var(--border-2); }
+.co-roll-chip-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.05;
+}
+.co-roll-chip-remaining {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.co-roll-chip-meta {
+  font-size: .54rem;
+  color: var(--text-faint);
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.co-roll-add {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
 
 .brand-lockup {
   display: flex;
@@ -1185,6 +1328,48 @@ textarea { resize: vertical; min-height: 58px; }
 .modal-footer .btn-secondary, .modal-footer .btn-primary { flex: 1; width: auto; }
 .modal-box .modal-footer { padding: 0; border: none; margin-top: 0; }
 
+.roll-modal-box {
+  max-width: 520px;
+  padding: 0;
+}
+.roll-modal-body {
+  display: grid;
+  gap: 14px;
+}
+.roll-modal-summary {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  padding: 10px 12px;
+  color: var(--text-dim);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+.roll-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.roll-modal-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.roll-modal-field.span2 {
+  grid-column: 1 / -1;
+}
+.roll-modal-field label {
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: var(--wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.roll-modal-field .input-sm,
+.roll-modal-field input,
+.roll-modal-field textarea {
+  width: 100%;
+}
+
 .daily-report-modal-box {
   max-height: min(88vh, 820px);
   display: flex;
@@ -1825,6 +2010,8 @@ textarea { resize: vertical; min-height: 58px; }
     flex: 0 0 auto;
     order: 2;
     margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .brand-lockup {
     width: auto;
@@ -1910,6 +2097,20 @@ textarea { resize: vertical; min-height: 58px; }
     right: 14px;
     bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
   }
+  .co-roll-tracker {
+    gap: 6px;
+  }
+  .co-roll-chip {
+    min-width: 126px;
+    max-width: 142px;
+    padding: 6px 8px 7px;
+  }
+  .co-roll-chip-meta {
+    display: none;
+  }
+  .co-roll-chip-status {
+    font-size: .5rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1936,6 +2137,12 @@ textarea { resize: vertical; min-height: 58px; }
   }
   .pp-advanced-grid {
     grid-template-columns: 1fr;
+  }
+  .roll-modal-grid {
+    grid-template-columns: 1fr;
+  }
+  .roll-modal-field.span2 {
+    grid-column: auto;
   }
   .pp-processed-time {
     white-space: normal;

@@ -22,7 +22,7 @@
   <link rel="manifest" href="manifest.json?v=7.0.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.0.8">
+  <link rel="stylesheet" href="styles.css?v=7.0.9">
   <link rel="icon" href="/icons/icon-192.png?v=7.0.1">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=7.0.1">
   <title>PrintGuard</title>
@@ -57,6 +57,7 @@
       </div>
     </div>
     <div class="topbar-right">
+      <div class="co-roll-tracker" id="co-roll-tracker" aria-label="Stav papírových rolí"></div>
       <button id="sync-btn" class="icon-btn" title="Obnovit" data-i18n-title="btn.refresh">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       </button>
@@ -888,10 +889,40 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=7.0.9"></script>
+  <div id="roll-modal" class="modal-overlay hidden">
+    <div class="modal-box roll-modal-box">
+      <div class="modal-header">
+        <h2 id="roll-modal-title">Nová role</h2>
+        <button class="modal-x" type="button" data-roll-cancel="true" aria-label="Zavřít">×</button>
+      </div>
+      <div class="modal-body roll-modal-body">
+        <div class="roll-modal-summary" id="roll-modal-summary">—</div>
+        <div class="roll-modal-grid">
+          <div class="roll-modal-field">
+            <label for="roll-modal-machine">Tiskárna</label>
+            <input id="roll-modal-machine" class="input-sm" type="text" readonly>
+          </div>
+          <div class="roll-modal-field">
+            <label for="roll-modal-width">Šířka média (mm) *</label>
+            <input id="roll-modal-width" class="input-sm" type="number" min="1" step="1" inputmode="numeric" placeholder="např. 1625">
+          </div>
+          <div class="roll-modal-field span2">
+            <label for="roll-modal-note">Poznámka <span class="opt">(volitelné)</span></label>
+            <textarea id="roll-modal-note" rows="3" placeholder="Např. nová role po výměně média"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" type="button" data-roll-cancel="true">Zrušit</button>
+        <button class="btn-primary" type="button" id="roll-modal-save">Uložit roli</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="i18n.js?v=7.0.10"></script>
   <script src="reports/date.js"></script>
   <script src="reports/csv.js"></script>
-  <script src="reports/colorado.js"></script>
+  <script src="reports/colorado.js?v=7.0.1"></script>
   <script src="reports/stock.js"></script>
   <script src="reports/notification-model.js"></script>
   <script src="reports/notification-rules.js"></script>
@@ -940,6 +971,6 @@
   <script src="app/date-filters.js?v=7.0.5"></script>
   <script src="app/push.js?v=7.0.5"></script>
   <script src="app/sync.js?v=7.0.5"></script>
-  <script src="app.js?v=7.0.6"></script>
+  <script src="app.js?v=7.0.7"></script>
 </body>
 </html>
