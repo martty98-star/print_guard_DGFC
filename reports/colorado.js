@@ -71,7 +71,6 @@
       state.activeRollId
       || state.loadedAt
       || hasBaseline
-      || mediaWidthMm
     );
     const canHydrateBaseline = Boolean(
       latest
@@ -90,7 +89,7 @@
     let bucketStatus = 'waiting';
 
     if (!mediaWidthMm) {
-      status = 'width_not_set';
+      status = 'waiting';
     } else if (!hasBaseline) {
       status = 'waiting';
     } else if (!latest) {
@@ -110,11 +109,11 @@
     const canEstimate = Boolean(mediaWidthMm && hasBaseline && latest);
     const fillPercent = canEstimate ? bucketFillPercent(remainingPct) : null;
     const remainingLabel = !hasActiveRoll
-      ? 'load roll'
+      ? 'WAIT'
       : !mediaWidthMm
-      ? 'width not set'
+      ? 'WAIT'
       : !hasBaseline
-        ? 'waiting for next sync'
+        ? 'WAIT'
         : formatApproxRemainingMeters(remainingM);
 
     return {

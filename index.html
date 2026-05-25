@@ -22,7 +22,7 @@
   <link rel="manifest" href="manifest.json?v=7.0.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.0.9">
+  <link rel="stylesheet" href="styles.css?v=7.0.10">
   <link rel="icon" href="/icons/icon-192.png?v=7.0.1">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=7.0.1">
   <title>PrintGuard</title>
@@ -889,9 +889,15 @@
   <!-- Toast + Confirm -->
   <div id="toast" class="toast hidden"></div>
   <div id="confirm-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <p id="confirm-text"></p>
-      <div class="modal-footer" style="border:none;padding:0">
+    <div class="modal-box confirm-box">
+      <div class="modal-header">
+        <h2 id="confirm-title">Potvrzení</h2>
+        <button class="modal-x" type="button" id="confirm-close" aria-label="Zavřít">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-text"></p>
+      </div>
+      <div class="modal-footer">
         <button id="confirm-cancel" class="btn-secondary">Zrušit</button>
         <button id="confirm-ok" class="btn-primary">Potvrdit</button>
       </div>
@@ -905,26 +911,15 @@
         <button class="modal-x" type="button" data-roll-cancel="true" aria-label="Zavřít">×</button>
       </div>
       <div class="modal-body roll-modal-body">
-        <div class="roll-modal-summary" id="roll-modal-summary">—</div>
+        <div class="roll-modal-summary" id="roll-modal-summary">Potvrdit výměnu role?</div>
         <div class="roll-modal-rollinfo">
-          <span class="roll-modal-rollinfo-label">Délka role</span>
+          <span class="roll-modal-rollinfo-label">Délka nové role</span>
           <strong>130 m</strong>
-        </div>
-        <div class="roll-modal-grid">
-          <div class="roll-modal-field span2">
-            <label for="roll-modal-width">Šířka role pro výpočet *</label>
-            <input id="roll-modal-width" class="input-sm" type="number" min="1" step="1" inputmode="numeric" placeholder="např. 1625 mm">
-            <div class="roll-modal-helper">Colorado reportuje spotřebu v m². Šířka je potřeba jen pro přepočet na běžné metry.</div>
-          </div>
-          <div class="roll-modal-field span2">
-            <label for="roll-modal-note">Poznámka <span class="opt">(volitelné)</span></label>
-            <textarea id="roll-modal-note" rows="3" placeholder="Např. nová role po výměně média"></textarea>
-          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" type="button" data-roll-cancel="true">Zrušit</button>
-        <button class="btn-primary" type="button" id="roll-modal-save">Uložit novou roli</button>
+        <button class="btn-primary" type="button" id="roll-modal-save">Potvrdit výměnu</button>
       </div>
     </div>
   </div>
@@ -945,7 +940,7 @@
   <script src="i18n.js?v=7.0.10"></script>
   <script src="reports/date.js"></script>
   <script src="reports/csv.js"></script>
-  <script src="reports/colorado.js?v=7.0.1"></script>
+  <script src="reports/colorado.js?v=7.0.2"></script>
   <script src="reports/stock.js"></script>
   <script src="reports/notification-model.js"></script>
   <script src="reports/notification-rules.js"></script>
@@ -953,7 +948,7 @@
   <script src="reports/printLog.js"></script>
   <script src="reports/checklist-domain.js?v=7.0.0"></script>
   <script src="scripts/core-utils.js"></script>
-  <script src="scripts/dom-utils.js"></script>
+  <script src="scripts/dom-utils.js?v=7.0.1"></script>
   <script src="scripts/push-utils.js"></script>
   <script src="scripts/settings-ui.js?v=7.0.1"></script>
   <script src="scripts/export-utils.js"></script>
@@ -994,6 +989,6 @@
   <script src="app/date-filters.js?v=7.0.5"></script>
   <script src="app/push.js?v=7.0.5"></script>
   <script src="app/sync.js?v=7.0.5"></script>
-  <script src="app.js?v=7.0.7"></script>
+  <script src="app.js?v=7.0.8"></script>
 </body>
 </html>

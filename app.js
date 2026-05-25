@@ -210,6 +210,7 @@ const S = {
   movements:   [],     // sorted by timestamp asc
   coRecords:   [],     // sorted by timestamp asc
   coloradoRolls: {},
+  coloradoRollEvents: {},
   mode:        'stock',
   stockFilter: 'all',
   stockSearch: '',
@@ -622,6 +623,7 @@ const CO_FORMATS = [
 ];
 
 const COLORADO_ROLL_STORAGE_KEY = 'pg_colorado_roll_state_v1';
+const COLORADO_ROLL_EVENTS_STORAGE_KEY = 'pg_colorado_roll_events_v1';
 const COLORADO_ROLL_LENGTH_M = 130;
 const COLORADO_ROLL_STALE_MINUTES = 90;
 
@@ -634,11 +636,14 @@ function getColoradoRollMachineLabel(machineId) {
   return MACHINES.find(machine => machine.id === machineId)?.label || machineId || 'Colorado';
 }
 
-function normalizeColoradoRollState(machineId, input) {
+function normalizeColoradoRollState(machineId, input, includeHistory = true) {
   const source = input && typeof input === 'object' ? input : {};
   const rollLengthM = Number(source.rollLengthM);
   const mediaWidthMm = Number(source.mediaWidthMm);
   const baselineMediaTotalM2 = Number(source.baselineMediaTotalM2);
+  const previousState = includeHistory && source.previousState && typeof source.previousState === 'object'
+    ? normalizeColoradoRollState(machineId, source.previousState, false)
+    : null;
   return {
     machineId,
     machineName: String(source.machineName || getColoradoRollMachineLabel(machineId)).trim() || getColoradoRollMachineLabel(machineId),
@@ -650,6 +655,8 @@ function normalizeColoradoRollState(machineId, input) {
     loadedAt: String(source.loadedAt || '').trim() || null,
     loadedBy: String(source.loadedBy || '').trim() || '',
     note: String(source.note || '').trim() || '',
+    lastLoadEventId: includeHistory ? (String(source.lastLoadEventId || '').trim() || null) : null,
+    previousState,
   };
 }
 
@@ -669,6 +676,22 @@ function loadColoradoRollStates() {
   }
 }
 
+function loadColoradoRollEvents() {
+  try {
+    const raw = ls(COLORADO_ROLL_EVENTS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const events = {};
+    MACHINES.forEach(({ id }) => {
+      events[id] = Array.isArray(parsed && parsed[id]) ? parsed[id] : [];
+    });
+    return events;
+  } catch (error) {
+    console.warn('Colorado roll event load failed', error);
+    return {};
+  }
+}
+
 function saveColoradoRollStates() {
   try {
     ls(COLORADO_ROLL_STORAGE_KEY, JSON.stringify(S.coloradoRolls || {}));
@@ -677,9 +700,39 @@ function saveColoradoRollStates() {
   }
 }
 
+function saveColoradoRollEvents() {
+  try {
+    ls(COLORADO_ROLL_EVENTS_STORAGE_KEY, JSON.stringify(S.coloradoRollEvents || {}));
+  } catch (error) {
+    console.warn('Colorado roll event save failed', error);
+  }
+}
+
 function getColoradoRollState(machineId) {
   if (!machineId) return null;
   return normalizeColoradoRollState(machineId, S.coloradoRolls && S.coloradoRolls[machineId]);
+}
+
+function getColoradoRollEvents(machineId) {
+  if (!machineId) return [];
+  return Array.isArray(S.coloradoRollEvents && S.coloradoRollEvents[machineId]) ? S.coloradoRollEvents[machineId] : [];
+}
+
+function appendColoradoRollEvent(machineId, type, payload) {
+  if (!machineId) return null;
+  const event = {
+    id: genId('co_roll_evt'),
+    machineId,
+    type,
+    timestamp: new Date().toISOString(),
+    ...(payload && typeof payload === 'object' ? payload : {}),
+  };
+  S.coloradoRollEvents = {
+    ...(S.coloradoRollEvents || {}),
+    [machineId]: [...getColoradoRollEvents(machineId), event],
+  };
+  saveColoradoRollEvents();
+  return event;
 }
 
 function setColoradoRollState(machineId, input) {
@@ -734,21 +787,22 @@ function getColoradoRollUiClass(status) {
 }
 
 function getColoradoRollStatusText(summary) {
-  if (!summary) return 'load roll';
-  if (summary.status === 'stale') return 'stale';
-  if (summary.status === 'width_not_set') return 'width not set';
-  if (summary.status === 'waiting') return summary.hasActiveRoll ? 'waiting for next sync' : 'load roll';
-  return summary.remainingLabel || '—';
+  if (!summary) return 'WAIT';
+  if (summary.status === 'stale') return 'STALE';
+  if (summary.status === 'ok') return 'OK';
+  if (summary.status === 'warn' || summary.status === 'low') return 'LOW';
+  if (summary.status === 'critical' || summary.status === 'empty') return 'CRIT';
+  return 'WAIT';
 }
 
 function getColoradoRollFreshnessText(summary) {
   if (!summary || !summary.freshnessLabel) return '';
-  if (summary.status === 'waiting' || summary.status === 'width_not_set') return '';
+  if (summary.status === 'waiting') return '';
   return summary.freshnessLabel;
 }
 
 function getColoradoRollAggregate(summaries) {
-  const rank = { stale: 6, empty: 5, critical: 4, low: 3, warn: 2, ok: 1, width_not_set: 0, waiting: 0 };
+  const rank = { stale: 6, empty: 5, critical: 4, low: 3, warn: 2, ok: 1, waiting: 0 };
   const worst = [...(summaries || [])].sort((a, b) => (rank[b.status] || 0) - (rank[a.status] || 0))[0] || null;
   const hasWarning = Boolean((summaries || []).find(summary => summary && summary.status !== 'ok'));
   return {
@@ -761,17 +815,19 @@ function getColoradoRollAggregate(summaries) {
   };
 }
 
-function renderColoradoRollSheet(summaries) {
+function renderColoradoRollSheet(summaries, focusMachineId) {
   const wrap = el('roll-sheet-body');
   if (!wrap) return;
 
   wrap.innerHTML = (summaries || []).map(summary => {
     const rollClass = getColoradoRollUiClass(summary.status);
     const statusText = getColoradoRollStatusText(summary);
-    const freshnessText = getColoradoRollFreshnessText(summary);
     const machineLabel = MACHINES.find(machine => machine.id === summary.machineId)?.label || summary.machineId || 'Colorado';
     const compactLabel = machineLabel.replace(/^Colorado\s+/i, 'C');
-    return `<div class="roll-sheet-row ${esc(rollClass)}">
+    const isFocused = focusMachineId && focusMachineId === summary.machineId;
+    const canUndo = Boolean(summary.canUndo);
+    const canReset = Boolean(isAdmin && isAdmin());
+    return `<div class="roll-sheet-row ${esc(rollClass)}${isFocused ? ' is-focused' : ''}">
       <div class="roll-sheet-head">
         <span class="roll-sheet-machine">${esc(compactLabel)}</span>
         <span class="roll-sheet-status">${esc(statusText)}</span>
@@ -779,9 +835,10 @@ function renderColoradoRollSheet(summaries) {
       <div class="roll-battery" aria-hidden="true" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${summary.fillPercent}%` : '--roll-fill:0%'}">
         <span class="roll-battery-fill"></span>
       </div>
-      ${freshnessText ? `<div class="roll-sheet-meta">${esc(freshnessText)}</div>` : ''}
       <div class="roll-sheet-actions">
-        <button class="btn-secondary btn-sm" type="button" data-roll-load="${esc(summary.machineId)}">+ Nová role</button>
+        <button class="btn-secondary btn-sm" type="button" data-roll-load="${esc(summary.machineId)}" aria-label="Nová role">+</button>
+        <button class="btn-secondary btn-sm" type="button" data-roll-undo="${esc(summary.machineId)}" ${canUndo ? '' : 'disabled'}>Zrušit poslední výměnu</button>
+        ${canReset ? `<button class="btn-secondary btn-sm" type="button" data-roll-reset="${esc(summary.machineId)}">Resetovat stav role</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -791,6 +848,14 @@ function renderColoradoRollSheet(summaries) {
       closeColoradoRollSheet();
       openColoradoRollModal(button.dataset.rollLoad);
     });
+  });
+
+  wrap.querySelectorAll('[data-roll-undo]').forEach(button => {
+    button.addEventListener('click', () => undoColoradoRollLoad(button.dataset.rollUndo));
+  });
+
+  wrap.querySelectorAll('[data-roll-reset]').forEach(button => {
+    button.addEventListener('click', () => promptColoradoRollReset(button.dataset.rollReset));
   });
 }
 
@@ -815,6 +880,7 @@ function renderColoradoRollTracker() {
     return {
       ...summary,
       machineLabel: label,
+      canUndo: Boolean(rollState && rollState.previousState && rollState.lastLoadEventId),
     };
   });
 
@@ -822,15 +888,10 @@ function renderColoradoRollTracker() {
     const rollClass = getColoradoRollUiClass(summary.status);
     const compactLabel = (summary.machineLabel || summary.machineId || 'Colorado').replace(/^Colorado\s+/i, 'C');
     const statusText = getColoradoRollStatusText(summary);
-    const freshnessText = getColoradoRollFreshnessText(summary);
     const fillPercent = Number.isFinite(summary.fillPercent) ? summary.fillPercent : 0;
-    const ariaLabel = [
-      summary.machineLabel || summary.machineId,
-      statusText,
-      freshnessText,
-    ].filter(Boolean).join(' · ');
+    const ariaLabel = `${summary.machineLabel || summary.machineId} ${statusText}`;
     return `<div class="roll-group" data-roll-machine="${esc(summary.machineId)}">
-      <div class="roll-chip ${esc(rollClass)}" role="group" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
+      <button class="roll-chip ${esc(rollClass)}" type="button" data-roll-detail="${esc(summary.machineId)}" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
         <div class="roll-chip-main">
           <div class="roll-chip-head">
             <span class="roll-chip-machine">${esc(compactLabel)}</span>
@@ -840,8 +901,7 @@ function renderColoradoRollTracker() {
             <span class="roll-battery-fill"></span>
           </div>
         </div>
-        ${freshnessText ? `<div class="roll-chip-meta">${esc(freshnessText)}</div>` : ''}
-      </div>
+      </button>
       <button class="icon-btn roll-action-button" type="button" data-roll-load="${esc(summary.machineId)}" title="Nová role" data-i18n-title="colorado.roll.load" aria-label="Nová role">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
@@ -850,6 +910,10 @@ function renderColoradoRollTracker() {
 
   wrap.querySelectorAll('[data-roll-load]').forEach(button => {
     button.addEventListener('click', () => openColoradoRollModal(button.dataset.rollLoad));
+  });
+
+  wrap.querySelectorAll('[data-roll-detail]').forEach(button => {
+    button.addEventListener('click', () => openColoradoRollSheet(button.dataset.rollDetail));
   });
 
   const mobileEntry = el('roll-mobile-entry');
@@ -864,7 +928,7 @@ function renderColoradoRollTracker() {
     mobileDot.classList.toggle('hidden', !aggregate.hasWarning);
   }
 
-  renderColoradoRollSheet(summaries);
+  renderColoradoRollSheet(summaries, el('roll-sheet')?.dataset.focusMachineId || null);
 }
 
 function closeColoradoRollModal() {
@@ -879,10 +943,12 @@ function closeColoradoRollSheet() {
   if (toggle) toggle.setAttribute('aria-expanded', 'false');
 }
 
-function openColoradoRollSheet() {
+function openColoradoRollSheet(machineId) {
   const sheet = el('roll-sheet');
   const toggle = el('roll-mobile-toggle');
   if (!sheet) return;
+  if (machineId) sheet.dataset.focusMachineId = machineId;
+  else delete sheet.dataset.focusMachineId;
   renderColoradoRollTracker();
   sheet.classList.remove('hidden');
   if (toggle) toggle.setAttribute('aria-expanded', 'true');
@@ -895,18 +961,14 @@ function openColoradoRollModal(machineId) {
   if (!machine) return;
   const state = getColoradoRollState(machine.id);
   const latest = getLatestCoRecord(machine.id);
-  const latestStamp = latest ? fmtDT(latest.timestamp) : '—';
   const summary = latest
-    ? `Poslední Colorado stav: ${latestStamp} · celkem ${fmtN(latest.mediaTotalM2, 1)} m²`
-    : 'Zatím nemáme poslední stav z Colorada. Roli lze uložit, výpočet se spustí po dalším syncu.';
+    ? 'Potvrdit výměnu role?'
+    : 'Zatím nemáme poslední stav z Colorada. Výpočet se spustí po dalším syncu.';
 
   elSet('roll-modal-title', `Nová role  ${machine.label}`);
   elSet('roll-modal-summary', summary);
-  el('roll-modal-width').value = state && state.mediaWidthMm ? String(state.mediaWidthMm) : '';
-  el('roll-modal-note').value = state && state.note ? state.note : '';
   modal.dataset.machineId = machine.id;
   modal.classList.remove('hidden');
-  el('roll-modal-width').focus();
 }
 
 async function saveColoradoRollModal() {
@@ -919,33 +981,105 @@ async function saveColoradoRollModal() {
     return;
   }
 
-  const mediaWidthMm = parseInt(el('roll-modal-width').value, 10);
-  const note = el('roll-modal-note').value.trim();
-  if (!Number.isFinite(mediaWidthMm) || mediaWidthMm <= 0) {
-    showToast('Zadejte šířku média v mm', 'error');
-    return;
-  }
-
   const latest = getLatestCoRecord(machine.id);
   const now = new Date().toISOString();
   const activeRollId = genId('roll');
   const baselineKnown = Boolean(latest);
+  const currentState = getColoradoRollState(machine.id);
+  const configuredWidth = normalizePositiveNumber(
+    currentState && currentState.mediaWidthMm,
+    normalizePositiveNumber(cfg.coloradoRollWidthMm || cfg.coloradoMediaWidthMm || cfg.mediaWidthMm, null)
+  );
+  const previousState = currentState ? normalizeColoradoRollState(machine.id, currentState, false) : null;
+  const loadEventId = genId('co-roll-loaded');
   const nextState = normalizeColoradoRollState(machine.id, {
     activeRollId,
     rollLengthM: COLORADO_ROLL_LENGTH_M,
-    mediaWidthMm,
+    mediaWidthMm: configuredWidth,
     baselineMediaTotalM2: baselineKnown ? Number(latest.mediaTotalM2) : null,
     baselineRecordedAt: baselineKnown ? latest.timestamp : null,
     loadedAt: now,
     loadedBy: cfg.userName || cfg.deviceId,
     machineName: machine.label,
-    note,
+    previousState,
+    lastLoadEventId: loadEventId,
   });
 
   setColoradoRollState(machine.id, nextState);
+  appendColoradoRollEvent(machine.id, 'roll_loaded', {
+    eventId: loadEventId,
+    before: previousState,
+    after: nextState,
+    baselineKnown,
+    baselineRecordedAt: nextState.baselineRecordedAt,
+  });
   closeColoradoRollModal();
   renderColoradoRollTracker();
-  showToast(baselineKnown ? 'Nová role uložena' : 'Role uložena, čekám na další sync', 'success');
+  showToast(
+    baselineKnown ? 'Nová role uložena' : 'Nová role uložena, čekáme na další sync',
+    'success',
+    {
+      label: 'Vrátit zpět',
+      onClick: () => undoColoradoRollLoad(machine.id),
+    }
+  );
+}
+
+function undoColoradoRollLoad(machineId) {
+  const current = getColoradoRollState(machineId);
+  if (!current || !current.lastLoadEventId) {
+    showToast('Nelze vrátit poslední výměnu', 'error');
+    return;
+  }
+
+  const preservedWidth = Number.isFinite(current.mediaWidthMm)
+    ? current.mediaWidthMm
+    : normalizePositiveNumber(cfg.coloradoRollWidthMm || cfg.coloradoMediaWidthMm || cfg.mediaWidthMm, null);
+  const restored = current.previousState
+    ? normalizeColoradoRollState(machineId, current.previousState)
+    : normalizeColoradoRollState(machineId, {
+      machineName: getColoradoRollMachineLabel(machineId),
+      mediaWidthMm: preservedWidth,
+    });
+
+  setColoradoRollState(machineId, restored);
+  appendColoradoRollEvent(machineId, 'roll_load_cancelled', {
+    revertedEventId: current.lastLoadEventId,
+    before: current,
+    after: restored,
+  });
+  renderColoradoRollTracker();
+  closeColoradoRollSheet();
+  showToast('Výměna vrácena', 'success');
+}
+
+function resetColoradoRollState(machineId) {
+  const before = getColoradoRollState(machineId);
+  const preservedWidth = before && Number.isFinite(before.mediaWidthMm)
+    ? before.mediaWidthMm
+    : normalizePositiveNumber(cfg.coloradoRollWidthMm || cfg.coloradoMediaWidthMm || cfg.mediaWidthMm, null);
+  const next = normalizeColoradoRollState(machineId, {
+    machineName: getColoradoRollMachineLabel(machineId),
+    mediaWidthMm: preservedWidth,
+  });
+  setColoradoRollState(machineId, next);
+  appendColoradoRollEvent(machineId, 'roll_reset', {
+    before,
+    after: next,
+  });
+  renderColoradoRollTracker();
+  closeColoradoRollSheet();
+  showToast('Stav role resetován', 'success');
+}
+
+function promptColoradoRollReset(machineId) {
+  if (!machineId) return;
+  showRollConfirm({
+    title: 'Zrušit poslední výměnu role?',
+    body: 'Tím se obnoví předchozí stav role.',
+    cancelLabel: 'Nechat',
+    confirmLabel: 'Zrušit výměnu',
+  }, () => resetColoradoRollState(machineId));
 }
 
 function getCombinedCoLifetimeInkBasis() {
@@ -1639,12 +1773,29 @@ async function deleteMovement(id) {
 
 window.enablePushNotifications = enablePushNotifications;
 
-function showConfirm(text, onOk) {
-  el('confirm-text').textContent = text;
-  el('confirm-modal').classList.remove('hidden');
-  const close = () => el('confirm-modal').classList.add('hidden');
+function showConfirm(input, onOk) {
+  const cfg = typeof input === 'object' && input
+    ? input
+    : { body: input };
+  const title = cfg.title || 'Potvrzení';
+  const body = cfg.body || cfg.text || '';
+  const confirmLabel = cfg.confirmLabel || 'Potvrdit';
+  const cancelLabel = cfg.cancelLabel || 'Zrušit';
+  const modal = el('confirm-modal');
+  if (!modal) return;
+  el('confirm-title').textContent = title;
+  el('confirm-text').textContent = body;
+  el('confirm-ok').textContent = confirmLabel;
+  el('confirm-cancel').textContent = cancelLabel;
+  modal.classList.remove('hidden');
+  const close = () => modal.classList.add('hidden');
   el('confirm-ok').onclick     = () => { close(); onOk(); };
   el('confirm-cancel').onclick = close;
+  el('confirm-close').onclick  = close;
+}
+
+function showRollConfirm(input, onOk) {
+  return showConfirm(input, onOk);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1657,6 +1808,7 @@ async function init() {
   }
   setDb(await openDB());
   S.coloradoRolls = loadColoradoRollStates();
+  S.coloradoRollEvents = loadColoradoRollEvents();
 
   // Mode toggle
   document.querySelectorAll('.mode-btn').forEach(b =>
@@ -1694,6 +1846,7 @@ async function init() {
   window.addEventListener('storage', event => {
     if (event.key !== COLORADO_ROLL_STORAGE_KEY) return;
     S.coloradoRolls = loadColoradoRollStates();
+    S.coloradoRollEvents = loadColoradoRollEvents();
     renderColoradoRollTracker();
   });
 
