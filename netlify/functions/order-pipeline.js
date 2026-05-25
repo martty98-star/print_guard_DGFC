@@ -83,11 +83,21 @@ exports.handler = async function handler(event) {
 
     query = event.queryStringParameters || {};
     includeStats = parseIncludeStats(query.includeStats);
+    const requestUrl = event.rawUrl || event.path || '/.netlify/functions/order-pipeline';
     const body = await withClient(async (client) => {
       if (query.detail === '1' || query.detail === 'true' || query.id || query.orderNumber) {
+        const detailStarted = Date.now();
         const row = await getOrderPipelineDetail(client, {
           id: query.id,
           orderNumber: query.orderNumber,
+        });
+        timings.detailMs = Date.now() - detailStarted;
+        timings.fullViewReason = 'detail';
+        console.warn('order-pipeline full-view slow path', {
+          reason: 'detail',
+          filters: summarizeFilters(query, includeStats),
+          requestUrl,
+          elapsedMs: timings.detailMs,
         });
         return { ok: true, row };
       }
@@ -104,7 +114,8 @@ exports.handler = async function handler(event) {
         status: query.status,
         reprint: query.reprint,
       };
-      const page = await listOrderPipeline(client, { ...filters, timings });
+      const page = await listOrderPipeline(client, { ...filters, requestUrl, timings });
+      timings.rowCount = Array.isArray(page.rows) ? page.rows.length : 0;
       const stats = includeStats.global || includeStats.scope
         ? await getOrderPipelineStats(client, {
           ...filters,
@@ -143,6 +154,7 @@ exports.handler = async function handler(event) {
     timings.totalMs = Date.now() - requestStarted;
     console.log('order-pipeline timing', {
       ...timings,
+      duration_ms: timings.totalMs,
       filters: summarizeFilters(query, includeStats),
     });
     return json(200, body);

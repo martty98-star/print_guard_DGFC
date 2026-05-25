@@ -132,6 +132,9 @@ async function ensureProcessedPrintOrderTables(client) {
   await client.query(`alter table processed_order_reprint_requests add column if not exists note text null`);
   await client.query(`alter table processed_order_reprint_requests add column if not exists confirmed_at timestamptz null`);
   await client.query(`create index if not exists processed_reprint_order_idx on processed_order_reprint_requests (order_id, requested_at desc)`);
+  await client.query(`create index if not exists processed_reprint_order_status_idx on processed_order_reprint_requests (order_id, status, requested_at desc)`);
+  await client.query(`create index if not exists processed_reprint_status_order_idx on processed_order_reprint_requests (status, order_id, requested_at desc)`);
+  await client.query(`create index if not exists processed_reprint_order_name_idx on processed_order_reprint_requests (order_name)`);
   await client.query(`
     create index if not exists processed_reprint_pending_lookup_idx
       on processed_order_reprint_requests (order_id, print_file_path)

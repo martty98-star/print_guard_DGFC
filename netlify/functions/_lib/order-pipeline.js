@@ -77,6 +77,151 @@ function pipelineDateExpr() {
   return `(coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) at time zone 'Europe/Prague')::date`;
 }
 
+function pipelineSortExpr() {
+  return `case
+          when pipeline_status = 'received_only' then 0
+          when pipeline_status = 'processed_without_received' then 1
+          when pipeline_status = 'reprint_pending' then 2
+          else 3
+        end,
+        coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+        order_number desc`;
+}
+
+function parentMatchKeyExpr(alias, columnName) {
+  return `regexp_replace(lower(coalesce(${alias}.${columnName}, '')), '[[:space:]_-]+', '', 'g')`;
+}
+
+function reprintParentMatchKeySql(alias) {
+  return `coalesce(
+          nullif(regexp_replace(regexp_replace(lower(coalesce(${alias}.order_name, '')), '([[:space:]_-]*reprint.*)$', '', 'i'), '[[:space:]_-]+', '', 'g'), ''),
+          nullif(regexp_replace(regexp_replace(lower(coalesce(${alias}.xml_file_name, '')), '([[:space:]_-]*reprint.*|\\.xml)$', '', 'i'), '[[:space:]_-]+', '', 'g'), '')
+        )`;
+}
+
+// Common list/stat requests do not need the full reprint XML payload. Keep them
+// on base tables so each request does not rebuild the expensive full view.
+function buildFastPipelineBaseCte() {
+  return `
+    with reprint_summary as (
+      select
+        order_id,
+        count(*)::int as reprint_request_count,
+        count(*) filter (where status = 'pending')::int as reprint_pending_count,
+        count(*) filter (where status in ('completed', 'resolved', 'done'))::int as reprint_completed_count,
+        (array_agg(status order by requested_at desc, id desc))[1] as latest_reprint_status
+      from processed_order_reprint_requests
+      group by order_id
+    ),
+    incoming_pipeline as (
+      select
+        i.order_number,
+        i.external_order_id,
+        i.customer_order_id,
+        i.received_at,
+        i.api_seen_at,
+        p.id as processed_order_id,
+        p.order_name as processed_order_name,
+        p.xml_file_name,
+        p.queued_date_time as processed_at,
+        p.queued_date_time,
+        p.workflow_name,
+        p.order_type,
+        p.print_files,
+        p.source_xml_path,
+        p.source_month
+      from print_orders_received i
+      left join lateral (
+        select p.*
+        from processed_print_orders p
+        where coalesce(p.ignored, false) = false
+          and upper(coalesce(p.order_type, 'S')) <> 'R'
+          and p.order_name in (i.order_number, i.external_order_id, i.customer_order_id)
+        order by case
+          when p.order_name = i.order_number then 1
+          when p.order_name = i.external_order_id then 2
+          when p.order_name = i.customer_order_id then 3
+          else 4
+        end, p.queued_date_time desc nulls last, p.id desc
+        limit 1
+      ) p on true
+    ),
+    processed_orphans as (
+      select
+        p.order_name as order_number,
+        null::text as external_order_id,
+        null::text as customer_order_id,
+        null::timestamptz as received_at,
+        null::timestamptz as api_seen_at,
+        p.id as processed_order_id,
+        p.order_name as processed_order_name,
+        p.xml_file_name,
+        p.queued_date_time as processed_at,
+        p.queued_date_time,
+        p.workflow_name,
+        p.order_type,
+        p.print_files,
+        p.source_xml_path,
+        p.source_month
+      from processed_print_orders p
+      where coalesce(p.ignored, false) = false
+        and upper(coalesce(p.order_type, 'S')) <> 'R'
+        and not exists (
+          select 1
+          from print_orders_received i
+          where i.order_number = p.order_name
+             or i.external_order_id = p.order_name
+             or i.customer_order_id = p.order_name
+        )
+    ),
+    pipeline_rows as (
+      select * from incoming_pipeline
+      union all
+      select * from processed_orphans
+    ),
+    pipeline_base as (
+      select
+        coalesce(pr.order_number, pr.processed_order_name) as order_number,
+        pr.external_order_id,
+        pr.customer_order_id,
+        pr.received_at,
+        pr.api_seen_at,
+        pr.processed_order_id,
+        pr.processed_order_name,
+        pr.xml_file_name,
+        pr.processed_at,
+        pr.queued_date_time,
+        pr.workflow_name,
+        pr.order_type,
+        pr.print_files,
+        pr.source_xml_path,
+        pr.source_month,
+        0::int as reprint_record_count,
+        '[]'::jsonb as reprint_records,
+        null::timestamptz as latest_reprint_record_at,
+        coalesce(r.reprint_request_count, 0) as reprint_request_count,
+        coalesce(r.reprint_pending_count, 0) as reprint_pending_count,
+        coalesce(r.reprint_completed_count, 0) as reprint_completed_count,
+        r.latest_reprint_status,
+        coalesce(r.reprint_pending_count, 0) > 0 as reprint_pending,
+        false as is_reprint_record,
+        case
+          when coalesce(r.reprint_pending_count, 0) > 0 then 'reprint_pending'
+          when pr.external_order_id is not null and pr.processed_order_id is not null then 'processed'
+          when pr.external_order_id is not null and pr.processed_order_id is null then 'received_only'
+          when pr.external_order_id is null and pr.processed_order_id is not null then 'processed_without_received'
+          else 'received_only'
+        end as pipeline_status
+      from pipeline_rows pr
+      left join reprint_summary r on r.order_id = pr.processed_order_id
+    )
+  `;
+}
+
+function requiresFullReprintView(options = {}) {
+  return options && options.deepScan === true;
+}
+
 async function ensureOrderPipelineView(client) {
   if (orderPipelineViewReady) return;
   await ensurePrintOrdersTable(client);
@@ -369,13 +514,13 @@ function addDateRangeFilter(where, params, options) {
 function addReprintFilter(where, value) {
   const reprint = cleanString(value) || 'all';
   if (reprint === 'has_reprint') {
-    where.push(`(coalesce(reprint_request_count, 0) > 0 or coalesce(reprint_record_count, 0) > 0)`);
+    where.push(`coalesce(reprint_request_count, 0) > 0`);
   } else if (reprint === 'pending') {
     where.push(`coalesce(reprint_pending_count, 0) > 0`);
   } else if (reprint === 'completed') {
-    where.push(`(coalesce(reprint_completed_count, 0) > 0 or reprint_records::text ilike '%done%')`);
+    where.push(`coalesce(reprint_completed_count, 0) > 0`);
   } else if (reprint === 'none') {
-    where.push(`coalesce(reprint_request_count, 0) = 0 and coalesce(reprint_record_count, 0) = 0`);
+    where.push(`coalesce(reprint_request_count, 0) = 0`);
   }
 }
 
@@ -385,7 +530,6 @@ function addStatusFilter(where, value) {
   if (status === 'needs_attention') {
     where.push(`(
       pipeline_status = 'received_only'
-      or pipeline_status = 'processed_without_received'
       or coalesce(reprint_pending_count, 0) > 0
     )`);
     return;
@@ -407,8 +551,23 @@ function addStatusFilter(where, value) {
     return;
   }
   if (status === 'has_reprint') {
-    where.push(`(coalesce(reprint_request_count, 0) > 0 or coalesce(reprint_record_count, 0) > 0)`);
+    where.push(`coalesce(reprint_request_count, 0) > 0`);
   }
+}
+
+function shouldUseAllTimeReprintScope(options = {}) {
+  const status = cleanString(options.status);
+  const reprint = cleanString(options.reprint);
+  if (status !== 'reprint_pending' && reprint !== 'pending') return false;
+
+  const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
+  const hasExplicitDate = Boolean(
+    cleanString(options.month)
+    || cleanString(options.from)
+    || cleanString(options.to)
+    || (preset && preset !== 'this_month')
+  );
+  return !hasExplicitDate;
 }
 
 function buildOrderPipelineFilters(options = {}) {
@@ -417,8 +576,17 @@ function buildOrderPipelineFilters(options = {}) {
   const normalizedSearch = normalizeSearchTerm(options.q || options.search);
   const params = [];
   const where = [];
+  const meta = {
+    datePreset: cleanString(options.datePreset || options.date_preset) || 'this_month',
+    hasMonth: Boolean(month),
+    hasSearch: Boolean(search),
+    searchMode: search ? (isOrderLikeSearch(search) ? 'order_like_exact' : 'text_ilike') : 'none',
+    status: cleanString(options.status) || 'all',
+    reprint: cleanString(options.reprint) || 'all',
+    allTimeReprintScope: shouldUseAllTimeReprintScope(options),
+  };
 
-  addDateRangeFilter(where, params, options);
+  if (!meta.allTimeReprintScope) addDateRangeFilter(where, params, options);
   addStatusFilter(where, options.status);
   addReprintFilter(where, options.reprint);
 
@@ -465,7 +633,9 @@ function buildOrderPipelineFilters(options = {}) {
     )`);
   }
 
-  return { params, where };
+  meta.whereCount = where.length;
+  meta.paramCount = params.length;
+  return { params, where, meta };
 }
 
 function mapPipelineStats(row) {
@@ -488,7 +658,6 @@ async function queryPipelineStats(client, filters) {
         count(*)::int as total,
         count(*) filter (
           where pipeline_status = 'received_only'
-            or pipeline_status = 'processed_without_received'
             or coalesce(reprint_pending_count, 0) > 0
         )::int as needs_attention,
         count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
@@ -507,13 +676,75 @@ async function queryPipelineStats(client, filters) {
   return mapPipelineStats(result.rows[0]);
 }
 
+async function queryFastPipelineStats(client, filters) {
+  const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
+  const result = await client.query(
+    `
+      ${buildFastPipelineBaseCte()}
+      select
+        count(*)::int as total,
+        count(*) filter (
+          where pipeline_status = 'received_only'
+            or coalesce(reprint_pending_count, 0) > 0
+        )::int as needs_attention,
+        count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
+        count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
+        count(*) filter (where coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
+        count(*) filter (where processed_order_id is not null)::int as processed,
+        count(*) filter (where coalesce(reprint_request_count, 0) > 0)::int as has_reprint
+      from pipeline_base
+      ${whereSql}
+    `,
+    filters.params
+  );
+  return mapPipelineStats(result.rows[0]);
+}
+
+async function queryOperationalGlobalStats(client) {
+  const filters = buildOrderPipelineFilters({ datePreset: 'this_month' });
+  const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
+  const result = await client.query(
+    `
+      ${buildFastPipelineBaseCte()},
+      current_scope as (
+        select
+          count(*)::int as total,
+          count(*) filter (
+            where pipeline_status = 'received_only'
+              or coalesce(reprint_pending_count, 0) > 0
+          )::int as needs_attention,
+          count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
+          count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
+          count(*) filter (where processed_order_id is not null)::int as processed,
+          count(*) filter (where coalesce(reprint_request_count, 0) > 0)::int as has_reprint
+        from pipeline_base
+        ${whereSql}
+      ),
+      reprint_backlog as (
+        select count(distinct r.order_id)::int as reprint_backlog
+        from processed_order_reprint_requests r
+        join processed_print_orders p on p.id = r.order_id
+        where r.status = 'pending'
+          and coalesce(p.ignored, false) = false
+      )
+      select current_scope.*, reprint_backlog.reprint_backlog
+      from current_scope
+      cross join reprint_backlog
+    `,
+    filters.params
+  );
+  return mapPipelineStats(result.rows[0]);
+}
+
 async function getOrderPipelineStats(client, options = {}) {
-  await ensureOrderPipelineView(client);
   const generatedAt = new Date().toISOString();
   const includeGlobal = options.includeGlobal !== false;
   const includeScope = Boolean(options.includeScope);
   const timings = options.timings || null;
   const stats = { generatedAt };
+  const scopeNeedsFullView = includeScope && requiresFullReprintView(options);
+
+  if (scopeNeedsFullView) await ensureOrderPipelineView(client);
 
   if (includeGlobal) {
     const now = Date.now();
@@ -523,10 +754,11 @@ async function getOrderPipelineStats(client, options = {}) {
       if (timings) {
         timings.globalStatsMs = 0;
         timings.globalStatsCacheHit = true;
+        timings.globalStatsPath = 'cache';
       }
     } else {
       const started = Date.now();
-      stats.global = await queryPipelineStats(client, { params: [], where: [] });
+      stats.global = await queryOperationalGlobalStats(client);
       const duration = Date.now() - started;
       globalStatsCache = {
         value: stats.global,
@@ -537,21 +769,29 @@ async function getOrderPipelineStats(client, options = {}) {
       if (timings) {
         timings.globalStatsMs = duration;
         timings.globalStatsCacheHit = false;
+        timings.globalStatsPath = 'fast_base';
       }
     }
   }
 
   if (includeScope) {
     const started = Date.now();
-    stats.scope = await queryPipelineStats(client, buildOrderPipelineFilters(options));
+    const filters = buildOrderPipelineFilters(options);
+    const useFullView = scopeNeedsFullView;
+    stats.scope = useFullView
+      ? await queryPipelineStats(client, filters)
+      : await queryFastPipelineStats(client, filters);
     if (timings) timings.scopeStatsMs = Date.now() - started;
+    if (timings) {
+      timings.scopeStatsPath = useFullView ? 'full_view' : 'fast_base';
+      timings.scopeStatsFilterMeta = filters.meta;
+    }
   }
 
   return stats;
 }
 
-async function listOrderPipeline(client, options = {}) {
-  await ensureOrderPipelineView(client);
+async function listOrderPipelineFullView(client, options = {}) {
   const limit = clampLimit(options.limit);
   const offset = clampOffset(options.offset);
   const filters = buildOrderPipelineFilters(options);
@@ -596,20 +836,24 @@ async function listOrderPipeline(client, options = {}) {
         ) as page_sizes
       from v_print_order_pipeline
       ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by case
-          when pipeline_status = 'received_only' then 0
-          when pipeline_status = 'processed_without_received' then 1
-          when pipeline_status = 'reprint_pending' then 2
-          else 3
-        end,
-        coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
-        order_number desc
+      order by ${pipelineSortExpr()}
       limit $${limitParam}
       offset $${offsetParam}
     `,
     params
   );
   if (options.timings) options.timings.rowsMs = Date.now() - started;
+  if (options.timings) {
+    options.timings.rowsPath = 'full_view';
+    options.timings.rowsFilterMeta = filters.meta;
+    options.timings.fullViewReason = options.fullViewReason || 'explicit_deep_scan';
+  }
+  console.warn('order-pipeline full-view slow path', {
+    reason: options.fullViewReason || 'explicit_deep_scan',
+    filters: filters.meta,
+    requestUrl: options.requestUrl || '',
+    elapsedMs: options.timings ? options.timings.rowsMs : Date.now() - started,
+  });
   const rows = result.rows.slice(0, limit).map(mapPipelineListRow);
   return {
     rows,
@@ -618,6 +862,126 @@ async function listOrderPipeline(client, options = {}) {
     hasMore: result.rows.length > limit,
     nextOffset: offset + rows.length,
   };
+}
+
+async function listOrderPipelineFast(client, options = {}) {
+  const limit = clampLimit(options.limit);
+  const offset = clampOffset(options.offset);
+  const filters = buildOrderPipelineFilters(options);
+  const params = filters.params.slice();
+  const where = filters.where;
+
+  params.push(limit + 1);
+  const limitParam = params.length;
+  params.push(offset);
+  const offsetParam = params.length;
+
+  const started = Date.now();
+  const result = await client.query(
+    `
+      ${buildFastPipelineBaseCte()},
+      filtered_pipeline as (
+        select *
+        from pipeline_base
+        ${where.length ? `where ${where.join(' and ')}` : ''}
+      ),
+      page_base as (
+        select *
+        from filtered_pipeline
+        order by ${pipelineSortExpr()}
+        limit $${limitParam}
+        offset $${offsetParam}
+      ),
+      processed_reprints as (
+        select
+          p.id,
+          p.order_name,
+          p.xml_file_name,
+          p.status,
+          p.queued_date_time,
+          p.source_xml_path,
+          p.print_files,
+          ${reprintParentMatchKeySql('p')} as parent_match_key
+        from processed_print_orders p
+        where coalesce(p.ignored, false) = false
+          and upper(coalesce(p.order_type, 'S')) = 'R'
+      ),
+      page_rows as (
+        select
+          pb.*,
+          coalesce(rr.reprint_record_count, 0) as fast_reprint_record_count,
+          rr.latest_reprint_record_at as fast_latest_reprint_record_at
+        from page_base pb
+        left join lateral (
+          select
+            count(*)::int as reprint_record_count,
+            max(rp.queued_date_time) as latest_reprint_record_at
+          from processed_reprints rp
+          where rp.parent_match_key = any(array_remove(array[
+            ${parentMatchKeyExpr('pb', 'order_number')},
+            ${parentMatchKeyExpr('pb', 'processed_order_name')},
+            ${parentMatchKeyExpr('pb', 'external_order_id')},
+            ${parentMatchKeyExpr('pb', 'customer_order_id')}
+          ], ''))
+        ) rr on true
+      )
+      select
+        order_number,
+        external_order_id,
+        customer_order_id,
+        received_at,
+        api_seen_at,
+        processed_order_id,
+        processed_order_name,
+        xml_file_name,
+        processed_at,
+        queued_date_time,
+        workflow_name,
+        order_type,
+        source_month,
+        fast_reprint_record_count as reprint_record_count,
+        fast_latest_reprint_record_at as latest_reprint_record_at,
+        reprint_request_count,
+        reprint_pending_count,
+        reprint_completed_count,
+        latest_reprint_status,
+        reprint_pending,
+        is_reprint_record,
+        pipeline_status,
+        jsonb_array_length(coalesce(print_files, '[]'::jsonb)) as print_file_count,
+        (
+          select string_agg(distinct nullif(file_item->>'pageSize', ''), ', ')
+          from jsonb_array_elements(coalesce(print_files, '[]'::jsonb)) file_item
+        ) as page_sizes
+      from page_rows
+      order by ${pipelineSortExpr()}
+    `,
+    params
+  );
+  if (options.timings) {
+    options.timings.rowsMs = Date.now() - started;
+    options.timings.rowsPath = 'fast_base';
+    options.timings.rowsFilterMeta = filters.meta;
+  }
+  const rows = result.rows.slice(0, limit).map(mapPipelineListRow);
+  return {
+    rows,
+    limit,
+    offset,
+    hasMore: result.rows.length > limit,
+    nextOffset: offset + rows.length,
+  };
+}
+
+async function listOrderPipeline(client, options = {}) {
+  if (requiresFullReprintView(options)) {
+    await ensureOrderPipelineView(client);
+    return listOrderPipelineFullView(client, {
+      ...options,
+      fullViewReason: options.fullViewReason || 'explicit_deep_scan',
+    });
+  }
+  return listOrderPipelineFast(client, options);
 }
 
 async function getOrderPipelineDetail(client, options = {}) {
@@ -656,11 +1020,27 @@ async function getOrderPipelineDetail(client, options = {}) {
 }
 
 async function listPipelineMonths(client) {
-  await ensureOrderPipelineView(client);
   const result = await client.query(`
-    select to_char(coalesce(processed_at, received_at, api_seen_at, latest_reprint_record_at), 'YYYY-MM') as month
-    from v_print_order_pipeline
-    where coalesce(processed_at, received_at, api_seen_at, latest_reprint_record_at) is not null
+    with months as (
+      select source_month as month
+      from processed_print_orders
+      where source_month is not null
+        and source_month <> ''
+        and coalesce(ignored, false) = false
+      union all
+      select to_char(coalesce(queued_date_time, order_date_time, imported_at), 'YYYY-MM') as month
+      from processed_print_orders
+      where source_month is null
+        and coalesce(queued_date_time, order_date_time, imported_at) is not null
+        and coalesce(ignored, false) = false
+      union all
+      select to_char(coalesce(received_at, api_seen_at), 'YYYY-MM') as month
+      from print_orders_received
+      where coalesce(received_at, api_seen_at) is not null
+    )
+    select month
+    from months
+    where month is not null and month <> ''
     group by month
     order by month desc
     limit 36
