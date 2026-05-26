@@ -1,7 +1,7 @@
 # Admin Auth
 
 ## Role
-Admin auth gates destructive or privileged actions through headers and server-side checks such as `requireAdminAccess()` and `requirePostPurchaseAccess()`. It separates operator PIN access for post-purchase workflow screens from full admin access for mutation-heavy maintenance paths.
+Admin auth is the gatekeeper for privileged mutations. The browser uses role state, admin PINs, and Post Purchase PINs for UI access, while the backend enforces headers through helpers such as `requireAdminAccess()` and `requirePostPurchaseAccess()`. It separates ordinary operator visibility from destructive maintenance paths, reprint actions, and admin-only stock or checklist operations.
 
 ## Connected to
 - [[PrintGuard Core]]
@@ -10,3 +10,4 @@ Admin auth gates destructive or privileged actions through headers and server-si
 - [[Stock System]]
 - [[Reprint Logic]]
 - [[Operational Workflow]]
+- [[Order Pipeline]]

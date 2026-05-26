@@ -1,7 +1,7 @@
 # PostPurchase API
 
 ## Role
-This subsystem ingests incoming business orders from Post Purchase and stores them in `print_orders_received`. It is the upstream source for the order pipeline and one of the two main identities the UI has to reconcile against processed XML records.
+This subsystem is the upstream business-order source. Sync jobs and backend helpers ingest Post Purchase payloads into `print_orders_received`, where they become the received-order side of the order pipeline. The browser does not talk to the external API directly; it goes through Netlify Functions and Neon-backed endpoints.
 
 ## Connected to
 - [[Order Pipeline]]
@@ -9,3 +9,4 @@ This subsystem ingests incoming business orders from Post Purchase and stores th
 - [[Netlify Functions]]
 - [[Admin Auth]]
 - [[Operational Workflow]]
+- [[PrintGuard Core]]

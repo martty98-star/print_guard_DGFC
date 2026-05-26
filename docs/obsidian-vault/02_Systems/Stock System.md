@@ -1,7 +1,7 @@
 # Stock System
 
 ## Role
-The stock system manages `pg_items`, `pg_movements`, and related operational UI for inventory state, movements, and low-stock alerting. It is a separate domain from the order pipeline but shares the same application shell, auth model, and Neon-backed sync model.
+The stock system is a separate operational domain inside the same app shell. It manages `pg_items`, `pg_movements`, alerts, exports, and offline-first browser state with sync to Neon. It is not part of the order pipeline, but it shares the same shell, auth gates, reporting utilities, and sync infrastructure.
 
 ## Connected to
 - [[PrintGuard Core]]
@@ -9,3 +9,4 @@ The stock system manages `pg_items`, `pg_movements`, and related operational UI 
 - [[Netlify Functions]]
 - [[Admin Auth]]
 - [[Operational Workflow]]
+- [[Performance Bottlenecks]]

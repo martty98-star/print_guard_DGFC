@@ -1,7 +1,7 @@
 # Colorado Accounting
 
 ## Role
-Colorado accounting is the printer-side operational pipeline that parses Colorado export files and persists print accounting rows plus ACL file metadata. It is separate from the browser runtime and acts as the production evidence layer for completed print activity and reporting.
+Colorado accounting is a separate printer-side evidence pipeline. Windows and PowerShell helpers outside the browser parse Colorado export files and store `print_accounting_rows` plus ACL metadata in Neon. The browser reads summarized results for dashboards and reports, but the ingestion path itself is operational infrastructure rather than frontend runtime.
 
 ## Connected to
 - [[Operational Workflow]]

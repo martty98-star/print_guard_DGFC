@@ -1,7 +1,7 @@
 # Netlify Functions
 
 ## Role
-Netlify Functions are the API surface between the browser runtime and Neon. They expose order pipeline, processed orders, checklist, print log, sync, stock, report, and push-notification endpoints, while shared logic lives under `netlify/functions/_lib/`.
+Netlify Functions are the HTTP boundary between the browser runtime and Neon. They expose order-pipeline, processed-orders, checklist, print-log, sync, push, and reporting endpoints, while shared DB and domain helpers live under `netlify/functions/_lib/`. They also host the canonical backend logic for Post Purchase ingestion and order-pipeline shaping.
 
 ## Connected to
 - [[PrintGuard Core]]
@@ -10,4 +10,6 @@ Netlify Functions are the API surface between the browser runtime and Neon. They
 - [[Neon Database]]
 - [[Admin Auth]]
 - [[Stock System]]
+- [[Processed XML]]
+- [[Reprint Logic]]
 - [[Performance Bottlenecks]]

@@ -1,5 +1,7 @@
+# Data Cleanup
+
 ## Role
-Data cleanup covers dedupe corrections, ignored processed rows, reprint reconciliation, and SQL maintenance work that keeps the pipeline trustworthy. It is the hygiene layer that prevents duplicate processed XML records, broken order identity joins, and stale operational noise from distorting UI decisions.
+Data cleanup is the hygiene layer that keeps the live workflow trustworthy. It covers processed-order dedupe corrections, ignored rows, reprint reconciliation, identity cleanup between business and processed order numbers, and SQL maintenance around views and helper columns. Without it, the pipeline becomes noisy, titles map to the wrong identifiers, and operator decisions stop matching reality.
 
 ## Connected to
 - [[Neon Database]]

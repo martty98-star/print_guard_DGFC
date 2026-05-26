@@ -78,16 +78,22 @@ const PrintGuardNavigation = typeof window !== 'undefined' && window.PrintGuardN
 if (!PrintGuardNavigation) throw new Error('Missing PrintGuardNavigation');
 const PrintGuardAccess = typeof window !== 'undefined' && window.PrintGuardAccess;
 if (!PrintGuardAccess) throw new Error('Missing PrintGuardAccess');
+const PrintGuardSettingsRuntime = typeof window !== 'undefined' && window.PrintGuardSettingsRuntime;
+if (!PrintGuardSettingsRuntime) throw new Error('Missing PrintGuardSettingsRuntime');
 const PrintGuardRuntimeUI = typeof window !== 'undefined' && window.PrintGuardRuntimeUI;
 if (!PrintGuardRuntimeUI) throw new Error('Missing PrintGuardRuntimeUI');
 const PrintGuardRuntimeState = typeof window !== 'undefined' && window.PrintGuardRuntimeState;
 if (!PrintGuardRuntimeState) throw new Error('Missing PrintGuardRuntimeState');
+const PrintGuardColoradoRuntime = typeof window !== 'undefined' && window.PrintGuardColoradoRuntime;
+if (!PrintGuardColoradoRuntime) throw new Error('Missing PrintGuardColoradoRuntime');
+const PrintGuardPostPurchaseRuntime = typeof window !== 'undefined' && window.PrintGuardPostPurchaseRuntime;
+if (!PrintGuardPostPurchaseRuntime) throw new Error('Missing PrintGuardPostPurchaseRuntime');
 const PrintGuardStockRuntime = typeof window !== 'undefined' && window.PrintGuardStockRuntime;
 if (!PrintGuardStockRuntime) throw new Error('Missing PrintGuardStockRuntime');
 const PrintGuardShell = typeof window !== 'undefined' && window.PrintGuardShell;
 if (!PrintGuardShell) throw new Error('Missing PrintGuardShell');
-const PrintGuardPrintLog = typeof window !== 'undefined' && window.PrintGuardPrintLog;
-if (!PrintGuardPrintLog) throw new Error('Missing PrintGuardPrintLog');
+const PrintGuardPrintLogRuntime = typeof window !== 'undefined' && window.PrintGuardPrintLogRuntime;
+if (!PrintGuardPrintLogRuntime) throw new Error('Missing PrintGuardPrintLogRuntime');
 const PrintGuardReporting = typeof window !== 'undefined' && window.PrintGuardReporting;
 if (!PrintGuardReporting) throw new Error('Missing PrintGuardReporting');
 const PrintGuardDateFilters = typeof window !== 'undefined' && window.PrintGuardDateFilters;
@@ -111,8 +117,6 @@ const DomUtils = (typeof window !== 'undefined' && window.PrintGuardDomUtils) ||
 if (!DomUtils) throw new Error('Missing PrintGuardDomUtils');
 const PushUtils = (typeof window !== 'undefined' && window.PrintGuardPushUtils) || null;
 if (!PushUtils) throw new Error('Missing PrintGuardPushUtils');
-const SettingsUI = (typeof window !== 'undefined' && window.PrintGuardSettingsUI) || null;
-if (!SettingsUI) throw new Error('Missing PrintGuardSettingsUI');
 const ExportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUtils) || null;
 if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
 const StockUI = (typeof window !== 'undefined' && window.PrintGuardStockUI) || null;
@@ -125,12 +129,8 @@ const StockActions = (typeof window !== 'undefined' && window.PrintGuardStockAct
 if (!StockActions) throw new Error('Missing PrintGuardStockActions');
 const StockLogModule = (typeof window !== 'undefined' && window.PrintGuardStockLog) || null;
 if (!StockLogModule) throw new Error('Missing PrintGuardStockLog');
-const PrintLogUI = (typeof window !== 'undefined' && window.PrintGuardPrintLogUI) || null;
-if (!PrintLogUI) throw new Error('Missing PrintGuardPrintLogUI');
 const ChecklistUI = (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
 if (!ChecklistUI) throw new Error('Missing PrintGuardChecklistUI');
-const PostPurchaseUI = (typeof window !== 'undefined' && window.PrintGuardPostPurchaseUI) || null;
-if (!PostPurchaseUI) throw new Error('Missing PrintGuardPostPurchaseUI');
 const {
   fmtDuration,
   fmtDurationSeconds,
@@ -150,21 +150,13 @@ const {
   runNotificationDispatch,
   urlBase64ToUint8Array,
 } = PushUtils;
-const {
-  loadSettingsUI: loadSettingsUIScreen,
-  setupSettings: setupSettingsUI,
-} = SettingsUI;
 const runtimeUiApi = PrintGuardRuntimeUI.createRuntimeUI({
-  APP_VERSION,
   cfg,
-  el,
-  loadSettingsUIScreen,
   t: i18n,
 });
 const {
   getCostUnitPerM2,
   getCostUnitPerMonth,
-  loadSettingsUI,
 } = runtimeUiApi;
 const accessApi = PrintGuardAccess.createAccessGuards({
   cfg,
@@ -181,15 +173,6 @@ const {
 const {
   fmtExportDateTime,
 } = ExportUtils;
-const {
-  getPrintLogTodayQueueBasisLabel: getPrintLogTodayQueueBasisLabelUI,
-  printLogRangeLabel: printLogRangeLabelUI,
-  printResultClass: printResultClassUI,
-  printResultLabel: printResultLabelUI,
-  renderPrintLogComparison: renderPrintLogComparisonUI,
-  renderPrintLogSummary: renderPrintLogSummaryUI,
-  renderPrintLogTodayQueue: renderPrintLogTodayQueueUI,
-} = PrintLogUI;
 
 function renderChecklistScreen(force = false) {
   return ChecklistUI.renderChecklistScreen(force);
@@ -236,7 +219,7 @@ async function loadAll() {
 //  COLORADO MODULE
 // ══════════════════════════════════════════════════════════
 
-const Colorado = PrintGuardColoradoController.createColoradoController({
+const coloradoRuntimeApi = PrintGuardColoradoRuntime.createColoradoRuntime({
   S,
   ST_CORECS,
   Reports,
@@ -266,32 +249,32 @@ const Colorado = PrintGuardColoradoController.createColoradoController({
   getCostUnitPerMonth,
   exportCSVCombinedLifetimeCo: (...args) => exportCSVCombinedLifetimeCo(...args),
 });
-
-const MACHINES = Colorado.MACHINES;
-
-function loadColoradoRollStates() { return Colorado.loadColoradoRollStates(); }
-function loadColoradoRollEvents() { return Colorado.loadColoradoRollEvents(); }
-function renderColoradoRollTracker() { return Colorado.renderColoradoRollTracker(); }
-function closeColoradoRollModal() { return Colorado.closeColoradoRollModal(); }
-function closeColoradoRollSheet() { return Colorado.closeColoradoRollSheet(); }
-function openColoradoRollSheet(machineId) { return Colorado.openColoradoRollSheet(machineId); }
-function openColoradoRollModal(machineId) { return Colorado.openColoradoRollModal(machineId); }
-async function saveColoradoRollModal() { return Colorado.saveColoradoRollModal(); }
-function undoColoradoRollLoad(machineId) { return Colorado.undoColoradoRollLoad(machineId); }
-function resetColoradoRollState(machineId) { return Colorado.resetColoradoRollState(machineId); }
-function promptColoradoRollReset(machineId) { return Colorado.promptColoradoRollReset(machineId); }
-function getCoRecs(machineId) { return Colorado.getCoRecs(machineId); }
-function computeCoIntervals(machineId) { return Colorado.computeCoIntervals(machineId); }
-function computeCoStats(machineId) { return Colorado.computeCoStats(machineId); }
-function getCombinedCoLifetimeInkBasis() { return Colorado.getCombinedCoLifetimeInkBasis(); }
-function getColoradoFormatEstimates() { return Colorado.getColoradoFormatEstimates(); }
-function renderCoDashboard() { return Colorado.renderCoDashboard(); }
-function setupCoEntry() { return Colorado.setupCoEntry(); }
-function bindColoradoHistoryControls(options) { return Colorado.bindColoradoHistoryControls(options); }
-function getSelectedMachine() { return Colorado.getSelectedMachine(); }
-function updateCoPreview() { return Colorado.updateCoPreview(); }
-function renderCoHistory() { return Colorado.renderCoHistory(); }
-async function deleteCoRecord(id) { return Colorado.deleteCoRecord(id); }
+const {
+  MACHINES,
+  loadColoradoRollStates,
+  loadColoradoRollEvents,
+  renderColoradoRollTracker,
+  closeColoradoRollModal,
+  closeColoradoRollSheet,
+  openColoradoRollSheet,
+  openColoradoRollModal,
+  saveColoradoRollModal,
+  undoColoradoRollLoad,
+  resetColoradoRollState,
+  promptColoradoRollReset,
+  getCoRecs,
+  computeCoIntervals,
+  computeCoStats,
+  getCombinedCoLifetimeInkBasis,
+  getColoradoFormatEstimates,
+  renderCoDashboard,
+  setupCoEntry,
+  bindColoradoHistoryControls,
+  getSelectedMachine,
+  updateCoPreview,
+  renderCoHistory,
+  deleteCoRecord,
+} = coloradoRuntimeApi;
 
 //  SETTINGS + EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════
@@ -299,19 +282,7 @@ async function deleteCoRecord(id) { return Colorado.deleteCoRecord(id); }
 
 // ── CSV helpers ──────────────────────────────────────────
 
-async function loadPostPurchaseOrders(force = false) {
-  return PostPurchaseUI.loadPostPurchaseOrders(force);
-}
-
-function renderPostPurchaseOrders() {
-  return PostPurchaseUI.renderPostPurchaseOrders();
-}
-
-async function syncPostPurchaseOrdersManual() {
-  return PostPurchaseUI.syncPostPurchaseOrdersManual();
-}
-
-const printLogApi = PrintGuardPrintLog.createPrintLog({
+const printLogApi = PrintGuardPrintLogRuntime.createPrintLogRuntime({
   Reports,
   S,
   computeCoIntervals,
@@ -327,13 +298,6 @@ const printLogApi = PrintGuardPrintLog.createPrintLog({
   fmtN,
   getNullableNumber,
   i18n,
-  printLogRangeLabelUI,
-  printResultClassUI,
-  printResultLabelUI,
-  getPrintLogTodayQueueBasisLabelUI,
-  renderPrintLogComparisonUI,
-  renderPrintLogSummaryUI,
-  renderPrintLogTodayQueueUI,
   showToast,
 });
 const {
@@ -442,18 +406,41 @@ const {
   handleImportJSON,
 } = reportingApi;
 
-const dateFilters = PrintGuardDateFilters.createDateFilters({
-  Reports,
+const settingsRuntimeApi = PrintGuardSettingsRuntime.createSettingsRuntime({
+  APP_VERSION,
+  ST_CORECS,
+  ST_ITEMS,
+  ST_MOVES,
+  ST_SETTINGS,
   S,
+  cfg,
   el,
-  loadPrintLog,
+  enablePushNotifications,
+  exportCSVIntervals,
+  exportCSVRawCo,
+  exportCSVStock,
+  exportCSVStockLevels,
+  exportJSON,
+  fetchImpl: appFetch,
+  handleImportJSON,
+  i18n,
+  idbClear,
+  renderAlerts,
+  renderCoDashboard,
   renderCoHistory,
-  renderStockLog,
+  renderItemsMgmt,
+  renderStockOverview,
+  saveSettingsToIDB,
+  sendStockNotifications,
+  showConfirm,
+  showToast,
 });
 const {
-  applyPreset,
-  dateRangeFilter,
-} = dateFilters;
+  initRuntime: initSettingsRuntime,
+  loadSettingsUI,
+} = settingsRuntimeApi;
+
+let dateFilters;
 
 // ══════════════════════════════════════════════════════════
 //  NAVIGATION + ADMIN AUTH
@@ -524,6 +511,44 @@ const {
   saveMovement,
 } = stockRuntimeApi;
 initStockRuntime();
+
+const postPurchaseRuntimeApi = PrintGuardPostPurchaseRuntime.createPostPurchaseRuntime({
+  S,
+  adminJsonHeaders,
+  applyRoleUI,
+  cfg,
+  el,
+  elSet,
+  esc,
+  fetchImpl: appFetch,
+  fmtDT,
+  postPurchaseErrorMessage,
+  postPurchaseHeaders,
+  postPurchaseJsonHeaders,
+  renderPostPurchaseAccessRequired,
+  requirePostPurchasePinForScreen,
+  showToast,
+});
+const {
+  bindControls: bindPostPurchaseControls,
+  initRuntime: initPostPurchaseRuntime,
+  loadPostPurchaseOrders,
+  renderPostPurchaseOrders,
+  syncPostPurchaseOrdersManual,
+} = postPurchaseRuntimeApi;
+
+dateFilters = PrintGuardDateFilters.createDateFilters({
+  Reports,
+  S,
+  el,
+  loadPrintLog,
+  renderCoHistory,
+  renderStockLog,
+});
+const {
+  applyPreset,
+  dateRangeFilter,
+} = dateFilters;
 
 navigationApi = PrintGuardNavigation.createNavigation({
   applyRoleUI,
@@ -603,52 +628,9 @@ async function init() {
     showConfirm,
     showToast,
   });
-  setupSettingsUI({
-    ST_CORECS,
-    ST_ITEMS,
-    ST_MOVES,
-    ST_SETTINGS,
-    S,
-    cfg,
-    el,
-    enablePushNotifications,
-    exportCSVIntervals,
-    exportCSVRawCo,
-    exportCSVStock,
-    exportCSVStockLevels,
-    exportJSON,
-    fetchImpl: appFetch,
-    handleImportJSON,
-    i18n,
-    idbClear,
-    renderAlerts,
-    renderCoDashboard,
-    renderCoHistory,
-    renderItemsMgmt,
-    renderStockOverview,
-    saveSettingsToIDB,
-    sendStockNotifications,
-    showConfirm,
-    showToast,
-  });
-  PostPurchaseUI.initPostPurchaseUI({
-    S,
-    adminJsonHeaders,
-    applyRoleUI,
-    cfg,
-    el,
-    elSet,
-    esc,
-    fetchImpl: appFetch,
-    fmtDT,
-    postPurchaseErrorMessage,
-    postPurchaseHeaders,
-    postPurchaseJsonHeaders,
-    renderPostPurchaseAccessRequired,
-    requirePostPurchasePinForScreen,
-    showToast,
-  });
-  PostPurchaseUI.bindPostPurchaseControls();
+  initSettingsRuntime();
+  initPostPurchaseRuntime();
+  bindPostPurchaseControls();
 
   bindPrintLogControls({
     exportCSVPrintLog,

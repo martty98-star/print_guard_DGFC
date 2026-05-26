@@ -4,10 +4,7 @@
 (function attachPrintGuardRuntimeUI(global) {
   function createRuntimeUI(deps) {
     const {
-      APP_VERSION,
       cfg,
-      el,
-      loadSettingsUIScreen,
       t,
     } = deps;
 
@@ -19,14 +16,9 @@
       return `${cfg.costCurrency} / ${t('unit.month-word')}`;
     }
 
-    function loadSettingsUI() {
-      return loadSettingsUIScreen({ APP_VERSION, cfg, el });
-    }
-
     return {
       getCostUnitPerM2,
       getCostUnitPerMonth,
-      loadSettingsUI,
     };
   }
 

@@ -1,7 +1,7 @@
 # Reprint Logic
 
 ## Role
-Reprint logic tracks both reprint records discovered in processed XML and operator-created rows in `processed_order_reprint_requests`. It is where the system decides whether a pipeline row is clean, has pending recovery work, or already has completed remediation.
+Reprint logic sits on top of the pipeline and tracks recovery work. It combines reprint-like evidence from processed XML with explicit operator-created requests in `processed_order_reprint_requests`, then feeds status back into the order pipeline UI. This is the layer that turns duplicate print attempts and manual interventions into an understandable operational state.
 
 ## Connected to
 - [[Order Pipeline]]
@@ -9,4 +9,5 @@ Reprint logic tracks both reprint records discovered in processed XML and operat
 - [[Print Files]]
 - [[Admin Auth]]
 - [[Neon Database]]
+- [[Netlify Functions]]
 - [[Data Cleanup]]

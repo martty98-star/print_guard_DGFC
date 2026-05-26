@@ -1,7 +1,7 @@
 # Order Pipeline
 
 ## Role
-The order pipeline is the normalized operational view that joins incoming business orders with processed print records and reprint state. In the database it is represented by `v_print_order_pipeline`, and in the UI it is the main place where operators understand whether an order was only received, fully processed, or needs reprint attention.
+The order pipeline is the main operator-facing reconciliation layer. It combines `print_orders_received`, `processed_print_orders`, and `processed_order_reprint_requests` into `v_print_order_pipeline`, then exposes that through Netlify to the processed-orders UI. This is where operators see whether an order was only received, was processed, is missing detail, or needs reprint handling.
 
 ## Connected to
 - [[PostPurchase API]]
@@ -11,4 +11,5 @@ The order pipeline is the normalized operational view that joins incoming busine
 - [[Neon Database]]
 - [[Netlify Functions]]
 - [[Operational Workflow]]
+- [[PrintGuard Core]]
 - [[Performance Bottlenecks]]
