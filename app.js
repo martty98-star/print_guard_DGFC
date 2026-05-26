@@ -130,6 +130,7 @@ const {
   getNullableNumber,
 } = CoreUtils;
 const {
+  showConfirm,
   showToast,
 } = DomUtils;
 const {
@@ -437,6 +438,7 @@ function getCombinedCoLifetimeInkBasis() { return Colorado.getCombinedCoLifetime
 function getColoradoFormatEstimates() { return Colorado.getColoradoFormatEstimates(); }
 function renderCoDashboard() { return Colorado.renderCoDashboard(); }
 function setupCoEntry() { return Colorado.setupCoEntry(); }
+function bindColoradoHistoryControls(options) { return Colorado.bindColoradoHistoryControls(options); }
 function getSelectedMachine() { return Colorado.getSelectedMachine(); }
 function updateCoPreview() { return Colorado.updateCoPreview(); }
 function renderCoHistory() { return Colorado.renderCoHistory(); }
@@ -486,6 +488,7 @@ const printLogApi = PrintGuardPrintLog.createPrintLog({
   showToast,
 });
 const {
+  bindPrintLogControls,
   fetchPrintLogRows,
   getPrintLogDirectInk,
   getPrintLogEstimateInterval,
@@ -718,31 +721,6 @@ async function deleteMovement(id) {
 
 window.enablePushNotifications = enablePushNotifications;
 
-function showConfirm(input, onOk) {
-  const cfg = typeof input === 'object' && input
-    ? input
-    : { body: input };
-  const title = cfg.title || 'Potvrzení';
-  const body = cfg.body || cfg.text || '';
-  const confirmLabel = cfg.confirmLabel || 'Potvrdit';
-  const cancelLabel = cfg.cancelLabel || 'Zrušit';
-  const modal = el('confirm-modal');
-  if (!modal) return;
-  el('confirm-title').textContent = title;
-  el('confirm-text').textContent = body;
-  el('confirm-ok').textContent = confirmLabel;
-  el('confirm-cancel').textContent = cancelLabel;
-  modal.classList.remove('hidden');
-  const close = () => modal.classList.add('hidden');
-  el('confirm-ok').onclick     = () => { close(); onOk(); };
-  el('confirm-cancel').onclick = close;
-  el('confirm-close').onclick  = close;
-}
-
-function showRollConfirm(input, onOk) {
-  return showConfirm(input, onOk);
-}
-
 // ══════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════
@@ -827,10 +805,11 @@ el('sync-btn').addEventListener('click', async () => {
   });
 
   // Colorado history tabs
-  document.querySelectorAll('.hist-tab').forEach(b =>
-    b.addEventListener('click', () => { S.coHistMachine = b.dataset.machine; renderCoHistory(); }));
-
   setupCoEntry();
+  bindColoradoHistoryControls({
+    exportCSVCurrentMonthCo,
+    exportCSVRawCo,
+  });
   ChecklistUI.initChecklistUI({
     applyRoleUI,
     adminErrorMessage,
@@ -899,53 +878,8 @@ el('sync-btn').addEventListener('click', async () => {
     });
   }
 
-  // Colorado history date range
-  el('co-hist-from').addEventListener('change', e => { S.coDateFrom = e.target.value; renderCoHistory(); });
-  el('co-hist-to').addEventListener('change',   e => { S.coDateTo   = e.target.value; renderCoHistory(); });
-  el('co-hist-clear-dates').addEventListener('click', () => {
-    S.coDateFrom = ''; S.coDateTo = '';
-    el('co-hist-from').value = ''; el('co-hist-to').value = '';
-    renderCoHistory();
-  });
-  el('co-history-export-btn').addEventListener('click', exportCSVRawCo);
-  el('co-month-export-btn').addEventListener('click', exportCSVCurrentMonthCo);
-
-  // Print log filters
-  el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; loadPrintLog(true); });
-  el('print-log-to').addEventListener('change',   e => { S.printLogDateTo   = e.target.value; loadPrintLog(true); });
-  el('print-log-view-mode').addEventListener('change', e => {
-    S.printLogViewMode = e.target.value || 'raw';
-    const isGrouped = S.printLogViewMode === 'grouped';
-    el('print-log-group-filter-wrap')?.classList.toggle('hidden', !isGrouped);
-    elSet('print-log-table-title', isGrouped ? 'Řešení problémů / SLA' : 'Poslední tiskové aktivity');
-    renderPrintLogRows();
-  });
-  el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; loadPrintLog(true); });
-  el('print-log-result').addEventListener('change',  e => { S.printLogResult  = e.target.value; loadPrintLog(true); });
-  el('print-log-group-filter').addEventListener('change', e => {
-    S.printLogGroupFilter = e.target.value || 'all';
-    renderPrintLogRows();
-  });
-  el('print-log-clear-dates').addEventListener('click', () => {
-    S.printLogDateFrom = ''; S.printLogDateTo = '';
-    el('print-log-from').value = ''; el('print-log-to').value = '';
-    loadPrintLog(true);
-  });
-  el('print-log-refresh-btn').addEventListener('click', () => {
-    loadPrintLog(true);
-  });
-  el('print-log-export-btn').addEventListener('click', exportCSVPrintLog);
-  document.addEventListener('click', e => {
-    const groupRow = e.target?.closest?.('.pl-group-row[data-group-id]');
-    if (groupRow) {
-      const id = groupRow.dataset.groupId;
-      S.printLogExpandedGroups[id] = !S.printLogExpandedGroups[id];
-      renderPrintLogRows();
-      return;
-    }
-    if (e.target?.id === 'pl-load-more') {
-      loadPrintLog(false);
-    }
+  bindPrintLogControls({
+    exportCSVPrintLog,
   });
 
   // Preset buttons (společné pro obě obrazovky)

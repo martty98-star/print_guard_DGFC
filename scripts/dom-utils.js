@@ -50,9 +50,31 @@
     toastTimer = setTimeout(() => toast.classList.add('hidden'), actionConfig ? 5000 : 3000);
   }
 
+  function showConfirm(input, onOk) {
+    const cfg = typeof input === 'object' && input
+      ? input
+      : { body: input };
+    const title = cfg.title || 'Potvrzeni';
+    const body = cfg.body || cfg.text || '';
+    const confirmLabel = cfg.confirmLabel || 'Potvrdit';
+    const cancelLabel = cfg.cancelLabel || 'Zrusit';
+    const modal = el('confirm-modal');
+    if (!modal) return;
+    el('confirm-title').textContent = title;
+    el('confirm-text').textContent = body;
+    el('confirm-ok').textContent = confirmLabel;
+    el('confirm-cancel').textContent = cancelLabel;
+    modal.classList.remove('hidden');
+    const close = () => modal.classList.add('hidden');
+    el('confirm-ok').onclick = () => { close(); onOk(); };
+    el('confirm-cancel').onclick = close;
+    el('confirm-close').onclick = close;
+  }
+
   global.PrintGuardDomUtils = {
     el,
     elSet,
+    showConfirm,
     showToast,
   };
 })(window);

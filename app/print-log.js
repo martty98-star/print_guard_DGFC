@@ -10,6 +10,7 @@
       getPrintLogTodayQueueBasisLabelUI, renderPrintLogComparisonUI,
       renderPrintLogSummaryUI, renderPrintLogTodayQueueUI, showToast,
     } = deps;
+    let controlsBound = false;
 
 function printLogRangeLabel() {
   return printLogRangeLabelUI(S, i18n);
@@ -564,6 +565,53 @@ function renderPrintLogRows() {
   if (foot) foot.textContent = `${i18n('print.foot.total.prefix')} ${S.printLogRows.length} ${i18n('print.foot.total.suffix')}`;
 }
 
+function bindPrintLogControls(options = {}) {
+  const onExportCsv = options.exportCSVPrintLog;
+  if (controlsBound) return;
+  controlsBound = true;
+
+  el('print-log-from').addEventListener('change', e => { S.printLogDateFrom = e.target.value; loadPrintLog(true); });
+  el('print-log-to').addEventListener('change', e => { S.printLogDateTo = e.target.value; loadPrintLog(true); });
+  el('print-log-view-mode').addEventListener('change', e => {
+    S.printLogViewMode = e.target.value || 'raw';
+    const isGrouped = S.printLogViewMode === 'grouped';
+    el('print-log-group-filter-wrap')?.classList.toggle('hidden', !isGrouped);
+    elSet('print-log-table-title', isGrouped ? 'Reseni problemu / SLA' : 'Posledni tiskove aktivity');
+    renderPrintLogRows();
+  });
+  el('print-log-printer').addEventListener('change', e => { S.printLogPrinter = e.target.value; loadPrintLog(true); });
+  el('print-log-result').addEventListener('change', e => { S.printLogResult = e.target.value; loadPrintLog(true); });
+  el('print-log-group-filter').addEventListener('change', e => {
+    S.printLogGroupFilter = e.target.value || 'all';
+    renderPrintLogRows();
+  });
+  el('print-log-clear-dates').addEventListener('click', () => {
+    S.printLogDateFrom = '';
+    S.printLogDateTo = '';
+    el('print-log-from').value = '';
+    el('print-log-to').value = '';
+    loadPrintLog(true);
+  });
+  el('print-log-refresh-btn').addEventListener('click', () => {
+    loadPrintLog(true);
+  });
+  el('print-log-export-btn').addEventListener('click', () => {
+    if (typeof onExportCsv === 'function') onExportCsv();
+  });
+  document.addEventListener('click', e => {
+    const groupRow = e.target?.closest?.('.pl-group-row[data-group-id]');
+    if (groupRow) {
+      const id = groupRow.dataset.groupId;
+      S.printLogExpandedGroups[id] = !S.printLogExpandedGroups[id];
+      renderPrintLogRows();
+      return;
+    }
+    if (e.target?.id === 'pl-load-more') {
+      loadPrintLog(false);
+    }
+  });
+}
+
 function renderPrintLifecycleGroups(wrap, foot) {
   const groups = getFilteredLifecycleGroups();
   if (!groups.length) {
@@ -631,6 +679,7 @@ function renderPrintLifecycleGroups(wrap, foot) {
 }
 
     return {
+      bindPrintLogControls,
       fetchPrintLogRows,
       getPrintLogDirectInk,
       getPrintLogEstimateInterval,

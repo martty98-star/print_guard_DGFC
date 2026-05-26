@@ -56,6 +56,7 @@
       exportCSVCombinedLifetimeCo,
       runSync,
     } = deps || {};
+    let historyControlsBound = false;
 
     if (!S || !Reports || !cfg || !ls || !el || !elSet || !esc || !fmtDT || !fmtN || !genId || !idbPut || !i18n || !navigate || !setSyncDirtyReason || !showConfirm || !showToast || !toISOfromDT || !toLocalDT || !dateRangeFilter) {
       throw new Error('Missing Colorado controller dependencies');
@@ -864,6 +865,40 @@
         btn.addEventListener('click', () => deleteCoRecord(btn.dataset.id)));
     }
 
+    function bindColoradoHistoryControls(options = {}) {
+      const onExportRaw = options.exportCSVRawCo;
+      const onExportMonth = options.exportCSVCurrentMonthCo;
+      if (historyControlsBound) return;
+      historyControlsBound = true;
+
+      document.querySelectorAll('.hist-tab').forEach(button =>
+        button.addEventListener('click', () => {
+          S.coHistMachine = button.dataset.machine;
+          renderCoHistory();
+        }));
+      el('co-hist-from').addEventListener('change', e => {
+        S.coDateFrom = e.target.value;
+        renderCoHistory();
+      });
+      el('co-hist-to').addEventListener('change', e => {
+        S.coDateTo = e.target.value;
+        renderCoHistory();
+      });
+      el('co-hist-clear-dates').addEventListener('click', () => {
+        S.coDateFrom = '';
+        S.coDateTo = '';
+        el('co-hist-from').value = '';
+        el('co-hist-to').value = '';
+        renderCoHistory();
+      });
+      el('co-history-export-btn').addEventListener('click', () => {
+        if (typeof onExportRaw === 'function') onExportRaw();
+      });
+      el('co-month-export-btn').addEventListener('click', () => {
+        if (typeof onExportMonth === 'function') onExportMonth();
+      });
+    }
+
     async function deleteCoRecord(id) {
       if (!isAdmin || !isAdmin()) { showToast('Mazání záznamů Colorado — jen admin', 'error'); return; }
       showConfirm('Smazat tento záznam Colorado? (Admin)', async () => {
@@ -912,6 +947,7 @@
       getColoradoFormatEstimates,
       renderCoDashboard,
       setupCoEntry,
+      bindColoradoHistoryControls,
       getSelectedMachine,
       updateCoPreview,
       renderCoHistory,
