@@ -72,20 +72,21 @@
   }
 
   function getPrimaryOrderLabel(row) {
+    const display = String(row && row.displayOrderName || '').trim();
+    if (display) return display;
+    return '';
+  }
+
+  function getRawOrderLabels(row) {
     const external = String(row && row.externalOrderId || '').trim();
     const customer = String(row && row.customerOrderId || '').trim();
     const orderName = String(row && row.orderName || '').trim();
     const processed = String(row && row.processedOrderName || '').trim();
-    return external || customer || orderName || processed || '';
+    return [external, customer, orderName, processed].filter(Boolean);
   }
 
   function getSecondaryOrderLabels(row, primaryLabel) {
-    const labels = [
-      String(row && row.externalOrderId || '').trim(),
-      String(row && row.customerOrderId || '').trim(),
-      String(row && row.orderName || '').trim(),
-      String(row && row.processedOrderName || '').trim(),
-    ]
+    const labels = getRawOrderLabels(row)
       .filter(Boolean)
       .filter((value, index, list) => list.indexOf(value) === index)
       .filter((value) => value !== primaryLabel);

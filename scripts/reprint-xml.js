@@ -25,6 +25,15 @@
     return cleaned || '';
   }
 
+  function normalizeOrderToken(value) {
+    const raw = cleanValue(value);
+    if (!raw) return '';
+    const strippedSuffix = raw.replace(/_REPRINT$/i, '');
+    const psMatch = strippedSuffix.match(/^PS(\d+)$/i);
+    if (psMatch) return psMatch[1];
+    return strippedSuffix;
+  }
+
   function pickOriginalOrderId(order) {
     const candidates = [
       order && order.originalOrderId,
@@ -43,14 +52,14 @@
       order && order.id,
     ];
     for (const candidate of candidates) {
-      const value = cleanValue(candidate);
+      const value = normalizeOrderToken(candidate);
       if (value) return value;
     }
     return 'ORDER';
   }
 
   function normalizePoNumber(order) {
-    const raw = cleanValue(
+    const raw = normalizeOrderToken(
       order && (
         order.PoNumber ||
         order.poNumber ||
@@ -65,7 +74,15 @@
         order.order_number
       )
     ) || pickOriginalOrderId(order);
-    return raw.endsWith('_REPRINT') ? raw : `${raw}_REPRINT`;
+    return raw;
+  }
+
+  function assertCleanReprintTokens(order) {
+    const poNumber = normalizePoNumber(order);
+    if (/_REPRINT$/i.test(poNumber)) {
+      throw new Error(`Invalid reprint PoNumber: ${poNumber}`);
+    }
+    return poNumber;
   }
 
   function xmlDocument(pageSize, copies, printFilePath) {
@@ -77,7 +94,7 @@
 
   function generateReprintXml(order, printFile) {
     const orderId = pickOriginalOrderId(order);
-    const poNumber = normalizePoNumber(order);
+    const poNumber = assertCleanReprintTokens(order);
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
@@ -107,6 +124,7 @@ ${printFileXml}
   }
 
   window.PrintGuardReprintXml = {
+    assertCleanReprintTokens,
     downloadXml,
     fileNameFromPath,
     generateReprintXml,

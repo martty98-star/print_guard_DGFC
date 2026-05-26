@@ -30,6 +30,48 @@ function stripReprintSuffix(value) {
   return String(value || '').replace(/([\s_-]*reprint.*)$/i, '');
 }
 
+function stripTechnicalSuffixes(value) {
+  return String(value || '')
+    .replace(/\.xml$/i, '')
+    .replace(/([\s_-]*reprint.*)$/i, '')
+    .replace(/([\s_-]+(?:retry|copy|duplicate|processed|submittool|xml|api|v)\d*)+$/i, '')
+    .trim();
+}
+
+function normalizeOrderIdentityCandidate(value) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+  if (/[\\/]/.test(raw) || /\.xml$/i.test(raw)) return null;
+
+  const cleaned = stripTechnicalSuffixes(raw);
+  const prefixed = cleaned.match(/^ps[\s_-]*(\d{6,})$/i);
+  if (prefixed) return `PS${prefixed[1]}`;
+
+  const numeric = cleaned.match(/^(\d{6,})$/);
+  if (numeric) return numeric[1];
+
+  return null;
+}
+
+function getCanonicalOrderIdentity(row) {
+  if (!row || typeof row !== 'object') return normalizeOrderIdentityCandidate(row);
+  const candidates = [
+    row.order_number,
+    row.external_order_id,
+    row.customer_order_id,
+    row.processed_order_name,
+    row.orderName,
+    row.externalOrderId,
+    row.customerOrderId,
+    row.processedOrderName,
+  ];
+  for (const candidate of candidates) {
+    const identity = normalizeOrderIdentityCandidate(candidate);
+    if (identity) return identity;
+  }
+  return null;
+}
+
 function isOrderLikeSearch(value) {
   const normalized = normalizeSearchTerm(stripXmlExtension(stripReprintSuffix(value)));
   return Boolean(normalized && /^(ps|pod)?\d{4,}$/.test(normalized));
@@ -77,7 +119,27 @@ function pipelineDateExpr() {
   return `(coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) at time zone 'Europe/Prague')::date`;
 }
 
-function pipelineSortExpr() {
+function pipelineIncomingDateExpr() {
+  return `(coalesce(received_at, api_seen_at) at time zone 'Europe/Prague')::date`;
+}
+
+function isDefaultOrderPipelineScope(options = {}) {
+  const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
+  return !cleanString(options.q || options.search)
+    && !cleanString(options.month)
+    && !cleanString(options.from)
+    && !cleanString(options.to)
+    && (cleanString(options.status) || 'all') === 'all'
+    && (cleanString(options.reprint) || 'all') === 'all'
+    && preset === 'this_month';
+}
+
+function pipelineSortExpr(options = {}) {
+  if (isDefaultOrderPipelineScope(options)) {
+    return `coalesce(received_at, api_seen_at) desc nulls last,
+        nullif(regexp_replace(coalesce(order_number, ''), '[^0-9]+', '', 'g'), '')::bigint desc nulls last,
+        order_number desc`;
+  }
   return `case
           when pipeline_status = 'received_only' then 0
           when pipeline_status = 'processed_without_received' then 1
@@ -91,6 +153,51 @@ function pipelineSortExpr() {
 
 function parentMatchKeyExpr(alias, columnName) {
   return `regexp_replace(lower(coalesce(${alias}.${columnName}, '')), '[[:space:]_-]+', '', 'g')`;
+}
+
+function orderIdentityKeySql(expression) {
+  return `regexp_replace(
+          regexp_replace(
+            regexp_replace(lower(coalesce(${expression}, '')), '^.*[\\\\/]', ''),
+            '\\.xml$', '', 'i'
+          ),
+          '([[:space:]_-]*(reprint.*|retry[0-9]*|copy[0-9]*|duplicate[0-9]*|processed|submittool|xml|api|v[0-9]*))$', '', 'i'
+        )`;
+}
+
+function pipelineIdentityKeySql(alias = '') {
+  const prefix = alias ? `${alias}.` : '';
+  return `coalesce(
+          nullif(regexp_replace(${orderIdentityKeySql(`${prefix}order_number`)}, '[[:space:]_-]+', '', 'g'), ''),
+          nullif(regexp_replace(${orderIdentityKeySql(`${prefix}external_order_id`)}, '[[:space:]_-]+', '', 'g'), ''),
+          nullif(regexp_replace(${orderIdentityKeySql(`${prefix}customer_order_id`)}, '[[:space:]_-]+', '', 'g'), ''),
+          nullif(regexp_replace(${orderIdentityKeySql(`${prefix}processed_order_name`)}, '[[:space:]_-]+', '', 'g'), '')
+        )`;
+}
+
+function defaultPipelineWhereSql() {
+  return `coalesce(received_at, api_seen_at) is not null
+      and pipeline_status <> 'processed_without_received'
+      and ${pipelineIdentityKeySql()} ~ '^(ps)?[0-9]{6,}$'`;
+}
+
+function dedupePipelineCte(sourceCte, targetCte) {
+  return `
+      ${targetCte} as (
+        select *
+        from (
+          select
+            ${sourceCte}.*,
+            row_number() over (
+              partition by coalesce(${pipelineIdentityKeySql(sourceCte)}, concat('row:', coalesce(processed_order_id::text, order_number, external_order_id, customer_order_id, '')))
+              order by coalesce(received_at, api_seen_at, processed_at, queued_date_time, latest_reprint_record_at) desc nulls last,
+                processed_order_id desc nulls last,
+                order_number desc
+            ) as pipeline_identity_rank
+          from ${sourceCte}
+        ) ranked_pipeline
+        where pipeline_identity_rank = 1
+      )`;
 }
 
 function reprintParentMatchKeySql(alias) {
@@ -137,7 +244,11 @@ function buildFastPipelineBaseCte() {
         from processed_print_orders p
         where coalesce(p.ignored, false) = false
           and upper(coalesce(p.order_type, 'S')) <> 'R'
-          and p.order_name in (i.order_number, i.external_order_id, i.customer_order_id)
+          and regexp_replace(${orderIdentityKeySql('p.order_name')}, '[[:space:]_-]+', '', 'g') = any(array_remove(array[
+            regexp_replace(${orderIdentityKeySql('i.order_number')}, '[[:space:]_-]+', '', 'g'),
+            regexp_replace(${orderIdentityKeySql('i.external_order_id')}, '[[:space:]_-]+', '', 'g'),
+            regexp_replace(${orderIdentityKeySql('i.customer_order_id')}, '[[:space:]_-]+', '', 'g')
+          ], ''))
         order by case
           when p.order_name = i.order_number then 1
           when p.order_name = i.external_order_id then 2
@@ -170,9 +281,11 @@ function buildFastPipelineBaseCte() {
         and not exists (
           select 1
           from print_orders_received i
-          where i.order_number = p.order_name
-             or i.external_order_id = p.order_name
-             or i.customer_order_id = p.order_name
+          where regexp_replace(${orderIdentityKeySql('p.order_name')}, '[[:space:]_-]+', '', 'g') = any(array_remove(array[
+            regexp_replace(${orderIdentityKeySql('i.order_number')}, '[[:space:]_-]+', '', 'g'),
+            regexp_replace(${orderIdentityKeySql('i.external_order_id')}, '[[:space:]_-]+', '', 'g'),
+            regexp_replace(${orderIdentityKeySql('i.customer_order_id')}, '[[:space:]_-]+', '', 'g')
+          ], ''))
         )
     ),
     pipeline_rows as (
@@ -281,11 +394,11 @@ async function ensureOrderPipelineView(client) {
       left join lateral (
         select p.*
         from processed_normal p
-        where p.order_name = any(array_remove(array[
-          i.order_number,
-          i.external_order_id,
-          i.customer_order_id
-        ], null))
+        where regexp_replace(${orderIdentityKeySql('p.order_name')}, '[[:space:]_-]+', '', 'g') = any(array_remove(array[
+          regexp_replace(${orderIdentityKeySql('i.order_number')}, '[[:space:]_-]+', '', 'g'),
+          regexp_replace(${orderIdentityKeySql('i.external_order_id')}, '[[:space:]_-]+', '', 'g'),
+          regexp_replace(${orderIdentityKeySql('i.customer_order_id')}, '[[:space:]_-]+', '', 'g')
+        ], ''))
         order by case
           when p.order_name = i.order_number then 1
           when p.order_name = i.external_order_id then 2
@@ -316,11 +429,11 @@ async function ensureOrderPipelineView(client) {
       where not exists (
         select 1
         from print_orders_received i
-        where p.order_name = any(array_remove(array[
-          i.order_number,
-          i.external_order_id,
-          i.customer_order_id
-        ], null))
+        where regexp_replace(${orderIdentityKeySql('p.order_name')}, '[[:space:]_-]+', '', 'g') = any(array_remove(array[
+          regexp_replace(${orderIdentityKeySql('i.order_number')}, '[[:space:]_-]+', '', 'g'),
+          regexp_replace(${orderIdentityKeySql('i.external_order_id')}, '[[:space:]_-]+', '', 'g'),
+          regexp_replace(${orderIdentityKeySql('i.customer_order_id')}, '[[:space:]_-]+', '', 'g')
+        ], ''))
       )
     ),
     pipeline_rows as (
@@ -415,8 +528,10 @@ async function ensureOrderPipelineView(client) {
 function mapPipelineRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
   const reprintRecords = Array.isArray(row.reprint_records) ? row.reprint_records : [];
+  const displayOrderName = getCanonicalOrderIdentity(row) || '';
   return {
     orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    displayOrderName,
     externalOrderId: row.external_order_id || '',
     customerOrderId: row.customer_order_id || '',
     receivedAt: toIso(row.received_at),
@@ -446,8 +561,10 @@ function mapPipelineRow(row) {
 }
 
 function mapPipelineListRow(row) {
+  const displayOrderName = getCanonicalOrderIdentity(row) || '';
   return {
     orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    displayOrderName,
     externalOrderId: row.external_order_id || '',
     customerOrderId: row.customer_order_id || '',
     receivedAt: toIso(row.received_at),
@@ -486,7 +603,7 @@ function addDateRangeFilter(where, params, options) {
   const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
   const from = cleanString(options.from);
   const to = cleanString(options.to);
-  const dateExpr = pipelineDateExpr();
+  const dateExpr = isDefaultOrderPipelineScope(options) ? pipelineIncomingDateExpr() : pipelineDateExpr();
 
   if (preset === 'custom') {
     if (isIsoDate(from)) {
@@ -590,6 +707,7 @@ function buildOrderPipelineFilters(options = {}) {
   if (!meta.allTimeReprintScope) addDateRangeFilter(where, params, options);
   addStatusFilter(where, options.status);
   addReprintFilter(where, options.reprint);
+  if (isDefaultOrderPipelineScope(options)) where.push(defaultPipelineWhereSql());
 
   if (month) {
     params.push(month);
@@ -655,6 +773,12 @@ async function queryPipelineStats(client, filters) {
   const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
   const result = await client.query(
     `
+      with filtered_pipeline as (
+        select *
+        from v_print_order_pipeline
+        ${whereSql}
+      ),
+      ${dedupePipelineCte('filtered_pipeline', 'deduped_pipeline')}
       select
         count(*)::int as total,
         count(*) filter (
@@ -669,8 +793,7 @@ async function queryPipelineStats(client, filters) {
           where coalesce(reprint_request_count, 0) > 0
             or coalesce(reprint_record_count, 0) > 0
         )::int as has_reprint
-      from v_print_order_pipeline
-      ${whereSql}
+      from deduped_pipeline
     `,
     filters.params
   );
@@ -682,6 +805,13 @@ async function queryFastPipelineStats(client, filters) {
   const result = await client.query(
     `
       ${buildFastPipelineBaseCte()}
+      ,
+      filtered_pipeline as (
+        select *
+        from pipeline_base
+        ${whereSql}
+      ),
+      ${dedupePipelineCte('filtered_pipeline', 'deduped_pipeline')}
       select
         count(*)::int as total,
         count(*) filter (
@@ -693,8 +823,7 @@ async function queryFastPipelineStats(client, filters) {
         count(*) filter (where coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
         count(*) filter (where processed_order_id is not null)::int as processed,
         count(*) filter (where coalesce(reprint_request_count, 0) > 0)::int as has_reprint
-      from pipeline_base
-      ${whereSql}
+      from deduped_pipeline
     `,
     filters.params
   );
@@ -707,6 +836,12 @@ async function queryOperationalGlobalStats(client) {
   const result = await client.query(
     `
       ${buildFastPipelineBaseCte()},
+      filtered_pipeline as (
+        select *
+        from pipeline_base
+        ${whereSql}
+      ),
+      ${dedupePipelineCte('filtered_pipeline', 'deduped_pipeline')},
       current_scope as (
         select
           count(*)::int as total,
@@ -718,8 +853,7 @@ async function queryOperationalGlobalStats(client) {
           count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
           count(*) filter (where processed_order_id is not null)::int as processed,
           count(*) filter (where coalesce(reprint_request_count, 0) > 0)::int as has_reprint
-        from pipeline_base
-        ${whereSql}
+        from deduped_pipeline
       ),
       reprint_backlog as (
         select count(distinct r.order_id)::int as reprint_backlog
@@ -807,6 +941,12 @@ async function listOrderPipelineFullView(client, options = {}) {
   const started = Date.now();
   const result = await client.query(
     `
+      with filtered_pipeline as (
+        select *
+        from v_print_order_pipeline
+        ${where.length ? `where ${where.join(' and ')}` : ''}
+      ),
+      ${dedupePipelineCte('filtered_pipeline', 'deduped_pipeline')}
       select
         order_number,
         external_order_id,
@@ -835,9 +975,8 @@ async function listOrderPipelineFullView(client, options = {}) {
           select string_agg(distinct nullif(file_item->>'pageSize', ''), ', ')
           from jsonb_array_elements(coalesce(print_files, '[]'::jsonb)) file_item
         ) as page_sizes
-      from v_print_order_pipeline
-      ${where.length ? `where ${where.join(' and ')}` : ''}
-      order by ${pipelineSortExpr()}
+      from deduped_pipeline
+      order by ${pipelineSortExpr(options)}
       limit $${limitParam}
       offset $${offsetParam}
     `,
@@ -886,10 +1025,11 @@ async function listOrderPipelineFast(client, options = {}) {
         from pipeline_base
         ${where.length ? `where ${where.join(' and ')}` : ''}
       ),
+      ${dedupePipelineCte('filtered_pipeline', 'deduped_pipeline')},
       page_base as (
         select *
-        from filtered_pipeline
-        order by ${pipelineSortExpr()}
+        from deduped_pipeline
+        order by ${pipelineSortExpr(options)}
         limit $${limitParam}
         offset $${offsetParam}
       ),
@@ -955,7 +1095,7 @@ async function listOrderPipelineFast(client, options = {}) {
           from jsonb_array_elements(coalesce(print_files, '[]'::jsonb)) file_item
         ) as page_sizes
       from page_rows
-      order by ${pipelineSortExpr()}
+      order by ${pipelineSortExpr(options)}
     `,
     params
   );
@@ -1011,7 +1151,7 @@ async function getOrderPipelineDetail(client, options = {}) {
       select *
       from v_print_order_pipeline
       where ${where.join(' or ')}
-      order by coalesce(processed_at, queued_date_time, received_at, api_seen_at, latest_reprint_record_at) desc nulls last,
+      order by coalesce(received_at, api_seen_at, processed_at, queued_date_time, latest_reprint_record_at) desc nulls last,
         nullif(regexp_replace(coalesce(order_number, ''), '[^0-9]+', '', 'g'), '')::bigint desc nulls last,
         order_number desc
       limit 1
@@ -1053,7 +1193,9 @@ async function listPipelineMonths(client) {
 module.exports = {
   getOrderPipelineDetail,
   getOrderPipelineStats,
+  getCanonicalOrderIdentity,
   ensureOrderPipelineView,
   listOrderPipeline,
   listPipelineMonths,
+  normalizeOrderIdentityCandidate,
 };
