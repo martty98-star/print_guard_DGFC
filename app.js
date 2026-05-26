@@ -80,6 +80,10 @@ const PrintGuardAccess = typeof window !== 'undefined' && window.PrintGuardAcces
 if (!PrintGuardAccess) throw new Error('Missing PrintGuardAccess');
 const PrintGuardRuntimeUI = typeof window !== 'undefined' && window.PrintGuardRuntimeUI;
 if (!PrintGuardRuntimeUI) throw new Error('Missing PrintGuardRuntimeUI');
+const PrintGuardRuntimeState = typeof window !== 'undefined' && window.PrintGuardRuntimeState;
+if (!PrintGuardRuntimeState) throw new Error('Missing PrintGuardRuntimeState');
+const PrintGuardStockRuntime = typeof window !== 'undefined' && window.PrintGuardStockRuntime;
+if (!PrintGuardStockRuntime) throw new Error('Missing PrintGuardStockRuntime');
 const PrintGuardShell = typeof window !== 'undefined' && window.PrintGuardShell;
 if (!PrintGuardShell) throw new Error('Missing PrintGuardShell');
 const PrintGuardPrintLog = typeof window !== 'undefined' && window.PrintGuardPrintLog;
@@ -199,179 +203,34 @@ function movementLabel(type) {
   return StockUI.movementLabel(type, i18n);
 }
 
-// ── App state ──────────────────────────────────────────────
-const S = {
-  items:       [],     // catalog
-  movements:   [],     // sorted by timestamp asc
-  coRecords:   [],     // sorted by timestamp asc
-  coloradoRolls: {},
-  coloradoRollEvents: {},
-  mode:        'stock',
-  stockFilter: 'all',
-  stockSearch: '',
-  detailArticle: null,
-  coHistMachine: 'colorado1',
-  editingItem:   null,
-  movType:       'issue',
-  movItem:       null,
-  logFilter:     'all',
-  logSearch:     '',
-  logDateFrom:   '',
-  logDateTo:     '',
-  coDateFrom:    '',
-  coDateTo:      '',
-  printLogDateFrom: '',
-  printLogDateTo:   '',
-  printLogPrinter:  'all',
-  printLogResult:   'all',
-  printLogRows:     [],
-  printLogOffset:   0,
-  printLogHasMore:  true,
-  printLogSummary:  null,
-  printLogTodayQueue: null,
-  printLogLoading:  false,
-  printLogLoaded:   false,
-  printLogViewMode: 'raw',
-  printLogGroupFilter: 'all',
-  printLogExpandedGroups: {},
-  postPurchaseOrders: [],
-  postPurchaseLoading: false,
-  postPurchaseLoaded: false,
-  postPurchaseFilter: 'open',
-  postPurchaseSearch: '',
-  postPurchaseSearchTimer: null,
-  postPurchaseAbortController: null,
-  postPurchaseStatus: 'all',
-  postPurchaseLimit: '50',
-  postPurchaseOffset: 0,
-  postPurchaseHasMore: false,
-  postPurchaseStats: null,
-  postPurchaseMonth: '',
-  postPurchaseDatePreset: 'this_month',
-  postPurchaseDateFrom: '',
-  postPurchaseDateTo: '',
-  postPurchaseReprint: 'all',
-  syncRunning:      false,
-  syncIntervalId:   null,
-};
+const runtimeStateApi = PrintGuardRuntimeState.createRuntimeState({
+  StockStore,
+  ST_CORECS,
+  ST_ITEMS,
+  ST_MOVES,
+  adminJsonHeaders,
+  elSet,
+  fetchImpl: fetch,
+  idbAll,
+  idbDelete,
+  idbPut,
+  loadSettingsFromIDB,
+});
+const { state: S, stockApiAdapter, stockDbAdapter } = runtimeStateApi;
 
-function stockDbAdapter() {
-  return {
-    ST_ITEMS,
-    ST_MOVES,
-    idbAll,
-    idbPut,
-    idbDelete,
-  };
-}
-
-function stockApiAdapter() {
-  return {
-    adminJsonHeaders,
-    fetchImpl: fetch,
-  };
-}
-
-// ── Settings IDB persistence ───────────────────────────────
-// ── Load all data ──────────────────────────────────────────
 async function loadAll() {
-  S.items     = await StockStore.getAllItems(stockDbAdapter());
-  S.movements = (await StockStore.getAllMovements(stockDbAdapter())).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  S.coRecords = (await idbAll(ST_CORECS))
-    .map(record => record && typeof record === 'object'
-      ? {
-          ...record,
-          updatedAt: record.updatedAt || record.updated_at || record.createdAt || record.timestamp || null,
-        }
-      : record)
-    .filter(record => record && !record.deletedAt)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  await loadSettingsFromIDB();
-
-  const ts = new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-  elSet('stock-last-update', ts);
-  elSet('co-last-update', ts);
-
-  renderStockOverview();
-  renderAlerts();
-  renderItemsMgmt();
-  renderCoDashboard();
-  renderCoHistory();
+  return runtimeStateApi.loadAll({
+    renderAlerts,
+    renderCoDashboard,
+    renderCoHistory,
+    renderItemsMgmt,
+    renderStockOverview,
+  });
 }
 
 // ══════════════════════════════════════════════════════════
 //  STOCK — COMPUTATION
 // ══════════════════════════════════════════════════════════
-
-/** Get movements for one article, sorted asc */
-function getMovements(articleNumber) {
-  return StockFeature.getMovements(articleNumber);
-}
-
-/**
- * Compute current on-hand and weekly consumption for an item.
- * Logic:
- *   - stocktake sets an absolute level; movements before first stocktake are ignored
- *   - receipt adds, issue subtracts from running total
- *   - weeklyConsumption = sum of issues in last N weeks / N
- */
-function computeStock(item) {
-  return StockFeature.computeStock(item);
-}
-
-// ══════════════════════════════════════════════════════════
-//  STOCK — OVERVIEW
-// ══════════════════════════════════════════════════════════
-
-function renderStockOverview() {
-  return StockFeature.renderStockOverview();
-}
-
-// ── Stock Detail ───────────────────────────────────────────
-let stockActions = null;
-
-function requireStockActions() {
-  if (!stockActions) throw new Error('Stock actions are not initialized');
-  return stockActions;
-}
-
-function openStockDetail(articleNumber) {
-  return requireStockActions().openStockDetail(articleNumber);
-}
-
-// Admin-gated verze pro Historie pohybů
-async function deleteMovementAdmin(id) {
-  return requireStockActions().deleteMovementAdmin(id);
-}
-
-// ── Alerts ────────────────────────────────────────────────
-function renderAlerts() {
-  return StockFeature.renderStockAlerts();
-}
-
-async function saveMovement() {
-  return requireStockActions().saveMovement();
-}
-
-// ══════════════════════════════════════════════════════════
-//  ITEMS MANAGEMENT (přidat / upravit / smazat položku)
-// ══════════════════════════════════════════════════════════
-
-function renderItemsMgmt() {
-  return requireStockActions().renderItemsMgmt();
-}
-
-function openItemModal(articleNumber) {
-  return requireStockActions().openItemModal(articleNumber);
-}
-
-async function saveItemModal() {
-  return requireStockActions().saveItemModal();
-}
-
-async function deleteItem(articleNumber) {
-  return requireStockActions().deleteItem(articleNumber);
-}
 
 // ══════════════════════════════════════════════════════════
 //  COLORADO MODULE
@@ -596,25 +455,6 @@ const {
   dateRangeFilter,
 } = dateFilters;
 
-let stockLogApi = null;
-
-function requireStockLog() {
-  if (!stockLogApi) throw new Error('Stock log is not initialized');
-  return stockLogApi;
-}
-
-// ══════════════════════════════════════════════════════════
-//  STOCK — LOG (všechny pohyby, reportová obrazovka)
-// ══════════════════════════════════════════════════════════
-
-function renderStockLog() {
-  return requireStockLog().renderStockLog();
-}
-
-function exportCSVStockLog() {
-  return requireStockLog().exportCSVStockLog();
-}
-
 // ══════════════════════════════════════════════════════════
 //  NAVIGATION + ADMIN AUTH
 // ══════════════════════════════════════════════════════════
@@ -632,28 +472,31 @@ const {
   setupAdminAuthHandlers,
 } = adminAuth;
 
-stockActions = StockActions.createStockActions({
+const stockRuntimeApi = PrintGuardStockRuntime.createStockRuntime({
   S,
+  StockActions,
   StockFeature,
+  StockLogModule,
   StockStore,
   StockUI,
   Reports,
   adminErrorMessage,
   cfg,
   cloudDelete,
+  dlBlob,
   el,
+  elSet,
   esc,
   fmtDT,
   fmtDays,
+  fmtExportDateTime,
+  fmtFileDT,
   fmtN,
   genId,
   i18n,
   isAdmin,
   movementLabel,
   navigate: (...args) => navigationApi.navigate(...args),
-  renderAlerts,
-  renderStockLog,
-  renderStockOverview,
   runNotificationDispatch,
   setSyncDirtyReason,
   showConfirm,
@@ -662,22 +505,25 @@ stockActions = StockActions.createStockActions({
   stockApiAdapter,
   stockDbAdapter,
 });
-stockLogApi = StockLogModule.createStockLog({
-  Reports,
-  S,
-  StockStore,
+const {
+  computeStock,
+  deleteItem,
+  deleteMovement,
   deleteMovementAdmin,
-  dlBlob,
-  el,
-  esc,
-  fmtDT,
-  fmtExportDateTime,
-  fmtFileDT,
-  fmtN,
-  i18n,
-  movementLabel,
+  exportCSVStockLog,
+  getMovements,
+  initFeature: initStockFeature,
+  initRuntime: initStockRuntime,
+  openItemModal,
   openStockDetail,
-});
+  renderAlerts,
+  renderItemsMgmt,
+  renderStockLog,
+  renderStockOverview,
+  saveItemModal,
+  saveMovement,
+} = stockRuntimeApi;
+initStockRuntime();
 
 navigationApi = PrintGuardNavigation.createNavigation({
   applyRoleUI,
@@ -723,11 +569,6 @@ const { bindShellControls } = shellApi;
 //  UTILITIES
 // ══════════════════════════════════════════════════════════
 
-// Canonical movement deletion. This preserves the previously effective hoisted implementation.
-async function deleteMovement(id) {
-  return requireStockActions().deleteMovement(id);
-}
-
 window.enablePushNotifications = enablePushNotifications;
 
 // ══════════════════════════════════════════════════════════
@@ -743,30 +584,7 @@ async function init() {
   S.coloradoRollEvents = loadColoradoRollEvents();
   bindShellControls();
 
-  StockFeature.initStockFeature({
-    S,
-    Reports,
-    cfg,
-    computeStock,
-    deleteMovement,
-    el,
-    elSet,
-    esc,
-    exportCSVStockLog,
-    fmtDT,
-    fmtDays,
-    fmtN,
-    i18n,
-    movementLabel,
-    navigate,
-    openStockDetail,
-    openItemModal,
-    renderStockLog,
-    renderStockOverview,
-    saveItemModal,
-    saveMovement,
-    statusLabel,
-  });
+  initStockFeature();
 
   // Colorado history tabs
   setupCoEntry();
