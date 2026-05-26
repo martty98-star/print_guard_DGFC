@@ -18,7 +18,7 @@
       "source_file": "app.js",
       "source_location": "L90",
       "id": "print_guard_dgfc_app_i18n",
-      "community": 39,
+      "community": 38,
       "norm_label": "i18n()"
     },
     {
@@ -36,7 +36,7 @@
       "source_file": "app.js",
       "source_location": "L159",
       "id": "print_guard_dgfc_app_getcostunitpermonth",
-      "community": 39,
+      "community": 38,
       "norm_label": "getcostunitpermonth()"
     },
     {
@@ -99,7 +99,7 @@
       "source_file": "app.js",
       "source_location": "L203",
       "id": "print_guard_dgfc_app_movementlabel",
-      "community": 39,
+      "community": 11,
       "norm_label": "movementlabel()"
     },
     {
@@ -414,7 +414,7 @@
       "source_file": "app.js",
       "source_location": "L660",
       "id": "print_guard_dgfc_app_rendercodashboard",
-      "community": 38,
+      "community": 39,
       "norm_label": "rendercodashboard()"
     },
     {
@@ -432,7 +432,7 @@
       "source_file": "app.js",
       "source_location": "L662",
       "id": "print_guard_dgfc_app_getselectedmachine",
-      "community": 38,
+      "community": 37,
       "norm_label": "getselectedmachine()"
     },
     {
@@ -540,7 +540,7 @@
       "source_file": "app.js",
       "source_location": "L832",
       "id": "print_guard_dgfc_app_renderstocklog",
-      "community": 39,
+      "community": 11,
       "norm_label": "renderstocklog()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L102",
       "id": "lib_order_pipeline_normalizeordertype",
-      "community": 7,
+      "community": 6,
       "norm_label": "normalizeordertype()"
     },
     {
@@ -3874,10 +3874,19 @@
       "norm_label": "defaultpipelinewheresql()"
     },
     {
+      "label": "dedupePipelineCte()",
+      "file_type": "code",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L184",
+      "id": "lib_order_pipeline_dedupepipelinecte",
+      "community": 1,
+      "norm_label": "dedupepipelinecte()"
+    },
+    {
       "label": "reprintParentMatchKeySql()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L188",
+      "source_location": "L203",
       "id": "lib_order_pipeline_reprintparentmatchkeysql",
       "community": 1,
       "norm_label": "reprintparentmatchkeysql()"
@@ -3886,7 +3895,7 @@
       "label": "buildFastPipelineBaseCte()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L197",
+      "source_location": "L212",
       "id": "lib_order_pipeline_buildfastpipelinebasecte",
       "community": 1,
       "norm_label": "buildfastpipelinebasecte()"
@@ -3895,7 +3904,7 @@
       "label": "requiresFullReprintView()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L314",
+      "source_location": "L335",
       "id": "lib_order_pipeline_requiresfullreprintview",
       "community": 1,
       "norm_label": "requiresfullreprintview()"
@@ -3904,7 +3913,7 @@
       "label": "ensureOrderPipelineView()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L318",
+      "source_location": "L339",
       "id": "lib_order_pipeline_ensureorderpipelineview",
       "community": 1,
       "norm_label": "ensureorderpipelineview()"
@@ -3913,7 +3922,7 @@
       "label": "mapPipelineRow()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L507",
+      "source_location": "L528",
       "id": "lib_order_pipeline_mappipelinerow",
       "community": 1,
       "norm_label": "mappipelinerow()"
@@ -3922,25 +3931,16 @@
       "label": "mapPipelineListRow()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L542",
+      "source_location": "L563",
       "id": "lib_order_pipeline_mappipelinelistrow",
       "community": 1,
       "norm_label": "mappipelinelistrow()"
     },
     {
-      "label": "dedupeDefaultPipelineRows()",
-      "file_type": "code",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L577",
-      "id": "lib_order_pipeline_dedupedefaultpipelinerows",
-      "community": 1,
-      "norm_label": "dedupedefaultpipelinerows()"
-    },
-    {
       "label": "isIsoDate()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L594",
+      "source_location": "L598",
       "id": "lib_order_pipeline_isisodate",
       "community": 1,
       "norm_label": "isisodate()"
@@ -3949,7 +3949,7 @@
       "label": "addDateRangeFilter()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L598",
+      "source_location": "L602",
       "id": "lib_order_pipeline_adddaterangefilter",
       "community": 1,
       "norm_label": "adddaterangefilter()"
@@ -3958,7 +3958,7 @@
       "label": "addReprintFilter()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L628",
+      "source_location": "L632",
       "id": "lib_order_pipeline_addreprintfilter",
       "community": 1,
       "norm_label": "addreprintfilter()"
@@ -3967,7 +3967,7 @@
       "label": "addStatusFilter()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L641",
+      "source_location": "L645",
       "id": "lib_order_pipeline_addstatusfilter",
       "community": 1,
       "norm_label": "addstatusfilter()"
@@ -3976,7 +3976,7 @@
       "label": "shouldUseAllTimeReprintScope()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L672",
+      "source_location": "L676",
       "id": "lib_order_pipeline_shouldusealltimereprintscope",
       "community": 1,
       "norm_label": "shouldusealltimereprintscope()"
@@ -3985,7 +3985,7 @@
       "label": "buildOrderPipelineFilters()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L687",
+      "source_location": "L691",
       "id": "lib_order_pipeline_buildorderpipelinefilters",
       "community": 1,
       "norm_label": "buildorderpipelinefilters()"
@@ -3994,7 +3994,7 @@
       "label": "mapPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L756",
+      "source_location": "L760",
       "id": "lib_order_pipeline_mappipelinestats",
       "community": 1,
       "norm_label": "mappipelinestats()"
@@ -4003,7 +4003,7 @@
       "label": "queryPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L768",
+      "source_location": "L772",
       "id": "lib_order_pipeline_querypipelinestats",
       "community": 1,
       "norm_label": "querypipelinestats()"
@@ -4012,7 +4012,7 @@
       "label": "queryFastPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L794",
+      "source_location": "L803",
       "id": "lib_order_pipeline_queryfastpipelinestats",
       "community": 1,
       "norm_label": "queryfastpipelinestats()"
@@ -4021,7 +4021,7 @@
       "label": "queryOperationalGlobalStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L818",
+      "source_location": "L833",
       "id": "lib_order_pipeline_queryoperationalglobalstats",
       "community": 1,
       "norm_label": "queryoperationalglobalstats()"
@@ -4030,7 +4030,7 @@
       "label": "getOrderPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L854",
+      "source_location": "L874",
       "id": "lib_order_pipeline_getorderpipelinestats",
       "community": 1,
       "norm_label": "getorderpipelinestats()"
@@ -4039,7 +4039,7 @@
       "label": "listOrderPipelineFullView()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L909",
+      "source_location": "L929",
       "id": "lib_order_pipeline_listorderpipelinefullview",
       "community": 1,
       "norm_label": "listorderpipelinefullview()"
@@ -4048,7 +4048,7 @@
       "label": "listOrderPipelineFast()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L985",
+      "source_location": "L1007",
       "id": "lib_order_pipeline_listorderpipelinefast",
       "community": 1,
       "norm_label": "listorderpipelinefast()"
@@ -4057,7 +4057,7 @@
       "label": "listOrderPipeline()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1097",
+      "source_location": "L1117",
       "id": "lib_order_pipeline_listorderpipeline",
       "community": 1,
       "norm_label": "listorderpipeline()"
@@ -4066,7 +4066,7 @@
       "label": "getOrderPipelineDetail()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1108",
+      "source_location": "L1128",
       "id": "lib_order_pipeline_getorderpipelinedetail",
       "community": 1,
       "norm_label": "getorderpipelinedetail()"
@@ -4075,7 +4075,7 @@
       "label": "listPipelineMonths()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1144",
+      "source_location": "L1164",
       "id": "lib_order_pipeline_listpipelinemonths",
       "community": 1,
       "norm_label": "listpipelinemonths()"
@@ -7083,7 +7083,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L4",
       "id": "scripts_core_utils_genid",
-      "community": 22,
+      "community": 37,
       "norm_label": "genid()"
     },
     {
@@ -7155,7 +7155,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L54",
       "id": "scripts_core_utils_fmtdays",
-      "community": 11,
+      "community": 22,
       "norm_label": "fmtdays()"
     },
     {
@@ -7164,7 +7164,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L62",
       "id": "scripts_core_utils_fmtdt",
-      "community": 38,
+      "community": 22,
       "norm_label": "fmtdt()"
     },
     {
@@ -9180,7 +9180,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L1",
       "id": "scripts_stock_ui_js",
-      "community": 60,
+      "community": 19,
       "norm_label": "stock-ui.js"
     },
     {
@@ -9189,7 +9189,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L7",
       "id": "scripts_stock_ui_statuslabel",
-      "community": 60,
+      "community": 19,
       "norm_label": "statuslabel()"
     },
     {
@@ -9198,7 +9198,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L11",
       "id": "scripts_stock_ui_movementlabel",
-      "community": 60,
+      "community": 19,
       "norm_label": "movementlabel()"
     },
     {
@@ -9216,7 +9216,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L92",
       "id": "scripts_stock_ui_buildmovementrows",
-      "community": 60,
+      "community": 19,
       "norm_label": "buildmovementrows()"
     },
     {
@@ -9225,7 +9225,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L121",
       "id": "scripts_stock_ui_buildstockhistorytable",
-      "community": 60,
+      "community": 19,
       "norm_label": "buildstockhistorytable()"
     },
     {
@@ -9234,7 +9234,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L158",
       "id": "scripts_stock_ui_renderalerts",
-      "community": 60,
+      "community": 19,
       "norm_label": "renderalerts()"
     },
     {
@@ -12532,15 +12532,6 @@
       "norm_label": "code:text (c:\\printguard\\logs\\submit-tool-sync.log)"
     },
     {
-      "label": "dedupePipelineCte()",
-      "file_type": "code",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L184",
-      "community": 1,
-      "norm_label": "dedupepipelinecte()",
-      "id": "lib_order_pipeline_dedupepipelinecte"
-    },
-    {
       "label": "MACHINES",
       "file_type": "code",
       "source_file": "app.js",
@@ -12590,7 +12581,7 @@
       "file_type": "code",
       "source_file": "app.js",
       "source_location": "L887",
-      "community": 38,
+      "community": 37,
       "norm_label": "savecoentry()",
       "id": "print_guard_dgfc_app_savecoentry"
     },
@@ -20627,9 +20618,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L33",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_striptechnicalsuffixes"
+      "target": "lib_order_pipeline_striptechnicalsuffixes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20637,9 +20628,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L41",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_normalizeorderidentitycandidate"
+      "target": "lib_order_pipeline_normalizeorderidentitycandidate",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20647,9 +20638,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L56",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_getcanonicalorderidentity"
+      "target": "lib_order_pipeline_getcanonicalorderidentity",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20717,9 +20708,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L122",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_pipelineincomingdateexpr"
+      "target": "lib_order_pipeline_pipelineincomingdateexpr",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20727,9 +20718,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L126",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_isdefaultorderpipelinescope"
+      "target": "lib_order_pipeline_isdefaultorderpipelinescope",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20757,9 +20748,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L158",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_orderidentitykeysql"
+      "target": "lib_order_pipeline_orderidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20767,9 +20758,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L168",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_pipelineidentitykeysql"
+      "target": "lib_order_pipeline_pipelineidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20777,9 +20768,19 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L178",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_defaultpipelinewheresql"
+      "target": "lib_order_pipeline_defaultpipelinewheresql",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L184",
+      "weight": 1.0,
+      "source": "netlify_functions_lib_order_pipeline_js",
+      "target": "lib_order_pipeline_dedupepipelinecte",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -20840,16 +20841,6 @@
       "confidence_score": 1.0,
       "source": "netlify_functions_lib_order_pipeline_js",
       "target": "lib_order_pipeline_mappipelinelistrow"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L577",
-      "weight": 1.0,
-      "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_dedupedefaultpipelinerows",
-      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -21018,19 +21009,9 @@
       "source_file": "tests/order-pipeline-identity.test.js",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_identity_test_js",
-      "target": "netlify_functions_lib_order_pipeline_js"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L184",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "netlify_functions_lib_order_pipeline_js",
-      "target": "lib_order_pipeline_dedupepipelinecte"
+      "target": "netlify_functions_lib_order_pipeline_js",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -21070,9 +21051,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L42",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_normalizeorderidentitycandidate",
-      "target": "lib_order_pipeline_cleanstring"
+      "target": "lib_order_pipeline_cleanstring",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21092,9 +21073,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L127",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_isdefaultorderpipelinescope",
-      "target": "lib_order_pipeline_cleanstring"
+      "target": "lib_order_pipeline_cleanstring",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21318,9 +21299,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L46",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_normalizeorderidentitycandidate",
-      "target": "lib_order_pipeline_striptechnicalsuffixes"
+      "target": "lib_order_pipeline_striptechnicalsuffixes",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21329,9 +21310,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L57",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_getcanonicalorderidentity",
-      "target": "lib_order_pipeline_normalizeorderidentitycandidate"
+      "target": "lib_order_pipeline_normalizeorderidentitycandidate",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -21340,9 +21321,9 @@
       "source_file": "tests/order-pipeline-identity.test.js",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_identity_test_js",
-      "target": "lib_order_pipeline_normalizeorderidentitycandidate"
+      "target": "lib_order_pipeline_normalizeorderidentitycandidate",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21351,9 +21332,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L531",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_mappipelinerow",
-      "target": "lib_order_pipeline_getcanonicalorderidentity"
+      "target": "lib_order_pipeline_getcanonicalorderidentity",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21362,18 +21343,7 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L564",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_mappipelinelistrow",
-      "target": "lib_order_pipeline_getcanonicalorderidentity"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L581",
-      "weight": 1.0,
-      "source": "lib_order_pipeline_dedupedefaultpipelinerows",
       "target": "lib_order_pipeline_getcanonicalorderidentity",
       "confidence_score": 1.0
     },
@@ -21384,9 +21354,9 @@
       "source_file": "tests/order-pipeline-identity.test.js",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_identity_test_js",
-      "target": "lib_order_pipeline_getcanonicalorderidentity"
+      "target": "lib_order_pipeline_getcanonicalorderidentity",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21684,9 +21654,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L606",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_adddaterangefilter",
-      "target": "lib_order_pipeline_pipelineincomingdateexpr"
+      "target": "lib_order_pipeline_pipelineincomingdateexpr",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21695,40 +21665,7 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L138",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_pipelinesortexpr",
-      "target": "lib_order_pipeline_isdefaultorderpipelinescope"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L606",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_adddaterangefilter",
-      "target": "lib_order_pipeline_isdefaultorderpipelinescope"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L710",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_buildorderpipelinefilters",
-      "target": "lib_order_pipeline_isdefaultorderpipelinescope"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L972",
-      "weight": 1.0,
-      "source": "lib_order_pipeline_listorderpipelinefullview",
       "target": "lib_order_pipeline_isdefaultorderpipelinescope",
       "confidence_score": 1.0
     },
@@ -21737,9 +21674,20 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1084",
+      "source_location": "L606",
       "weight": 1.0,
-      "source": "lib_order_pipeline_listorderpipelinefast",
+      "source": "lib_order_pipeline_adddaterangefilter",
+      "target": "lib_order_pipeline_isdefaultorderpipelinescope",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L710",
+      "weight": 1.0,
+      "source": "lib_order_pipeline_buildorderpipelinefilters",
       "target": "lib_order_pipeline_isdefaultorderpipelinescope",
       "confidence_score": 1.0
     },
@@ -21825,9 +21773,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L171",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_pipelineidentitykeysql",
-      "target": "lib_order_pipeline_orderidentitykeysql"
+      "target": "lib_order_pipeline_orderidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21836,9 +21784,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L247",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_buildfastpipelinebasecte",
-      "target": "lib_order_pipeline_orderidentitykeysql"
+      "target": "lib_order_pipeline_orderidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21847,9 +21795,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L397",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_ensureorderpipelineview",
-      "target": "lib_order_pipeline_orderidentitykeysql"
+      "target": "lib_order_pipeline_orderidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21858,9 +21806,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L181",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_defaultpipelinewheresql",
-      "target": "lib_order_pipeline_pipelineidentitykeysql"
+      "target": "lib_order_pipeline_pipelineidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21869,9 +21817,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L192",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_dedupepipelinecte",
-      "target": "lib_order_pipeline_pipelineidentitykeysql"
+      "target": "lib_order_pipeline_pipelineidentitykeysql",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -21880,9 +21828,64 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L710",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_buildorderpipelinefilters",
-      "target": "lib_order_pipeline_defaultpipelinewheresql"
+      "target": "lib_order_pipeline_defaultpipelinewheresql",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L781",
+      "weight": 1.0,
+      "source": "lib_order_pipeline_querypipelinestats",
+      "target": "lib_order_pipeline_dedupepipelinecte",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L814",
+      "weight": 1.0,
+      "source": "lib_order_pipeline_queryfastpipelinestats",
+      "target": "lib_order_pipeline_dedupepipelinecte",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L844",
+      "weight": 1.0,
+      "source": "lib_order_pipeline_queryoperationalglobalstats",
+      "target": "lib_order_pipeline_dedupepipelinecte",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L949",
+      "weight": 1.0,
+      "source": "lib_order_pipeline_listorderpipelinefullview",
+      "target": "lib_order_pipeline_dedupepipelinecte",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "netlify/functions/_lib/order-pipeline.js",
+      "source_location": "L1028",
+      "weight": 1.0,
+      "source": "lib_order_pipeline_listorderpipelinefast",
+      "target": "lib_order_pipeline_dedupepipelinecte",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -22076,28 +22079,6 @@
       "confidence_score": 1.0,
       "source": "scripts_order_pipeline_api_js",
       "target": "lib_order_pipeline_mappipelinerow"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L973",
-      "weight": 1.0,
-      "source": "lib_order_pipeline_listorderpipelinefullview",
-      "target": "lib_order_pipeline_dedupedefaultpipelinerows",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1085",
-      "weight": 1.0,
-      "source": "lib_order_pipeline_listorderpipelinefast",
-      "target": "lib_order_pipeline_dedupedefaultpipelinerows",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -22324,17 +22305,6 @@
       "target": "lib_order_pipeline_querypipelinestats"
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L781",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_querypipelinestats",
-      "target": "lib_order_pipeline_dedupepipelinecte"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
@@ -22356,17 +22326,6 @@
       "target": "lib_order_pipeline_queryfastpipelinestats"
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L814",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_queryfastpipelinestats",
-      "target": "lib_order_pipeline_dedupepipelinecte"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
@@ -22386,17 +22345,6 @@
       "confidence_score": 1.0,
       "source": "lib_order_pipeline_getorderpipelinestats",
       "target": "lib_order_pipeline_queryoperationalglobalstats"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L844",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_queryoperationalglobalstats",
-      "target": "lib_order_pipeline_dedupepipelinecte"
     },
     {
       "relation": "contains",
@@ -22431,17 +22379,6 @@
       "target": "lib_order_pipeline_listorderpipelinefullview"
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L949",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_listorderpipelinefullview",
-      "target": "lib_order_pipeline_dedupepipelinecte"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
@@ -22461,17 +22398,6 @@
       "confidence_score": 1.0,
       "source": "lib_order_pipeline_listorderpipeline",
       "target": "lib_order_pipeline_listorderpipelinefast"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1028",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "lib_order_pipeline_listorderpipelinefast",
-      "target": "lib_order_pipeline_dedupepipelinecte"
     },
     {
       "relation": "imports",
@@ -30728,9 +30654,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L80",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_getraworderlabels"
+      "target": "scripts_order_pipeline_render_getraworderlabels",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -31168,9 +31094,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L89",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_getsecondaryorderlabels",
-      "target": "scripts_order_pipeline_render_getraworderlabels"
+      "target": "scripts_order_pipeline_render_getraworderlabels",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32586,9 +32512,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L28",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_js",
-      "target": "scripts_reprint_xml_normalizeordertoken"
+      "target": "scripts_reprint_xml_normalizeordertoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32616,9 +32542,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L80",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_js",
-      "target": "scripts_reprint_xml_assertcleanreprinttokens"
+      "target": "scripts_reprint_xml_assertcleanreprinttokens",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32711,9 +32637,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_normalizeordertoken",
-      "target": "scripts_reprint_xml_cleanvalue"
+      "target": "scripts_reprint_xml_cleanvalue",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32744,9 +32670,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L55",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_pickoriginalorderid",
-      "target": "scripts_reprint_xml_normalizeordertoken"
+      "target": "scripts_reprint_xml_normalizeordertoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32755,9 +32681,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L62",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_normalizeponumber",
-      "target": "scripts_reprint_xml_normalizeordertoken"
+      "target": "scripts_reprint_xml_normalizeordertoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32788,9 +32714,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L81",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_assertcleanreprinttokens",
-      "target": "scripts_reprint_xml_normalizeponumber"
+      "target": "scripts_reprint_xml_normalizeponumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32810,9 +32736,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L97",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_generatereprintxml",
-      "target": "scripts_reprint_xml_assertcleanreprinttokens"
+      "target": "scripts_reprint_xml_assertcleanreprinttokens",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -37147,9 +37073,9 @@
       "source_file": "tests/order-pipeline-identity.test.js",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_identity_test_js",
-      "target": "tests_order_pipeline_identity_test_assert"
+      "target": "tests_order_pipeline_identity_test_assert",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -37157,9 +37083,9 @@
       "source_file": "tests/order-pipeline-identity.test.js",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_identity_test_js",
-      "target": "tests_order_pipeline_identity_test_getcanonicalorderidentity_normalizeorderidentitycandidate"
+      "target": "tests_order_pipeline_identity_test_getcanonicalorderidentity_normalizeorderidentitycandidate",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38721,5 +38647,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "66396ffdaf34b5b140f7e82ec8ec6fb064b0044d"
+  "built_at_commit": "53b3b12373f734862b8caf0152951d22b02c10d3"
 }
