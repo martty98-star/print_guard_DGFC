@@ -667,12 +667,32 @@
 
       const formatTable = formatEstimates.rows.length ? `
         <div class="format-estimates">
-          ${formatEstimates.rows.map(row => `
-            <div class="format-estimate">
-              <span class="metric-desc">${esc(row.label)}</span>
-              <strong>${fmtN(row.inkL, 3)} L</strong>
-            </div>
-          `).join('')}
+          <div class="format-estimates-head">
+            <span class="format-estimates-title">${i18n('colorado.card.formats.note')}</span>
+            <span class="format-estimates-subtitle">${basis ? `${fmtN(basis.sampleCount || 0, 0)} ${i18n('colorado.card.formats.intervals')}` : ''}</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table format-estimates-table">
+              <thead>
+                <tr>
+                  <th>${i18n('colorado.card.formats.table.format')}</th>
+                  <th>${i18n('colorado.card.formats.table.area')}</th>
+                  <th>${i18n('colorado.card.formats.table.ink')}</th>
+                  ${hasCosts ? `<th>${i18n('colorado.card.formats.table.cost')}</th>` : ''}
+                </tr>
+              </thead>
+              <tbody>
+                ${formatEstimates.rows.map(row => `
+                  <tr>
+                    <td><strong>${esc(row.label)}</strong></td>
+                    <td class="num">${fmtN(row.areaM2, 2)} m²</td>
+                    <td class="num">${fmtN(row.inkL, 3)} L</td>
+                    ${hasCosts ? `<td class="num">${row.cost !== null ? fmtN(row.cost, 2) : '—'}</td>` : ''}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>` : '';
 
       wrap.innerHTML = `

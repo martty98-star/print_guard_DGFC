@@ -1,16 +1,16 @@
 # Graph Report - print_guard_DGFC  (2026-05-26)
 
 ## Corpus Check
-- 151 files · ~122,096 words
+- 154 files · ~122,472 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1606 nodes · 2739 edges · 125 communities (113 shown, 12 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 95 edges (avg confidence: 0.8)
+- 1623 nodes · 2759 edges · 129 communities (115 shown, 14 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 96 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f0a5d17e`
+- Built from commit: `4d202145`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -35,10 +35,8 @@
 - [[_COMMUNITY_Community 17|Community 17]]
 - [[_COMMUNITY_Community 18|Community 18]]
 - [[_COMMUNITY_Community 19|Community 19]]
-- [[_COMMUNITY_Community 20|Community 20]]
 - [[_COMMUNITY_Community 21|Community 21]]
 - [[_COMMUNITY_Community 22|Community 22]]
-- [[_COMMUNITY_Community 23|Community 23]]
 - [[_COMMUNITY_Community 24|Community 24]]
 - [[_COMMUNITY_Community 25|Community 25]]
 - [[_COMMUNITY_Community 26|Community 26]]
@@ -51,7 +49,6 @@
 - [[_COMMUNITY_Community 33|Community 33]]
 - [[_COMMUNITY_Community 34|Community 34]]
 - [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
 - [[_COMMUNITY_Community 37|Community 37]]
 - [[_COMMUNITY_Community 38|Community 38]]
 - [[_COMMUNITY_Community 39|Community 39]]
@@ -70,7 +67,6 @@
 - [[_COMMUNITY_Community 52|Community 52]]
 - [[_COMMUNITY_Community 53|Community 53]]
 - [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
 - [[_COMMUNITY_Community 56|Community 56]]
 - [[_COMMUNITY_Community 57|Community 57]]
 - [[_COMMUNITY_Community 58|Community 58]]
@@ -125,6 +121,10 @@
 - [[_COMMUNITY_Community 121|Community 121]]
 - [[_COMMUNITY_Community 122|Community 122]]
 - [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `el()` - 27 edges
@@ -150,18 +150,11 @@
 - `Colorado JSON Upsert` --references--> `Neon PostgreSQL`  [EXTRACTED]
   SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js → README.md
 
-## Communities (125 total, 12 thin omitted)
+## Communities (129 total, 14 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.07
-Nodes (76): {
-  buildDailyProductionReport,
-}, {
-  checkRateLimit,
-  json,
-  requirePostPurchaseAccess,
-  withClient,
-}, {
+Cohesion: 0.08
+Nodes (71): {
   checkRateLimit,
   json,
   requirePostPurchaseAccess,
@@ -171,7 +164,7 @@ Nodes (76): {
   getOrderPipelineStats,
   listOrderPipeline,
   listPipelineMonths,
-} (+68 more)
+}, includeStats, months (+63 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.09
@@ -204,8 +197,8 @@ Cohesion: 0.13
 Nodes (16): 1) Stock / inventory sync, 2) Post Purchase orders, 3) Processed orders, 4) Order pipeline, 6) Submit Tool lifecycle sync, 7) Colorado pipeline, 8) Push notifications, code:text (local IDB / UI state) (+8 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.08
-Nodes (58): ChecklistItem, ChecklistItemInput, ChecklistOccurrence, ChecklistScheduleType, ChecklistWeekdayKey, DueEvaluationOptions, getVisibleChecklistOccurrence(), addChecklistLocalDays() (+50 more)
+Cohesion: 0.10
+Nodes (49): ChecklistItem, ChecklistItemInput, ChecklistOccurrence, ChecklistScheduleType, ChecklistWeekdayKey, DueEvaluationOptions, getVisibleChecklistOccurrence(), addChecklistLocalDays() (+41 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.07
@@ -228,8 +221,8 @@ Cohesion: 0.12
 Nodes (36): chunkArray(), listPrintOrdersReceived(), mapPrintOrderRow(), updatePrintOrderLifecycleStatus(), applyFilterParams(), assertPostPurchaseConfig(), buildCandidateUrls(), cleanString() (+28 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.06
-Nodes (19): adminAuth, buildMovementRows(), buildStockHistoryTable(), CO_FORMATS, Colorado, computeStock(), costCurrencySelect, dateFilters (+11 more)
+Cohesion: 0.05
+Nodes (24): accessApi, adminAuth, buildMovementRows(), buildStockHistoryTable(), CO_FORMATS, Colorado, computeStock(), costCurrencySelect (+16 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.12
@@ -256,20 +249,12 @@ Cohesion: 0.12
 Nodes (15): buildAccountingInkExpressions(), buildAccountingInkJoin(), buildFilters(), buildInkExpressions(), columnCache, getColumns(), getColumnsSafe(), handler() (+7 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.17
-Nodes (21): deleteCoRecord(), deleteItem(), deleteMovementAdmin(), openItemModal(), renderItemsMgmt(), renderPostPurchaseAccessRequired(), requireAdminPinForScreen(), requirePostPurchasePinForScreen() (+13 more)
+Cohesion: 0.13
+Nodes (22): deleteCoRecord(), deleteItem(), deleteMovementAdmin(), openItemModal(), renderPostPurchaseAccessRequired(), requireAdminPinForScreen(), requirePostPurchasePinForScreen(), showConfirm() (+14 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.26
-Nodes (10): applyUiAccessState(), completeChecklist(), deleteChecklist(), getVisibleOccurrence(), refreshChecklist(), renderChecklistScreen(), saveChecklist(), setStatus() (+2 more)
-
-### Community 20 - "Community 20"
-Cohesion: 0.17
-Nodes (9): { evaluateChecklistReminders }, { json, parseRequestBody, requireAdminAccess, withClient }, lookbackMinutes, actor, {
-  deleteChecklistItem,
-  listChecklistItems,
-  saveChecklistItem,
-}, id, { json, parseRequestBody, requireAdminPin, withClient }, requestBody (+1 more)
+Cohesion: 0.15
+Nodes (19): completeChecklistOccurrence(), createChecklistItem(), deleteChecklistItem(), evaluateChecklistReminders(), getFetch(), listChecklistCompletions(), listChecklistItems(), request() (+11 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.09
@@ -279,13 +264,9 @@ Nodes (29): active, bases:Create new base, canvas:Create new canvas, command-pal
 Cohesion: 0.21
 Nodes (19): buildDailyProductionReport(), buildEmail(), buildWarnings(), cleanDate(), escapeHtml(), fmtNumber(), int(), loadMachineOutput() (+11 more)
 
-### Community 23 - "Community 23"
-Cohesion: 0.20
-Nodes (18): checkAdminApiKey(), checkAdminPin(), checkPostPurchaseOperatorPin(), createAuthError(), crypto, getAdminApiKey(), getAdminPin(), getHeader() (+10 more)
-
 ### Community 24 - "Community 24"
-Cohesion: 0.15
-Nodes (11): ds(), fmtDays(), fmtDT(), fmtDuration(), fmtInt(), fmtMeasure(), getPrintLogTodayQueueBasisLabel(), printLogRangeLabel() (+3 more)
+Cohesion: 0.11
+Nodes (19): getSelectedMachine(), saveCoEntry(), setupCoEntry(), updateCoPreview(), ds(), fmtDays(), fmtDT(), fmtDuration() (+11 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.17
@@ -296,25 +277,25 @@ Cohesion: 0.26
 Nodes (16): batchUpsertCoRecords(), batchUpsertItems(), batchUpsertMovements(), checkAdminApiKey(), checkAdminPin(), checkRateLimit(), chunkArray(), getAdminApiKey() (+8 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.16
-Nodes (10): openDB(), setDb(), setupAppUpdateChecks(), showPendingUpdateToast(), bindColoradoHistoryControls(), init(), loadColoradoRollEvents(), loadColoradoRollStates() (+2 more)
+Cohesion: 0.14
+Nodes (11): idbPut(), openDB(), setDb(), saveSettingsToIDB(), setupAppUpdateChecks(), showPendingUpdateToast(), bindColoradoHistoryControls(), init() (+3 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.14
 Nodes (5): api, filterStockOverviewItems(), getActiveStockItems(), getAlertStockItems(), getStockStatusCounts()
 
 ### Community 29 - "Community 29"
-Cohesion: 0.27
-Nodes (14): checklistDomain, {
+Cohesion: 0.25
+Nodes (15): checklistDomain, {
   ensureChecklistTables,
   finalizeChecklistOccurrence,
   listChecklistItems,
   reserveChecklistOccurrence,
-}, evaluateChecklistReminders(), { sendPushToMatchingSubscriptions }, checklistDomain, cleanOptionalString(), completeChecklistOccurrence(), ensureChecklistTables() (+6 more)
+}, evaluateChecklistReminders(), { sendPushToMatchingSubscriptions }, checklistDomain, cleanOptionalString(), completeChecklistOccurrence(), deleteChecklistItem() (+7 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.20
-Nodes (17): computeCoIntervals(), computeCoStats(), getCoRecs(), getCostUnitPerM2(), getCostUnitPerMonth(), getLatestCoRecord(), getSelectedMachine(), i18n() (+9 more)
+Cohesion: 0.33
+Nodes (10): computeCoIntervals(), computeCoStats(), getCoRecs(), getCostUnitPerM2(), getCostUnitPerMonth(), getLatestCoRecord(), i18n(), renderCoHistory() (+2 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.14
@@ -335,13 +316,6 @@ Nodes (12): background_color, description, display, icons, lang, name, orientati
 ### Community 35 - "Community 35"
 Cohesion: 0.20
 Nodes (10): code:powershell (Test-Path "\\NAS01\Data\PrintGuard\scans"), code:powershell ([Environment]::SetEnvironmentVariable(), code:powershell ([Environment]::GetEnvironmentVariable("PRINTGUARD_SCAN_OUTPU), Windows PowerShell examples, 3. Set machine environment variables, code:powershell ([Environment]::SetEnvironmentVariable("NEON_DATABASE_URL", "), code:powershell ([Environment]::SetEnvironmentVariable("NEON_DATABASE_URL", "), code:powershell (echo $env:NEON_DATABASE_URL) (+2 more)
-
-### Community 36 - "Community 36"
-Cohesion: 0.17
-Nodes (10): checklistId, checklistTitle, {
-  completeChecklistOccurrence,
-  listChecklistCompletions,
-}, completedAt, completedBy, deviceId, { json, parseRequestBody, withClient }, limit (+2 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.18
@@ -388,7 +362,7 @@ Cohesion: 0.18
 Nodes (11): 1. Copy files, 4. NAS access rule, 7. What this sync does, code:text (C:\PrintGuard\SubmitTool-sync), code:text (\\NAS01\Data\ST_logs\JobQueue), code:text (2026-04-27,08.46.02.887,JobQueue,PrintJob PS4755364, status=), code:text (C:\PrintGuard\SubmitTool-sync), code:text (C:\PrintGuard\logs\submit-tool-sync.log) (+3 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.31
+Cohesion: 0.36
 Nodes (6): computeStock(), getMovements(), renderStockAlerts(), renderStockHistory(), renderStockOverview(), requireContext()
 
 ### Community 49 - "Community 49"
@@ -415,13 +389,9 @@ Nodes (4): http, PORT, server, { spawn }
 Cohesion: 0.22
 Nodes (8): dependencies, pg, description, name, private, scripts, sync, version
 
-### Community 55 - "Community 55"
-Cohesion: 0.39
-Nodes (7): ensureVapidConfigured(), getStatusCode(), isValidVapidSubject(), normalizeAlertTypes(), sendPushToMatchingSubscriptions(), subscriptionMatchesCategory(), webPush
-
 ### Community 57 - "Community 57"
-Cohesion: 0.27
-Nodes (9): idbAll(), idbPut(), loadSettingsFromIDB(), saveSettingsToIDB(), loadAll(), renderAlerts(), renderStockOverview(), saveMovement() (+1 more)
+Cohesion: 0.31
+Nodes (11): idbAll(), loadSettingsFromIDB(), loadAll(), renderAlerts(), renderCoDashboard(), renderItemsMgmt(), renderStockOverview(), requireStockActions() (+3 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.46
@@ -460,24 +430,16 @@ Cohesion: 0.52
 Nodes (6): Changes already made, Files that connect to Neon, Functions that may keep Neon awake, Neon Compute Audit, Queries likely to run often, Remaining risks
 
 ### Community 67 - "Community 67"
-Cohesion: 0.18
-Nodes (6): id, { json, parseRequestBody, requireAdminPin, withClient }, requestBody, {
-  checkRateLimit,
-  getHeader,
-  json,
-  parseRequestBody,
-  requireAdminAccess,
-  requirePostPurchaseAccess,
-  withClient,
-}, {
-  listPrintOrdersReceived,
-  syncPostPurchaseOrders,
-  updatePrintOrderLifecycleStatus,
-}, parseRequestBody()
+Cohesion: 0.11
+Nodes (15): { evaluateChecklistReminders }, { json, parseRequestBody, requireAdminAccess, withClient }, lookbackMinutes, actor, {
+  deleteChecklistItem,
+  listChecklistItems,
+  saveChecklistItem,
+}, id, { json, parseRequestBody, requireAdminPin, withClient }, requestBody (+7 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.40
-Nodes (4): buildMovementRows(), buildStockHistoryTable(), movementLabel(), renderAlerts()
+Cohesion: 0.20
+Nodes (20): checkAdminApiKey(), checkAdminPin(), checkPostPurchaseOperatorPin(), checkRateLimit(), createAuthError(), crypto, getAdminApiKey(), getAdminPin() (+12 more)
 
 ### Community 69 - "Community 69"
 Cohesion: 0.33
@@ -576,7 +538,7 @@ Cohesion: 0.50
 Nodes (3): Connected to, Netlify Functions, Role
 
 ### Community 118 - "Community 118"
-Cohesion: 0.50
+Cohesion: 0.83
 Nodes (3): Connected to, Print Files, Role
 
 ### Community 119 - "Community 119"
@@ -588,36 +550,47 @@ Cohesion: 0.50
 Nodes (3): Connected to, Reprint Logic, Role
 
 ### Community 121 - "Community 121"
-Cohesion: 0.50
+Cohesion: 0.83
 Nodes (3): Connected to, Performance Bottlenecks, Role
 
 ### Community 122 - "Community 122"
-Cohesion: 0.50
+Cohesion: 0.83
 Nodes (3): Connected to, Data Cleanup, Role
 
 ### Community 123 - "Community 123"
 Cohesion: 0.50
 Nodes (3): Connected to, PrintGuard Vault Index, Role
 
+### Community 125 - "Community 125"
+Cohesion: 0.17
+Nodes (10): checklistId, checklistTitle, {
+  completeChecklistOccurrence,
+  listChecklistCompletions,
+}, completedAt, completedBy, deviceId, { json, parseRequestBody, withClient }, limit (+2 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.39
+Nodes (7): ensureVapidConfigured(), getStatusCode(), isValidVapidSubject(), normalizeAlertTypes(), sendPushToMatchingSubscriptions(), subscriptionMatchesCategory(), webPush
+
 ## Knowledge Gaps
-- **402 isolated node(s):** `S`, `Colorado`, `printLogApi`, `pushApi`, `syncApi` (+397 more)
+- **401 isolated node(s):** `runtimeUiApi`, `accessApi`, `runtimeStateApi`, `Colorado`, `printLogApi` (+396 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `log()` connect `Community 6` to `Community 9`, `Community 10`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
-- **Why does `scripts` connect `Community 8` to `Community 1`, `Community 10`, `Community 2`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+  _High betweenness centrality (0.052) - this node is a cross-community bridge._
 - **Why does `PrintGuard` connect `Community 102` to `Community 1`, `Community 106`, `Community 4`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
-- **Are the 23 inferred relationships involving `el()` (e.g. with `requireAdminPinForScreen()` and `renderPostPurchaseAccessRequired()`) actually correct?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+- **Why does `scripts` connect `Community 8` to `Community 1`, `Community 10`, `Community 2`?**
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
+- **Are the 23 inferred relationships involving `el()` (e.g. with `renderPrintLogComparison()` and `renderPrintLogTodayQueue()`) actually correct?**
   _`el()` has 23 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `S`, `Colorado`, `printLogApi` to the rest of the system?**
-  _403 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `runtimeUiApi`, `accessApi`, `runtimeStateApi` to the rest of the system?**
+  _402 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08432432432432432 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.09409701928696669 - nodes in this community are weakly interconnected._

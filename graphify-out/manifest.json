@@ -1,7 +1,7 @@
 {
   "C:\\PrintGuard\\print_guard_DGFC\\app.js": {
-    "mtime": 1779803229.9955103,
-    "ast_hash": "a2f6715085f2312d1b3f2f4fff3f988d",
+    "mtime": 1779805963.2677007,
+    "ast_hash": "6aea485741d81f9fa61fe459363fe423",
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\i18n.js": {
@@ -565,9 +565,9 @@
     "semantic_hash": "aaff0cd82f3d356fd6c63612a822e862"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\colorado-controller.js": {
-    "mtime": 1779803127.6670926,
-    "ast_hash": "12423c13d218225ee16946ae03229209",
-    "semantic_hash": "12423c13d218225ee16946ae03229209"
+    "mtime": 1779806199.9906843,
+    "ast_hash": "52790e77e0390509faa23ca2904e980e",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\AGENTS.md": {
     "mtime": 1779708700.8585765,
@@ -585,8 +585,8 @@
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\index.html": {
-    "mtime": 1779802213.0303,
-    "ast_hash": "5e91efedc350206baff17dc8f16ab3bd",
+    "mtime": 1779805945.7402585,
+    "ast_hash": "a60d4763386426f08904770d7cc244db",
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\NEON_COMPUTE_AUDIT.md": {
@@ -680,23 +680,23 @@
     "semantic_hash": "e676afaa28a34e9993e24356ea8b2d66"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\.obsidian\\app.json": {
-    "mtime": 1779784934.260621,
+    "mtime": 1779804325.7148511,
     "ast_hash": "99914b932bd37a50b983c5e7c90ae93b",
     "semantic_hash": "99914b932bd37a50b983c5e7c90ae93b"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\.obsidian\\appearance.json": {
-    "mtime": 1779784934.2616208,
+    "mtime": 1779804325.7148511,
     "ast_hash": "99914b932bd37a50b983c5e7c90ae93b",
     "semantic_hash": "99914b932bd37a50b983c5e7c90ae93b"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\.obsidian\\core-plugins.json": {
-    "mtime": 1779784933.8147688,
+    "mtime": 1779804325.233559,
     "ast_hash": "7c877bea49eaeabb100563bd157b9051",
     "semantic_hash": "7c877bea49eaeabb100563bd157b9051"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\.obsidian\\workspace.json": {
-    "mtime": 1779804091.0235102,
-    "ast_hash": "fd01d78a0fb04c3b3136b12aca361544",
+    "mtime": 1779806217.947,
+    "ast_hash": "c872416e97c14eecedba586bdc5bd8e8",
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\tests\\order-pipeline-render-labels.test.js": {
@@ -715,7 +715,7 @@
     "semantic_hash": "bf9cd94b01e76120dea3526ddec76956"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\.obsidian\\graph.json": {
-    "mtime": 1779803912.212,
+    "mtime": 1779804139.084,
     "ast_hash": "c1eb5d3d3702ac376f5958901f77c67c",
     "semantic_hash": ""
   },
@@ -775,8 +775,8 @@
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\docs\\obsidian-vault\\06_Printing\\Print Files.md": {
-    "mtime": 1779803882.1737337,
-    "ast_hash": "598ae154583773a80ca4703ccdc002de",
+    "mtime": 1779804474.9105585,
+    "ast_hash": "d744938d115fa02d84fabd80bc0fb13d",
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\docs\\obsidian-vault\\06_Printing\\Processed XML.md": {
@@ -790,13 +790,38 @@
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\docs\\obsidian-vault\\07_Problems\\Performance Bottlenecks.md": {
-    "mtime": 1779803882.3580256,
-    "ast_hash": "d3cc654d1a6721a2bfd7383c9aff018b",
+    "mtime": 1779804435.1815226,
+    "ast_hash": "25ebe7d810bf55a43de8250962e7abb1",
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\docs\\obsidian-vault\\08_Future_Work\\Data Cleanup.md": {
-    "mtime": 1779803882.455081,
-    "ast_hash": "306f8d75ae22e88b4f81e98e426f01a4",
+    "mtime": 1779804449.6841981,
+    "ast_hash": "09e1f36af82e2ebc307120fe98360485",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\app\\shell.js": {
+    "mtime": 1779805122.3581564,
+    "ast_hash": "5b30d2c0ad27fe65abaabc2828530b96",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\app\\access.js": {
+    "mtime": 1779805389.3730173,
+    "ast_hash": "5f4305d1d6fe83f06d964649fa3cd1ef",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\app\\runtime-ui.js": {
+    "mtime": 1779805389.4802763,
+    "ast_hash": "f924a67c89a04716fdd6c5f62f247782",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\app\\runtime-state.js": {
+    "mtime": 1779805705.18335,
+    "ast_hash": "25a65dc3d5cd0af89397e38884a90893",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\app\\stock-runtime.js": {
+    "mtime": 1779805945.648136,
+    "ast_hash": "7ed6201d39d53fd7daf897f64f691c10",
     "semantic_hash": ""
   }
 }

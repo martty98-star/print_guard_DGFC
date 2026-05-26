@@ -1313,6 +1313,37 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .mc-last strong { color: var(--text); }
 .mc-empty { font-size: .8rem; color: var(--text-faint); padding: 4px 0; line-height: 1.6; }
+.format-estimates {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.format-estimates-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.format-estimates-title {
+  color: var(--text);
+  font-size: .76rem;
+  font-weight: 700;
+}
+.format-estimates-subtitle {
+  color: var(--text-faint);
+  font-size: .62rem;
+  letter-spacing: .03em;
+}
+.format-estimates-table {
+  min-width: 460px;
+}
+.format-estimates-table td strong {
+  color: var(--text);
+  font-size: .78rem;
+}
 
 /* ── Settings ── */
 .settings-stack { display: flex; flex-direction: column; gap: 10px; }
