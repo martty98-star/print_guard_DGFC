@@ -76,6 +76,12 @@ const PrintGuardAdminAuth = typeof window !== 'undefined' && window.PrintGuardAd
 if (!PrintGuardAdminAuth) throw new Error('Missing PrintGuardAdminAuth');
 const PrintGuardNavigation = typeof window !== 'undefined' && window.PrintGuardNavigation;
 if (!PrintGuardNavigation) throw new Error('Missing PrintGuardNavigation');
+const PrintGuardAccess = typeof window !== 'undefined' && window.PrintGuardAccess;
+if (!PrintGuardAccess) throw new Error('Missing PrintGuardAccess');
+const PrintGuardRuntimeUI = typeof window !== 'undefined' && window.PrintGuardRuntimeUI;
+if (!PrintGuardRuntimeUI) throw new Error('Missing PrintGuardRuntimeUI');
+const PrintGuardShell = typeof window !== 'undefined' && window.PrintGuardShell;
+if (!PrintGuardShell) throw new Error('Missing PrintGuardShell');
 const PrintGuardPrintLog = typeof window !== 'undefined' && window.PrintGuardPrintLog;
 if (!PrintGuardPrintLog) throw new Error('Missing PrintGuardPrintLog');
 const PrintGuardReporting = typeof window !== 'undefined' && window.PrintGuardReporting;
@@ -144,6 +150,30 @@ const {
   loadSettingsUI: loadSettingsUIScreen,
   setupSettings: setupSettingsUI,
 } = SettingsUI;
+const runtimeUiApi = PrintGuardRuntimeUI.createRuntimeUI({
+  APP_VERSION,
+  cfg,
+  el,
+  loadSettingsUIScreen,
+  t: i18n,
+});
+const {
+  getCostUnitPerM2,
+  getCostUnitPerMonth,
+  loadSettingsUI,
+} = runtimeUiApi;
+const accessApi = PrintGuardAccess.createAccessGuards({
+  cfg,
+  el,
+  elSet,
+  showToast,
+  t: i18n,
+});
+const {
+  renderPostPurchaseAccessRequired,
+  requireAdminPinForScreen,
+  requirePostPurchasePinForScreen,
+} = accessApi;
 const {
   fmtExportDateTime,
 } = ExportUtils;
@@ -156,46 +186,6 @@ const {
   renderPrintLogSummary: renderPrintLogSummaryUI,
   renderPrintLogTodayQueue: renderPrintLogTodayQueueUI,
 } = PrintLogUI;
-
-function getCostUnitPerM2() {
-  return `${cfg.costCurrency} / m²`;
-}
-
-function getCostUnitPerMonth() {
-  return `${cfg.costCurrency} / ${i18n('unit.month-word')}`;
-}
-
-function loadSettingsUI() {
-  return loadSettingsUIScreen({ APP_VERSION, cfg, el });
-}
-
-function requireAdminPinForScreen(statusId, wrapId) {
-  if (cfg.adminPin) return true;
-
-  if (statusId) elSet(statusId, 'Admin PIN required');
-  const wrap = wrapId ? el(wrapId) : null;
-  if (wrap) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Admin PIN is required for this action.</p><div class="table-empty-note">Open Settings, enter the admin PIN, and unlock admin mode.</div></div>`;
-  }
-  showToast('Admin PIN is required for this action.', 'error');
-  return false;
-}
-
-function renderPostPurchaseAccessRequired() {
-  const t = window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t.bind(window.I18N) : (key) => key;
-  elSet('postpurchase-status', t('processed.status.pin-required'));
-  const wrap = el('postpurchase-orders-wrap');
-  if (wrap) {
-    wrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠</div><p>${t('processed.pin.required')}</p><div class="table-empty-note">${t('processed.pin.required-note')}</div></div>`;
-  }
-}
-
-function requirePostPurchasePinForScreen() {
-  if (cfg.postPurchasePin || cfg.adminPin) return true;
-  renderPostPurchaseAccessRequired();
-  showToast(window.I18N ? window.I18N.t('processed.pin.required') : 'Processed Orders PIN is required.', 'error');
-  return false;
-}
 
 function renderChecklistScreen(force = false) {
   return ChecklistUI.renderChecklistScreen(force);
@@ -710,6 +700,25 @@ const {
   updateOfflineBanner,
 } = navigationApi;
 
+const shellApi = PrintGuardShell.createShell({
+  applyPreset,
+  closeColoradoRollModal,
+  closeColoradoRollSheet,
+  el,
+  getInitialScreen,
+  loadColoradoRollEvents,
+  loadColoradoRollStates,
+  navigate,
+  openColoradoRollSheet,
+  renderColoradoRollTracker,
+  runSync,
+  saveColoradoRollModal,
+  setMode,
+  state: S,
+  updateOfflineBanner,
+});
+const { bindShellControls } = shellApi;
+
 // ══════════════════════════════════════════════════════════
 //  UTILITIES
 // ══════════════════════════════════════════════════════════
@@ -732,52 +741,7 @@ async function init() {
   setDb(await openDB());
   S.coloradoRolls = loadColoradoRollStates();
   S.coloradoRollEvents = loadColoradoRollEvents();
-
-  // Mode toggle
-  document.querySelectorAll('.mode-btn').forEach(b =>
-    b.addEventListener('click', () => setMode(b.dataset.mode)));
-
-  // Bottom navs
-  document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(b =>
-    b.addEventListener('click', () => navigate(b.dataset.screen)));
-
-  window.addEventListener('popstate', () => {
-    navigate(getInitialScreen(), { replace: true });
-  });
-
-  // Back buttons
-  document.querySelectorAll('.back-btn').forEach(b =>
-    b.addEventListener('click', () => navigate(b.dataset.screen || 'stock-overview')));
-
-  // FABs
-  el('fab-co-entry').addEventListener('click',  () => navigate('co-entry'));
-
-  // Topbar
-  el('nav-settings').addEventListener('click', () => navigate('settings'));
-  el('roll-modal-save')?.addEventListener('click', () => saveColoradoRollModal());
-  document.querySelectorAll('[data-roll-cancel]').forEach(button =>
-    button.addEventListener('click', closeColoradoRollModal));
-  el('roll-modal')?.addEventListener('click', event => {
-    if (event.target === el('roll-modal')) closeColoradoRollModal();
-  });
-  el('roll-mobile-toggle')?.addEventListener('click', () => openColoradoRollSheet());
-  document.querySelectorAll('[data-roll-sheet-cancel]').forEach(button =>
-    button.addEventListener('click', closeColoradoRollSheet));
-  el('roll-sheet')?.addEventListener('click', event => {
-    if (event.target === el('roll-sheet')) closeColoradoRollSheet();
-  });
-  window.addEventListener('storage', event => {
-    if (event.key !== 'pg_colorado_roll_state_v1') return;
-    S.coloradoRolls = loadColoradoRollStates();
-    S.coloradoRollEvents = loadColoradoRollEvents();
-    renderColoradoRollTracker();
-  });
-
-// ✅ SYNC (cloud push + pull + overwrite local)
-// ✅ SYNC (cloud push + pull + overwrite local) — HARDENED
-el('sync-btn').addEventListener('click', async () => {
-  await runSync();
-});
+  bindShellControls();
 
   StockFeature.initStockFeature({
     S,
@@ -868,29 +832,11 @@ el('sync-btn').addEventListener('click', async () => {
   });
   PostPurchaseUI.bindPostPurchaseControls();
 
-  const langSelect = el('lang-select');
-  if (langSelect) {
-    langSelect.value = (window.I18N && window.I18N.currentLang) || (window.I18N && window.I18N.defaultLang) || 'cs';
-    langSelect.addEventListener('change', e => {
-      if (window.I18N && typeof window.I18N.setLang === 'function') {
-        window.I18N.setLang(e.target.value);
-      }
-    });
-  }
-
   bindPrintLogControls({
     exportCSVPrintLog,
   });
 
-  // Preset buttons (společné pro obě obrazovky)
-  document.querySelectorAll('.dr-preset').forEach(btn =>
-    btn.addEventListener('click', () => applyPreset(btn.dataset.range, btn.dataset.target)));
-
   setupAdminAuthHandlers();
-
-  window.addEventListener('online',  updateOfflineBanner);
-  window.addEventListener('offline', updateOfflineBanner);
-  updateOfflineBanner();
 
   await loadAll();
   applyRoleUI(); // ✅ IMPORTANT
