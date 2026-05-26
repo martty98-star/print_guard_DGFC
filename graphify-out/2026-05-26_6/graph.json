@@ -25,7 +25,7 @@
       "label": "getCostUnitPerM2()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L157",
+      "source_location": "L155",
       "id": "print_guard_dgfc_app_getcostunitperm2",
       "community": 38,
       "norm_label": "getcostunitperm2()"
@@ -34,7 +34,7 @@
       "label": "getCostUnitPerMonth()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L161",
+      "source_location": "L159",
       "id": "print_guard_dgfc_app_getcostunitpermonth",
       "community": 39,
       "norm_label": "getcostunitpermonth()"
@@ -43,7 +43,7 @@
       "label": "loadSettingsUI()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L165",
+      "source_location": "L163",
       "id": "print_guard_dgfc_app_loadsettingsui",
       "community": 11,
       "norm_label": "loadsettingsui()"
@@ -52,7 +52,7 @@
       "label": "requireAdminPinForScreen()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L169",
+      "source_location": "L167",
       "id": "print_guard_dgfc_app_requireadminpinforscreen",
       "community": 19,
       "norm_label": "requireadminpinforscreen()"
@@ -61,7 +61,7 @@
       "label": "renderPostPurchaseAccessRequired()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L181",
+      "source_location": "L179",
       "id": "print_guard_dgfc_app_renderpostpurchaseaccessrequired",
       "community": 19,
       "norm_label": "renderpostpurchaseaccessrequired()"
@@ -70,7 +70,7 @@
       "label": "requirePostPurchasePinForScreen()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L190",
+      "source_location": "L188",
       "id": "print_guard_dgfc_app_requirepostpurchasepinforscreen",
       "community": 19,
       "norm_label": "requirepostpurchasepinforscreen()"
@@ -79,7 +79,7 @@
       "label": "renderChecklistScreen()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L197",
+      "source_location": "L195",
       "id": "print_guard_dgfc_app_renderchecklistscreen",
       "community": 11,
       "norm_label": "renderchecklistscreen()"
@@ -88,7 +88,7 @@
       "label": "statusLabel()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L201",
+      "source_location": "L199",
       "id": "print_guard_dgfc_app_statuslabel",
       "community": 11,
       "norm_label": "statuslabel()"
@@ -97,7 +97,7 @@
       "label": "movementLabel()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L205",
+      "source_location": "L203",
       "id": "print_guard_dgfc_app_movementlabel",
       "community": 39,
       "norm_label": "movementlabel()"
@@ -106,7 +106,7 @@
       "label": "S",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L210",
+      "source_location": "L208",
       "id": "print_guard_dgfc_app_s",
       "community": 11,
       "norm_label": "s"
@@ -115,7 +115,7 @@
       "label": "stockDbAdapter()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L265",
+      "source_location": "L263",
       "id": "print_guard_dgfc_app_stockdbadapter",
       "community": 39,
       "norm_label": "stockdbadapter()"
@@ -124,7 +124,7 @@
       "label": "stockApiAdapter()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L275",
+      "source_location": "L273",
       "id": "print_guard_dgfc_app_stockapiadapter",
       "community": 11,
       "norm_label": "stockapiadapter()"
@@ -133,7 +133,7 @@
       "label": "loadAll()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L284",
+      "source_location": "L282",
       "id": "print_guard_dgfc_app_loadall",
       "community": 39,
       "norm_label": "loadall()"
@@ -142,7 +142,7 @@
       "label": "getMovements()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L314",
+      "source_location": "L312",
       "id": "print_guard_dgfc_app_getmovements",
       "community": 11,
       "norm_label": "getmovements()"
@@ -151,7 +151,7 @@
       "label": "computeStock()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L325",
+      "source_location": "L323",
       "id": "print_guard_dgfc_app_computestock",
       "community": 11,
       "norm_label": "computestock()"
@@ -160,34 +160,43 @@
       "label": "renderStockOverview()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L333",
+      "source_location": "L331",
       "id": "print_guard_dgfc_app_renderstockoverview",
       "community": 39,
       "norm_label": "renderstockoverview()"
     },
     {
-      "label": "requireStockActions()",
-      "file_type": "code",
-      "source_file": "app.js",
-      "source_location": "L340",
-      "id": "print_guard_dgfc_app_requirestockactions",
-      "community": 19,
-      "norm_label": "requirestockactions()"
-    },
-    {
       "label": "openStockDetail()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L345",
+      "source_location": "L336",
       "id": "print_guard_dgfc_app_openstockdetail",
       "community": 11,
       "norm_label": "openstockdetail()"
     },
     {
+      "label": "buildMovementRows()",
+      "file_type": "code",
+      "source_file": "app.js",
+      "source_location": "L398",
+      "id": "print_guard_dgfc_app_buildmovementrows",
+      "community": 11,
+      "norm_label": "buildmovementrows()"
+    },
+    {
+      "label": "buildStockHistoryTable()",
+      "file_type": "code",
+      "source_file": "app.js",
+      "source_location": "L413",
+      "id": "print_guard_dgfc_app_buildstockhistorytable",
+      "community": 11,
+      "norm_label": "buildstockhistorytable()"
+    },
+    {
       "label": "deleteMovementAdmin()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L350",
+      "source_location": "L418",
       "id": "print_guard_dgfc_app_deletemovementadmin",
       "community": 19,
       "norm_label": "deletemovementadmin()"
@@ -196,7 +205,7 @@
       "label": "renderAlerts()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L355",
+      "source_location": "L437",
       "id": "print_guard_dgfc_app_renderalerts",
       "community": 39,
       "norm_label": "renderalerts()"
@@ -205,7 +214,7 @@
       "label": "saveMovement()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L359",
+      "source_location": "L441",
       "id": "print_guard_dgfc_app_savemovement",
       "community": 39,
       "norm_label": "savemovement()"
@@ -214,7 +223,7 @@
       "label": "renderItemsMgmt()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L367",
+      "source_location": "L486",
       "id": "print_guard_dgfc_app_renderitemsmgmt",
       "community": 39,
       "norm_label": "renderitemsmgmt()"
@@ -223,7 +232,7 @@
       "label": "openItemModal()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L371",
+      "source_location": "L523",
       "id": "print_guard_dgfc_app_openitemmodal",
       "community": 19,
       "norm_label": "openitemmodal()"
@@ -232,7 +241,7 @@
       "label": "saveItemModal()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L375",
+      "source_location": "L548",
       "id": "print_guard_dgfc_app_saveitemmodal",
       "community": 39,
       "norm_label": "saveitemmodal()"
@@ -241,7 +250,7 @@
       "label": "deleteItem()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L379",
+      "source_location": "L585",
       "id": "print_guard_dgfc_app_deleteitem",
       "community": 19,
       "norm_label": "deleteitem()"
@@ -250,7 +259,7 @@
       "label": "Colorado",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L387",
+      "source_location": "L611",
       "id": "print_guard_dgfc_app_colorado",
       "community": 11,
       "norm_label": "colorado"
@@ -259,7 +268,7 @@
       "label": "loadColoradoRollStates()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L420",
+      "source_location": "L644",
       "id": "print_guard_dgfc_app_loadcoloradorollstates",
       "community": 37,
       "norm_label": "loadcoloradorollstates()"
@@ -268,7 +277,7 @@
       "label": "loadColoradoRollEvents()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L421",
+      "source_location": "L645",
       "id": "print_guard_dgfc_app_loadcoloradorollevents",
       "community": 37,
       "norm_label": "loadcoloradorollevents()"
@@ -277,7 +286,7 @@
       "label": "renderColoradoRollTracker()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L422",
+      "source_location": "L646",
       "id": "print_guard_dgfc_app_rendercoloradorolltracker",
       "community": 11,
       "norm_label": "rendercoloradorolltracker()"
@@ -286,7 +295,7 @@
       "label": "closeColoradoRollModal()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L423",
+      "source_location": "L647",
       "id": "print_guard_dgfc_app_closecoloradorollmodal",
       "community": 11,
       "norm_label": "closecoloradorollmodal()"
@@ -295,7 +304,7 @@
       "label": "closeColoradoRollSheet()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L424",
+      "source_location": "L648",
       "id": "print_guard_dgfc_app_closecoloradorollsheet",
       "community": 11,
       "norm_label": "closecoloradorollsheet()"
@@ -304,7 +313,7 @@
       "label": "openColoradoRollSheet()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L425",
+      "source_location": "L649",
       "id": "print_guard_dgfc_app_opencoloradorollsheet",
       "community": 11,
       "norm_label": "opencoloradorollsheet()"
@@ -313,7 +322,7 @@
       "label": "openColoradoRollModal()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L426",
+      "source_location": "L650",
       "id": "print_guard_dgfc_app_opencoloradorollmodal",
       "community": 11,
       "norm_label": "opencoloradorollmodal()"
@@ -322,7 +331,7 @@
       "label": "saveColoradoRollModal()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L427",
+      "source_location": "L651",
       "id": "print_guard_dgfc_app_savecoloradorollmodal",
       "community": 11,
       "norm_label": "savecoloradorollmodal()"
@@ -331,7 +340,7 @@
       "label": "undoColoradoRollLoad()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L428",
+      "source_location": "L652",
       "id": "print_guard_dgfc_app_undocoloradorollload",
       "community": 11,
       "norm_label": "undocoloradorollload()"
@@ -340,7 +349,7 @@
       "label": "resetColoradoRollState()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L429",
+      "source_location": "L653",
       "id": "print_guard_dgfc_app_resetcoloradorollstate",
       "community": 11,
       "norm_label": "resetcoloradorollstate()"
@@ -349,7 +358,7 @@
       "label": "promptColoradoRollReset()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L430",
+      "source_location": "L654",
       "id": "print_guard_dgfc_app_promptcoloradorollreset",
       "community": 11,
       "norm_label": "promptcoloradorollreset()"
@@ -358,7 +367,7 @@
       "label": "getCoRecs()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L431",
+      "source_location": "L655",
       "id": "print_guard_dgfc_app_getcorecs",
       "community": 38,
       "norm_label": "getcorecs()"
@@ -367,7 +376,7 @@
       "label": "computeCoIntervals()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L432",
+      "source_location": "L656",
       "id": "print_guard_dgfc_app_computecointervals",
       "community": 38,
       "norm_label": "computecointervals()"
@@ -376,7 +385,7 @@
       "label": "computeCoStats()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L433",
+      "source_location": "L657",
       "id": "print_guard_dgfc_app_computecostats",
       "community": 38,
       "norm_label": "computecostats()"
@@ -385,7 +394,7 @@
       "label": "getCombinedCoLifetimeInkBasis()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L434",
+      "source_location": "L658",
       "id": "print_guard_dgfc_app_getcombinedcolifetimeinkbasis",
       "community": 11,
       "norm_label": "getcombinedcolifetimeinkbasis()"
@@ -394,7 +403,7 @@
       "label": "getColoradoFormatEstimates()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L435",
+      "source_location": "L659",
       "id": "print_guard_dgfc_app_getcoloradoformatestimates",
       "community": 11,
       "norm_label": "getcoloradoformatestimates()"
@@ -403,7 +412,7 @@
       "label": "renderCoDashboard()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L436",
+      "source_location": "L660",
       "id": "print_guard_dgfc_app_rendercodashboard",
       "community": 38,
       "norm_label": "rendercodashboard()"
@@ -412,7 +421,7 @@
       "label": "setupCoEntry()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L437",
+      "source_location": "L661",
       "id": "print_guard_dgfc_app_setupcoentry",
       "community": 37,
       "norm_label": "setupcoentry()"
@@ -421,7 +430,7 @@
       "label": "getSelectedMachine()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L438",
+      "source_location": "L662",
       "id": "print_guard_dgfc_app_getselectedmachine",
       "community": 38,
       "norm_label": "getselectedmachine()"
@@ -430,7 +439,7 @@
       "label": "updateCoPreview()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L439",
+      "source_location": "L663",
       "id": "print_guard_dgfc_app_updatecopreview",
       "community": 38,
       "norm_label": "updatecopreview()"
@@ -439,7 +448,7 @@
       "label": "renderCoHistory()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L440",
+      "source_location": "L664",
       "id": "print_guard_dgfc_app_rendercohistory",
       "community": 38,
       "norm_label": "rendercohistory()"
@@ -448,7 +457,7 @@
       "label": "deleteCoRecord()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L441",
+      "source_location": "L665",
       "id": "print_guard_dgfc_app_deletecorecord",
       "community": 19,
       "norm_label": "deletecorecord()"
@@ -457,7 +466,7 @@
       "label": "loadPostPurchaseOrders()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L449",
+      "source_location": "L673",
       "id": "print_guard_dgfc_app_loadpostpurchaseorders",
       "community": 11,
       "norm_label": "loadpostpurchaseorders()"
@@ -466,7 +475,7 @@
       "label": "renderPostPurchaseOrders()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L453",
+      "source_location": "L677",
       "id": "print_guard_dgfc_app_renderpostpurchaseorders",
       "community": 11,
       "norm_label": "renderpostpurchaseorders()"
@@ -475,7 +484,7 @@
       "label": "syncPostPurchaseOrdersManual()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L457",
+      "source_location": "L681",
       "id": "print_guard_dgfc_app_syncpostpurchaseordersmanual",
       "community": 11,
       "norm_label": "syncpostpurchaseordersmanual()"
@@ -484,7 +493,7 @@
       "label": "printLogApi",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L461",
+      "source_location": "L685",
       "id": "print_guard_dgfc_app_printlogapi",
       "community": 11,
       "norm_label": "printlogapi"
@@ -493,7 +502,7 @@
       "label": "pushApi",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L499",
+      "source_location": "L723",
       "id": "print_guard_dgfc_app_pushapi",
       "community": 11,
       "norm_label": "pushapi"
@@ -502,7 +511,7 @@
       "label": "syncApi",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L514",
+      "source_location": "L738",
       "id": "print_guard_dgfc_app_syncapi",
       "community": 11,
       "norm_label": "syncapi"
@@ -511,7 +520,7 @@
       "label": "reportingApi",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L546",
+      "source_location": "L770",
       "id": "print_guard_dgfc_app_reportingapi",
       "community": 11,
       "norm_label": "reportingapi"
@@ -520,7 +529,7 @@
       "label": "dateFilters",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L591",
+      "source_location": "L815",
       "id": "print_guard_dgfc_app_datefilters",
       "community": 11,
       "norm_label": "datefilters"
@@ -529,7 +538,7 @@
       "label": "renderStockLog()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L608",
+      "source_location": "L832",
       "id": "print_guard_dgfc_app_renderstocklog",
       "community": 39,
       "norm_label": "renderstocklog()"
@@ -538,7 +547,7 @@
       "label": "exportCSVStockLog()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L658",
+      "source_location": "L882",
       "id": "print_guard_dgfc_app_exportcsvstocklog",
       "community": 54,
       "norm_label": "exportcsvstocklog()"
@@ -547,7 +556,7 @@
       "label": "adminAuth",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L679",
+      "source_location": "L903",
       "id": "print_guard_dgfc_app_adminauth",
       "community": 11,
       "norm_label": "adminauth"
@@ -556,7 +565,7 @@
       "label": "deleteMovement()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L748",
+      "source_location": "L941",
       "id": "print_guard_dgfc_app_deletemovement",
       "community": 43,
       "norm_label": "deletemovement()"
@@ -565,7 +574,7 @@
       "label": "showConfirm()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L754",
+      "source_location": "L959",
       "id": "print_guard_dgfc_app_showconfirm",
       "community": 19,
       "norm_label": "showconfirm()"
@@ -574,7 +583,7 @@
       "label": "showRollConfirm()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L775",
+      "source_location": "L980",
       "id": "print_guard_dgfc_app_showrollconfirm",
       "community": 19,
       "norm_label": "showrollconfirm()"
@@ -583,7 +592,7 @@
       "label": "init()",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L783",
+      "source_location": "L988",
       "id": "print_guard_dgfc_app_init",
       "community": 37,
       "norm_label": "init()"
@@ -592,7 +601,7 @@
       "label": "costCurrencySelect",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L1106",
+      "source_location": "L1311",
       "id": "print_guard_dgfc_app_costcurrencyselect",
       "community": 11,
       "norm_label": "costcurrencyselect"
@@ -2160,7 +2169,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L1",
       "id": "netlify_functions_daily_production_report_js",
-      "community": 0,
+      "community": 17,
       "norm_label": "daily-production-report.js"
     },
     {
@@ -2169,7 +2178,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L3",
       "id": "functions_daily_production_report_checkratelimit_json_requirepostpurchaseaccess_withclient",
-      "community": 0,
+      "community": 17,
       "norm_label": "{\r\n  checkratelimit,\r\n  json,\r\n  requirepostpurchaseaccess,\r\n  withclient,\r\n}"
     },
     {
@@ -2178,7 +2187,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L9",
       "id": "functions_daily_production_report_builddailyproductionreport",
-      "community": 0,
+      "community": 17,
       "norm_label": "{\r\n  builddailyproductionreport,\r\n}"
     },
     {
@@ -2187,7 +2196,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L13",
       "id": "functions_daily_production_report_cleanapierror",
-      "community": 0,
+      "community": 17,
       "norm_label": "cleanapierror()"
     },
     {
@@ -7020,7 +7029,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L1",
       "id": "scripts_checklist_api_js",
-      "community": 15,
+      "community": 2,
       "norm_label": "checklist-api.js"
     },
     {
@@ -7029,7 +7038,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L10",
       "id": "scripts_checklist_api_getfetch",
-      "community": 15,
+      "community": 2,
       "norm_label": "getfetch()"
     },
     {
@@ -7038,7 +7047,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L16",
       "id": "scripts_checklist_api_request",
-      "community": 15,
+      "community": 2,
       "norm_label": "request()"
     },
     {
@@ -7047,7 +7056,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L39",
       "id": "scripts_checklist_api_listchecklistitems",
-      "community": 15,
+      "community": 2,
       "norm_label": "listchecklistitems()"
     },
     {
@@ -7056,7 +7065,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L43",
       "id": "scripts_checklist_api_createchecklistitem",
-      "community": 15,
+      "community": 2,
       "norm_label": "createchecklistitem()"
     },
     {
@@ -7065,7 +7074,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L47",
       "id": "scripts_checklist_api_updatechecklistitem",
-      "community": 15,
+      "community": 2,
       "norm_label": "updatechecklistitem()"
     },
     {
@@ -7074,7 +7083,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L51",
       "id": "scripts_checklist_api_deletechecklistitem",
-      "community": 15,
+      "community": 2,
       "norm_label": "deletechecklistitem()"
     },
     {
@@ -7083,7 +7092,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L55",
       "id": "scripts_checklist_api_completechecklistoccurrence",
-      "community": 15,
+      "community": 2,
       "norm_label": "completechecklistoccurrence()"
     },
     {
@@ -7092,7 +7101,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L59",
       "id": "scripts_checklist_api_listchecklistcompletions",
-      "community": 15,
+      "community": 2,
       "norm_label": "listchecklistcompletions()"
     },
     {
@@ -7101,7 +7110,7 @@
       "source_file": "scripts/checklist-api.js",
       "source_location": "L64",
       "id": "scripts_checklist_api_evaluatechecklistreminders",
-      "community": 15,
+      "community": 2,
       "norm_label": "evaluatechecklistreminders()"
     },
     {
@@ -7650,7 +7659,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L4",
       "id": "scripts_core_utils_genid",
-      "community": 39,
+      "community": 22,
       "norm_label": "genid()"
     },
     {
@@ -7722,7 +7731,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L54",
       "id": "scripts_core_utils_fmtdays",
-      "community": 22,
+      "community": 11,
       "norm_label": "fmtdays()"
     },
     {
@@ -9434,24 +9443,6 @@
       "id": "scripts_settings_ui_setupsettings",
       "community": 19,
       "norm_label": "setupsettings()"
-    },
-    {
-      "label": "stock-actions.js",
-      "file_type": "code",
-      "source_file": "scripts/stock-actions.js",
-      "source_location": "L1",
-      "id": "scripts_stock_actions_js",
-      "community": 94,
-      "norm_label": "stock-actions.js"
-    },
-    {
-      "label": "createStockActions()",
-      "file_type": "code",
-      "source_file": "scripts/stock-actions.js",
-      "source_location": "L4",
-      "id": "scripts_stock_actions_createstockactions",
-      "community": 94,
-      "norm_label": "createstockactions()"
     },
     {
       "label": "stock-controller.js",
@@ -13270,24 +13261,6 @@
       "norm_label": "code:text (c:\\printguard\\logs\\submit-tool-sync.log)"
     },
     {
-      "label": "buildMovementRows()",
-      "file_type": "code",
-      "source_file": "app.js",
-      "source_location": "L398",
-      "community": 11,
-      "norm_label": "buildmovementrows()",
-      "id": "print_guard_dgfc_app_buildmovementrows"
-    },
-    {
-      "label": "buildStockHistoryTable()",
-      "file_type": "code",
-      "source_file": "app.js",
-      "source_location": "L413",
-      "community": 11,
-      "norm_label": "buildstockhistorytable()",
-      "id": "print_guard_dgfc_app_buildstockhistorytable"
-    },
-    {
       "label": "normalizeOrderToken()",
       "file_type": "code",
       "source_file": "scripts/reprint-xml.js",
@@ -13719,21 +13692,31 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app.js",
-      "source_location": "L340",
-      "weight": 1.0,
-      "source": "app_js",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
       "source_location": "L334",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "app_js",
       "target": "print_guard_dgfc_app_openstockdetail"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.js",
+      "source_location": "L398",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "app_js",
+      "target": "print_guard_dgfc_app_buildmovementrows"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.js",
+      "source_location": "L411",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "app_js",
+      "target": "print_guard_dgfc_app_buildstockhistorytable"
     },
     {
       "relation": "contains",
@@ -14199,26 +14182,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app.js",
-      "source_location": "L398",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "app_js",
-      "target": "print_guard_dgfc_app_buildmovementrows"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L411",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "app_js",
-      "target": "print_guard_dgfc_app_buildstockhistorytable"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
       "source_location": "L396",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -14345,17 +14308,6 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app.js",
-      "source_location": "L1228",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "print_guard_dgfc_app_renderstocklog",
-      "target": "print_guard_dgfc_app_i18n"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
       "source_location": "L343",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -14382,6 +14334,17 @@
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "print_guard_dgfc_app_renderitemsmgmt",
+      "target": "print_guard_dgfc_app_i18n"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app.js",
+      "source_location": "L1228",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "print_guard_dgfc_app_renderstocklog",
       "target": "print_guard_dgfc_app_i18n"
     },
     {
@@ -14554,10 +14517,10 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app.js",
-      "source_location": "L1206",
+      "source_location": "L461",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "print_guard_dgfc_app_renderstocklog",
+      "source": "print_guard_dgfc_app_savemovement",
       "target": "print_guard_dgfc_app_movementlabel"
     },
     {
@@ -14565,10 +14528,10 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app.js",
-      "source_location": "L461",
+      "source_location": "L1206",
       "weight": 1.0,
       "confidence_score": 1.0,
-      "source": "print_guard_dgfc_app_savemovement",
+      "source": "print_guard_dgfc_app_renderstocklog",
       "target": "print_guard_dgfc_app_movementlabel"
     },
     {
@@ -14746,94 +14709,6 @@
       "confidence_score": 1.0,
       "source": "print_guard_dgfc_app_saveitemmodal",
       "target": "print_guard_dgfc_app_renderstockoverview"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L346",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_openstockdetail",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L351",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_deletemovementadmin",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L360",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_savemovement",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L368",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_renderitemsmgmt",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L372",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_openitemmodal",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L376",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_saveitemmodal",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L380",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_deleteitem",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "app.js",
-      "source_location": "L749",
-      "weight": 1.0,
-      "source": "print_guard_dgfc_app_deletemovement",
-      "target": "print_guard_dgfc_app_requirestockactions",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -22544,9 +22419,9 @@
       "source_file": "netlify/functions/_lib/order-pipeline.js",
       "source_location": "L77",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "lib_order_pipeline_getcanonicalorderidentity",
-      "target": "lib_order_pipeline_cleanstring"
+      "target": "lib_order_pipeline_cleanstring",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32192,9 +32067,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L74",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_cleanlabel"
+      "target": "scripts_order_pipeline_render_cleanlabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32202,9 +32077,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L78",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_getinternalorderids"
+      "target": "scripts_order_pipeline_render_getinternalorderids",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32212,9 +32087,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L86",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_isinternalorderidlabel"
+      "target": "scripts_order_pipeline_render_isinternalorderidlabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32222,9 +32097,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L91",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_isprefixedorderlabel"
+      "target": "scripts_order_pipeline_render_isprefixedorderlabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32232,9 +32107,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L95",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_getbusinessorderlabels"
+      "target": "scripts_order_pipeline_render_getbusinessorderlabels",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -32681,9 +32556,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L87",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_isinternalorderidlabel",
-      "target": "scripts_order_pipeline_render_cleanlabel"
+      "target": "scripts_order_pipeline_render_cleanlabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32692,9 +32567,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L92",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_isprefixedorderlabel",
-      "target": "scripts_order_pipeline_render_cleanlabel"
+      "target": "scripts_order_pipeline_render_cleanlabel",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32703,9 +32578,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L88",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_isinternalorderidlabel",
-      "target": "scripts_order_pipeline_render_getinternalorderids"
+      "target": "scripts_order_pipeline_render_getinternalorderids",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32714,9 +32589,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L123",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_getprimaryorderlabel",
-      "target": "scripts_order_pipeline_render_getbusinessorderlabels"
+      "target": "scripts_order_pipeline_render_getbusinessorderlabels",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32725,9 +32600,9 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L127",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_getraworderlabels",
-      "target": "scripts_order_pipeline_render_getbusinessorderlabels"
+      "target": "scripts_order_pipeline_render_getbusinessorderlabels",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -34476,16 +34351,6 @@
       "confidence_score": 1.0,
       "source": "scripts_settings_ui_js",
       "target": "scripts_settings_ui_setupsettings"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/stock-actions.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "source": "scripts_stock_actions_js",
-      "target": "scripts_stock_actions_createstockactions",
-      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38820,9 +38685,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_assert"
+      "target": "tests_order_pipeline_render_labels_test_assert",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38830,9 +38695,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_fs"
+      "target": "tests_order_pipeline_render_labels_test_fs",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38840,9 +38705,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_path"
+      "target": "tests_order_pipeline_render_labels_test_path",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38850,9 +38715,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_vm"
+      "target": "tests_order_pipeline_render_labels_test_vm",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38860,9 +38725,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_source"
+      "target": "tests_order_pipeline_render_labels_test_source",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38870,9 +38735,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L9",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_context"
+      "target": "tests_order_pipeline_render_labels_test_context",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38880,9 +38745,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_esc"
+      "target": "tests_order_pipeline_render_labels_test_esc",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38890,9 +38755,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L25",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_html"
+      "target": "tests_order_pipeline_render_labels_test_html",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -38900,9 +38765,9 @@
       "source_file": "tests/order-pipeline-render-labels.test.js",
       "source_location": "L45",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_prefixedhtml"
+      "target": "tests_order_pipeline_render_labels_test_prefixedhtml",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -40464,5 +40329,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "9d5f44965d4605d37c801d3e570050a1481ee1e2"
+  "built_at_commit": "9c845f21ff88590fb86c946b154a30e99910cb4d"
 }

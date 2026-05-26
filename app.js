@@ -111,6 +111,8 @@ const StockStore = (typeof window !== 'undefined' && window.StockStore) || null;
 if (!StockStore) throw new Error('Missing StockStore');
 const StockFeature = (typeof window !== 'undefined' && window.StockFeature) || null;
 if (!StockFeature) throw new Error('Missing StockFeature');
+const StockActions = (typeof window !== 'undefined' && window.PrintGuardStockActions) || null;
+if (!StockActions) throw new Error('Missing PrintGuardStockActions');
 const PrintLogUI = (typeof window !== 'undefined' && window.PrintGuardPrintLogUI) || null;
 if (!PrintLogUI) throw new Error('Missing PrintGuardPrintLogUI');
 const ChecklistUI = (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
@@ -333,104 +335,20 @@ function renderStockOverview() {
 }
 
 // ── Stock Detail ───────────────────────────────────────────
+let stockActions = null;
+
+function requireStockActions() {
+  if (!stockActions) throw new Error('Stock actions are not initialized');
+  return stockActions;
+}
+
 function openStockDetail(articleNumber) {
-  const item = S.items.find(it => it.articleNumber === articleNumber);
-  if (!item) return;
-  S.detailArticle = articleNumber;
-  el('detail-title').textContent = item.name || articleNumber;
-
-  const m     = computeStock(item);
-  const moves = getMovements(articleNumber);
-  const statusLbl = statusLabel(m.status);
-  const lblCoverage = i18n('stock.metric.coverage');
-  const lblWeekly = i18n('stock.metric.weekly');
-
-  el('detail-content').innerHTML = `
-    <div class="detail-hero">
-      <span class="badge ${m.status}" style="display:inline-block;margin-bottom:12px">${statusLbl}</span>
-      <div>
-        <span class="detail-big">${fmtN(m.onHand, 0)}</span>
-        <span class="detail-unit">${esc(item.unit || 'ks')}</span>
-      </div>
-      <div class="detail-metrics-grid">
-        <div class="dm-item"><span class="dm-val">${fmtDays(m.daysLeft)}</span><span class="dm-lbl">${lblCoverage}</span></div>
-        <div class="dm-item"><span class="dm-val">${m.avgWeekly > 0 ? fmtN(m.avgWeekly, 1) : '—'}</span><span class="dm-lbl">${lblWeekly}</span></div>
-        <div class="dm-item"><span class="dm-val">${item.leadTimeDays || '—'}</span><span class="dm-lbl">Dod. lhůta (dny)</span></div>
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title">Parametry položky</div>
-      <div class="param-row"><span>Číslo artiklu</span><code>${esc(articleNumber)}</code></div>
-      ${item.category    ? `<div class="param-row"><span>Kategorie</span><span>${esc(item.category)}</span></div>` : ''}
-      ${item.supplier    ? `<div class="param-row"><span>Dodavatel</span><span>${esc(item.supplier)}</span></div>` : ''}
-      ${item.MOQ         ? `<div class="param-row"><span>MOQ</span><span>${item.MOQ}</span></div>` : ''}
-      ${item.leadTimeDays? `<div class="param-row"><span>Dodací lhůta</span><span>${item.leadTimeDays} dní</span></div>` : ''}
-      ${item.safetyDays  ? `<div class="param-row"><span>Bezp. zásoba</span><span>${item.safetyDays} dní</span></div>` : ''}
-      ${item.minQty      ? `<div class="param-row"><span>Min. množství</span><span>${item.minQty} ${esc(item.unit || 'ks')}</span></div>` : ''}
-      ${item.orderUrl    ? `<div class="param-row admin-only"><span>Odkaz na objednávku</span><a href="${esc(item.orderUrl)}" target="_blank" rel="noopener" class="order-link">🛒 Objednat</a></div>` : ''}
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-head">
-        <div class="detail-tabs">
-          <button class="detail-tab active" data-tab="movements">Pohyby</button>
-          <button class="detail-tab" data-tab="history">Stav skladu</button>
-        </div>
-        <button class="btn-sm" id="detail-add-mov-btn">+ Nový pohyb</button>
-      </div>
-        <div class="detail-tab-pane table-wrap" data-pane="movements" style="margin-top:10px">
-        ${moves.length ? `<table class="data-table">
-          <thead><tr><th>${i18n('table.date')}</th><th>${i18n('table.type')}</th><th>${i18n('table.qty')}</th><th>${i18n('table.after')}</th><th>${i18n('table.note')}</th><th></th></tr></thead>
-          <tbody>${buildMovementRows(item, moves)}</tbody>
-        </table>` : '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby. Přidejte příjem nebo inventuru.</p></div>'}
-      </div>
-      <div class="detail-tab-pane table-wrap hidden" data-pane="history" style="margin-top:10px">
-        ${buildStockHistoryTable(item, moves)}
-      </div>
-    </div>`;
-
-  StockFeature.bindStockDetailControls(item);
-
-  navigate('stock-detail');
-}
-
-function buildMovementRows(item, moves) {
-  return StockUI.buildMovementRows({
-    esc,
-    fmtDT,
-    fmtN,
-    item,
-    movementLabel,
-    moves,
-  });
-}
-
-/**
- * Build a "stock level over time" table (derived from movement ledger).
- * Shows running on-hand after every movement, most recent first.
- */
-function buildStockHistoryTable(item, moves) {
-  return StockFeature.renderStockHistory(item, moves);
+  return requireStockActions().openStockDetail(articleNumber);
 }
 
 // Admin-gated verze pro Historie pohybů
 async function deleteMovementAdmin(id) {
-  if (!isAdmin()) { showToast('Mazání pohybů — jen admin', 'error'); return; }
-  showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
-    try {
-      await StockStore.deleteMovementRemote(id, stockApiAdapter());
-      await StockStore.deleteMovementLocal(stockDbAdapter(), id);
-      S.movements = S.movements.filter(m => m.id !== id);
-      renderStockOverview();
-      renderAlerts();
-      renderStockLog();
-      if (S.detailArticle) openStockDetail(S.detailArticle);
-      showToast('Pohyb smazán');
-    } catch (err) {
-      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
-    }
-  });
+  return requireStockActions().deleteMovementAdmin(id);
 }
 
 // ── Alerts ────────────────────────────────────────────────
@@ -439,44 +357,7 @@ function renderAlerts() {
 }
 
 async function saveMovement() {
-  if (!S.movItem) { showToast('Vyberte položku', 'error'); return; }
-  const qty = parseFloat(el('mov-qty').value);
-  if (isNaN(qty) || qty < 0) { showToast('Zadejte platné množství', 'error'); return; }
-
-  const move = {
-    id:            genId('mov'),
-    articleNumber: S.movItem.articleNumber,
-    movType:       S.movType,
-    qty,
-    note:          el('mov-note').value.trim() || undefined,
-    timestamp:     new Date().toISOString(),
-    deviceId:      cfg.deviceId,
-  };
-
-  el('mov-save-btn').disabled = true;
-  try {
-    const notifyItem = S.movItem;
-    await StockStore.putMovement(stockDbAdapter(), move);
-    S.movements.push(move);
-    setSyncDirtyReason('stock');
-    S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    const typeLabel = movementLabel(S.movType);
-    showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
-    el('mov-qty').value  = '';
-    el('mov-note').value = '';
-    StockFeature.clearMovementForm();
-    renderStockOverview();
-    renderAlerts();
-    navigate('stock-overview');
-    runNotificationDispatch(
-      Reports.notificationDispatch?.emitStockMovementCreated?.(move, notifyItem),
-      'stock movement event'
-    );
-  } catch (err) {
-    showToast('Chyba: ' + err.message, 'error');
-  } finally {
-    el('mov-save-btn').disabled = false;
-  }
+  return requireStockActions().saveMovement();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -484,124 +365,19 @@ async function saveMovement() {
 // ══════════════════════════════════════════════════════════
 
 function renderItemsMgmt() {
-  const list = el('items-mgmt-list');
-  const lblOnHand = i18n('stock.metric.onhand');
-  if (!S.items.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné položky.\nKlikněte + Přidat položku nebo importujte JSON.</p></div>`;
-    return;
-  }
-  const byCategory = {};
-  S.items.forEach(it => {
-    const cat = it.category || 'Ostatní';
-    if (!byCategory[cat]) byCategory[cat] = [];
-    byCategory[cat].push(it);
-  });
-
-  list.innerHTML = Object.entries(byCategory).sort(([a], [b]) => a.localeCompare(b)).map(([cat, items]) => `
-    <div style="margin-bottom:6px">
-      <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);padding:10px 0 6px">${esc(cat)}</div>
-      ${items.map(it => {
-        const m = computeStock(it);
-        return `<div class="mgmt-card" style="margin-bottom:5px">
-          <div class="mgmt-info">
-            <div class="mgmt-name">${esc(it.name || it.articleNumber)}</div>
-            <div class="mgmt-meta">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')} · ${lblOnHand}: ${fmtN(m.onHand, 0)}</div>
-          </div>
-          <div class="mgmt-actions">
-            ${it.orderUrl ? `<a href="${esc(it.orderUrl)}" target="_blank" rel="noopener" class="btn-icon-sm admin-only" title="Objednat">🛒</a>` : ''}
-            <button class="btn-icon-sm" data-edit="${esc(it.articleNumber)}" title="Upravit">✎</button>
-            <button class="btn-icon-sm danger" data-del="${esc(it.articleNumber)}" title="Smazat">✕</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`).join('');
-
-  list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openItemModal(b.dataset.edit)));
-  list.querySelectorAll('[data-del]').forEach(b  => b.addEventListener('click', () => deleteItem(b.dataset.del)));
+  return requireStockActions().renderItemsMgmt();
 }
 
 function openItemModal(articleNumber) {
-  // ADMIN GUARD
-  if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
-
-  S.editingItem = articleNumber
-    ? (S.items.find(it => it.articleNumber === articleNumber) || null)
-    : null;
-
-  el('item-modal-title').textContent = S.editingItem ? 'Upravit položku' : 'Nová položka';
-  const it = S.editingItem || {};
-  el('im-name').value     = it.name        || '';
-  el('im-article').value  = it.articleNumber || '';
-  el('im-unit').value     = it.unit        || '';
-  el('im-category').value = it.category    || '';
-  el('im-supplier').value = it.supplier    || '';
-  el('im-moq').value      = it.MOQ         || '';
-  el('im-lead').value     = it.leadTimeDays || '';
-  el('im-safety').value   = it.safetyDays  || '';
-  el('im-minqty').value   = it.minQty      || '';
-  el('im-url').value      = it.orderUrl    || '';
-  el('im-article').readOnly = !!S.editingItem;
-  el('item-modal').classList.remove('hidden');
-  el('im-name').focus();
+  return requireStockActions().openItemModal(articleNumber);
 }
 
 async function saveItemModal() {
-  // ADMIN GUARD
-  if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
-
-  const name    = el('im-name').value.trim();
-  const article = el('im-article').value.trim().toUpperCase().replace(/\s+/g, '-');
-  if (!name)    { showToast('Zadejte název', 'error'); return; }
-  if (!article) { showToast('Zadejte číslo artiklu', 'error'); return; }
-  if (!S.editingItem && S.items.find(it => it.articleNumber === article)) {
-    showToast('Artikl s tímto číslem již existuje', 'error'); return;
-  }
-
-  const item = {
-    articleNumber: article,
-    name,
-    unit:         el('im-unit').value.trim()     || 'ks',
-    category:     el('im-category').value.trim() || '',
-    supplier:     el('im-supplier').value.trim() || '',
-    MOQ:          parseInt(el('im-moq').value)   || 1,
-    leadTimeDays: parseInt(el('im-lead').value)  || 7,
-    safetyDays:   parseInt(el('im-safety').value)|| 7,
-    minQty:       parseFloat(el('im-minqty').value) || 0,
-    orderUrl:     el('im-url').value.trim() || undefined,
-    isActive: true,
-  };
-
-  await StockStore.putItem(stockDbAdapter(), item);
-  const idx = S.items.findIndex(it => it.articleNumber === article);
-  if (idx >= 0) S.items[idx] = item; else S.items.push(item);
-  setSyncDirtyReason('stock');
-
-  el('item-modal').classList.add('hidden');
-  renderItemsMgmt();
-  renderStockOverview();
-  showToast(S.editingItem ? 'Položka upravena' : 'Položka přidána', 'success');
+  return requireStockActions().saveItemModal();
 }
 
 async function deleteItem(articleNumber) {
-  // ADMIN GUARD
-  if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
-
-  showConfirm(`Smazat položku "${articleNumber}" včetně všech pohybů?`, async () => {
-    try {
-      await cloudDelete('item', articleNumber);
-      await StockStore.deleteItem(stockDbAdapter(), articleNumber);
-      await StockStore.deleteMovementsForArticle(stockDbAdapter(), S.movements, articleNumber);
-      S.items     = S.items.filter(it => it.articleNumber !== articleNumber);
-      S.movements = S.movements.filter(m  => m.articleNumber !== articleNumber);
-      setSyncDirtyReason('stock');
-      renderItemsMgmt();
-      renderStockOverview();
-      renderAlerts();
-      showToast('Položka smazána');
-    } catch (err) {
-      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
-    }
-  });
+  return requireStockActions().deleteItem(articleNumber);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -912,6 +688,37 @@ const {
   setupAdminAuthHandlers,
 } = adminAuth;
 
+stockActions = StockActions.createStockActions({
+  S,
+  StockFeature,
+  StockStore,
+  StockUI,
+  Reports,
+  adminErrorMessage,
+  cfg,
+  cloudDelete,
+  el,
+  esc,
+  fmtDT,
+  fmtDays,
+  fmtN,
+  genId,
+  i18n,
+  isAdmin,
+  movementLabel,
+  navigate: (...args) => navigationApi.navigate(...args),
+  renderAlerts,
+  renderStockLog,
+  renderStockOverview,
+  runNotificationDispatch,
+  setSyncDirtyReason,
+  showConfirm,
+  showToast,
+  statusLabel,
+  stockApiAdapter,
+  stockDbAdapter,
+});
+
 navigationApi = PrintGuardNavigation.createNavigation({
   applyRoleUI,
   el,
@@ -939,19 +746,7 @@ const {
 
 // Canonical movement deletion. This preserves the previously effective hoisted implementation.
 async function deleteMovement(id) {
-  showConfirm('Smazat tento pohyb skladu?', async () => {
-    try {
-      await StockStore.deleteMovementRemote(id, stockApiAdapter());
-      await StockStore.deleteMovementLocal(stockDbAdapter(), id);
-      S.movements = S.movements.filter(m => m.id !== id);
-      renderStockOverview();
-      renderAlerts();
-      if (S.detailArticle) openStockDetail(S.detailArticle);
-      showToast('Pohyb smazán');
-    } catch (err) {
-      showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
-    }
-  });
+  return requireStockActions().deleteMovement(id);
 }
 
 window.enablePushNotifications = enablePushNotifications;
