@@ -36,6 +36,7 @@
     reprintActionStateByKey: new Map(),
     reprintStateTimers: new Map(),
     reprintRefreshTimer: null,
+    controlsBound: false,
   };
 
   function initPostPurchaseUI(deps) {
@@ -209,6 +210,111 @@
 
   function getVisibleOrders() {
     return state.S.postPurchaseOrders || [];
+  }
+
+  function setPostPurchaseQuickFilter(status) {
+    state.S.postPurchaseStatus = status || 'all';
+    state.S.postPurchaseReprint = 'all';
+    if (state.el('postpurchase-reprint-filter')) state.el('postpurchase-reprint-filter').value = 'all';
+    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
+      const active = (button.dataset.postpurchaseStatus || 'all') === state.S.postPurchaseStatus;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    loadPostPurchaseOrders(true);
+  }
+
+  function resetPostPurchaseFilters() {
+    if (state.S.postPurchaseSearchTimer) clearTimeout(state.S.postPurchaseSearchTimer);
+    state.S.postPurchaseSearchTimer = null;
+    state.S.postPurchaseSearch = '';
+    state.S.postPurchaseMonth = '';
+    state.S.postPurchaseDatePreset = 'this_month';
+    state.S.postPurchaseDateFrom = '';
+    state.S.postPurchaseDateTo = '';
+    state.S.postPurchaseStatus = 'all';
+    state.S.postPurchaseReprint = 'all';
+    if (state.el('postpurchase-search')) state.el('postpurchase-search').value = '';
+    if (state.el('postpurchase-date-preset')) state.el('postpurchase-date-preset').value = 'this_month';
+    if (state.el('postpurchase-month-filter')) state.el('postpurchase-month-filter').value = '';
+    if (state.el('postpurchase-date-from')) state.el('postpurchase-date-from').value = '';
+    if (state.el('postpurchase-date-to')) state.el('postpurchase-date-to').value = '';
+    if (state.el('postpurchase-reprint-filter')) state.el('postpurchase-reprint-filter').value = 'all';
+    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
+      const active = (button.dataset.postpurchaseStatus || 'all') === 'all';
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    loadPostPurchaseOrders(true);
+  }
+
+  function bindPostPurchaseControls() {
+    if (state.controlsBound) return;
+    state.controlsBound = true;
+
+    state.el('postpurchase-refresh-btn')?.addEventListener('click', () => {
+      loadPostPurchaseOrders(true);
+    });
+    state.el('postpurchase-search')?.addEventListener('input', e => {
+      state.S.postPurchaseSearch = e.target.value || '';
+      if (state.S.postPurchaseSearchTimer) clearTimeout(state.S.postPurchaseSearchTimer);
+      if (state.S.postPurchaseLoaded) state.elSet('postpurchase-status', t('processed.status.searching'));
+      state.S.postPurchaseSearchTimer = setTimeout(() => {
+        loadPostPurchaseOrders(true);
+      }, 300);
+    });
+    state.el('postpurchase-date-preset')?.addEventListener('change', e => {
+      state.S.postPurchaseDatePreset = e.target.value || 'this_month';
+      loadPostPurchaseOrders(true);
+    });
+    state.el('postpurchase-month-filter')?.addEventListener('change', e => {
+      state.S.postPurchaseMonth = e.target.value || '';
+      loadPostPurchaseOrders(true);
+    });
+    state.el('postpurchase-date-from')?.addEventListener('change', e => {
+      state.S.postPurchaseDateFrom = e.target.value || '';
+      if (state.S.postPurchaseDateFrom || state.S.postPurchaseDateTo) state.S.postPurchaseDatePreset = 'custom';
+      if (state.el('postpurchase-date-preset')) state.el('postpurchase-date-preset').value = state.S.postPurchaseDatePreset;
+      loadPostPurchaseOrders(true);
+    });
+    state.el('postpurchase-date-to')?.addEventListener('change', e => {
+      state.S.postPurchaseDateTo = e.target.value || '';
+      if (state.S.postPurchaseDateFrom || state.S.postPurchaseDateTo) state.S.postPurchaseDatePreset = 'custom';
+      if (state.el('postpurchase-date-preset')) state.el('postpurchase-date-preset').value = state.S.postPurchaseDatePreset;
+      loadPostPurchaseOrders(true);
+    });
+    state.el('postpurchase-reprint-filter')?.addEventListener('change', e => {
+      state.S.postPurchaseReprint = e.target.value || 'all';
+      loadPostPurchaseOrders(true);
+    });
+    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
+      button.addEventListener('click', () => {
+        setPostPurchaseQuickFilter(button.dataset.postpurchaseStatus || 'all');
+      });
+    });
+    state.el('postpurchase-clear-filters')?.addEventListener('click', resetPostPurchaseFilters);
+    state.el('postpurchase-unlock-btn')?.addEventListener('click', () => {
+      const pin = (state.el('postpurchase-pin')?.value || '').trim();
+      if (!pin) {
+        state.showToast(t('processed.pin.enter'), 'error');
+        return;
+      }
+      state.cfg.postPurchasePin = pin;
+      if (state.el('postpurchase-pin')) state.el('postpurchase-pin').value = '';
+      state.S.postPurchaseLoaded = false;
+      state.showToast(t('processed.toast.unlocked'), 'success');
+      loadPostPurchaseOrders(true);
+    });
+    state.el('postpurchase-lock-btn')?.addEventListener('click', () => {
+      state.cfg.postPurchasePin = '';
+      state.S.postPurchaseLoaded = false;
+      state.S.postPurchaseOrders = [];
+      state.renderPostPurchaseAccessRequired();
+      state.showToast(t('processed.toast.locked'), 'success');
+    });
+    state.el('postpurchase-sync-btn')?.addEventListener('click', () => {
+      syncPostPurchaseOrdersManual();
+    });
   }
 
   function hasScopedStatsFilter(filters) {
@@ -558,6 +664,7 @@
   }
 
   window.PrintGuardPostPurchaseUI = {
+    bindPostPurchaseControls,
     initPostPurchaseUI,
     loadPostPurchaseOrders,
     renderPostPurchaseOrders,

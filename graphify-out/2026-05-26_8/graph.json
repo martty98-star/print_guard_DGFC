@@ -171,7 +171,7 @@
       "source_file": "app.js",
       "source_location": "L342",
       "id": "print_guard_dgfc_app_requirestockactions",
-      "community": 39,
+      "community": 19,
       "norm_label": "requirestockactions()"
     },
     {
@@ -189,7 +189,7 @@
       "source_file": "app.js",
       "source_location": "L352",
       "id": "print_guard_dgfc_app_deletemovementadmin",
-      "community": 39,
+      "community": 19,
       "norm_label": "deletemovementadmin()"
     },
     {
@@ -216,7 +216,7 @@
       "source_file": "app.js",
       "source_location": "L369",
       "id": "print_guard_dgfc_app_renderitemsmgmt",
-      "community": 39,
+      "community": 19,
       "norm_label": "renderitemsmgmt()"
     },
     {
@@ -234,7 +234,7 @@
       "source_file": "app.js",
       "source_location": "L377",
       "id": "print_guard_dgfc_app_saveitemmodal",
-      "community": 39,
+      "community": 19,
       "norm_label": "saveitemmodal()"
     },
     {
@@ -243,7 +243,7 @@
       "source_file": "app.js",
       "source_location": "L381",
       "id": "print_guard_dgfc_app_deleteitem",
-      "community": 39,
+      "community": 19,
       "norm_label": "deleteitem()"
     },
     {
@@ -405,7 +405,7 @@
       "source_file": "app.js",
       "source_location": "L438",
       "id": "print_guard_dgfc_app_rendercodashboard",
-      "community": 38,
+      "community": 39,
       "norm_label": "rendercodashboard()"
     },
     {
@@ -414,7 +414,7 @@
       "source_file": "app.js",
       "source_location": "L439",
       "id": "print_guard_dgfc_app_setupcoentry",
-      "community": 37,
+      "community": 39,
       "norm_label": "setupcoentry()"
     },
     {
@@ -423,7 +423,7 @@
       "source_file": "app.js",
       "source_location": "L440",
       "id": "print_guard_dgfc_app_getselectedmachine",
-      "community": 38,
+      "community": 39,
       "norm_label": "getselectedmachine()"
     },
     {
@@ -432,7 +432,7 @@
       "source_file": "app.js",
       "source_location": "L441",
       "id": "print_guard_dgfc_app_updatecopreview",
-      "community": 38,
+      "community": 39,
       "norm_label": "updatecopreview()"
     },
     {
@@ -450,7 +450,7 @@
       "source_file": "app.js",
       "source_location": "L443",
       "id": "print_guard_dgfc_app_deletecorecord",
-      "community": 39,
+      "community": 19,
       "norm_label": "deletecorecord()"
     },
     {
@@ -567,7 +567,7 @@
       "source_file": "app.js",
       "source_location": "L715",
       "id": "print_guard_dgfc_app_deletemovement",
-      "community": 39,
+      "community": 43,
       "norm_label": "deletemovement()"
     },
     {
@@ -576,7 +576,7 @@
       "source_file": "app.js",
       "source_location": "L721",
       "id": "print_guard_dgfc_app_showconfirm",
-      "community": 39,
+      "community": 19,
       "norm_label": "showconfirm()"
     },
     {
@@ -585,7 +585,7 @@
       "source_file": "app.js",
       "source_location": "L742",
       "id": "print_guard_dgfc_app_showrollconfirm",
-      "community": 39,
+      "community": 19,
       "norm_label": "showrollconfirm()"
     },
     {
@@ -601,7 +601,7 @@
       "label": "costCurrencySelect",
       "file_type": "code",
       "source_file": "app.js",
-      "source_location": "L981",
+      "source_location": "L1073",
       "id": "print_guard_dgfc_app_costcurrencyselect",
       "community": 11,
       "norm_label": "costcurrencyselect"
@@ -756,7 +756,7 @@
       "source_file": "package.json",
       "source_location": "L1",
       "id": "package_json",
-      "community": 3,
+      "community": 16,
       "norm_label": "package.json"
     },
     {
@@ -765,7 +765,7 @@
       "source_file": "package.json",
       "source_location": "L2",
       "id": "print_guard_dgfc_package_name",
-      "community": 3,
+      "community": 16,
       "norm_label": "name"
     },
     {
@@ -774,7 +774,7 @@
       "source_file": "package.json",
       "source_location": "L3",
       "id": "print_guard_dgfc_package_private",
-      "community": 3,
+      "community": 16,
       "norm_label": "private"
     },
     {
@@ -783,7 +783,7 @@
       "source_file": "package.json",
       "source_location": "L4",
       "id": "print_guard_dgfc_package_version",
-      "community": 3,
+      "community": 16,
       "norm_label": "version"
     },
     {
@@ -792,7 +792,7 @@
       "source_file": "package.json",
       "source_location": "L5",
       "id": "print_guard_dgfc_package_scripts",
-      "community": 3,
+      "community": 16,
       "norm_label": "scripts"
     },
     {
@@ -801,7 +801,7 @@
       "source_file": "package.json",
       "source_location": "L6",
       "id": "print_guard_dgfc_package_scripts_db_audit",
-      "community": 3,
+      "community": 16,
       "norm_label": "db:audit"
     },
     {
@@ -810,7 +810,7 @@
       "source_file": "package.json",
       "source_location": "L7",
       "id": "print_guard_dgfc_package_scripts_db_indexes",
-      "community": 3,
+      "community": 16,
       "norm_label": "db:indexes"
     },
     {
@@ -819,7 +819,7 @@
       "source_file": "package.json",
       "source_location": "L8",
       "id": "print_guard_dgfc_package_scripts_export_colorado_monthly",
-      "community": 3,
+      "community": 16,
       "norm_label": "export:colorado-monthly"
     },
     {
@@ -828,7 +828,7 @@
       "source_file": "package.json",
       "source_location": "L9",
       "id": "print_guard_dgfc_package_scripts_sync_postpurchase_orders",
-      "community": 3,
+      "community": 16,
       "norm_label": "sync:postpurchase-orders"
     },
     {
@@ -837,7 +837,7 @@
       "source_file": "package.json",
       "source_location": "L10",
       "id": "print_guard_dgfc_package_scripts_sync_submit_tool_logs",
-      "community": 3,
+      "community": 16,
       "norm_label": "sync:submit-tool-logs"
     },
     {
@@ -846,7 +846,7 @@
       "source_file": "package.json",
       "source_location": "L11",
       "id": "print_guard_dgfc_package_scripts_sync_processed_print_orders",
-      "community": 3,
+      "community": 16,
       "norm_label": "sync:processed-print-orders"
     },
     {
@@ -855,7 +855,7 @@
       "source_file": "package.json",
       "source_location": "L13",
       "id": "print_guard_dgfc_package_dependencies",
-      "community": 3,
+      "community": 16,
       "norm_label": "dependencies"
     },
     {
@@ -864,7 +864,7 @@
       "source_file": "package.json",
       "source_location": "L14",
       "id": "print_guard_dgfc_package_dependencies_pg",
-      "community": 3,
+      "community": 16,
       "norm_label": "pg"
     },
     {
@@ -873,7 +873,7 @@
       "source_file": "package.json",
       "source_location": "L15",
       "id": "print_guard_dgfc_package_dependencies_web_push",
-      "community": 3,
+      "community": 16,
       "norm_label": "web-push"
     },
     {
@@ -1755,7 +1755,7 @@
       "source_file": "app/db.js",
       "source_location": "L41",
       "id": "app_db_idball",
-      "community": 37,
+      "community": 39,
       "norm_label": "idball()"
     },
     {
@@ -1764,7 +1764,7 @@
       "source_file": "app/db.js",
       "source_location": "L49",
       "id": "app_db_idbput",
-      "community": 37,
+      "community": 39,
       "norm_label": "idbput()"
     },
     {
@@ -1881,7 +1881,7 @@
       "source_file": "app/settings-store.js",
       "source_location": "L1",
       "id": "app_settings_store_js",
-      "community": 37,
+      "community": 39,
       "norm_label": "settings-store.js"
     },
     {
@@ -1890,7 +1890,7 @@
       "source_file": "app/settings-store.js",
       "source_location": "L13",
       "id": "app_settings_store_savesettingstoidb",
-      "community": 37,
+      "community": 39,
       "norm_label": "savesettingstoidb()"
     },
     {
@@ -1899,7 +1899,7 @@
       "source_file": "app/settings-store.js",
       "source_location": "L26",
       "id": "app_settings_store_loadsettingsfromidb",
-      "community": 37,
+      "community": 39,
       "norm_label": "loadsettingsfromidb()"
     },
     {
@@ -1962,7 +1962,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L1",
       "id": "netlify_functions_checklist_completions_js",
-      "community": 97,
+      "community": 15,
       "norm_label": "checklist-completions.js"
     },
     {
@@ -1971,7 +1971,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L3",
       "id": "functions_checklist_completions_json_parserequestbody_withclient",
-      "community": 97,
+      "community": 15,
       "norm_label": "{ json, parserequestbody, withclient }"
     },
     {
@@ -1980,7 +1980,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L4",
       "id": "functions_checklist_completions_completechecklistoccurrence_listchecklistcompletions",
-      "community": 97,
+      "community": 15,
       "norm_label": "{\n  completechecklistoccurrence,\n  listchecklistcompletions,\n}"
     },
     {
@@ -1989,7 +1989,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L9",
       "id": "functions_checklist_completions_getactor",
-      "community": 97,
+      "community": 15,
       "norm_label": "getactor()"
     },
     {
@@ -1998,7 +1998,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L27",
       "id": "functions_checklist_completions_limit",
-      "community": 97,
+      "community": 15,
       "norm_label": "limit"
     },
     {
@@ -2007,7 +2007,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L39",
       "id": "functions_checklist_completions_requestbody",
-      "community": 97,
+      "community": 15,
       "norm_label": "requestbody"
     },
     {
@@ -2016,7 +2016,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L40",
       "id": "functions_checklist_completions_checklistid",
-      "community": 97,
+      "community": 15,
       "norm_label": "checklistid"
     },
     {
@@ -2025,7 +2025,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L41",
       "id": "functions_checklist_completions_occurrencekey",
-      "community": 97,
+      "community": 15,
       "norm_label": "occurrencekey"
     },
     {
@@ -2034,7 +2034,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L42",
       "id": "functions_checklist_completions_deviceid",
-      "community": 97,
+      "community": 15,
       "norm_label": "deviceid"
     },
     {
@@ -2043,7 +2043,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L43",
       "id": "functions_checklist_completions_completedat",
-      "community": 97,
+      "community": 15,
       "norm_label": "completedat"
     },
     {
@@ -2052,7 +2052,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L44",
       "id": "functions_checklist_completions_completedby",
-      "community": 97,
+      "community": 15,
       "norm_label": "completedby"
     },
     {
@@ -2061,7 +2061,7 @@
       "source_file": "netlify/functions/checklist-completions.js",
       "source_location": "L45",
       "id": "functions_checklist_completions_checklisttitle",
-      "community": 97,
+      "community": 15,
       "norm_label": "checklisttitle"
     },
     {
@@ -2070,7 +2070,7 @@
       "source_file": "netlify/functions/checklist-evaluate.js",
       "source_location": "L1",
       "id": "netlify_functions_checklist_evaluate_js",
-      "community": 16,
+      "community": 0,
       "norm_label": "checklist-evaluate.js"
     },
     {
@@ -2079,7 +2079,7 @@
       "source_file": "netlify/functions/checklist-evaluate.js",
       "source_location": "L3",
       "id": "functions_checklist_evaluate_json_parserequestbody_requireadminaccess_withclient",
-      "community": 16,
+      "community": 0,
       "norm_label": "{ json, parserequestbody, requireadminaccess, withclient }"
     },
     {
@@ -2088,7 +2088,7 @@
       "source_file": "netlify/functions/checklist-evaluate.js",
       "source_location": "L4",
       "id": "functions_checklist_evaluate_evaluatechecklistreminders",
-      "community": 16,
+      "community": 0,
       "norm_label": "{ evaluatechecklistreminders }"
     },
     {
@@ -2097,7 +2097,7 @@
       "source_file": "netlify/functions/checklist-evaluate.js",
       "source_location": "L24",
       "id": "functions_checklist_evaluate_lookbackminutes",
-      "community": 16,
+      "community": 0,
       "norm_label": "lookbackminutes"
     },
     {
@@ -2106,7 +2106,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L1",
       "id": "netlify_functions_checklist_items_js",
-      "community": 16,
+      "community": 15,
       "norm_label": "checklist-items.js"
     },
     {
@@ -2115,7 +2115,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L3",
       "id": "functions_checklist_items_json_parserequestbody_requireadminpin_withclient",
-      "community": 16,
+      "community": 0,
       "norm_label": "{ json, parserequestbody, requireadminpin, withclient }"
     },
     {
@@ -2124,7 +2124,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L4",
       "id": "functions_checklist_items_deletechecklistitem_listchecklistitems_savechecklistitem",
-      "community": 16,
+      "community": 15,
       "norm_label": "{\n  deletechecklistitem,\n  listchecklistitems,\n  savechecklistitem,\n}"
     },
     {
@@ -2133,7 +2133,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L10",
       "id": "functions_checklist_items_getactor",
-      "community": 16,
+      "community": 15,
       "norm_label": "getactor()"
     },
     {
@@ -2142,7 +2142,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L36",
       "id": "functions_checklist_items_requestbody",
-      "community": 16,
+      "community": 15,
       "norm_label": "requestbody"
     },
     {
@@ -2151,7 +2151,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L37",
       "id": "functions_checklist_items_actor",
-      "community": 16,
+      "community": 15,
       "norm_label": "actor"
     },
     {
@@ -2160,7 +2160,7 @@
       "source_file": "netlify/functions/checklist-items.js",
       "source_location": "L49",
       "id": "functions_checklist_items_id",
-      "community": 16,
+      "community": 15,
       "norm_label": "id"
     },
     {
@@ -2169,7 +2169,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L1",
       "id": "netlify_functions_daily_production_report_js",
-      "community": 16,
+      "community": 0,
       "norm_label": "daily-production-report.js"
     },
     {
@@ -2178,7 +2178,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L3",
       "id": "functions_daily_production_report_checkratelimit_json_requirepostpurchaseaccess_withclient",
-      "community": 16,
+      "community": 0,
       "norm_label": "{\r\n  checkratelimit,\r\n  json,\r\n  requirepostpurchaseaccess,\r\n  withclient,\r\n}"
     },
     {
@@ -2187,7 +2187,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L9",
       "id": "functions_daily_production_report_builddailyproductionreport",
-      "community": 16,
+      "community": 0,
       "norm_label": "{\r\n  builddailyproductionreport,\r\n}"
     },
     {
@@ -2196,7 +2196,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L13",
       "id": "functions_daily_production_report_cleanapierror",
-      "community": 16,
+      "community": 0,
       "norm_label": "cleanapierror()"
     },
     {
@@ -2205,7 +2205,7 @@
       "source_file": "netlify/functions/delete-stock-movement.js",
       "source_location": "L1",
       "id": "netlify_functions_delete_stock_movement_js",
-      "community": 16,
+      "community": 0,
       "norm_label": "delete-stock-movement.js"
     },
     {
@@ -2214,7 +2214,7 @@
       "source_file": "netlify/functions/delete-stock-movement.js",
       "source_location": "L3",
       "id": "functions_delete_stock_movement_json_parserequestbody_requireadminpin_withclient",
-      "community": 16,
+      "community": 0,
       "norm_label": "{ json, parserequestbody, requireadminpin, withclient }"
     },
     {
@@ -2223,7 +2223,7 @@
       "source_file": "netlify/functions/delete-stock-movement.js",
       "source_location": "L17",
       "id": "functions_delete_stock_movement_requestbody",
-      "community": 16,
+      "community": 0,
       "norm_label": "requestbody"
     },
     {
@@ -2232,7 +2232,7 @@
       "source_file": "netlify/functions/delete-stock-movement.js",
       "source_location": "L18",
       "id": "functions_delete_stock_movement_id",
-      "community": 16,
+      "community": 0,
       "norm_label": "id"
     },
     {
@@ -2376,7 +2376,7 @@
       "source_file": "netlify/functions/postpurchase-orders.js",
       "source_location": "L1",
       "id": "netlify_functions_postpurchase_orders_js",
-      "community": 99,
+      "community": 0,
       "norm_label": "postpurchase-orders.js"
     },
     {
@@ -2385,7 +2385,7 @@
       "source_file": "netlify/functions/postpurchase-orders.js",
       "source_location": "L3",
       "id": "functions_postpurchase_orders_checkratelimit_getheader_json_parserequestbody_requireadminaccess_requirepostpurchaseaccess_withclient",
-      "community": 99,
+      "community": 0,
       "norm_label": "{\n  checkratelimit,\n  getheader,\n  json,\n  parserequestbody,\n  requireadminaccess,\n  requirepostpurchaseaccess,\n  withclient,\n}"
     },
     {
@@ -2394,7 +2394,7 @@
       "source_file": "netlify/functions/postpurchase-orders.js",
       "source_location": "L12",
       "id": "functions_postpurchase_orders_listprintordersreceived_syncpostpurchaseorders_updateprintorderlifecyclestatus",
-      "community": 99,
+      "community": 0,
       "norm_label": "{\n  listprintordersreceived,\n  syncpostpurchaseorders,\n  updateprintorderlifecyclestatus,\n}"
     },
     {
@@ -2403,7 +2403,7 @@
       "source_file": "netlify/functions/postpurchase-orders.js",
       "source_location": "L18",
       "id": "functions_postpurchase_orders_parselistoptions",
-      "community": 99,
+      "community": 0,
       "norm_label": "parselistoptions()"
     },
     {
@@ -2412,7 +2412,7 @@
       "source_file": "netlify/functions/postpurchase-orders.js",
       "source_location": "L26",
       "id": "functions_postpurchase_orders_parsesyncoptions",
-      "community": 99,
+      "community": 0,
       "norm_label": "parsesyncoptions()"
     },
     {
@@ -2421,7 +2421,7 @@
       "source_file": "netlify/functions/postpurchase-orders.js",
       "source_location": "L38",
       "id": "functions_postpurchase_orders_parseupdateoptions",
-      "community": 99,
+      "community": 0,
       "norm_label": "parseupdateoptions()"
     },
     {
@@ -3699,7 +3699,7 @@
       "source_file": "netlify/functions/_lib/checklist-reminders.js",
       "source_location": "L1",
       "id": "netlify_functions_lib_checklist_reminders_js",
-      "community": 96,
+      "community": 15,
       "norm_label": "checklist-reminders.js"
     },
     {
@@ -3708,7 +3708,7 @@
       "source_file": "netlify/functions/_lib/checklist-reminders.js",
       "source_location": "L3",
       "id": "lib_checklist_reminders_checklistdomain",
-      "community": 96,
+      "community": 15,
       "norm_label": "checklistdomain"
     },
     {
@@ -3717,7 +3717,7 @@
       "source_file": "netlify/functions/_lib/checklist-reminders.js",
       "source_location": "L4",
       "id": "lib_checklist_reminders_ensurechecklisttables_finalizechecklistoccurrence_listchecklistitems_reservechecklistoccurrence",
-      "community": 96,
+      "community": 15,
       "norm_label": "{\n  ensurechecklisttables,\n  finalizechecklistoccurrence,\n  listchecklistitems,\n  reservechecklistoccurrence,\n}"
     },
     {
@@ -3726,7 +3726,7 @@
       "source_file": "netlify/functions/_lib/checklist-reminders.js",
       "source_location": "L10",
       "id": "lib_checklist_reminders_sendpushtomatchingsubscriptions",
-      "community": 96,
+      "community": 15,
       "norm_label": "{ sendpushtomatchingsubscriptions }"
     },
     {
@@ -3735,7 +3735,7 @@
       "source_file": "netlify/functions/_lib/checklist-reminders.js",
       "source_location": "L12",
       "id": "lib_checklist_reminders_evaluatechecklistreminders",
-      "community": 96,
+      "community": 15,
       "norm_label": "evaluatechecklistreminders()"
     },
     {
@@ -3744,7 +3744,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L1",
       "id": "netlify_functions_lib_checklist_store_js",
-      "community": 96,
+      "community": 15,
       "norm_label": "checklist-store.js"
     },
     {
@@ -3753,7 +3753,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L3",
       "id": "lib_checklist_store_checklistdomain",
-      "community": 96,
+      "community": 15,
       "norm_label": "checklistdomain"
     },
     {
@@ -3762,7 +3762,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L6",
       "id": "lib_checklist_store_cleanoptionalstring",
-      "community": 96,
+      "community": 15,
       "norm_label": "cleanoptionalstring()"
     },
     {
@@ -3771,7 +3771,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L12",
       "id": "lib_checklist_store_mapchecklistrow",
-      "community": 96,
+      "community": 15,
       "norm_label": "mapchecklistrow()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L31",
       "id": "lib_checklist_store_ensurechecklisttables",
-      "community": 96,
+      "community": 15,
       "norm_label": "ensurechecklisttables()"
     },
     {
@@ -3789,7 +3789,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L123",
       "id": "lib_checklist_store_listchecklistitems",
-      "community": 96,
+      "community": 15,
       "norm_label": "listchecklistitems()"
     },
     {
@@ -3798,7 +3798,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L150",
       "id": "lib_checklist_store_savechecklistitem",
-      "community": 96,
+      "community": 15,
       "norm_label": "savechecklistitem()"
     },
     {
@@ -3807,7 +3807,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L281",
       "id": "lib_checklist_store_deletechecklistitem",
-      "community": 96,
+      "community": 15,
       "norm_label": "deletechecklistitem()"
     },
     {
@@ -3816,7 +3816,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L294",
       "id": "lib_checklist_store_reservechecklistoccurrence",
-      "community": 96,
+      "community": 15,
       "norm_label": "reservechecklistoccurrence()"
     },
     {
@@ -3825,7 +3825,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L346",
       "id": "lib_checklist_store_finalizechecklistoccurrence",
-      "community": 96,
+      "community": 15,
       "norm_label": "finalizechecklistoccurrence()"
     },
     {
@@ -3834,7 +3834,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L373",
       "id": "lib_checklist_store_completechecklistoccurrence",
-      "community": 96,
+      "community": 15,
       "norm_label": "completechecklistoccurrence()"
     },
     {
@@ -3843,7 +3843,7 @@
       "source_file": "netlify/functions/_lib/checklist-store.js",
       "source_location": "L428",
       "id": "lib_checklist_store_listchecklistcompletions",
-      "community": 96,
+      "community": 15,
       "norm_label": "listchecklistcompletions()"
     },
     {
@@ -4032,7 +4032,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L1",
       "id": "netlify_functions_lib_db_js",
-      "community": 92,
+      "community": 0,
       "norm_label": "db.js"
     },
     {
@@ -4041,7 +4041,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L3",
       "id": "netlify_functions_lib_db_js_lib_db_client",
-      "community": 92,
+      "community": 0,
       "norm_label": "{ client }"
     },
     {
@@ -4050,7 +4050,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L4",
       "id": "lib_db_crypto",
-      "community": 92,
+      "community": 0,
       "norm_label": "crypto"
     },
     {
@@ -4059,7 +4059,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L6",
       "id": "lib_db_json",
-      "community": 16,
+      "community": 0,
       "norm_label": "json()"
     },
     {
@@ -4068,7 +4068,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L18",
       "id": "lib_db_parserequestbody",
-      "community": 16,
+      "community": 0,
       "norm_label": "parserequestbody()"
     },
     {
@@ -4077,7 +4077,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L34",
       "id": "netlify_functions_lib_db_js_lib_db_getconnectionstring",
-      "community": 92,
+      "community": 0,
       "norm_label": "getconnectionstring()"
     },
     {
@@ -4086,7 +4086,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L44",
       "id": "lib_db_ratelimitbuckets",
-      "community": 92,
+      "community": 0,
       "norm_label": "ratelimitbuckets"
     },
     {
@@ -4095,7 +4095,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L46",
       "id": "lib_db_getadminapikey",
-      "community": 92,
+      "community": 0,
       "norm_label": "getadminapikey()"
     },
     {
@@ -4104,7 +4104,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L55",
       "id": "lib_db_getadminpin",
-      "community": 92,
+      "community": 0,
       "norm_label": "getadminpin()"
     },
     {
@@ -4113,7 +4113,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L64",
       "id": "lib_db_getpostpurchaseoperatorpin",
-      "community": 92,
+      "community": 0,
       "norm_label": "getpostpurchaseoperatorpin()"
     },
     {
@@ -4122,7 +4122,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L73",
       "id": "lib_db_getheader",
-      "community": 92,
+      "community": 0,
       "norm_label": "getheader()"
     },
     {
@@ -4131,7 +4131,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L84",
       "id": "lib_db_getrequestidentity",
-      "community": 92,
+      "community": 0,
       "norm_label": "getrequestidentity()"
     },
     {
@@ -4140,7 +4140,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L90",
       "id": "lib_db_checkratelimit",
-      "community": 92,
+      "community": 0,
       "norm_label": "checkratelimit()"
     },
     {
@@ -4149,7 +4149,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L113",
       "id": "lib_db_timingsafeequalstring",
-      "community": 92,
+      "community": 0,
       "norm_label": "timingsafeequalstring()"
     },
     {
@@ -4158,7 +4158,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L122",
       "id": "lib_db_createautherror",
-      "community": 92,
+      "community": 0,
       "norm_label": "createautherror()"
     },
     {
@@ -4167,7 +4167,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L128",
       "id": "lib_db_checkadminapikey",
-      "community": 92,
+      "community": 0,
       "norm_label": "checkadminapikey()"
     },
     {
@@ -4176,7 +4176,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L140",
       "id": "lib_db_checkadminpin",
-      "community": 92,
+      "community": 0,
       "norm_label": "checkadminpin()"
     },
     {
@@ -4185,7 +4185,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L152",
       "id": "lib_db_checkpostpurchaseoperatorpin",
-      "community": 92,
+      "community": 0,
       "norm_label": "checkpostpurchaseoperatorpin()"
     },
     {
@@ -4194,7 +4194,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L164",
       "id": "lib_db_requireadminapikey",
-      "community": 92,
+      "community": 0,
       "norm_label": "requireadminapikey()"
     },
     {
@@ -4203,7 +4203,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L172",
       "id": "lib_db_requireadminaccess",
-      "community": 92,
+      "community": 0,
       "norm_label": "requireadminaccess()"
     },
     {
@@ -4212,7 +4212,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L182",
       "id": "lib_db_requirepostpurchaseaccess",
-      "community": 92,
+      "community": 0,
       "norm_label": "requirepostpurchaseaccess()"
     },
     {
@@ -4221,7 +4221,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L195",
       "id": "lib_db_requireadminpin",
-      "community": 92,
+      "community": 0,
       "norm_label": "requireadminpin()"
     },
     {
@@ -4230,7 +4230,7 @@
       "source_file": "netlify/functions/_lib/db.js",
       "source_location": "L199",
       "id": "netlify_functions_lib_db_js_lib_db_withclient",
-      "community": 92,
+      "community": 0,
       "norm_label": "withclient()"
     },
     {
@@ -5166,7 +5166,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L1",
       "id": "netlify_functions_lib_push_delivery_js",
-      "community": 98,
+      "community": 15,
       "norm_label": "push-delivery.js"
     },
     {
@@ -5175,7 +5175,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L3",
       "id": "lib_push_delivery_webpush",
-      "community": 98,
+      "community": 15,
       "norm_label": "webpush"
     },
     {
@@ -5184,7 +5184,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L7",
       "id": "lib_push_delivery_isvalidvapidsubject",
-      "community": 98,
+      "community": 15,
       "norm_label": "isvalidvapidsubject()"
     },
     {
@@ -5193,7 +5193,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L11",
       "id": "lib_push_delivery_getstatuscode",
-      "community": 98,
+      "community": 15,
       "norm_label": "getstatuscode()"
     },
     {
@@ -5202,7 +5202,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L17",
       "id": "lib_push_delivery_normalizealerttypes",
-      "community": 98,
+      "community": 15,
       "norm_label": "normalizealerttypes()"
     },
     {
@@ -5211,7 +5211,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L40",
       "id": "lib_push_delivery_subscriptionmatchescategory",
-      "community": 98,
+      "community": 15,
       "norm_label": "subscriptionmatchescategory()"
     },
     {
@@ -5220,7 +5220,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L49",
       "id": "lib_push_delivery_ensurevapidconfigured",
-      "community": 98,
+      "community": 15,
       "norm_label": "ensurevapidconfigured()"
     },
     {
@@ -5229,7 +5229,7 @@
       "source_file": "netlify/functions/_lib/push-delivery.js",
       "source_location": "L76",
       "id": "lib_push_delivery_sendpushtomatchingsubscriptions",
-      "community": 98,
+      "community": 15,
       "norm_label": "sendpushtomatchingsubscriptions()"
     },
     {
@@ -7380,7 +7380,7 @@
       "source_file": "scripts/checklist-state.js",
       "source_location": "L30",
       "id": "scripts_checklist_state_isadmin",
-      "community": 39,
+      "community": 19,
       "norm_label": "isadmin()"
     },
     {
@@ -7659,7 +7659,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L4",
       "id": "scripts_core_utils_genid",
-      "community": 38,
+      "community": 39,
       "norm_label": "genid()"
     },
     {
@@ -7686,7 +7686,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L22",
       "id": "scripts_core_utils_fmtn",
-      "community": 38,
+      "community": 22,
       "norm_label": "fmtn()"
     },
     {
@@ -7749,7 +7749,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L73",
       "id": "scripts_core_utils_tolocaldt",
-      "community": 37,
+      "community": 39,
       "norm_label": "tolocaldt()"
     },
     {
@@ -7758,7 +7758,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L79",
       "id": "scripts_core_utils_toisofromdt",
-      "community": 38,
+      "community": 39,
       "norm_label": "toisofromdt()"
     },
     {
@@ -8845,7 +8845,7 @@
       "label": "initPostPurchaseUI()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L42",
+      "source_location": "L41",
       "id": "scripts_postpurchase_ui_initpostpurchaseui",
       "community": 14,
       "norm_label": "initpostpurchaseui()"
@@ -8854,7 +8854,7 @@
       "label": "cleanApiError()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L53",
+      "source_location": "L52",
       "id": "scripts_postpurchase_ui_cleanapierror",
       "community": 14,
       "norm_label": "cleanapierror()"
@@ -8863,7 +8863,7 @@
       "label": "updateMonthFilter()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L60",
+      "source_location": "L59",
       "id": "scripts_postpurchase_ui_updatemonthfilter",
       "community": 14,
       "norm_label": "updatemonthfilter()"
@@ -8872,7 +8872,7 @@
       "label": "updateFilterControls()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L70",
+      "source_location": "L69",
       "id": "scripts_postpurchase_ui_updatefiltercontrols",
       "community": 14,
       "norm_label": "updatefiltercontrols()"
@@ -8881,7 +8881,7 @@
       "label": "getQuickFilterLabel()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L98",
+      "source_location": "L97",
       "id": "scripts_postpurchase_ui_getquickfilterlabel",
       "community": 14,
       "norm_label": "getquickfilterlabel()"
@@ -8890,7 +8890,7 @@
       "label": "getReprintFilterLabel()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L110",
+      "source_location": "L109",
       "id": "scripts_postpurchase_ui_getreprintfilterlabel",
       "community": 14,
       "norm_label": "getreprintfilterlabel()"
@@ -8899,7 +8899,7 @@
       "label": "getActiveFilterLabel()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L122",
+      "source_location": "L121",
       "id": "scripts_postpurchase_ui_getactivefilterlabel",
       "community": 14,
       "norm_label": "getactivefilterlabel()"
@@ -8908,7 +8908,7 @@
       "label": "setReprintActionState()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L131",
+      "source_location": "L130",
       "id": "scripts_postpurchase_ui_setreprintactionstate",
       "community": 14,
       "norm_label": "setreprintactionstate()"
@@ -8917,7 +8917,7 @@
       "label": "clearReprintActionState()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L152",
+      "source_location": "L151",
       "id": "scripts_postpurchase_ui_clearreprintactionstate",
       "community": 14,
       "norm_label": "clearreprintactionstate()"
@@ -8926,7 +8926,7 @@
       "label": "markReprintHistoryDone()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L160",
+      "source_location": "L159",
       "id": "scripts_postpurchase_ui_markreprinthistorydone",
       "community": 14,
       "norm_label": "markreprinthistorydone()"
@@ -8935,7 +8935,7 @@
       "label": "adjustStatsAfterReprintResolve()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L176",
+      "source_location": "L175",
       "id": "scripts_postpurchase_ui_adjuststatsafterreprintresolve",
       "community": 14,
       "norm_label": "adjuststatsafterreprintresolve()"
@@ -8944,7 +8944,7 @@
       "label": "schedulePostPurchaseRefresh()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L187",
+      "source_location": "L186",
       "id": "scripts_postpurchase_ui_schedulepostpurchaserefresh",
       "community": 14,
       "norm_label": "schedulepostpurchaserefresh()"
@@ -8953,7 +8953,7 @@
       "label": "getOperatorName()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L195",
+      "source_location": "L194",
       "id": "scripts_postpurchase_ui_getoperatorname",
       "community": 14,
       "norm_label": "getoperatorname()"
@@ -8962,7 +8962,7 @@
       "label": "getRenderOptions()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L199",
+      "source_location": "L198",
       "id": "scripts_postpurchase_ui_getrenderoptions",
       "community": 14,
       "norm_label": "getrenderoptions()"
@@ -8971,43 +8971,16 @@
       "label": "getVisibleOrders()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L211",
+      "source_location": "L210",
       "id": "scripts_postpurchase_ui_getvisibleorders",
       "community": 14,
       "norm_label": "getvisibleorders()"
     },
     {
-      "label": "setPostPurchaseQuickFilter()",
-      "file_type": "code",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L215",
-      "id": "scripts_postpurchase_ui_setpostpurchasequickfilter",
-      "community": 14,
-      "norm_label": "setpostpurchasequickfilter()"
-    },
-    {
-      "label": "resetPostPurchaseFilters()",
-      "file_type": "code",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L227",
-      "id": "scripts_postpurchase_ui_resetpostpurchasefilters",
-      "community": 14,
-      "norm_label": "resetpostpurchasefilters()"
-    },
-    {
-      "label": "bindPostPurchaseControls()",
-      "file_type": "code",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L251",
-      "id": "scripts_postpurchase_ui_bindpostpurchasecontrols",
-      "community": 14,
-      "norm_label": "bindpostpurchasecontrols()"
-    },
-    {
       "label": "hasScopedStatsFilter()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L320",
+      "source_location": "L214",
       "id": "scripts_postpurchase_ui_hasscopedstatsfilter",
       "community": 14,
       "norm_label": "hasscopedstatsfilter()"
@@ -9016,7 +8989,7 @@
       "label": "buildOrderPipelineFilters()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L332",
+      "source_location": "L226",
       "id": "scripts_postpurchase_ui_buildorderpipelinefilters",
       "community": 14,
       "norm_label": "buildorderpipelinefilters()"
@@ -9025,7 +8998,7 @@
       "label": "getProcessedOrderId()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L344",
+      "source_location": "L238",
       "id": "scripts_postpurchase_ui_getprocessedorderid",
       "community": 14,
       "norm_label": "getprocessedorderid()"
@@ -9034,7 +9007,7 @@
       "label": "findOrderAndPrintFile()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L348",
+      "source_location": "L242",
       "id": "scripts_postpurchase_ui_findorderandprintfile",
       "community": 14,
       "norm_label": "findorderandprintfile()"
@@ -9043,7 +9016,7 @@
       "label": "storeReprintHistory()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L361",
+      "source_location": "L255",
       "id": "scripts_postpurchase_ui_storereprinthistory",
       "community": 14,
       "norm_label": "storereprinthistory()"
@@ -9052,7 +9025,7 @@
       "label": "loadVisibleReprintHistory()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L370",
+      "source_location": "L264",
       "id": "scripts_postpurchase_ui_loadvisiblereprinthistory",
       "community": 14,
       "norm_label": "loadvisiblereprinthistory()"
@@ -9061,7 +9034,7 @@
       "label": "createReprintRequest()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L392",
+      "source_location": "L286",
       "id": "scripts_postpurchase_ui_createreprintrequest",
       "community": 14,
       "norm_label": "createreprintrequest()"
@@ -9070,7 +9043,7 @@
       "label": "resolveReprintRequest()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L421",
+      "source_location": "L315",
       "id": "scripts_postpurchase_ui_resolvereprintrequest",
       "community": 14,
       "norm_label": "resolvereprintrequest()"
@@ -9079,7 +9052,7 @@
       "label": "deleteReprintRequest()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L456",
+      "source_location": "L350",
       "id": "scripts_postpurchase_ui_deletereprintrequest",
       "community": 14,
       "norm_label": "deletereprintrequest()"
@@ -9088,7 +9061,7 @@
       "label": "loadOrderDetail()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L483",
+      "source_location": "L377",
       "id": "scripts_postpurchase_ui_loadorderdetail",
       "community": 14,
       "norm_label": "loadorderdetail()"
@@ -9097,7 +9070,7 @@
       "label": "loadPostPurchaseOrders()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L511",
+      "source_location": "L405",
       "id": "scripts_postpurchase_ui_loadpostpurchaseorders",
       "community": 14,
       "norm_label": "loadpostpurchaseorders()"
@@ -9106,7 +9079,7 @@
       "label": "renderPostPurchaseOrders()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L570",
+      "source_location": "L464",
       "id": "scripts_postpurchase_ui_renderpostpurchaseorders",
       "community": 14,
       "norm_label": "renderpostpurchaseorders()"
@@ -9115,7 +9088,7 @@
       "label": "bindProcessedOrderActions()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L587",
+      "source_location": "L481",
       "id": "scripts_postpurchase_ui_bindprocessedorderactions",
       "community": 14,
       "norm_label": "bindprocessedorderactions()"
@@ -9124,7 +9097,7 @@
       "label": "syncPostPurchaseOrdersManual()",
       "file_type": "code",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L662",
+      "source_location": "L556",
       "id": "scripts_postpurchase_ui_syncpostpurchaseordersmanual",
       "community": 14,
       "norm_label": "syncpostpurchaseordersmanual()"
@@ -9873,7 +9846,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L1",
       "id": "scripts_stock_ui_js",
-      "community": 19,
+      "community": 92,
       "norm_label": "stock-ui.js"
     },
     {
@@ -9882,7 +9855,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L7",
       "id": "scripts_stock_ui_statuslabel",
-      "community": 19,
+      "community": 92,
       "norm_label": "statuslabel()"
     },
     {
@@ -9891,7 +9864,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L11",
       "id": "scripts_stock_ui_movementlabel",
-      "community": 19,
+      "community": 92,
       "norm_label": "movementlabel()"
     },
     {
@@ -9909,7 +9882,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L92",
       "id": "scripts_stock_ui_buildmovementrows",
-      "community": 19,
+      "community": 92,
       "norm_label": "buildmovementrows()"
     },
     {
@@ -9918,7 +9891,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L121",
       "id": "scripts_stock_ui_buildstockhistorytable",
-      "community": 19,
+      "community": 92,
       "norm_label": "buildstockhistorytable()"
     },
     {
@@ -9927,7 +9900,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L158",
       "id": "scripts_stock_ui_renderalerts",
-      "community": 19,
+      "community": 92,
       "norm_label": "renderalerts()"
     },
     {
@@ -9990,7 +9963,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L1",
       "id": "scripts_sync_processed_print_orders_js",
-      "community": 0,
+      "community": 16,
       "norm_label": "sync-processed-print-orders.js"
     },
     {
@@ -9999,7 +9972,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L4",
       "id": "scripts_sync_processed_print_orders_crypto",
-      "community": 0,
+      "community": 16,
       "norm_label": "crypto"
     },
     {
@@ -10008,7 +9981,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L5",
       "id": "scripts_sync_processed_print_orders_fs",
-      "community": 0,
+      "community": 16,
       "norm_label": "fs"
     },
     {
@@ -10017,7 +9990,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L6",
       "id": "scripts_sync_processed_print_orders_path",
-      "community": 0,
+      "community": 16,
       "norm_label": "path"
     },
     {
@@ -10026,7 +9999,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L7",
       "id": "scripts_sync_processed_print_orders_withclient",
-      "community": 0,
+      "community": 16,
       "norm_label": "{ withclient }"
     },
     {
@@ -10035,7 +10008,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L8",
       "id": "scripts_sync_processed_print_orders_listknownprocessedxmlhashes_upsertprocessedprintorder_ensureprocessedprintordertables",
-      "community": 0,
+      "community": 16,
       "norm_label": "{\r\n  listknownprocessedxmlhashes,\r\n  upsertprocessedprintorder,\r\n  ensureprocessedprintordertables,\r\n}"
     },
     {
@@ -10044,7 +10017,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L16",
       "id": "scripts_sync_processed_print_orders_parseargs",
-      "community": 0,
+      "community": 16,
       "norm_label": "parseargs()"
     },
     {
@@ -10053,7 +10026,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L27",
       "id": "scripts_sync_processed_print_orders_cleanstring",
-      "community": 0,
+      "community": 16,
       "norm_label": "cleanstring()"
     },
     {
@@ -10062,7 +10035,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L32",
       "id": "scripts_sync_processed_print_orders_sha256",
-      "community": 0,
+      "community": 16,
       "norm_label": "sha256()"
     },
     {
@@ -10071,7 +10044,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L36",
       "id": "scripts_sync_processed_print_orders_decodexml",
-      "community": 0,
+      "community": 16,
       "norm_label": "decodexml()"
     },
     {
@@ -10080,7 +10053,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L45",
       "id": "scripts_sync_processed_print_orders_gettag",
-      "community": 0,
+      "community": 16,
       "norm_label": "gettag()"
     },
     {
@@ -10089,7 +10062,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L50",
       "id": "scripts_sync_processed_print_orders_getblocks",
-      "community": 0,
+      "community": 16,
       "norm_label": "getblocks()"
     },
     {
@@ -10098,7 +10071,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L60",
       "id": "scripts_sync_processed_print_orders_getvariable",
-      "community": 0,
+      "community": 16,
       "norm_label": "getvariable()"
     },
     {
@@ -10107,7 +10080,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L69",
       "id": "scripts_sync_processed_print_orders_normalizeordertype",
-      "community": 0,
+      "community": 16,
       "norm_label": "normalizeordertype()"
     },
     {
@@ -10116,7 +10089,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L77",
       "id": "scripts_sync_processed_print_orders_parseprocessedprintorderxml",
-      "community": 0,
+      "community": 16,
       "norm_label": "parseprocessedprintorderxml()"
     },
     {
@@ -10125,7 +10098,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L105",
       "id": "scripts_sync_processed_print_orders_formatmonth",
-      "community": 0,
+      "community": 16,
       "norm_label": "formatmonth()"
     },
     {
@@ -10134,7 +10107,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L109",
       "id": "scripts_sync_processed_print_orders_topositiveinteger",
-      "community": 0,
+      "community": 16,
       "norm_label": "topositiveinteger()"
     },
     {
@@ -10143,7 +10116,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L114",
       "id": "scripts_sync_processed_print_orders_gettimeoutms",
-      "community": 0,
+      "community": 16,
       "norm_label": "gettimeoutms()"
     },
     {
@@ -10152,7 +10125,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L118",
       "id": "scripts_sync_processed_print_orders_withtimeout",
-      "community": 0,
+      "community": 16,
       "norm_label": "withtimeout()"
     },
     {
@@ -10161,7 +10134,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L132",
       "id": "scripts_sync_processed_print_orders_checkrootexists",
-      "community": 0,
+      "community": 16,
       "norm_label": "checkrootexists()"
     },
     {
@@ -10170,7 +10143,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L144",
       "id": "scripts_sync_processed_print_orders_listmonthfolders",
-      "community": 0,
+      "community": 16,
       "norm_label": "listmonthfolders()"
     },
     {
@@ -10179,7 +10152,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L177",
       "id": "scripts_sync_processed_print_orders_listxmlfiles",
-      "community": 0,
+      "community": 16,
       "norm_label": "listxmlfiles()"
     },
     {
@@ -10188,7 +10161,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L224",
       "id": "scripts_sync_processed_print_orders_listknownhashesforfiles",
-      "community": 0,
+      "community": 16,
       "norm_label": "listknownhashesforfiles()"
     },
     {
@@ -10197,7 +10170,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L236",
       "id": "scripts_sync_processed_print_orders_syncprocessedprintorders",
-      "community": 0,
+      "community": 16,
       "norm_label": "syncprocessedprintorders()"
     },
     {
@@ -10206,7 +10179,7 @@
       "source_file": "scripts/sync-processed-print-orders.js",
       "source_location": "L331",
       "id": "scripts_sync_processed_print_orders_main",
-      "community": 0,
+      "community": 16,
       "norm_label": "main()"
     },
     {
@@ -13409,7 +13382,7 @@
       "file_type": "code",
       "source_file": "app.js",
       "source_location": "L887",
-      "community": 38,
+      "community": 39,
       "norm_label": "savecoentry()",
       "id": "print_guard_dgfc_app_savecoentry"
     },
@@ -14175,9 +14148,9 @@
       "source_file": "app.js",
       "source_location": "L608",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "app_js",
-      "target": "print_guard_dgfc_app_requirestocklog"
+      "target": "print_guard_dgfc_app_requirestocklog",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15478,9 +15451,9 @@
       "source_file": "app.js",
       "source_location": "L618",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "print_guard_dgfc_app_renderstocklog",
-      "target": "print_guard_dgfc_app_requirestocklog"
+      "target": "print_guard_dgfc_app_requirestocklog",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -15489,9 +15462,9 @@
       "source_file": "app.js",
       "source_location": "L622",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "print_guard_dgfc_app_exportcsvstocklog",
-      "target": "print_guard_dgfc_app_requirestocklog"
+      "target": "print_guard_dgfc_app_requirestocklog",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -33330,36 +33303,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L215",
-      "weight": 1.0,
-      "source": "scripts_postpurchase_ui_js",
-      "target": "scripts_postpurchase_ui_setpostpurchasequickfilter",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L227",
-      "weight": 1.0,
-      "source": "scripts_postpurchase_ui_js",
-      "target": "scripts_postpurchase_ui_resetpostpurchasefilters",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L251",
-      "weight": 1.0,
-      "source": "scripts_postpurchase_ui_js",
-      "target": "scripts_postpurchase_ui_bindpostpurchasecontrols",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/postpurchase-ui.js",
       "source_location": "L98",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -33780,28 +33723,6 @@
       "confidence_score": 1.0,
       "source": "scripts_postpurchase_ui_renderpostpurchaseorders",
       "target": "scripts_postpurchase_ui_getvisibleorders"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L224",
-      "weight": 1.0,
-      "source": "scripts_postpurchase_ui_setpostpurchasequickfilter",
-      "target": "scripts_postpurchase_ui_loadpostpurchaseorders",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/postpurchase-ui.js",
-      "source_location": "L248",
-      "weight": 1.0,
-      "source": "scripts_postpurchase_ui_resetpostpurchasefilters",
-      "target": "scripts_postpurchase_ui_loadpostpurchaseorders",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -34989,9 +34910,9 @@
       "source_file": "scripts/stock-log.js",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_stock_log_js",
-      "target": "scripts_stock_log_createstocklog"
+      "target": "scripts_stock_log_createstocklog",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -40612,5 +40533,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "f485e1a8d8f6f8bf78922dab184b6b1b1df66f19"
+  "built_at_commit": "faacb807fcce1e123f47dcc5196d1a48b0b52e2e"
 }

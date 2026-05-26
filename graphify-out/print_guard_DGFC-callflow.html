@@ -60,7 +60,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 <div class="container">
 
 <h1>print_guard_DGFC — Complete Call Flow &amp; Architecture Documentation</h1>
-<p class="subtitle">Generated from graphify knowledge graph: 1510 nodes, 2594 edges, 96 communities. Commit: faacb80</p>
+<p class="subtitle">Generated from graphify knowledge graph: 1513 nodes, 2599 edges, 100 communities. Commit: f485e1a</p>
 
 <div class="nav">
     <a href="#overview">Architecture Overview</a>
@@ -76,8 +76,8 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
     <a href="#community-6">Community 6</a>
     <a href="#community-11">Community 11</a>
     <a href="#community-7">Community 7</a>
-    <a href="#community-8">Community 8</a>
     <a href="#community-14">Community 14</a>
+    <a href="#community-8">Community 8</a>
     <a href="#other">Other</a>
 </div>
 
@@ -88,17 +88,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    BUILD_GRAPH_321CBB04("Graph Build<br/><small>347 nodes</small>")
+    BUILD_GRAPH_321CBB04("Graph Build<br/><small>253 nodes</small>")
     class BUILD_GRAPH_321CBB04 module;
-    ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>78 nodes</small>")
+    ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>137 nodes</small>")
     class ANALYSIS_CLUSTERING_C79796DA module;
-    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>92 nodes</small>")
+    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>106 nodes</small>")
     class OUTPUTS_DOCS_ED82387C module;
     CLI_SKILLS_9964CBB8("CLI &amp; Skill Installers<br/><small>2 nodes</small>")
     class CLI_SKILLS_9964CBB8 module;
-    INGEST_CACHE_UPDATE_FF457338("Ingestion &amp; Updates<br/><small>77 nodes</small>")
+    INGEST_CACHE_UPDATE_FF457338("Ingestion &amp; Updates<br/><small>84 nodes</small>")
     class INGEST_CACHE_UPDATE_FF457338 module;
-    SERVE_API_35EC8E86("Serving API<br/><small>204 nodes</small>")
+    SERVE_API_35EC8E86("Serving API<br/><small>161 nodes</small>")
     class SERVE_API_35EC8E86 module;
     TESTS_FIXTURES_B84B1DCC("Tests &amp; Fixtures<br/><small>24 nodes</small>")
     class TESTS_FIXTURES_B84B1DCC module;
@@ -112,24 +112,24 @@ flowchart LR
     class COMMUNITY_11_DE018FC2 module;
     COMMUNITY_7_989501FC("Community 7<br/><small>38 nodes</small>")
     class COMMUNITY_7_989501FC module;
+    COMMUNITY_14_21BC55C3("Community 14<br/><small>35 nodes</small>")
+    class COMMUNITY_14_21BC55C3 module;
     COMMUNITY_8_9FC4FAC0("Community 8<br/><small>35 nodes</small>")
     class COMMUNITY_8_9FC4FAC0 module;
-    COMMUNITY_14_21BC55C3("Community 14<br/><small>32 nodes</small>")
-    class COMMUNITY_14_21BC55C3 module;
-    OTHER_D0941E68("Other<br/><small>412 nodes</small>")
+    OTHER_D0941E68("Other<br/><small>469 nodes</small>")
     class OTHER_D0941E68 module;
-    COMMUNITY_11_DE018FC2 -->|contains x37| OTHER_D0941E68
-    SERVE_API_35EC8E86 -->|imports x16| BUILD_GRAPH_321CBB04
-    BUILD_GRAPH_321CBB04 -->|imports x7| SERVE_API_35EC8E86
-    BUILD_GRAPH_321CBB04 -->|imports x5| COMMUNITY_7_989501FC
+    COMMUNITY_11_DE018FC2 -->|contains x36| OTHER_D0941E68
+    BUILD_GRAPH_321CBB04 -->|imports x15| OTHER_D0941E68
+    OTHER_D0941E68 -->|imports x7| ANALYSIS_CLUSTERING_C79796DA
+    OTHER_D0941E68 -->|imports x6| BUILD_GRAPH_321CBB04
+    COMMUNITY_11_DE018FC2 -->|contains x5| INGEST_CACHE_UPDATE_FF457338
+    ANALYSIS_CLUSTERING_C79796DA -->|imports x5| OTHER_D0941E68
+    OTHER_D0941E68 -->|imports x5| SERVE_API_35EC8E86
     COMMUNITY_6_7D637A07 -->|calls x5| COMMUNITY_7_989501FC
     COMMUNITY_11_DE018FC2 -->|contains x4| OUTPUTS_DOCS_ED82387C
-    COMMUNITY_11_DE018FC2 -->|contains x4| INGEST_CACHE_UPDATE_FF457338
-    BUILD_GRAPH_321CBB04 -->|contains x3| OUTPUTS_DOCS_ED82387C
-    COMMUNITY_6_7D637A07 -->|calls x3| SERVE_API_35EC8E86
-    COMMUNITY_2_8C8DF7B9 -->|calls x3| SERVE_API_35EC8E86
-    OTHER_D0941E68 -->|calls x2| COMMUNITY_11_DE018FC2
-    OTHER_D0941E68 -->|calls x2| INGEST_CACHE_UPDATE_FF457338
+    OTHER_D0941E68 -->|imports x4| COMMUNITY_7_989501FC
+    SERVE_API_35EC8E86 -->|imports x4| ANALYSIS_CLUSTERING_C79796DA
+    SERVE_API_35EC8E86 -->|imports x3| OTHER_D0941E68
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -146,19 +146,19 @@ flowchart LR
     <h4>Architecture Layers</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
-      <tr><td>Graph Build</td><td>347</td><td><code>0, 4, 16, 60, 68, 30, 75, 26, 27, 28, 47, 53, 59, 65, 66, 86, 89, 90</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>78</td><td><code>5, 9, 88</code></td></tr><tr><td>Outputs &amp; Docs</td><td>92</td><td><code>3, 17, 33, 54, 64</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>2</td><td><code>77, 80</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>77</td><td><code>18, 29, 36, 37, 61</code></td></tr><tr><td>Serving API</td><td>204</td><td><code>1, 15, 24, 12</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>24</td><td><code>25, 91</code></td></tr><tr><td>Community 2</td><td>52</td><td><code>2</code></td></tr><tr><td>Community 10</td><td>40</td><td><code>10</code></td></tr><tr><td>Community 6</td><td>39</td><td><code>6</code></td></tr><tr><td>Community 11</td><td>38</td><td><code>11</code></td></tr><tr><td>Community 7</td><td>38</td><td><code>7</code></td></tr><tr><td>Community 8</td><td>35</td><td><code>8</code></td></tr><tr><td>Community 14</td><td>32</td><td><code>14</code></td></tr><tr><td>Other</td><td>412</td><td><code>13, 19, 20, 22, 39, 21, 23, 48, 56, 31, 32, 43, 35, 40, 38, 41, 42, 44, 45, 46, 34, 49, 50, 51, 52, 82, 55, 57, 58, 83, 92, 62, 63, 84, 85, 67, 93, 69, 70, 71, 72, 73, 74, 87, 94, 95, 76, 78, 79, 81</code></td></tr>
+      <tr><td>Graph Build</td><td>253</td><td><code>4, 60, 68, 30, 16, 75, 26, 27, 28, 47, 53, 59, 65, 66, 86, 89, 90</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>137</td><td><code>0, 5, 9, 88</code></td></tr><tr><td>Outputs &amp; Docs</td><td>106</td><td><code>3, 17, 33, 54, 64</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>2</td><td><code>77, 80</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>84</td><td><code>18, 37, 29, 36, 61</code></td></tr><tr><td>Serving API</td><td>161</td><td><code>1, 24, 12, 15</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>24</td><td><code>25, 91</code></td></tr><tr><td>Community 2</td><td>52</td><td><code>2</code></td></tr><tr><td>Community 10</td><td>40</td><td><code>10</code></td></tr><tr><td>Community 6</td><td>39</td><td><code>6</code></td></tr><tr><td>Community 11</td><td>38</td><td><code>11</code></td></tr><tr><td>Community 7</td><td>38</td><td><code>7</code></td></tr><tr><td>Community 14</td><td>35</td><td><code>14</code></td></tr><tr><td>Community 8</td><td>35</td><td><code>8</code></td></tr><tr><td>Other</td><td>469</td><td><code>13, 92, 19, 20, 22, 21, 23, 38, 96, 48, 39, 56, 31, 32, 97, 35, 40, 43, 41, 42, 44, 45, 46, 34, 49, 50, 51, 52, 82, 98, 55, 57, 58, 83, 99, 62, 63, 84, 85, 67, 93, 69, 70, 71, 72, 73, 74, 87, 94, 95, 76, 78, 79, 81</code></td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Core Flow</h4>
-    <div class="arrow-chain">CLI &amp; Skill Installers -&gt; Graph Build -&gt; Serving API -&gt; Community 2 -&gt; Analysis &amp; Clustering -&gt; Outputs &amp; Docs -&gt; Other</div>
+    <div class="arrow-chain">CLI &amp; Skill Installers -&gt; Graph Build -&gt; Other -&gt; Analysis &amp; Clustering -&gt; Serving API -&gt; Community 7 -&gt; Outputs &amp; Docs</div>
   </div>
 </div>
 <div class="grid">
   <div class="card">
     <h4>Graph Report Highlights</h4>
     <ul>
-      <li>1510 nodes · 2594 edges · 96 communities (87 shown, 9 thin omitted)</li>
+      <li>1513 nodes · 2599 edges · 100 communities (90 shown, 10 thin omitted)</li>
       <li>Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 88 edges (avg confidence: 0.8)</li>
       <li>Token cost: 0 input · 0 output</li>
       <li>1. `el()` - 26 edges</li>
@@ -170,68 +170,68 @@ flowchart LR
 <hr>
 <!-- ====== 2. Graph Build ====== -->
 <h2 id="build-graph">2. Graph Build</h2>
-<p>Graph Build groups implementation around server, netlify, colorado, upsert, mostly in .obsidian/core-plugins.json, .obsidian/workspace.json, script_server/colorado-upsert/upsert-colorado-json.js. This section covers 347 nodes and 525 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Graph Build groups implementation around server, colorado, upsert, script, mostly in .obsidian/core-plugins.json, .obsidian/workspace.json, script_server/colorado-upsert/upsert-colorado-json.js. This section covers 253 nodes and 283 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Graph Build (347 nodes, 525 edges)
-    subgraph build_graph_functions_lib_db_js_e6141623["functions/_lib/db.js"]
-        netlify_functions_lib_db_js_lib_db_getconnection_1d407cff("getConnectionString()<br/><small>functions/_lib/db.js</small>")
-        netlify_functions_lib_db_js_lib_db_withclient_871d2a41("withClient()<br/><small>functions/_lib/db.js</small>")
-        lib_db_getadminapikey_ae23a8ec("getAdminApiKey()<br/><small>functions/_lib/db.js</small>")
-        lib_db_checkadminapikey_5370f484("checkAdminApiKey()<br/><small>functions/_lib/db.js</small>")
-        lib_db_getadminpin_824cba51("getAdminPin()<br/><small>functions/_lib/db.js</small>")
-        lib_db_checkadminpin_cbcd7466("checkAdminPin()<br/><small>functions/_lib/db.js</small>")
-        lib_db_getpostpurchaseoperatorpin_94366347("getPostPurchaseOperatorPin()<br/><small>functions/_lib/db.js</small>")
-        lib_db_checkpostpurchaseoperatorpin_b600d2c1("checkPostPurchaseOperatorPin()<br/><small>functions/_lib/db.js</small>")
-        lib_db_getheader_4c1a2d13("getHeader()<br/><small>functions/_lib/db.js</small>")
-        lib_db_getrequestidentity_3bcf7ac3("getRequestIdentity()<br/><small>functions/_lib/db.js</small>")
-        lib_db_checkratelimit_f646ff12("checkRateLimit()<br/><small>functions/_lib/db.js</small>")
-        lib_db_timingsafeequalstring_7a0fbe98("timingSafeEqualString()<br/><small>functions/_lib/db.js</small>")
+    %% Section: Graph Build (253 nodes, 283 edges)
+    subgraph build_graph_scripts_audit_db_schema_js_a8941609["scripts/audit-db-schema.js"]
+        scripts_audit_db_schema_fail_ea52cfc3("fail()<br/><small>scripts/audit-db-schema.js</small>")
+        scripts_audit_db_schema_main_9af09baa("main()<br/><small>scripts/audit-db-schema.js</small>")
+        scripts_audit_db_schema_markdowntable_aebd28f0("markdownTable()<br/><small>scripts/audit-db-schema.js</small>")
+        scripts_audit_db_schema_buildmarkdown_d5fead59("buildMarkdown()<br/><small>scripts/audit-db-schema.js</small>")
+        scripts_audit_db_schema_groupprimarykeys_c2c230db("groupPrimaryKeys()<br/><small>scripts/audit-db-schema.js</small>")
+        scripts_audit_db_schema_printsummary_e3ef075d("printSummary()<br/><small>scripts/audit-db-schema.js</small>")
     end
-    subgraph build_graph_functions_lib_processed_print_orders_d31dd8fd["functions/_lib/processed-print-orders.js"]
-        lib_processed_print_orders_ensureprocessedprinto_c4351f3e("ensureProcessedPrintOrderTables()<br/><small>functions/_lib/processed-print-orders.js</small>")
-        lib_processed_print_orders_cleanstring_5c73f69d("cleanString()<br/><small>functions/_lib/processed-print-orders.js</small>")
+    subgraph build_graph_SERVER_BACKEND_script_server_Parse_C_9d62407f["SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1"]
+        script_server_parse_coloradoacl_server_to_nullab_5fb0912a("To-NullableInt()<br/><small>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small>")
+        script_server_parse_coloradoacl_server_to_nullab_eb671c58("To-NullableDurationSeconds()<br/><small>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small>")
+        script_server_parse_coloradoacl_server_new_acljo_25e207ef("New-AclJobRecord()<br/><small>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small>")
+        script_server_parse_coloradoacl_server_to_boolfr_22b35c04("To-BoolFromResult()<br/><small>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small>")
+        script_server_parse_coloradoacl_server_build_dat_12eb3bd8("Build-DateTime()<br/><small>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small>")
+    end
+    subgraph build_graph_script_server_colorado_upsert_upsert_81e0add2["script_server/colorado-upsert/upsert-colorado-json.js"]
+        colorado_upsert_upsert_colorado_json_chunkarray_051076fd("chunkArray()<br/><small>script_server/colorado-upsert/upsert-colorado-json.js</small>")
+        colorado_upsert_upsert_colorado_json_log_a59c8541("log()<br/><small>script_server/colorado-upsert/upsert-colorado-json.js</small>")
+        colorado_upsert_upsert_colorado_json_tonullabled_da05878d("toNullableDate()<br/><small>script_server/colorado-upsert/upsert-colorado-json.js</small>")
+        colorado_upsert_upsert_colorado_json_tonullablet_b4e6f388("toNullableTimestamp()<br/><small>script_server/colorado-upsert/upsert-colorado-json.js</small>")
+        colorado_upsert_upsert_colorado_json_tonullablei_f533c0ec("toNullableInt()<br/><small>script_server/colorado-upsert/upsert-colorado-json.js</small>")
     end
     netlify_functions_checklist_evaluate_js_33df5dfa("checklist-evaluate.js")
-    netlify_functions_postpurchase_orders_js_66de0aec("postpurchase-orders.js")
-    netlify_functions_processed_print_orders_js_8d1cdb4b("processed-print-orders.js")
-    scripts_sync_processed_print_orders_withtimeout_8d6cdc78("withTimeout()<br/><small>scripts/sync-processed-print-orders.js</small>")
-    netlify_functions_lib_db_js_lib_db_getconnection_1d407cff -->|calls| netlify_functions_lib_db_js_lib_db_withclient_871d2a41
-    lib_db_getadminapikey_ae23a8ec -->|calls| lib_db_checkadminapikey_5370f484
-    lib_db_getadminpin_824cba51 -->|calls| lib_db_checkadminpin_cbcd7466
-    lib_db_getpostpurchaseoperatorpin_94366347 -->|calls| lib_db_checkpostpurchaseoperatorpin_b600d2c1
-    lib_db_getheader_4c1a2d13 -->|calls| lib_db_getrequestidentity_3bcf7ac3
-    lib_db_getheader_4c1a2d13 -->|calls| lib_db_checkadminapikey_5370f484
-    lib_db_getheader_4c1a2d13 -->|calls| lib_db_checkadminpin_cbcd7466
-    lib_db_getheader_4c1a2d13 -->|calls| lib_db_checkpostpurchaseoperatorpin_b600d2c1
-    lib_db_getrequestidentity_3bcf7ac3 -->|calls| lib_db_checkratelimit_f646ff12
-    lib_db_timingsafeequalstring_7a0fbe98 -->|calls| lib_db_checkadminapikey_5370f484
-    lib_db_timingsafeequalstring_7a0fbe98 -->|calls| lib_db_checkadminpin_cbcd7466
-    lib_db_timingsafeequalstring_7a0fbe98 -->|calls| lib_db_checkpostpurchaseoperatorpin_b600d2c1
-    netlify_functions_postpurchase_orders_js_66de0aec -->|imports| lib_db_checkratelimit_f646ff12
-    netlify_functions_postpurchase_orders_js_66de0aec -->|imports| lib_db_getheader_4c1a2d13
-    netlify_functions_processed_print_orders_js_8d1cdb4b -->|imports| lib_db_checkratelimit_f646ff12
-    %% Omitted for readability: 329 nodes, 0 edges
-    class netlify_functions_lib_db_js_lib_db_getconnection_1d407cff function;
-    class netlify_functions_lib_db_js_lib_db_withclient_871d2a41 entry;
-    class lib_db_getadminapikey_ae23a8ec api;
-    class lib_db_checkadminapikey_5370f484 api;
-    class lib_db_getadminpin_824cba51 function;
-    class lib_db_checkadminpin_cbcd7466 function;
-    class lib_db_getpostpurchaseoperatorpin_94366347 function;
-    class lib_db_checkpostpurchaseoperatorpin_b600d2c1 function;
-    class lib_db_getheader_4c1a2d13 function;
-    class lib_db_getrequestidentity_3bcf7ac3 function;
-    class lib_db_checkratelimit_f646ff12 function;
-    class lib_db_timingsafeequalstring_7a0fbe98 function;
-    class lib_processed_print_orders_ensureprocessedprinto_c4351f3e async;
-    class lib_processed_print_orders_cleanstring_5c73f69d function;
+    netlify_functions_checklist_items_js_5da24077("checklist-items.js")
+    scripts_audit_db_schema_fail_ea52cfc3 -->|calls| scripts_audit_db_schema_main_9af09baa
+    scripts_audit_db_schema_markdowntable_aebd28f0 -->|calls| scripts_audit_db_schema_buildmarkdown_d5fead59
+    scripts_audit_db_schema_groupprimarykeys_c2c230db -->|calls| scripts_audit_db_schema_buildmarkdown_d5fead59
+    scripts_audit_db_schema_groupprimarykeys_c2c230db -->|calls| scripts_audit_db_schema_printsummary_e3ef075d
+    scripts_audit_db_schema_buildmarkdown_d5fead59 -->|calls| scripts_audit_db_schema_main_9af09baa
+    scripts_audit_db_schema_printsummary_e3ef075d -->|calls| scripts_audit_db_schema_main_9af09baa
+    script_server_parse_coloradoacl_server_to_nullab_5fb0912a -->|calls| script_server_parse_coloradoacl_server_to_nullab_eb671c58
+    script_server_parse_coloradoacl_server_to_nullab_5fb0912a -->|calls| script_server_parse_coloradoacl_server_new_acljo_25e207ef
+    script_server_parse_coloradoacl_server_to_nullab_eb671c58 -->|calls| script_server_parse_coloradoacl_server_new_acljo_25e207ef
+    script_server_parse_coloradoacl_server_to_nullab_eb671c58 -->|calls| colorado_upsert_upsert_colorado_json_tonullablei_f533c0ec
+    script_server_parse_coloradoacl_server_to_boolfr_22b35c04 -->|calls| script_server_parse_coloradoacl_server_new_acljo_25e207ef
+    script_server_parse_coloradoacl_server_build_dat_12eb3bd8 -->|calls| script_server_parse_coloradoacl_server_new_acljo_25e207ef
+    script_server_parse_coloradoacl_server_new_acljo_25e207ef -->|calls| colorado_upsert_upsert_colorado_json_tonullablei_f533c0ec
+    %% Omitted for readability: 235 nodes, 0 edges
+    class scripts_audit_db_schema_fail_ea52cfc3 function;
+    class scripts_audit_db_schema_main_9af09baa function;
+    class scripts_audit_db_schema_markdowntable_aebd28f0 function;
+    class scripts_audit_db_schema_buildmarkdown_d5fead59 function;
+    class scripts_audit_db_schema_groupprimarykeys_c2c230db function;
+    class scripts_audit_db_schema_printsummary_e3ef075d function;
+    class script_server_parse_coloradoacl_server_to_nullab_5fb0912a function;
+    class script_server_parse_coloradoacl_server_to_nullab_eb671c58 function;
+    class script_server_parse_coloradoacl_server_new_acljo_25e207ef function;
+    class script_server_parse_coloradoacl_server_to_boolfr_22b35c04 function;
+    class script_server_parse_coloradoacl_server_build_dat_12eb3bd8 function;
+    class colorado_upsert_upsert_colorado_json_chunkarray_051076fd function;
+    class colorado_upsert_upsert_colorado_json_log_a59c8541 function;
+    class colorado_upsert_upsert_colorado_json_tonullabled_da05878d function;
+    class colorado_upsert_upsert_colorado_json_tonullablet_b4e6f388 function;
+    class colorado_upsert_upsert_colorado_json_tonullablei_f533c0ec function;
     class netlify_functions_checklist_evaluate_js_33df5dfa module;
-    class netlify_functions_postpurchase_orders_js_66de0aec module;
-    class netlify_functions_processed_print_orders_js_8d1cdb4b async;
-    class scripts_sync_processed_print_orders_withtimeout_8d6cdc78 function;
+    class netlify_functions_checklist_items_js_5da24077 module;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -255,309 +255,243 @@ flowchart LR
 </tr>
 <tr>
   <td>1</td>
-  <td><code>checklist-evaluate.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
+  <td><code>Parse-ColoradoAcl_server.ps1</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-class">Class</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>json()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>parseRequestBody()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br>+1 more</td>
-  <td>checklist-evaluate.js node in netlify/functions/checklist-evaluate.js.</td>
+  <td>No direct outbound edge</td>
+  <td>Parse-ColoradoAcl_server.ps1 node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>2</td>
-  <td><code>{ json, parseRequestBody, requireAdminAccess, withClient }</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>Write-Log()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{ json, parseRequestBody, requireAdminAccess, withClient } node in netlify/functions/checklist-evaluate.js.</td>
+  <td>Write-Log() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>3</td>
-  <td><code>{ evaluateChecklistReminders }</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small></td>
+  <td><code>Ensure-Folder()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{ evaluateChecklistReminders } node in netlify/functions/checklist-evaluate.js.</td>
+  <td>Ensure-Folder() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>4</td>
-  <td><code>lookbackMinutes</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small></td>
+  <td><code>To-NullableInt()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>lookbackMinutes node in netlify/functions/checklist-evaluate.js.</td>
+  <td><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>To-NullableDurationSeconds()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>To-NullableInt() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>5</td>
-  <td><code>{ json, parseRequestBody, requireAdminPin, withClient }</code><br><small style="color:var(--muted)">netlify/functions/checklist-items.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>{ json, parseRequestBody, requireAdminPin, withClient } node in netlify/functions/checklist-items.js.</td>
+  <td><code>To-NullableDurationSeconds()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>To-NullableInt()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>toNullableInt()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td>To-NullableDurationSeconds() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>6</td>
-  <td><code>daily-production-report.js</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
+  <td><code>To-BoolFromResult()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>checkRateLimit()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>json()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br>+1 more</td>
-  <td>daily-production-report.js node in netlify/functions/daily-production-report.js.</td>
+  <td><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>To-BoolFromResult() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>7</td>
-  <td><code>{
-  checkRateLimit,
-  json,
-  requirePostPurchaseAccess,
-  withClient,
-}</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>Build-DateTime()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>{
-  checkRateLimit,
-  json,
-  requirePostPurchaseAccess,
-  withClient,
-} node in netlify/functions/daily-production-report.js.</td>
+  <td><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>Build-DateTime() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>8</td>
-  <td><code>{
-  buildDailyProductionReport,
-}</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
+  <td><code>Get-SourceDateFromFileName()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{
-  buildDailyProductionReport,
-} node in netlify/functions/daily-production-report.js.</td>
+  <td>Get-SourceDateFromFileName() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>9</td>
-  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
+  <td><code>Get-NormalizedFieldName()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>cleanApiError() node in netlify/functions/daily-production-report.js.</td>
+  <td><code>Get-AclJobRows()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>Get-AclSchemaInfo()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>Get-NormalizedFieldName() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>10</td>
-  <td><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>json()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>parseRequestBody()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br>+1 more</td>
-  <td>delete-stock-movement.js node in netlify/functions/delete-stock-movement.js.</td>
+  <td><code>Get-AclSchemaInfo()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>Get-NormalizedFieldName()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>No direct outbound edge</td>
+  <td>Get-AclSchemaInfo() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>11</td>
-  <td><code>{ json, parseRequestBody, requireAdminPin, withClient }</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>Get-DedupeKey()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>{ json, parseRequestBody, requireAdminPin, withClient } node in netlify/functions/delete-stock-movement.js.</td>
+  <td><code>New-AclFileRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>Get-DedupeKey() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>12</td>
-  <td><code>requestBody</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
+  <td><code>New-AclFileRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
+  <td><code>Get-DedupeKey()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
   <td>No direct outbound edge</td>
-  <td>requestBody node in netlify/functions/delete-stock-movement.js.</td>
+  <td>New-AclFileRecord() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>13</td>
-  <td><code>id</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
+  <td><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>id node in netlify/functions/delete-stock-movement.js.</td>
+  <td><code>Build-DateTime()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>Get-DedupeKey()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>To-BoolFromResult()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br>+2 more</td>
+  <td><code>Get-AclJobRows()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>toNullableInt()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td>New-AclJobRecord() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>14</td>
-  <td><code>postpurchase-orders.js</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>checkRateLimit()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>getHeader()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br>+4 more</td>
-  <td>postpurchase-orders.js node in netlify/functions/postpurchase-orders.js.</td>
+  <td><code>Get-AclJobRows()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>Get-NormalizedFieldName()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small><br><code>New-AclJobRecord()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</small></td>
+  <td>No direct outbound edge</td>
+  <td>Get-AclJobRows() node in SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1.</td>
 </tr>
 <tr>
   <td>15</td>
-  <td><code>{
-  checkRateLimit,
-  getHeader,
-  json,
-  parseRequestBody,
-  requireAdminAccess,
-  requirePostPurchaseAccess,
-  withClient,
-}</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>Parse-ColoradoSync_server.ps1</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
+  <td><span class="tag tag-class">Class</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{
-  checkRateLimit,
-  getHeader,
-  json,
-  parseRequestBody,
-  requireAdminAccess,
-  requirePostPurchaseAccess,
-  withClient,
-} node in netlify/functions/postpurchase-orders.js.</td>
+  <td>Parse-ColoradoSync_server.ps1 node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>16</td>
-  <td><code>{
-  listPrintOrdersReceived,
-  syncPostPurchaseOrders,
-  updatePrintOrderLifecycleStatus,
-}</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
+  <td><code>Write-Log()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{
-  listPrintOrdersReceived,
-  syncPostPurchaseOrders,
-  updatePrintOrderLifecycleStatus,
-} node in netlify/functions/postpurchase-orders.js.</td>
+  <td>Write-Log() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>17</td>
-  <td><code>parseListOptions()</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
+  <td><code>Ensure-Folder()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>parseListOptions() node in netlify/functions/postpurchase-orders.js.</td>
+  <td>Ensure-Folder() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>18</td>
-  <td><code>parseSyncOptions()</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
+  <td><code>To-NullableInt()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>parseSyncOptions() node in netlify/functions/postpurchase-orders.js.</td>
+  <td>To-NullableInt() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>19</td>
-  <td><code>parseUpdateOptions()</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
+  <td><code>To-BoolFromResult()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>parseUpdateOptions() node in netlify/functions/postpurchase-orders.js.</td>
+  <td>To-BoolFromResult() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>20</td>
-  <td><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
-  <td><span class="tag tag-async">Async</span></td>
+  <td><code>Build-DateTime()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>checkRateLimit()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>createReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br>+10 more</td>
-  <td>processed-print-orders.js node in netlify/functions/processed-print-orders.js.</td>
+  <td>No direct outbound edge</td>
+  <td>Build-DateTime() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>21</td>
-  <td><code>{
-  checkRateLimit,
-  json,
-  parseRequestBody,
-  requireAdminAccess,
-  requirePostPurchaseAccess,
-  withClient,
-}</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>Get-SourceDateFromFileName()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{
-  checkRateLimit,
-  json,
-  parseRequestBody,
-  requireAdminAccess,
-  requirePostPurchaseAccess,
-  withClient,
-} node in netlify/functions/processed-print-orders.js.</td>
+  <td>Get-SourceDateFromFileName() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>22</td>
-  <td><code>{
-  createReprintRequest,
-  deleteReprintRequest,
-  listProcessedOrderMonths,
-  listProcessedPrintOrders,
-  listReprintRequests,
-  resolveReprintRequest,
-}</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
-  <td><span class="tag tag-async">Async</span></td>
+  <td><code>Get-DedupeKey()</code><br><small style="color:var(--muted)">SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{
-  createReprintRequest,
-  deleteReprintRequest,
-  listProcessedOrderMonths,
-  listProcessedPrintOrders,
-  listReprintRequests,
-  resolveReprintRequest,
-} node in netlify/functions/processed-print-orders.js.</td>
+  <td>Get-DedupeKey() node in SERVER_BACKEND/script_server/Parse-ColoradoSync_server.ps1.</td>
 </tr>
 <tr>
   <td>23</td>
-  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
+  <td><code>upsert-colorado-json.js</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>cleanApiError() node in netlify/functions/processed-print-orders.js.</td>
+  <td>upsert-colorado-json.js node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
 </tr>
 <tr>
   <td>24</td>
-  <td><code>started</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><code>fs</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>started node in netlify/functions/processed-print-orders.js.</td>
+  <td>fs node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
 </tr>
 <tr>
   <td>25</td>
-  <td><code>orderIds</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><code>path</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>orderIds node in netlify/functions/processed-print-orders.js.</td>
+  <td>path node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
 </tr>
 <tr>
   <td>26</td>
-  <td><code>bodyInput</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>bodyInput node in netlify/functions/processed-print-orders.js.</td>
-</tr>
-<tr>
-  <td>27</td>
-  <td><code>action</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>action node in netlify/functions/processed-print-orders.js.</td>
-</tr>
-<tr>
-  <td>28</td>
-  <td><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td><code>checklist-evaluate.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small><br><code>daily-production-report.js</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small><br><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small><br>+2 more</td>
-  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small><br><code>sync-processed-print-orders.js</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small></td>
-  <td>db.js node in functions/_lib/db.js.</td>
-</tr>
-<tr>
-  <td>29</td>
-  <td><code>{ Client }</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><code>{ Client }</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
   <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{ Client } node in functions/_lib/db.js.</td>
+  <td>{ Client } node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>loadEnvFile()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>preloadEnv()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td>loadEnvFile() node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>preloadEnv()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>loadEnvFile()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>preloadEnv() node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>PRINTERS</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>PRINTERS node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
 </tr>
 <tr>
   <td>30</td>
-  <td><code>crypto</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><code>log()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>crypto node in functions/_lib/db.js.</td>
+  <td><code>getAclJsonFiles()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small><br><code>getJsonFiles()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small><br><code>main()</code><br><small style="color:var(--muted)">script_server/colorado-upsert/upsert-colorado-json.js</small></td>
+  <td>log() node in script_server/colorado-upsert/upsert-colorado-json.js.</td>
 </tr>
 </table>
 
@@ -569,83 +503,92 @@ flowchart LR
       <tr><td><code>.obsidian/core-plugins.json</code></td><td>32 nodes</td></tr>
 <tr><td><code>.obsidian/workspace.json</code></td><td>30 nodes</td></tr>
 <tr><td><code>script_server/colorado-upsert/upsert-colorado-json.js</code></td><td>28 nodes</td></tr>
-<tr><td><code>scripts/sync-processed-print-orders.js</code></td><td>26 nodes</td></tr>
-<tr><td><code>functions/_lib/db.js</code></td><td>24 nodes</td></tr>
-<tr><td><code>functions/_lib/processed-print-orders.js</code></td><td>24 nodes</td></tr>
 <tr><td><code>scan-capture/README.md</code></td><td>24 nodes</td></tr>
 <tr><td><code>README.md</code></td><td>20 nodes</td></tr>
+<tr><td><code>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</code></td><td>14 nodes</td></tr>
+<tr><td><code>scripts/audit-db-schema.js</code></td><td>14 nodes</td></tr>
+<tr><td><code>script_server/colorado-upsert/package.json</code></td><td>13 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x324, calls x140, imports x38, imports x10. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x219, calls x45, references x9, imports x7. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 3. Analysis & Clustering ====== -->
 <h2 id="analysis-clustering">3. Analysis &amp; Clustering</h2>
-<p>Analysis &amp; Clustering groups implementation around sync, submit, tool, logsjs, mostly in scan-capture/server.js, SubmitTool-sync/sync-submit-tool-logs.js, scripts/sync-submit-tool-logs.js. This section covers 78 nodes and 134 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Analysis &amp; Clustering groups implementation around sync, processed, print, ordersjs, mostly in scan-capture/server.js, scripts/sync-processed-print-orders.js, functions/_lib/processed-print-orders.js. This section covers 137 nodes and 293 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Analysis &amp; Clustering (78 nodes, 134 edges)
-    subgraph analysis_clustering_scan_capture_server_js_e09e6ed4["scan-capture/server.js"]
-        scan_capture_server_json_12b11a68("json()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_localdatestring_5b47625d("localDateString()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_sanitizerequestpayload_85ca93b3("sanitizeRequestPayload()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_getjsonlpath_8c67383b("getJsonlPath()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_contenttypefor_2feedcc4("contentTypeFor()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_pad2_da1f45e4("pad2()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_getfallbackjsonlpath_24881c13("getFallbackJsonlPath()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_filedatefromiso_6f659b8a("fileDateFromIso()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_safetext_c3ff2dfe("safeText()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_handlescan_25200fe8("handleScan()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_handledeletescan_02a992bf("handleDeleteScan()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_sendhealth_47ef6289("sendHealth()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_ensureoutputdir_a5f132f7("ensureOutputDir()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_appendscanline_48a08f2a("appendScanLine()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_ensurefallbackdir_b6d45a08("ensureFallbackDir()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_readrecentscans_487fab15("readRecentScans()<br/><small>scan-capture/server.js</small>")
-        scan_capture_server_readbody_8a67689d("readBody()<br/><small>scan-capture/server.js</small>")
+    %% Section: Analysis &amp; Clustering (137 nodes, 293 edges)
+    subgraph analysis_clustering_functions_lib_processed_prin_997b834e["functions/_lib/processed-print-orders.js"]
+        lib_processed_print_orders_ensureprocessedprinto_c4351f3e("ensureProcessedPrintOrderTables()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_cleanstring_5c73f69d("cleanString()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_normalizesearchterm_c278a47a("normalizeSearchTerm()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_toisoornull_db0c5c26("toIsoOrNull()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_makeorderdedupekey_f0e9c7cd("makeOrderDedupeKey()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_upsertprocessedprinto_10735fd4("upsertProcessedPrintOrder()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_listprocessedprintord_64bb77ab("listProcessedPrintOrders()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_createreprintrequest_abca2a5f("createReprintRequest()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_resolvereprintrequest_56887dc7("resolveReprintRequest()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_upperorempty_4cd9d64f("upperOrEmpty()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_normalizeordertype_e496456e("normalizeOrderType()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_mapprocessedorderrow_4372657f("mapProcessedOrderRow()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_normalizeboolean_3ef77e8a("normalizeBoolean()<br/><small>functions/_lib/processed-print-orders.js</small>")
+        lib_processed_print_orders_normalizeprintfiles_7eb192ab("normalizePrintFiles()<br/><small>functions/_lib/processed-print-orders.js</small>")
     end
+    subgraph analysis_clustering_scripts_sync_processed_print_67c9dd41["scripts/sync-processed-print-orders.js"]
+        scripts_sync_processed_print_orders_js_b421798b("sync-processed-print-orders.js")
+        scripts_sync_processed_print_orders_withtimeout_8d6cdc78("withTimeout()<br/><small>scripts/sync-processed-print-orders.js</small>")
+    end
+    netlify_functions_processed_print_orders_js_8d1cdb4b("processed-print-orders.js")
     scripts_sync_submit_tool_logs_js_0eaf6619("sync-submit-tool-logs.js")
-    scan_capture_server_pad2_da1f45e4 -->|calls| scan_capture_server_localdatestring_5b47625d
-    scan_capture_server_localdatestring_5b47625d -->|calls| scan_capture_server_getjsonlpath_8c67383b
-    scan_capture_server_localdatestring_5b47625d -->|calls| scan_capture_server_getfallbackjsonlpath_24881c13
-    scan_capture_server_localdatestring_5b47625d -->|calls| scan_capture_server_filedatefromiso_6f659b8a
-    scan_capture_server_safetext_c3ff2dfe -->|calls| scan_capture_server_sanitizerequestpayload_85ca93b3
-    scan_capture_server_json_12b11a68 -->|calls| scan_capture_server_handlescan_25200fe8
-    scan_capture_server_json_12b11a68 -->|calls| scan_capture_server_handledeletescan_02a992bf
-    scan_capture_server_json_12b11a68 -->|calls| scan_capture_server_sendhealth_47ef6289
-    scan_capture_server_ensureoutputdir_a5f132f7 -->|calls| scan_capture_server_appendscanline_48a08f2a
-    scan_capture_server_ensurefallbackdir_b6d45a08 -->|calls| scan_capture_server_appendscanline_48a08f2a
-    scan_capture_server_getjsonlpath_8c67383b -->|calls| scan_capture_server_appendscanline_48a08f2a
-    scan_capture_server_getjsonlpath_8c67383b -->|calls| scan_capture_server_readrecentscans_487fab15
-    scan_capture_server_getfallbackjsonlpath_24881c13 -->|calls| scan_capture_server_appendscanline_48a08f2a
-    scan_capture_server_appendscanline_48a08f2a -->|calls| scan_capture_server_handlescan_25200fe8
-    scan_capture_server_readbody_8a67689d -->|calls| scan_capture_server_handlescan_25200fe8
-    scan_capture_server_sanitizerequestpayload_85ca93b3 -->|calls| scan_capture_server_handlescan_25200fe8
-    scan_capture_server_filedatefromiso_6f659b8a -->|calls| scan_capture_server_handledeletescan_02a992bf
-    %% Omitted for readability: 60 nodes, 0 edges
-    class scan_capture_server_json_12b11a68 function;
-    class scan_capture_server_localdatestring_5b47625d function;
-    class scan_capture_server_sanitizerequestpayload_85ca93b3 function;
-    class scan_capture_server_getjsonlpath_8c67383b function;
-    class scan_capture_server_contenttypefor_2feedcc4 function;
-    class scan_capture_server_pad2_da1f45e4 function;
-    class scan_capture_server_getfallbackjsonlpath_24881c13 function;
-    class scan_capture_server_filedatefromiso_6f659b8a function;
-    class scan_capture_server_safetext_c3ff2dfe function;
-    class scan_capture_server_handlescan_25200fe8 function;
-    class scan_capture_server_handledeletescan_02a992bf function;
-    class scan_capture_server_sendhealth_47ef6289 function;
-    class scan_capture_server_ensureoutputdir_a5f132f7 function;
-    class scan_capture_server_appendscanline_48a08f2a function;
-    class scan_capture_server_ensurefallbackdir_b6d45a08 function;
-    class scan_capture_server_readrecentscans_487fab15 function;
-    class scan_capture_server_readbody_8a67689d function;
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_normalizesearchterm_c278a47a
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_toisoornull_db0c5c26
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_makeorderdedupekey_f0e9c7cd
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_listprocessedprintord_64bb77ab
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_createreprintrequest_abca2a5f
+    lib_processed_print_orders_cleanstring_5c73f69d -->|calls| lib_processed_print_orders_resolvereprintrequest_56887dc7
+    lib_processed_print_orders_normalizesearchterm_c278a47a -->|calls| lib_processed_print_orders_listprocessedprintord_64bb77ab
+    lib_processed_print_orders_upperorempty_4cd9d64f -->|calls| lib_processed_print_orders_normalizeordertype_e496456e
+    lib_processed_print_orders_normalizeordertype_e496456e -->|calls| lib_processed_print_orders_makeorderdedupekey_f0e9c7cd
+    lib_processed_print_orders_normalizeordertype_e496456e -->|calls| lib_processed_print_orders_mapprocessedorderrow_4372657f
+    lib_processed_print_orders_normalizeordertype_e496456e -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_toisoornull_db0c5c26 -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_normalizeboolean_3ef77e8a -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_normalizeprintfiles_7eb192ab -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_makeorderdedupekey_f0e9c7cd -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_ensureprocessedprinto_c4351f3e -->|calls| lib_processed_print_orders_upsertprocessedprinto_10735fd4
+    lib_processed_print_orders_ensureprocessedprinto_c4351f3e -->|calls| lib_processed_print_orders_listprocessedprintord_64bb77ab
+    lib_processed_print_orders_ensureprocessedprinto_c4351f3e -->|calls| lib_processed_print_orders_createreprintrequest_abca2a5f
+    lib_processed_print_orders_ensureprocessedprinto_c4351f3e -->|calls| lib_processed_print_orders_resolvereprintrequest_56887dc7
+    lib_processed_print_orders_ensureprocessedprinto_c4351f3e -->|calls| scripts_sync_processed_print_orders_js_b421798b
+    lib_processed_print_orders_upsertprocessedprinto_10735fd4 -->|calls| scripts_sync_processed_print_orders_js_b421798b
+    scripts_sync_processed_print_orders_js_b421798b -->|calls| scripts_sync_processed_print_orders_withtimeout_8d6cdc78
+    netlify_functions_processed_print_orders_js_8d1cdb4b -->|imports| lib_processed_print_orders_createreprintrequest_abca2a5f
+    %% Omitted for readability: 119 nodes, 2 edges
+    class lib_processed_print_orders_ensureprocessedprinto_c4351f3e async;
+    class lib_processed_print_orders_cleanstring_5c73f69d function;
+    class lib_processed_print_orders_normalizesearchterm_c278a47a function;
+    class lib_processed_print_orders_toisoornull_db0c5c26 function;
+    class lib_processed_print_orders_makeorderdedupekey_f0e9c7cd function;
+    class lib_processed_print_orders_upsertprocessedprinto_10735fd4 async;
+    class lib_processed_print_orders_listprocessedprintord_64bb77ab async;
+    class lib_processed_print_orders_createreprintrequest_abca2a5f function;
+    class lib_processed_print_orders_resolvereprintrequest_56887dc7 function;
+    class lib_processed_print_orders_upperorempty_4cd9d64f function;
+    class lib_processed_print_orders_normalizeordertype_e496456e function;
+    class lib_processed_print_orders_mapprocessedorderrow_4372657f async;
+    class lib_processed_print_orders_normalizeboolean_3ef77e8a function;
+    class lib_processed_print_orders_normalizeprintfiles_7eb192ab function;
+    class scripts_sync_processed_print_orders_js_b421798b async;
+    class scripts_sync_processed_print_orders_withtimeout_8d6cdc78 function;
+    class netlify_functions_processed_print_orders_js_8d1cdb4b async;
     class scripts_sync_submit_tool_logs_js_0eaf6619 module;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
@@ -670,243 +613,271 @@ flowchart LR
 </tr>
 <tr>
   <td>1</td>
-  <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
+  <td><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ensureLifecycleEventsTable()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>ensureSchema()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small><br><code>findMatchingOrder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br>+11 more</td>
-  <td>sync-submit-tool-logs.js node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>deleteReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>listProcessedOrderMonths()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br>+4 more</td>
+  <td>processed-print-orders.js node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>2</td>
-  <td><code>crypto</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
+  <td><code>{
+  checkRateLimit,
+  json,
+  parseRequestBody,
+  requireAdminAccess,
+  requirePostPurchaseAccess,
+  withClient,
+}</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>crypto node in scripts/sync-submit-tool-logs.js.</td>
+  <td>{
+  checkRateLimit,
+  json,
+  parseRequestBody,
+  requireAdminAccess,
+  requirePostPurchaseAccess,
+  withClient,
+} node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>3</td>
-  <td><code>fs</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
+  <td><code>{
+  createReprintRequest,
+  deleteReprintRequest,
+  listProcessedOrderMonths,
+  listProcessedPrintOrders,
+  listReprintRequests,
+  resolveReprintRequest,
+}</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>fs node in scripts/sync-submit-tool-logs.js.</td>
+  <td>{
+  createReprintRequest,
+  deleteReprintRequest,
+  listProcessedOrderMonths,
+  listProcessedPrintOrders,
+  listReprintRequests,
+  resolveReprintRequest,
+} node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>4</td>
-  <td><code>path</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
+  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><span class="tag tag-endpoint">API</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>path node in scripts/sync-submit-tool-logs.js.</td>
+  <td>cleanApiError() node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>5</td>
-  <td><code>{ withClient }</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>started</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{ withClient } node in scripts/sync-submit-tool-logs.js.</td>
+  <td>started node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>6</td>
-  <td><code>{ ensurePrintOrdersTable }</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>orderIds</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
-  <td>{ ensurePrintOrdersTable } node in scripts/sync-submit-tool-logs.js.</td>
+  <td>orderIds node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>7</td>
-  <td><code>parseArgs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>bodyInput</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>main()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>parseArgs() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>No direct outbound edge</td>
+  <td>bodyInput node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>8</td>
-  <td><code>toPositiveInteger()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>action</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>main()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>toPositiveInteger() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>No direct outbound edge</td>
+  <td>action node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>9</td>
-  <td><code>formatDateFolder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>getDateFolders()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>formatDateFolder() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>processed-print-orders.js</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><code>sync-processed-print-orders.js</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small></td>
+  <td>processed-print-orders.js node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>10</td>
-  <td><code>getDateFolders()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>crypto</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>formatDateFolder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>getDateFolders() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>crypto node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>11</td>
-  <td><code>sha256()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>parseSubmitToolLine()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>sha256() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>listProcessedPrintOrders()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br>+4 more</td>
+  <td>cleanString() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>12</td>
-  <td><code>parseKeyValues()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>normalizeSearchTerm()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>parseSubmitToolLine()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>parseKeyValues() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><code>listProcessedPrintOrders()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>normalizeSearchTerm() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>13</td>
-  <td><code>parseSubmitToolLine()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>upperOrEmpty()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>parseKeyValues()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>sha256()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>readEventsFromFile()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>parseSubmitToolLine() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td><code>normalizeOrderType()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>upperOrEmpty() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>14</td>
-  <td><code>ensureLifecycleEventsTable()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>normalizeOrderType()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>ensureLifecycleEventsTable() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>upperOrEmpty()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>mapProcessedOrderRow()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>upsertProcessedPrintOrder()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>normalizeOrderType() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>15</td>
-  <td><code>getMatchCandidates()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>toIsoOrNull()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>findMatchingOrder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>getMatchCandidates() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><code>upsertProcessedPrintOrder()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>toIsoOrNull() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>16</td>
-  <td><code>findMatchingOrder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>normalizeBoolean()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>getMatchCandidates()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>findMatchingOrder() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td><code>upsertProcessedPrintOrder()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>normalizeBoolean() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>17</td>
-  <td><code>insertLifecycleEvent()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>normalizePrintFiles()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>insertLifecycleEvent() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td><code>normalizePrintFilesForDedupe()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>upsertProcessedPrintOrder()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>normalizePrintFiles() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>18</td>
-  <td><code>updateSubmitToolStatus()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>normalizePrintFilesForDedupe()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>updateSubmitToolStatus() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>normalizePrintFiles()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>normalizePrintFilesForDedupe() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>19</td>
-  <td><code>listTxtFiles()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>sha256()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>listTxtFiles() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>sha256() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>20</td>
-  <td><code>readEventsFromFile()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>parseSubmitToolLine()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>readEventsFromFile() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>normalizeOrderType()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>normalizePrintFilesForDedupe()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br>+1 more</td>
+  <td><code>makeOrderKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>normalizePrintFiles()</code><br><small style="color:var(--muted)">scripts/reprint-xml.js</small><br><code>upsertProcessedPrintOrder()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>makeOrderDedupeKey() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>21</td>
-  <td><code>syncSubmitToolLogs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
+  <td><code>makeOrderKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>ensureLifecycleEventsTable()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>findMatchingOrder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>getDateFolders()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br>+4 more</td>
+  <td><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td>No direct outbound edge</td>
-  <td>syncSubmitToolLogs() node in scripts/sync-submit-tool-logs.js.</td>
+  <td>makeOrderKey() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>22</td>
-  <td><code>main()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>parseArgs()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>toPositiveInteger()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
-  <td>No direct outbound edge</td>
-  <td>main() node in scripts/sync-submit-tool-logs.js.</td>
+  <td><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>deleteReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>listKnownProcessedXmlHashes()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br>+7 more</td>
+  <td>ensureProcessedPrintOrderTables() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>23</td>
-  <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
+  <td><code>chunkArray()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>sync-submit-tool-logs.js node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>listKnownProcessedXmlHashes()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td>chunkArray() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>24</td>
-  <td><code>crypto</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>crypto node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>listKnownProcessedXmlHashes()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>chunkArray()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><code>listKnownHashesForFiles()</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small><br><code>sync-processed-print-orders.js</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small></td>
+  <td>Caches analysis results or computes cache keys.</td>
 </tr>
 <tr>
   <td>25</td>
-  <td><code>fs</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
+  <td><code>mapProcessedOrderRow()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>normalizeOrderType()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td>No direct outbound edge</td>
-  <td>fs node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td>mapProcessedOrderRow() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>26</td>
-  <td><code>path</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>path node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>upsertProcessedPrintOrder()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>makeOrderDedupeKey()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br>+4 more</td>
+  <td><code>normalizePrintFiles()</code><br><small style="color:var(--muted)">scripts/reprint-xml.js</small><br><code>sync-processed-print-orders.js</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small><br><code>syncProcessedPrintOrders()</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small></td>
+  <td>upsertProcessedPrintOrder() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>27</td>
-  <td><code>{ Client }</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>{ Client } node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>listProcessedPrintOrders()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>normalizeSearchTerm()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br>+1 more</td>
+  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small></td>
+  <td>listProcessedPrintOrders() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>28</td>
-  <td><code>parseArgs()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>main()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td>parseArgs() node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>listProcessedOrderMonths()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small></td>
+  <td>listProcessedOrderMonths() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>29</td>
-  <td><code>getConnectionString()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
+  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>withClient()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td>getConnectionString() node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small></td>
+  <td>createReprintRequest() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 <tr>
   <td>30</td>
-  <td><code>withClient()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
-  <td><code>getConnectionString()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td><code>main()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small></td>
-  <td>withClient() node in SubmitTool-sync/sync-submit-tool-logs.js.</td>
+  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>ensureProcessedPrintOrderTables()</code><br><small style="color:var(--muted)">functions/_lib/processed-print-orders.js</small><br><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
+  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small></td>
+  <td>resolveReprintRequest() node in functions/_lib/processed-print-orders.js.</td>
 </tr>
 </table>
 
@@ -916,26 +887,30 @@ flowchart LR
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>scan-capture/server.js</code></td><td>32 nodes</td></tr>
+<tr><td><code>scripts/sync-processed-print-orders.js</code></td><td>25 nodes</td></tr>
+<tr><td><code>functions/_lib/processed-print-orders.js</code></td><td>24 nodes</td></tr>
 <tr><td><code>SubmitTool-sync/sync-submit-tool-logs.js</code></td><td>23 nodes</td></tr>
 <tr><td><code>scripts/sync-submit-tool-logs.js</code></td><td>22 nodes</td></tr>
+<tr><td><code>netlify/functions/processed-print-orders.js</code></td><td>8 nodes</td></tr>
 <tr><td><code>_COMMUNITY_Community 53.md</code></td><td>1 nodes</td></tr>
+<tr><td><code>scripts/reprint-xml.js</code></td><td>1 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x68, calls x66. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x139, contains x138, imports x13, imports x3. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 4. Outputs & Docs ====== -->
 <h2 id="outputs-docs">4. Outputs &amp; Docs</h2>
-<p>Outputs &amp; Docs groups implementation around scripts, daily, reports, export, mostly in functions/_lib/daily-production-report.js, reports/colorado.js, scripts/export-colorado-monthly.js. This section covers 92 nodes and 157 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Outputs &amp; Docs groups implementation around scripts, daily, reports, export, mostly in functions/_lib/daily-production-report.js, reports/colorado.js, scripts/export-colorado-monthly.js. This section covers 106 nodes and 171 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Outputs &amp; Docs (92 nodes, 157 edges)
+    %% Section: Outputs &amp; Docs (106 nodes, 171 edges)
     subgraph outputs_docs_functions_lib_daily_production_repo_526ce889["functions/_lib/daily-production-report.js"]
         lib_daily_production_report_num_2f18570d("num()<br/><small>functions/_lib/daily-production-report.js</small>")
         lib_daily_production_report_cleandate_217c08ac("cleanDate()<br/><small>functions/_lib/daily-production-report.js</small>")
@@ -974,7 +949,7 @@ flowchart LR
     lib_daily_production_report_int_eb33f4db -->|calls| lib_daily_production_report_loadpipelinesummary_dd51c6cb
     lib_daily_production_report_loadmachineoutput_a863fb31 -->|calls| lib_daily_production_report_builddailyproduction_e23f99f4
     lib_daily_production_report_loadpipelinesummary_dd51c6cb -->|calls| lib_daily_production_report_builddailyproduction_e23f99f4
-    %% Omitted for readability: 74 nodes, 0 edges
+    %% Omitted for readability: 88 nodes, 0 edges
     class lib_daily_production_report_num_2f18570d function;
     class lib_daily_production_report_cleandate_217c08ac function;
     class lib_daily_production_report_selecteddate_7f258c98 function;
@@ -1016,6 +991,118 @@ flowchart LR
 </tr>
 <tr>
   <td>1</td>
+  <td><code>package.json</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>package.json node in package.json.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>name</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>name node in package.json.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>private</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>private node in package.json.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>version</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>version node in package.json.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>scripts</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>scripts node in package.json.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>db:audit</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>db:audit node in package.json.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>db:indexes</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>db:indexes node in package.json.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>export:colorado-monthly</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Exports documentation data to a target format.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>sync:postpurchase-orders</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>sync:postpurchase-orders node in package.json.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>sync:submit-tool-logs</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>sync:submit-tool-logs node in package.json.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>sync:processed-print-orders</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>sync:processed-print-orders node in package.json.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>dependencies</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>dependencies node in package.json.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>pg</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>pg node in package.json.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>web-push</code><br><small style="color:var(--muted)">package.json</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>web-push node in package.json.</td>
+</tr>
+<tr>
+  <td>15</td>
   <td><code>colorado.js</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
@@ -1023,7 +1110,7 @@ flowchart LR
   <td>colorado.js node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>2</td>
+  <td>16</td>
   <td><code>DEFAULT_MACHINES</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td>External entry / no inbound edge</td>
@@ -1031,7 +1118,7 @@ flowchart LR
   <td>DEFAULT_MACHINES node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>3</td>
+  <td>17</td>
   <td><code>toNumber()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1039,7 +1126,7 @@ flowchart LR
   <td>toNumber() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>4</td>
+  <td>18</td>
   <td><code>sortByTimestampAsc()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1047,7 +1134,7 @@ flowchart LR
   <td>sortByTimestampAsc() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>5</td>
+  <td>19</td>
   <td><code>normalizePositiveNumber()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1055,7 +1142,7 @@ flowchart LR
   <td>normalizePositiveNumber() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>6</td>
+  <td>20</td>
   <td><code>bucketRemainingState()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1063,7 +1150,7 @@ flowchart LR
   <td>bucketRemainingState() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>7</td>
+  <td>21</td>
   <td><code>bucketFillPercent()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1071,7 +1158,7 @@ flowchart LR
   <td>bucketFillPercent() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>8</td>
+  <td>22</td>
   <td><code>formatApproxRemainingMeters()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1079,7 +1166,7 @@ flowchart LR
   <td>formatApproxRemainingMeters() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>9</td>
+  <td>23</td>
   <td><code>formatApproxAgeLabel()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1087,7 +1174,7 @@ flowchart LR
   <td>formatApproxAgeLabel() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>10</td>
+  <td>24</td>
   <td><code>getColoradoRecords()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>sortByTimestampAsc()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
@@ -1095,7 +1182,7 @@ flowchart LR
   <td>getColoradoRecords() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>11</td>
+  <td>25</td>
   <td><code>buildColoradoRollSummary()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>bucketFillPercent()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>bucketRemainingState()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>formatApproxAgeLabel()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br>+3 more</td>
@@ -1103,7 +1190,7 @@ flowchart LR
   <td>buildColoradoRollSummary() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>12</td>
+  <td>26</td>
   <td><code>buildColoradoIntervals()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>sortByTimestampAsc()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
@@ -1111,7 +1198,7 @@ flowchart LR
   <td>buildColoradoIntervals() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>13</td>
+  <td>27</td>
   <td><code>buildColoradoStats()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>buildColoradoIntervals()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>sortByTimestampAsc()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>toNumber()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
@@ -1119,7 +1206,7 @@ flowchart LR
   <td>buildColoradoStats() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>14</td>
+  <td>28</td>
   <td><code>buildColoradoIntervalRows()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1127,7 +1214,7 @@ flowchart LR
   <td>buildColoradoIntervalRows() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>15</td>
+  <td>29</td>
   <td><code>buildColoradoMonthlySummary()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -1135,124 +1222,12 @@ flowchart LR
   <td>buildColoradoMonthlySummary() node in reports/colorado.js.</td>
 </tr>
 <tr>
-  <td>16</td>
+  <td>30</td>
   <td><code>getLatestColoradoRecord()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>buildColoradoRollSummary()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>getColoradoRecords()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
   <td>No direct outbound edge</td>
   <td>Verifies imports, entry points, or version behavior.</td>
-</tr>
-<tr>
-  <td>17</td>
-  <td><code>buildColoradoLifetimeSummary()</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>buildColoradoLifetimeSummary() node in reports/colorado.js.</td>
-</tr>
-<tr>
-  <td>18</td>
-  <td><code>api</code><br><small style="color:var(--muted)">reports/colorado.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>api node in reports/colorado.js.</td>
-</tr>
-<tr>
-  <td>19</td>
-  <td><code>csv.js</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>export-colorado-monthly.js</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small></td>
-  <td>csv.js node in reports/csv.js.</td>
-</tr>
-<tr>
-  <td>20</td>
-  <td><code>csvEsc()</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>csvEsc() node in reports/csv.js.</td>
-</tr>
-<tr>
-  <td>21</td>
-  <td><code>csvRow()</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>rowsToCsv()</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td>csvRow() node in reports/csv.js.</td>
-</tr>
-<tr>
-  <td>22</td>
-  <td><code>rowsToCsv()</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>csvRow()</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td><code>buildCsv()</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small><br><code>export-colorado-monthly.js</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small></td>
-  <td>rowsToCsv() node in reports/csv.js.</td>
-</tr>
-<tr>
-  <td>23</td>
-  <td><code>api</code><br><small style="color:var(--muted)">reports/csv.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>api node in reports/csv.js.</td>
-</tr>
-<tr>
-  <td>24</td>
-  <td><code>date.js</code><br><small style="color:var(--muted)">reports/date.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>date.js node in reports/date.js.</td>
-</tr>
-<tr>
-  <td>25</td>
-  <td><code>dateRangeFilter()</code><br><small style="color:var(--muted)">reports/date.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>dateRangeFilter() node in reports/date.js.</td>
-</tr>
-<tr>
-  <td>26</td>
-  <td><code>getCurrentMonthExportRange()</code><br><small style="color:var(--muted)">reports/date.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>pad()</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small></td>
-  <td>Exports documentation data to a target format.</td>
-</tr>
-<tr>
-  <td>27</td>
-  <td><code>api</code><br><small style="color:var(--muted)">reports/date.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>api node in reports/date.js.</td>
-</tr>
-<tr>
-  <td>28</td>
-  <td><code>export-colorado-monthly.js</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td><code>buildColoradoMonthlySummary()</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>colorado.js</code><br><small style="color:var(--muted)">reports/colorado.js</small><br><code>csv.js</code><br><small style="color:var(--muted)">reports/csv.js</small><br>+2 more</td>
-  <td>No direct outbound edge</td>
-  <td>Exports documentation data to a target format.</td>
-</tr>
-<tr>
-  <td>29</td>
-  <td><code>fs</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>fs node in scripts/export-colorado-monthly.js.</td>
-</tr>
-<tr>
-  <td>30</td>
-  <td><code>path</code><br><small style="color:var(--muted)">scripts/export-colorado-monthly.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>path node in scripts/export-colorado-monthly.js.</td>
 </tr>
 </table>
 
@@ -1264,16 +1239,16 @@ flowchart LR
       <tr><td><code>functions/_lib/daily-production-report.js</code></td><td>20 nodes</td></tr>
 <tr><td><code>reports/colorado.js</code></td><td>18 nodes</td></tr>
 <tr><td><code>scripts/export-colorado-monthly.js</code></td><td>18 nodes</td></tr>
+<tr><td><code>package.json</code></td><td>14 nodes</td></tr>
 <tr><td><code>scripts/daily-report-ui.js</code></td><td>12 nodes</td></tr>
 <tr><td><code>scripts/export-utils.js</code></td><td>6 nodes</td></tr>
 <tr><td><code>reports/csv.js</code></td><td>5 nodes</td></tr>
 <tr><td><code>scripts/daily-report-api.js</code></td><td>5 nodes</td></tr>
-<tr><td><code>app.js</code></td><td>4 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x80, calls x70, imports x3, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x94, calls x70, imports x3, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -1347,38 +1322,39 @@ flowchart LR
 
 <!-- ====== 6. Ingestion & Updates ====== -->
 <h2 id="ingest-cache-update">6. Ingestion &amp; Updates</h2>
-<p>Ingestion &amp; Updates groups implementation around sync, readmemd, submittool, server, mostly in SubmitTool-sync/README.md, manifest.json, SERVER_BACKEND/script_server/ColoradoSync_server.ps1. This section covers 77 nodes and 83 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Ingestion &amp; Updates groups implementation around sync, readmemd, submittool, server, mostly in SubmitTool-sync/README.md, manifest.json, SERVER_BACKEND/script_server/ColoradoSync_server.ps1. This section covers 84 nodes and 91 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Ingestion &amp; Updates (77 nodes, 83 edges)
+    %% Section: Ingestion &amp; Updates (84 nodes, 91 edges)
     subgraph ingest_cache_update_SERVER_BACKEND_script_server_33e1fe39["SERVER_BACKEND/script_server/ColoradoSync_server.ps1"]
         script_server_coloradosync_server_contains_value_1c6c185a("Contains-Value()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_convert_respon_da4d8cfa("Convert-ResponseContentToString()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_download_file_5b96cc96("Download-File()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
-        script_server_coloradosync_server_ensure_folder_871b6100("Ensure-Folder()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_write_log_c78479b3("Write-Log()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_sync_printer_c166e56a("Sync-Printer()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
+        script_server_coloradosync_server_ensure_folder_871b6100("Ensure-Folder()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_load_manifest_9dd13c9e("Load-Manifest()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_save_manifest_53768b9a("Save-Manifest()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_get_absoluteur_ea21d144("Get-AbsoluteUrl()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         script_server_coloradosync_server_get_downloadli_fae23d7a("Get-DownloadLinksFromHtml()<br/><small>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</small>")
         server_backend_script_server_coloradosync_server_45f2ffdf("ColoradoSync_server.ps1")
     end
-    subgraph ingest_cache_update_app_db_js_9cd3d9c5["app/db.js"]
-        app_db_js_8f53ddc3("db.js")
-        app_db_idbclear_4de40f7e("idbClear()<br/><small>app/db.js</small>")
-        app_db_idbdelete_ba4348ae("idbDelete()<br/><small>app/db.js</small>")
-        app_db_opendb_cd0463f6("openDB()<br/><small>app/db.js</small>")
-    end
     subgraph ingest_cache_update_app_js_e83dc643["app.js"]
         print_guard_dgfc_app_loadcoloradorollevents_69512c74("loadColoradoRollEvents()<br/><small>app.js</small>")
         print_guard_dgfc_app_loadcoloradorollstates_cc35575a("loadColoradoRollStates()<br/><small>app.js</small>")
+        print_guard_dgfc_app_setupcoentry_1a53c38a("setupCoEntry()<br/><small>app.js</small>")
         print_guard_dgfc_app_init_5105c871("init()<br/><small>app.js</small>")
+    end
+    subgraph ingest_cache_update_app_db_js_9cd3d9c5["app/db.js"]
+        app_db_js_8f53ddc3("db.js")
+        app_db_idball_31e38aa9("idbAll()<br/><small>app/db.js</small>")
+        app_db_idbclear_4de40f7e("idbClear()<br/><small>app/db.js</small>")
     end
     print_guard_dgfc_app_loadcoloradorollstates_cc35575a -->|calls| print_guard_dgfc_app_init_5105c871
     print_guard_dgfc_app_loadcoloradorollevents_69512c74 -->|calls| print_guard_dgfc_app_init_5105c871
+    print_guard_dgfc_app_setupcoentry_1a53c38a -->|calls| print_guard_dgfc_app_init_5105c871
     script_server_coloradosync_server_write_log_c78479b3 -->|calls| script_server_coloradosync_server_sync_printer_c166e56a
     script_server_coloradosync_server_ensure_folder_871b6100 -->|calls| script_server_coloradosync_server_sync_printer_c166e56a
     script_server_coloradosync_server_load_manifest_9dd13c9e -->|calls| script_server_coloradosync_server_sync_printer_c166e56a
@@ -1388,25 +1364,25 @@ flowchart LR
     script_server_coloradosync_server_download_file_5b96cc96 -->|calls| script_server_coloradosync_server_sync_printer_c166e56a
     script_server_coloradosync_server_contains_value_1c6c185a -->|calls| script_server_coloradosync_server_sync_printer_c166e56a
     script_server_coloradosync_server_convert_respon_da4d8cfa -->|calls| script_server_coloradosync_server_sync_printer_c166e56a
-    %% Omitted for readability: 59 nodes, 0 edges
+    %% Omitted for readability: 66 nodes, 0 edges
     class script_server_coloradosync_server_contains_value_1c6c185a function;
     class script_server_coloradosync_server_convert_respon_da4d8cfa function;
     class script_server_coloradosync_server_download_file_5b96cc96 function;
-    class script_server_coloradosync_server_ensure_folder_871b6100 function;
     class script_server_coloradosync_server_write_log_c78479b3 function;
     class script_server_coloradosync_server_sync_printer_c166e56a function;
+    class script_server_coloradosync_server_ensure_folder_871b6100 function;
     class script_server_coloradosync_server_load_manifest_9dd13c9e function;
     class script_server_coloradosync_server_save_manifest_53768b9a function;
     class script_server_coloradosync_server_get_absoluteur_ea21d144 function;
     class script_server_coloradosync_server_get_downloadli_fae23d7a function;
     class server_backend_script_server_coloradosync_server_45f2ffdf klass;
-    class app_db_js_8f53ddc3 module;
-    class app_db_idbclear_4de40f7e function;
-    class app_db_idbdelete_ba4348ae function;
-    class app_db_opendb_cd0463f6 function;
     class print_guard_dgfc_app_loadcoloradorollevents_69512c74 function;
     class print_guard_dgfc_app_loadcoloradorollstates_cc35575a function;
+    class print_guard_dgfc_app_setupcoentry_1a53c38a function;
     class print_guard_dgfc_app_init_5105c871 function;
+    class app_db_js_8f53ddc3 module;
+    class app_db_idball_31e38aa9 function;
+    class app_db_idbclear_4de40f7e function;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -1678,33 +1654,42 @@ flowchart LR
       <tr><td><code>SubmitTool-sync/README.md</code></td><td>36 nodes</td></tr>
 <tr><td><code>manifest.json</code></td><td>13 nodes</td></tr>
 <tr><td><code>SERVER_BACKEND/script_server/ColoradoSync_server.ps1</code></td><td>11 nodes</td></tr>
-<tr><td><code>app/db.js</code></td><td>5 nodes</td></tr>
+<tr><td><code>app/db.js</code></td><td>7 nodes</td></tr>
 <tr><td><code>sw.js</code></td><td>5 nodes</td></tr>
-<tr><td><code>app.js</code></td><td>3 nodes</td></tr>
+<tr><td><code>app.js</code></td><td>4 nodes</td></tr>
+<tr><td><code>app/settings-store.js</code></td><td>3 nodes</td></tr>
 <tr><td><code>app/update-checks.js</code></td><td>3 nodes</td></tr>
-<tr><td><code>index.html</code></td><td>1 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x67, calls x11, references x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x71, calls x12, references x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 7. Serving API ====== -->
 <h2 id="serve-api">7. Serving API</h2>
-<p>Serving API groups implementation around netlify, functions, order, checklist, mostly in functions/_lib/order-pipeline.js, ARCHITECTURE.md, netlify/functions/send-stock-alerts.js. This section covers 204 nodes and 411 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Serving API groups implementation around netlify, functions, order, pipelinejs, mostly in functions/_lib/order-pipeline.js, ARCHITECTURE.md, netlify/functions/send-stock-alerts.js. This section covers 161 nodes and 337 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Serving API (204 nodes, 411 edges)
-    subgraph serve_api_functions_lib_checklist_store_js_ae55115c["functions/_lib/checklist-store.js"]
-        lib_checklist_store_ensurechecklisttables_c3842948("ensureChecklistTables()<br/><small>functions/_lib/checklist-store.js</small>")
-        lib_checklist_store_reservechecklistoccurrence_28fa3b2a("reserveChecklistOccurrence()<br/><small>functions/_lib/checklist-store.js</small>")
-        lib_checklist_store_finalizechecklistoccurrence_48aebeca("finalizeChecklistOccurrence()<br/><small>functions/_lib/checklist-store.js</small>")
-        lib_checklist_store_cleanoptionalstring_881d060c("cleanOptionalString()<br/><small>functions/_lib/checklist-store.js</small>")
+    %% Section: Serving API (161 nodes, 337 edges)
+    subgraph serve_api_functions_lib_order_pipeline_js_cf77cfe0["functions/_lib/order-pipeline.js"]
+        lib_order_pipeline_cleanstring_bced6500("cleanString()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7("isDefaultOrderPipelineScope()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_normalizesearchterm_7257f69e("normalizeSearchTerm()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_normalizeorderidentitycandida_de1d520a("normalizeOrderIdentityCandidate()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_getcanonicalorderidentity_2e197f97("getCanonicalOrderIdentity()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_ordersearchcandidates_23765ce3("orderSearchCandidates()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_adddaterangefilter_1d52e380("addDateRangeFilter()<br/><small>functions/_lib/order-pipeline.js</small>")
+    end
+    subgraph serve_api_netlify_functions_order_pipeline_js_e48848b2["netlify/functions/order-pipeline.js"]
+        netlify_functions_order_pipeline_js_a0a591a2("order-pipeline.js")
+        functions_order_pipeline_cleanstring_d323486c("cleanString()<br/><small>netlify/functions/order-pipeline.js</small>")
+        functions_order_pipeline_parseincludestats_24a3c089("parseIncludeStats()<br/><small>netlify/functions/order-pipeline.js</small>")
+        functions_order_pipeline_summarizefilters_d4d9fee6("summarizeFilters()<br/><small>netlify/functions/order-pipeline.js</small>")
     end
     subgraph serve_api_netlify_functions_send_stock_alerts_js_b96f5e24["netlify/functions/send-stock-alerts.js"]
         functions_send_stock_alerts_getstatuscode_73563456("getStatusCode()<br/><small>netlify/functions/send-stock-alerts.js</small>")
@@ -1712,56 +1697,43 @@ flowchart LR
         functions_send_stock_alerts_normalizealerttypes_ea9e2d49("normalizeAlertTypes()<br/><small>netlify/functions/send-stock-alerts.js</small>")
         functions_send_stock_alerts_subscriptionmatchesa_da547de4("subscriptionMatchesAlertType()<br/><small>netlify/functions/send-stock-alerts.js</small>")
     end
-    subgraph serve_api_netlify_functions_order_pipeline_js_e48848b2["netlify/functions/order-pipeline.js"]
-        functions_order_pipeline_cleanstring_d323486c("cleanString()<br/><small>netlify/functions/order-pipeline.js</small>")
-        functions_order_pipeline_parseincludestats_24a3c089("parseIncludeStats()<br/><small>netlify/functions/order-pipeline.js</small>")
-        functions_order_pipeline_summarizefilters_d4d9fee6("summarizeFilters()<br/><small>netlify/functions/order-pipeline.js</small>")
-    end
-    subgraph serve_api_functions_lib_checklist_reminders_js_078df5e1["functions/_lib/checklist-reminders.js"]
-        netlify_functions_lib_checklist_reminders_js_0a603339("checklist-reminders.js")
-        lib_checklist_reminders_evaluatechecklistreminde_59abfefe("evaluateChecklistReminders()<br/><small>functions/_lib/checklist-reminders.js</small>")
-    end
     subgraph serve_api_scripts_order_pipeline_api_js_82b19845["scripts/order-pipeline-api.js"]
         scripts_order_pipeline_api_t_ce153840("t()<br/><small>scripts/order-pipeline-api.js</small>")
         scripts_order_pipeline_api_readjsonresponse_3ee7d9c8("readJsonResponse()<br/><small>scripts/order-pipeline-api.js</small>")
     end
-    lib_order_pipeline_cleanstring_bced6500("cleanString()<br/><small>functions/_lib/order-pipeline.js</small>")
-    lib_push_delivery_sendpushtomatchingsubscription_cf73a182("sendPushToMatchingSubscriptions()<br/><small>functions/_lib/push-delivery.js</small>")
     scripts_checklist_api_request_1a84bf70("request()<br/><small>scripts/checklist-api.js</small>")
     functions_order_pipeline_cleanstring_d323486c -->|calls| functions_order_pipeline_parseincludestats_24a3c089
     functions_order_pipeline_cleanstring_d323486c -->|calls| functions_order_pipeline_summarizefilters_d4d9fee6
     functions_send_stock_alerts_getstatuscode_73563456 -->|calls| functions_send_stock_alerts_sendalerttosubscript_9cf05e50
     functions_send_stock_alerts_normalizealerttypes_ea9e2d49 -->|calls| functions_send_stock_alerts_subscriptionmatchesa_da547de4
-    lib_checklist_reminders_evaluatechecklistreminde_59abfefe -->|calls| lib_checklist_store_ensurechecklisttables_c3842948
-    lib_checklist_reminders_evaluatechecklistreminde_59abfefe -->|calls| lib_checklist_store_reservechecklistoccurrence_28fa3b2a
-    lib_checklist_reminders_evaluatechecklistreminde_59abfefe -->|calls| lib_push_delivery_sendpushtomatchingsubscription_cf73a182
-    lib_checklist_reminders_evaluatechecklistreminde_59abfefe -->|calls| lib_checklist_store_finalizechecklistoccurrence_48aebeca
-    lib_checklist_store_cleanoptionalstring_881d060c -->|calls| lib_checklist_store_finalizechecklistoccurrence_48aebeca
-    lib_checklist_store_ensurechecklisttables_c3842948 -->|calls| lib_checklist_store_reservechecklistoccurrence_28fa3b2a
-    lib_checklist_store_ensurechecklisttables_c3842948 -->|calls| lib_checklist_store_finalizechecklistoccurrence_48aebeca
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_normalizesearchterm_7257f69e
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_normalizeorderidentitycandida_de1d520a
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_getcanonicalorderidentity_2e197f97
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_ordersearchcandidates_23765ce3
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_adddaterangefilter_1d52e380
+    lib_order_pipeline_normalizesearchterm_7257f69e -->|calls| lib_order_pipeline_ordersearchcandidates_23765ce3
+    lib_order_pipeline_normalizeorderidentitycandida_de1d520a -->|calls| lib_order_pipeline_getcanonicalorderidentity_2e197f97
+    lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7 -->|calls| lib_order_pipeline_adddaterangefilter_1d52e380
     scripts_order_pipeline_api_t_ce153840 -->|calls| scripts_order_pipeline_api_readjsonresponse_3ee7d9c8
-    netlify_functions_lib_checklist_reminders_js_0a603339 -->|imports| lib_checklist_store_ensurechecklisttables_c3842948
-    netlify_functions_lib_checklist_reminders_js_0a603339 -->|imports| lib_checklist_store_finalizechecklistoccurrence_48aebeca
-    netlify_functions_lib_checklist_reminders_js_0a603339 -->|imports| lib_checklist_store_reservechecklistoccurrence_28fa3b2a
-    netlify_functions_lib_checklist_reminders_js_0a603339 -->|imports| lib_push_delivery_sendpushtomatchingsubscription_cf73a182
-    %% Omitted for readability: 186 nodes, 0 edges
-    class lib_checklist_store_ensurechecklisttables_c3842948 function;
-    class lib_checklist_store_reservechecklistoccurrence_28fa3b2a function;
-    class lib_checklist_store_finalizechecklistoccurrence_48aebeca function;
-    class lib_checklist_store_cleanoptionalstring_881d060c function;
+    %% Omitted for readability: 143 nodes, 0 edges
+    class lib_order_pipeline_cleanstring_bced6500 function;
+    class lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7 function;
+    class lib_order_pipeline_normalizesearchterm_7257f69e function;
+    class lib_order_pipeline_normalizeorderidentitycandida_de1d520a function;
+    class lib_order_pipeline_getcanonicalorderidentity_2e197f97 function;
+    class lib_order_pipeline_ordersearchcandidates_23765ce3 function;
+    class lib_order_pipeline_adddaterangefilter_1d52e380 function;
+    class netlify_functions_order_pipeline_js_a0a591a2 module;
+    class functions_order_pipeline_cleanstring_d323486c function;
+    class functions_order_pipeline_parseincludestats_24a3c089 function;
+    class functions_order_pipeline_summarizefilters_d4d9fee6 function;
     class functions_send_stock_alerts_getstatuscode_73563456 function;
     class functions_send_stock_alerts_sendalerttosubscript_9cf05e50 function;
     class functions_send_stock_alerts_normalizealerttypes_ea9e2d49 function;
     class functions_send_stock_alerts_subscriptionmatchesa_da547de4 function;
-    class functions_order_pipeline_cleanstring_d323486c function;
-    class functions_order_pipeline_parseincludestats_24a3c089 function;
-    class functions_order_pipeline_summarizefilters_d4d9fee6 function;
-    class netlify_functions_lib_checklist_reminders_js_0a603339 module;
-    class lib_checklist_reminders_evaluatechecklistreminde_59abfefe function;
     class scripts_order_pipeline_api_t_ce153840 function;
     class scripts_order_pipeline_api_readjsonresponse_3ee7d9c8 function;
-    class lib_order_pipeline_cleanstring_bced6500 function;
-    class lib_push_delivery_sendpushtomatchingsubscription_cf73a182 function;
     class scripts_checklist_api_request_1a84bf70 function;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
@@ -2056,14 +2028,14 @@ flowchart LR
 <tr><td><code>netlify/functions/send-stock-alerts.js</code></td><td>20 nodes</td></tr>
 <tr><td><code>netlify/functions/order-pipeline.js</code></td><td>15 nodes</td></tr>
 <tr><td><code>scripts/checklist-ui.js</code></td><td>13 nodes</td></tr>
-<tr><td><code>functions/_lib/checklist-store.js</code></td><td>12 nodes</td></tr>
-<tr><td><code>netlify/functions/checklist-completions.js</code></td><td>12 nodes</td></tr>
 <tr><td><code>scripts/checklist-api.js</code></td><td>10 nodes</td></tr>
+<tr><td><code>scripts/order-pipeline-api.js</code></td><td>10 nodes</td></tr>
+<tr><td><code>reports/notification-rules.js</code></td><td>5 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x237, calls x147, imports x21, imports x6. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x198, calls x127, imports x10, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -4084,8 +4056,355 @@ flowchart LR
 </div>
 <hr>
 
-<!-- ====== 14. Community 8 ====== -->
-<h2 id="community-8">14. Community 8</h2>
+<!-- ====== 14. Community 14 ====== -->
+<h2 id="community-14">14. Community 14</h2>
+<p>Community 14 groups implementation around postpurchase, uijs, scripts, state, mostly in scripts/postpurchase-ui.js. This section covers 35 nodes and 74 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Community 14 (35 nodes, 74 edges)
+    scripts_postpurchase_ui_t_f49c1de8("t()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_cleanapierror_5c136d98("cleanApiError()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149("loadVisibleReprintHistory()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_adjuststatsafterreprintr_0b8fd523("adjustStatsAfterReprintResolve()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_getprocessedorderid_10320c9d("getProcessedOrderId()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_getrenderoptions_5e8ea5b5("getRenderOptions()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_updatemonthfilter_d675833b("updateMonthFilter()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_getquickfilterlabel_4959dd3f("getQuickFilterLabel()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8("getReprintFilterLabel()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6("getActiveFilterLabel()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_createreprintrequest_3d63a49c("createReprintRequest()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_resolvereprintrequest_da574a60("resolveReprintRequest()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_deletereprintrequest_15c7d997("deleteReprintRequest()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879("loadPostPurchaseOrders()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841("renderPostPurchaseOrders()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_syncpostpurchaseordersma_08389c68("syncPostPurchaseOrdersManual()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_loadorderdetail_514e4332("loadOrderDetail()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_updatefiltercontrols_a6fc4533("updateFilterControls()<br/><small>scripts/postpurchase-ui.js</small>")
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_cleanapierror_5c136d98
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_updatemonthfilter_d675833b
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_getquickfilterlabel_4959dd3f
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_createreprintrequest_3d63a49c
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_resolvereprintrequest_da574a60
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_deletereprintrequest_15c7d997
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
+    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_syncpostpurchaseordersma_08389c68
+    scripts_postpurchase_ui_cleanapierror_5c136d98 -->|calls| scripts_postpurchase_ui_loadorderdetail_514e4332
+    scripts_postpurchase_ui_cleanapierror_5c136d98 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
+    scripts_postpurchase_ui_updatemonthfilter_d675833b -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
+    scripts_postpurchase_ui_updatefiltercontrols_a6fc4533 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
+    scripts_postpurchase_ui_getquickfilterlabel_4959dd3f -->|calls| scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6
+    scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8 -->|calls| scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6
+    scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
+    scripts_postpurchase_ui_adjuststatsafterreprintr_0b8fd523 -->|calls| scripts_postpurchase_ui_resolvereprintrequest_da574a60
+    scripts_postpurchase_ui_getrenderoptions_5e8ea5b5 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
+    scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149 -->|calls| scripts_postpurchase_ui_loadorderdetail_514e4332
+    scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
+    scripts_postpurchase_ui_createreprintrequest_3d63a49c -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
+    scripts_postpurchase_ui_resolvereprintrequest_da574a60 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
+    %% Omitted for readability: 17 nodes, 4 edges
+    class scripts_postpurchase_ui_t_f49c1de8 function;
+    class scripts_postpurchase_ui_cleanapierror_5c136d98 api;
+    class scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149 function;
+    class scripts_postpurchase_ui_adjuststatsafterreprintr_0b8fd523 function;
+    class scripts_postpurchase_ui_getprocessedorderid_10320c9d async;
+    class scripts_postpurchase_ui_getrenderoptions_5e8ea5b5 function;
+    class scripts_postpurchase_ui_updatemonthfilter_d675833b function;
+    class scripts_postpurchase_ui_getquickfilterlabel_4959dd3f function;
+    class scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8 function;
+    class scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6 function;
+    class scripts_postpurchase_ui_createreprintrequest_3d63a49c function;
+    class scripts_postpurchase_ui_resolvereprintrequest_da574a60 function;
+    class scripts_postpurchase_ui_deletereprintrequest_15c7d997 function;
+    class scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879 function;
+    class scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841 function;
+    class scripts_postpurchase_ui_syncpostpurchaseordersma_08389c68 function;
+    class scripts_postpurchase_ui_loadorderdetail_514e4332 function;
+    class scripts_postpurchase_ui_updatefiltercontrols_a6fc4533 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>postpurchase-ui.js</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>postpurchase-ui.js node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>deleteReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br>+8 more</td>
+  <td>t() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>state</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>state node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>initPostPurchaseUI()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>initPostPurchaseUI() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-endpoint">API</span></td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>loadOrderDetail()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>cleanApiError() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>updateMonthFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>updateMonthFilter() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>updateFilterControls()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>updateFilterControls() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>getQuickFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>getQuickFilterLabel() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>getReprintFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>getReprintFilterLabel() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getQuickFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>getReprintFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>getActiveFilterLabel() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>setReprintActionState()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>setReprintActionState() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>clearReprintActionState()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>clearReprintActionState() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>markReprintHistoryDone()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>markReprintHistoryDone() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>adjustStatsAfterReprintResolve()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>adjustStatsAfterReprintResolve() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>schedulePostPurchaseRefresh()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>schedulePostPurchaseRefresh() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>getOperatorName()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>getOperatorName() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>getRenderOptions()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>getRenderOptions() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>getVisibleOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>getVisibleOrders() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>setPostPurchaseQuickFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>setPostPurchaseQuickFilter() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>resetPostPurchaseFilters()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>resetPostPurchaseFilters() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>bindPostPurchaseControls()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>bindPostPurchaseControls() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>hasScopedStatsFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>buildOrderPipelineFilters()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>hasScopedStatsFilter() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>buildOrderPipelineFilters()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>hasScopedStatsFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>buildOrderPipelineFilters() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>getProcessedOrderId()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-async">Async</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>findOrderAndPrintFile()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>getProcessedOrderId() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>findOrderAndPrintFile()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getProcessedOrderId()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>findOrderAndPrintFile() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>storeReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>loadVisibleReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>storeReprintHistory() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>loadVisibleReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>storeReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>loadOrderDetail()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>loadVisibleReprintHistory() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>findOrderAndPrintFile()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>createReprintRequest() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>adjustStatsAfterReprintResolve()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>markReprintHistoryDone()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>schedulePostPurchaseRefresh()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br>+2 more</td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>resolveReprintRequest() node in scripts/postpurchase-ui.js.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>deleteReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
+  <td>deleteReprintRequest() node in scripts/postpurchase-ui.js.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>scripts/postpurchase-ui.js</code></td><td>35 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x40, contains x34. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 15. Community 8 ====== -->
+<h2 id="community-8">15. Community 8</h2>
 <p>Community 8 groups implementation around print, log, rowsjs, netlify, mostly in netlify/functions/print-log-rows.js, reports/types.d.ts. This section covers 35 nodes and 69 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
@@ -4420,361 +4739,14 @@ flowchart LR
 </div>
 <hr>
 
-<!-- ====== 15. Community 14 ====== -->
-<h2 id="community-14">15. Community 14</h2>
-<p>Community 14 groups implementation around postpurchase, uijs, scripts, state, mostly in scripts/postpurchase-ui.js. This section covers 32 nodes and 69 internal edges; the diagram shows only representative relationships to stay readable.</p>
-
-<div class="mermaid">
-%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
-flowchart LR
-    %% Section: Community 14 (32 nodes, 69 edges)
-    scripts_postpurchase_ui_t_f49c1de8("t()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_cleanapierror_5c136d98("cleanApiError()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149("loadVisibleReprintHistory()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_adjuststatsafterreprintr_0b8fd523("adjustStatsAfterReprintResolve()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_getprocessedorderid_10320c9d("getProcessedOrderId()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_getrenderoptions_5e8ea5b5("getRenderOptions()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_updatemonthfilter_d675833b("updateMonthFilter()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_getquickfilterlabel_4959dd3f("getQuickFilterLabel()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8("getReprintFilterLabel()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6("getActiveFilterLabel()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_createreprintrequest_3d63a49c("createReprintRequest()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_resolvereprintrequest_da574a60("resolveReprintRequest()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_deletereprintrequest_15c7d997("deleteReprintRequest()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879("loadPostPurchaseOrders()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841("renderPostPurchaseOrders()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_syncpostpurchaseordersma_08389c68("syncPostPurchaseOrdersManual()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_loadorderdetail_514e4332("loadOrderDetail()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_updatefiltercontrols_a6fc4533("updateFilterControls()<br/><small>scripts/postpurchase-ui.js</small>")
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_cleanapierror_5c136d98
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_updatemonthfilter_d675833b
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_getquickfilterlabel_4959dd3f
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_createreprintrequest_3d63a49c
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_resolvereprintrequest_da574a60
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_deletereprintrequest_15c7d997
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
-    scripts_postpurchase_ui_t_f49c1de8 -->|calls| scripts_postpurchase_ui_syncpostpurchaseordersma_08389c68
-    scripts_postpurchase_ui_cleanapierror_5c136d98 -->|calls| scripts_postpurchase_ui_loadorderdetail_514e4332
-    scripts_postpurchase_ui_cleanapierror_5c136d98 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
-    scripts_postpurchase_ui_updatemonthfilter_d675833b -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
-    scripts_postpurchase_ui_updatefiltercontrols_a6fc4533 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
-    scripts_postpurchase_ui_getquickfilterlabel_4959dd3f -->|calls| scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6
-    scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8 -->|calls| scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6
-    scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
-    scripts_postpurchase_ui_adjuststatsafterreprintr_0b8fd523 -->|calls| scripts_postpurchase_ui_resolvereprintrequest_da574a60
-    scripts_postpurchase_ui_getrenderoptions_5e8ea5b5 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
-    scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149 -->|calls| scripts_postpurchase_ui_loadorderdetail_514e4332
-    scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149 -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
-    scripts_postpurchase_ui_createreprintrequest_3d63a49c -->|calls| scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879
-    scripts_postpurchase_ui_resolvereprintrequest_da574a60 -->|calls| scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841
-    %% Omitted for readability: 14 nodes, 4 edges
-    class scripts_postpurchase_ui_t_f49c1de8 function;
-    class scripts_postpurchase_ui_cleanapierror_5c136d98 api;
-    class scripts_postpurchase_ui_loadvisiblereprinthistor_a3c5e149 function;
-    class scripts_postpurchase_ui_adjuststatsafterreprintr_0b8fd523 function;
-    class scripts_postpurchase_ui_getprocessedorderid_10320c9d async;
-    class scripts_postpurchase_ui_getrenderoptions_5e8ea5b5 function;
-    class scripts_postpurchase_ui_updatemonthfilter_d675833b function;
-    class scripts_postpurchase_ui_getquickfilterlabel_4959dd3f function;
-    class scripts_postpurchase_ui_getreprintfilterlabel_5a01e1a8 function;
-    class scripts_postpurchase_ui_getactivefilterlabel_c7b24ab6 function;
-    class scripts_postpurchase_ui_createreprintrequest_3d63a49c function;
-    class scripts_postpurchase_ui_resolvereprintrequest_da574a60 function;
-    class scripts_postpurchase_ui_deletereprintrequest_15c7d997 function;
-    class scripts_postpurchase_ui_loadpostpurchaseorders_75fbe879 function;
-    class scripts_postpurchase_ui_renderpostpurchaseorders_f6c7e841 function;
-    class scripts_postpurchase_ui_syncpostpurchaseordersma_08389c68 function;
-    class scripts_postpurchase_ui_loadorderdetail_514e4332 function;
-    class scripts_postpurchase_ui_updatefiltercontrols_a6fc4533 function;
-    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
-    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
-    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
-    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
-    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
-    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
-    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
-    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
-    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
-</div>
-
-<h3>Call Details</h3>
-<table class="call-table">
-<tr>
-  <th style="width:5%">#</th>
-  <th style="width:28%">Node</th>
-  <th style="width:10%">Type</th>
-  <th style="width:17%">Caller</th>
-  <th style="width:20%">Callees</th>
-  <th style="width:20%">Description</th>
-</tr>
-<tr>
-  <td>1</td>
-  <td><code>postpurchase-ui.js</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>postpurchase-ui.js node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>2</td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>deleteReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br>+8 more</td>
-  <td>t() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>3</td>
-  <td><code>state</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>state node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>4</td>
-  <td><code>initPostPurchaseUI()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>initPostPurchaseUI() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>5</td>
-  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>loadOrderDetail()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>cleanApiError() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>6</td>
-  <td><code>updateMonthFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>updateMonthFilter() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>7</td>
-  <td><code>updateFilterControls()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>updateFilterControls() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>8</td>
-  <td><code>getQuickFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>getQuickFilterLabel() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>9</td>
-  <td><code>getReprintFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>getReprintFilterLabel() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>10</td>
-  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getQuickFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>getReprintFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>getActiveFilterLabel() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>11</td>
-  <td><code>setReprintActionState()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>setReprintActionState() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>12</td>
-  <td><code>clearReprintActionState()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>clearReprintActionState() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>13</td>
-  <td><code>markReprintHistoryDone()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>markReprintHistoryDone() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>14</td>
-  <td><code>adjustStatsAfterReprintResolve()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>adjustStatsAfterReprintResolve() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>15</td>
-  <td><code>schedulePostPurchaseRefresh()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>schedulePostPurchaseRefresh() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>16</td>
-  <td><code>getOperatorName()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>getOperatorName() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>17</td>
-  <td><code>getRenderOptions()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>getRenderOptions() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>18</td>
-  <td><code>getVisibleOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>getVisibleOrders() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>19</td>
-  <td><code>hasScopedStatsFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>buildOrderPipelineFilters()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>hasScopedStatsFilter() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>20</td>
-  <td><code>buildOrderPipelineFilters()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>hasScopedStatsFilter()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>buildOrderPipelineFilters() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>21</td>
-  <td><code>getProcessedOrderId()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-async">Async</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>findOrderAndPrintFile()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>getProcessedOrderId() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>22</td>
-  <td><code>findOrderAndPrintFile()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getProcessedOrderId()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>findOrderAndPrintFile() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>23</td>
-  <td><code>storeReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>loadVisibleReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>storeReprintHistory() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>24</td>
-  <td><code>loadVisibleReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>storeReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>loadOrderDetail()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>loadVisibleReprintHistory() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>25</td>
-  <td><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>findOrderAndPrintFile()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>createReprintRequest() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>26</td>
-  <td><code>resolveReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>adjustStatsAfterReprintResolve()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>markReprintHistoryDone()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>schedulePostPurchaseRefresh()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br>+2 more</td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>resolveReprintRequest() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>27</td>
-  <td><code>deleteReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>deleteReprintRequest() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>28</td>
-  <td><code>loadOrderDetail()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>loadVisibleReprintHistory()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>loadOrderDetail() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>29</td>
-  <td><code>loadPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>buildOrderPipelineFilters()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>cleanApiError()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>createReprintRequest()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br>+6 more</td>
-  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>loadPostPurchaseOrders() node in scripts/postpurchase-ui.js.</td>
-</tr>
-<tr>
-  <td>30</td>
-  <td><code>renderPostPurchaseOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getActiveFilterLabel()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>getRenderOptions()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br><code>getVisibleOrders()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small><br>+4 more</td>
-  <td><code>bindProcessedOrderActions()</code><br><small style="color:var(--muted)">scripts/postpurchase-ui.js</small></td>
-  <td>renderPostPurchaseOrders() node in scripts/postpurchase-ui.js.</td>
-</tr>
-</table>
-
-<div class="grid">
-  <div class="card">
-    <h4>Key Files</h4>
-    <table style="width:100%;font-size:0.85rem;">
-      <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>scripts/postpurchase-ui.js</code></td><td>32 nodes</td></tr>
-    </table>
-  </div>
-  <div class="card">
-    <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: calls x38, contains x31. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
-  </div>
-</div>
-<hr>
-
 <!-- ====== 16. Other ====== -->
 <h2 id="other">16. Other</h2>
-<p>Other groups implementation around scripts, netlify, functions, stock, mostly in app.js, netlify/functions/print-log-summary.js, scripts/checklist-render.js. This section covers 412 nodes and 580 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Other groups implementation around scripts, netlify, functions, checklist, mostly in app.js, netlify/functions/print-log-summary.js, functions/_lib/db.js. This section covers 469 nodes and 684 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Other (412 nodes, 580 edges)
+    %% Section: Other (469 nodes, 684 edges)
     subgraph other_app_js_ccee49be["app.js"]
         print_guard_dgfc_app_i18n_a7c2200b("i18n()<br/><small>app.js</small>")
         print_guard_dgfc_app_requirestockactions_5bc51684("requireStockActions()<br/><small>app.js</small>")
@@ -4792,9 +4764,9 @@ flowchart LR
         print_guard_dgfc_app_loadall_e94e9b1a("loadAll()<br/><small>app.js</small>")
         print_guard_dgfc_app_saveitemmodal_8d5f7837("saveItemModal()<br/><small>app.js</small>")
     end
-    reports_notification_model_normalizetext_6f228a21("normalizeText()<br/><small>reports/notification-model.js</small>")
-    scripts_reprint_xml_cleanvalue_3e635b42("cleanValue()<br/><small>scripts/reprint-xml.js</small>")
-    scripts_stock_feature_requirecontext_f2538ea6("requireContext()<br/><small>scripts/stock-feature.js</small>")
+    netlify_functions_lib_checklist_reminders_js_0a603339("checklist-reminders.js")
+    lib_checklist_store_ensurechecklisttables_c3842948("ensureChecklistTables()<br/><small>functions/_lib/checklist-store.js</small>")
+    netlify_functions_postpurchase_orders_js_66de0aec("postpurchase-orders.js")
     print_guard_dgfc_app_i18n_a7c2200b -->|calls| print_guard_dgfc_app_getcostunitpermonth_be1c3e44
     print_guard_dgfc_app_i18n_a7c2200b -->|calls| print_guard_dgfc_app_savemovement_36f4bb10
     print_guard_dgfc_app_i18n_a7c2200b -->|calls| print_guard_dgfc_app_renderitemsmgmt_08c8cc7e
@@ -4817,7 +4789,8 @@ flowchart LR
     print_guard_dgfc_app_renderitemsmgmt_08c8cc7e -->|calls| print_guard_dgfc_app_saveitemmodal_8d5f7837
     print_guard_dgfc_app_getcorecs_6e838821 -->|calls| print_guard_dgfc_app_rendermachinecard_3f00019c
     print_guard_dgfc_app_getcorecs_6e838821 -->|calls| print_guard_dgfc_app_rendercohistory_86169248
-    %% Omitted for readability: 394 nodes, 0 edges
+    netlify_functions_lib_checklist_reminders_js_0a603339 -->|imports| lib_checklist_store_ensurechecklisttables_c3842948
+    %% Omitted for readability: 451 nodes, 0 edges
     class print_guard_dgfc_app_i18n_a7c2200b function;
     class print_guard_dgfc_app_requirestockactions_5bc51684 function;
     class print_guard_dgfc_app_getcorecs_6e838821 function;
@@ -4833,9 +4806,9 @@ flowchart LR
     class print_guard_dgfc_app_stockdbadapter_893b1586 function;
     class print_guard_dgfc_app_loadall_e94e9b1a function;
     class print_guard_dgfc_app_saveitemmodal_8d5f7837 function;
-    class reports_notification_model_normalizetext_6f228a21 function;
-    class scripts_reprint_xml_cleanvalue_3e635b42 function;
-    class scripts_stock_feature_requirecontext_f2538ea6 function;
+    class netlify_functions_lib_checklist_reminders_js_0a603339 module;
+    class lib_checklist_store_ensurechecklisttables_c3842948 function;
+    class netlify_functions_postpurchase_orders_js_66de0aec module;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -5059,43 +5032,43 @@ flowchart LR
 </tr>
 <tr>
   <td>26</td>
-  <td><code>requireAdminPinForScreen()</code><br><small style="color:var(--muted)">app.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>el()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small><br><code>elSet()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small><br><code>showToast()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small></td>
-  <td>requireAdminPinForScreen() node in app.js.</td>
+  <td><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td><code>checklist-completions.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-completions.js</small><br><code>postpurchase-orders.js</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>db.js node in functions/_lib/db.js.</td>
 </tr>
 <tr>
   <td>27</td>
-  <td><code>renderPostPurchaseAccessRequired()</code><br><small style="color:var(--muted)">app.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
+  <td><code>{ Client }</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>el()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small><br><code>elSet()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small><br><code>requirePostPurchasePinForScreen()</code><br><small style="color:var(--muted)">app.js</small></td>
-  <td>renderPostPurchaseAccessRequired() node in app.js.</td>
+  <td>No direct outbound edge</td>
+  <td>{ Client } node in functions/_lib/db.js.</td>
 </tr>
 <tr>
   <td>28</td>
-  <td><code>requirePostPurchasePinForScreen()</code><br><small style="color:var(--muted)">app.js</small></td>
+  <td><code>crypto</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>renderPostPurchaseAccessRequired()</code><br><small style="color:var(--muted)">app.js</small></td>
-  <td><code>showToast()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small></td>
-  <td>requirePostPurchasePinForScreen() node in app.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>crypto node in functions/_lib/db.js.</td>
 </tr>
 <tr>
   <td>29</td>
-  <td><code>requireStockActions()</code><br><small style="color:var(--muted)">app.js</small></td>
+  <td><code>getConnectionString()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>deleteItem()</code><br><small style="color:var(--muted)">app.js</small><br><code>deleteMovement()</code><br><small style="color:var(--muted)">app.js</small><br><code>deleteMovementAdmin()</code><br><small style="color:var(--muted)">app.js</small><br>+4 more</td>
-  <td>requireStockActions() node in app.js.</td>
+  <td><code>withClient()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td>getConnectionString() node in functions/_lib/db.js.</td>
 </tr>
 <tr>
   <td>30</td>
-  <td><code>deleteMovementAdmin()</code><br><small style="color:var(--muted)">app.js</small></td>
+  <td><code>rateLimitBuckets</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>requireStockActions()</code><br><small style="color:var(--muted)">app.js</small></td>
-  <td><code>isAdmin()</code><br><small style="color:var(--muted)">scripts/checklist-state.js</small><br><code>showConfirm()</code><br><small style="color:var(--muted)">app.js</small><br><code>showToast()</code><br><small style="color:var(--muted)">scripts/dom-utils.js</small></td>
-  <td>deleteMovementAdmin() node in app.js.</td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>rateLimitBuckets node in functions/_lib/db.js.</td>
 </tr>
 </table>
 
@@ -5104,19 +5077,19 @@ flowchart LR
     <h4>Key Files</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>app.js</code></td><td>33 nodes</td></tr>
+      <tr><td><code>app.js</code></td><td>32 nodes</td></tr>
 <tr><td><code>netlify/functions/print-log-summary.js</code></td><td>25 nodes</td></tr>
+<tr><td><code>functions/_lib/db.js</code></td><td>21 nodes</td></tr>
 <tr><td><code>scripts/checklist-render.js</code></td><td>19 nodes</td></tr>
 <tr><td><code>netlify/functions/sync.js</code></td><td>17 nodes</td></tr>
 <tr><td><code>scripts/stock-domain.js</code></td><td>17 nodes</td></tr>
 <tr><td><code>docs/configuration.generated.md</code></td><td>16 nodes</td></tr>
-<tr><td><code>scripts/core-utils.js</code></td><td>14 nodes</td></tr>
-<tr><td><code>scripts/reprint-xml.js</code></td><td>13 nodes</td></tr>
+<tr><td><code>scripts/core-utils.js</code></td><td>13 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x332, calls x184. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x387, calls x225, imports x11, imports x5. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -5127,17 +5100,17 @@ flowchart LR
   <div class="card">
     <h4>Graph</h4>
     <table style="width:100%;font-size:0.85rem;">
-      <tr><td>Nodes</td><td>1510</td></tr>
-      <tr><td>Edges</td><td>2594</td></tr>
+      <tr><td>Nodes</td><td>1513</td></tr>
+      <tr><td>Edges</td><td>2599</td></tr>
       <tr><td>Hyperedges</td><td>0</td></tr>
-      <tr><td>Communities</td><td>96</td></tr>
+      <tr><td>Communities</td><td>100</td></tr>
       <tr><td>Documented Sections</td><td>15</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Edge Confidence</h4>
     <table style="width:100%;font-size:0.85rem;">
-      <tr><td>EXTRACTED</td><td>2506</td></tr>
+      <tr><td>EXTRACTED</td><td>2511</td></tr>
       <tr><td>INFERRED</td><td>88</td></tr>
       <tr><td>AMBIGUOUS</td><td>0</td></tr>
     </table>
@@ -5146,7 +5119,7 @@ flowchart LR
 
 <div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
   <p>print_guard_DGFC — Architecture Documentation</p>
-  <p>Generated: 2026-05-26 13:33 UTC · graphify callflow-html</p>
+  <p>Generated: 2026-05-26 13:39 UTC · graphify callflow-html</p>
 </div>
 
 </div><!-- .container -->
