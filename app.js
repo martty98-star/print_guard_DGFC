@@ -406,40 +406,6 @@ const {
   handleImportJSON,
 } = reportingApi;
 
-const settingsRuntimeApi = PrintGuardSettingsRuntime.createSettingsRuntime({
-  APP_VERSION,
-  ST_CORECS,
-  ST_ITEMS,
-  ST_MOVES,
-  ST_SETTINGS,
-  S,
-  cfg,
-  el,
-  enablePushNotifications,
-  exportCSVIntervals,
-  exportCSVRawCo,
-  exportCSVStock,
-  exportCSVStockLevels,
-  exportJSON,
-  fetchImpl: appFetch,
-  handleImportJSON,
-  i18n,
-  idbClear,
-  renderAlerts,
-  renderCoDashboard,
-  renderCoHistory,
-  renderItemsMgmt,
-  renderStockOverview,
-  saveSettingsToIDB,
-  sendStockNotifications,
-  showConfirm,
-  showToast,
-});
-const {
-  initRuntime: initSettingsRuntime,
-  loadSettingsUI,
-} = settingsRuntimeApi;
-
 let dateFilters;
 
 // ══════════════════════════════════════════════════════════
@@ -511,6 +477,40 @@ const {
   saveMovement,
 } = stockRuntimeApi;
 initStockRuntime();
+
+const settingsRuntimeApi = PrintGuardSettingsRuntime.createSettingsRuntime({
+  APP_VERSION,
+  ST_CORECS,
+  ST_ITEMS,
+  ST_MOVES,
+  ST_SETTINGS,
+  S,
+  cfg,
+  el,
+  enablePushNotifications,
+  exportCSVIntervals,
+  exportCSVRawCo,
+  exportCSVStock,
+  exportCSVStockLevels,
+  exportJSON,
+  fetchImpl: appFetch,
+  handleImportJSON,
+  i18n,
+  idbClear,
+  renderAlerts,
+  renderCoDashboard,
+  renderCoHistory,
+  renderItemsMgmt,
+  renderStockOverview,
+  saveSettingsToIDB,
+  sendStockNotifications,
+  showConfirm,
+  showToast,
+});
+const {
+  initRuntime: initSettingsRuntime,
+  loadSettingsUI,
+} = settingsRuntimeApi;
 
 const postPurchaseRuntimeApi = PrintGuardPostPurchaseRuntime.createPostPurchaseRuntime({
   S,
