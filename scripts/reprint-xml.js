@@ -25,7 +25,13 @@
     return cleaned || '';
   }
 
-  function normalizeOrderToken(value) {
+  function normalizeOrderIdToken(value) {
+    const raw = cleanValue(value);
+    if (!raw) return '';
+    return raw.replace(/_REPRINT$/i, '');
+  }
+
+  function normalizePoNumberToken(value) {
     const raw = cleanValue(value);
     if (!raw) return '';
     const strippedSuffix = raw.replace(/_REPRINT$/i, '');
@@ -52,14 +58,14 @@
       order && order.id,
     ];
     for (const candidate of candidates) {
-      const value = normalizeOrderToken(candidate);
+      const value = normalizeOrderIdToken(candidate);
       if (value) return value;
     }
     return 'ORDER';
   }
 
   function normalizePoNumber(order) {
-    const raw = normalizeOrderToken(
+    const raw = normalizePoNumberToken(
       order && (
         order.PoNumber ||
         order.poNumber ||

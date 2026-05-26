@@ -60,7 +60,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 <div class="container">
 
 <h1>print_guard_DGFC — Complete Call Flow &amp; Architecture Documentation</h1>
-<p class="subtitle">Generated from graphify knowledge graph: 1422 nodes, 2494 edges, 88 communities. Commit: 66396ff</p>
+<p class="subtitle">Generated from graphify knowledge graph: 1504 nodes, 2580 edges, 94 communities. Commit: 9c845f2</p>
 
 <div class="nav">
     <a href="#overview">Architecture Overview</a>
@@ -72,10 +72,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
     <a href="#serve-api">Serving API</a>
     <a href="#tests-fixtures">Tests &amp; Fixtures</a>
     <a href="#community-15">Community 15</a>
+    <a href="#community-10">Community 10</a>
     <a href="#community-11">Community 11</a>
     <a href="#community-7">Community 7</a>
     <a href="#community-6">Community 6</a>
-    <a href="#community-10">Community 10</a>
     <a href="#community-8">Community 8</a>
     <a href="#community-14">Community 14</a>
     <a href="#other">Other</a>
@@ -88,11 +88,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    BUILD_GRAPH_321CBB04("Graph Build<br/><small>283 nodes</small>")
+    BUILD_GRAPH_321CBB04("Graph Build<br/><small>343 nodes</small>")
     class BUILD_GRAPH_321CBB04 module;
-    ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>77 nodes</small>")
+    ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>78 nodes</small>")
     class ANALYSIS_CLUSTERING_C79796DA module;
-    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>89 nodes</small>")
+    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>93 nodes</small>")
     class OUTPUTS_DOCS_ED82387C module;
     CLI_SKILLS_9964CBB8("CLI &amp; Skill Installers<br/><small>2 nodes</small>")
     class CLI_SKILLS_9964CBB8 module;
@@ -100,23 +100,23 @@ flowchart LR
     class INGEST_CACHE_UPDATE_FF457338 module;
     SERVE_API_35EC8E86("Serving API<br/><small>200 nodes</small>")
     class SERVE_API_35EC8E86 module;
-    TESTS_FIXTURES_B84B1DCC("Tests &amp; Fixtures<br/><small>14 nodes</small>")
+    TESTS_FIXTURES_B84B1DCC("Tests &amp; Fixtures<br/><small>24 nodes</small>")
     class TESTS_FIXTURES_B84B1DCC module;
     COMMUNITY_15_4BECAAD7("Community 15<br/><small>56 nodes</small>")
     class COMMUNITY_15_4BECAAD7 module;
+    COMMUNITY_10_48432F59("Community 10<br/><small>40 nodes</small>")
+    class COMMUNITY_10_48432F59 module;
     COMMUNITY_11_DE018FC2("Community 11<br/><small>39 nodes</small>")
     class COMMUNITY_11_DE018FC2 module;
     COMMUNITY_7_989501FC("Community 7<br/><small>39 nodes</small>")
     class COMMUNITY_7_989501FC module;
     COMMUNITY_6_7D637A07("Community 6<br/><small>38 nodes</small>")
     class COMMUNITY_6_7D637A07 module;
-    COMMUNITY_10_48432F59("Community 10<br/><small>35 nodes</small>")
-    class COMMUNITY_10_48432F59 module;
     COMMUNITY_8_9FC4FAC0("Community 8<br/><small>35 nodes</small>")
     class COMMUNITY_8_9FC4FAC0 module;
     COMMUNITY_14_21BC55C3("Community 14<br/><small>32 nodes</small>")
     class COMMUNITY_14_21BC55C3 module;
-    OTHER_D0941E68("Other<br/><small>401 nodes</small>")
+    OTHER_D0941E68("Other<br/><small>403 nodes</small>")
     class OTHER_D0941E68 module;
     COMMUNITY_11_DE018FC2 -->|contains x37| OTHER_D0941E68
     COMMUNITY_15_4BECAAD7 -->|imports x8| BUILD_GRAPH_321CBB04
@@ -125,8 +125,8 @@ flowchart LR
     BUILD_GRAPH_321CBB04 -->|imports x5| COMMUNITY_7_989501FC
     BUILD_GRAPH_321CBB04 -->|imports x5| SERVE_API_35EC8E86
     COMMUNITY_7_989501FC -->|calls x5| COMMUNITY_6_7D637A07
+    OUTPUTS_DOCS_ED82387C -->|imports x4| BUILD_GRAPH_321CBB04
     COMMUNITY_7_989501FC -->|calls x4| SERVE_API_35EC8E86
-    BUILD_GRAPH_321CBB04 -->|contains x3| OUTPUTS_DOCS_ED82387C
     OTHER_D0941E68 -->|calls x2| COMMUNITY_11_DE018FC2
     OTHER_D0941E68 -->|calls x2| INGEST_CACHE_UPDATE_FF457338
     BUILD_GRAPH_321CBB04 -->|contains x2| ANALYSIS_CLUSTERING_C79796DA
@@ -146,7 +146,7 @@ flowchart LR
     <h4>Architecture Layers</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
-      <tr><td>Graph Build</td><td>283</td><td><code>0, 4, 16, 30, 75, 26, 27, 28, 47, 53, 59, 65, 66, 86</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>77</td><td><code>5, 9</code></td></tr><tr><td>Outputs &amp; Docs</td><td>89</td><td><code>3, 17, 33, 54, 64</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>2</td><td><code>77, 80</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>82</td><td><code>18, 37, 29, 36, 61</code></td></tr><tr><td>Serving API</td><td>200</td><td><code>1, 2, 24, 12</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>14</td><td><code>25</code></td></tr><tr><td>Community 15</td><td>56</td><td><code>15</code></td></tr><tr><td>Community 11</td><td>39</td><td><code>11</code></td></tr><tr><td>Community 7</td><td>39</td><td><code>7</code></td></tr><tr><td>Community 6</td><td>38</td><td><code>6</code></td></tr><tr><td>Community 10</td><td>35</td><td><code>10</code></td></tr><tr><td>Community 8</td><td>35</td><td><code>8</code></td></tr><tr><td>Community 14</td><td>32</td><td><code>14</code></td></tr><tr><td>Other</td><td>401</td><td><code>13, 19, 20, 21, 22, 23, 48, 38, 39, 31, 32, 43, 35, 40, 56, 41, 42, 44, 45, 46, 34, 49, 50, 51, 52, 82, 55, 57, 58, 83, 60, 62, 63, 84, 85, 67, 68, 69, 70, 71, 72, 73, 74, 87, 76, 78, 79, 81</code></td></tr>
+      <tr><td>Graph Build</td><td>343</td><td><code>0, 4, 16, 60, 68, 30, 75, 26, 27, 28, 47, 53, 59, 65, 66, 86, 89, 90</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>78</td><td><code>5, 9, 88</code></td></tr><tr><td>Outputs &amp; Docs</td><td>93</td><td><code>3, 17, 33, 54, 64</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>2</td><td><code>77, 80</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>82</td><td><code>18, 37, 29, 36, 61</code></td></tr><tr><td>Serving API</td><td>200</td><td><code>1, 2, 24, 12</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>24</td><td><code>25, 91</code></td></tr><tr><td>Community 15</td><td>56</td><td><code>15</code></td></tr><tr><td>Community 10</td><td>40</td><td><code>10</code></td></tr><tr><td>Community 11</td><td>39</td><td><code>11</code></td></tr><tr><td>Community 7</td><td>39</td><td><code>7</code></td></tr><tr><td>Community 6</td><td>38</td><td><code>6</code></td></tr><tr><td>Community 8</td><td>35</td><td><code>8</code></td></tr><tr><td>Community 14</td><td>32</td><td><code>14</code></td></tr><tr><td>Other</td><td>403</td><td><code>13, 19, 20, 21, 22, 23, 48, 38, 39, 56, 31, 32, 43, 35, 40, 41, 42, 44, 45, 46, 34, 49, 50, 51, 52, 82, 55, 57, 58, 83, 92, 62, 63, 84, 85, 67, 93, 69, 70, 71, 72, 73, 74, 87, 76, 78, 79, 81</code></td></tr>
     </table>
   </div>
   <div class="card">
@@ -158,8 +158,8 @@ flowchart LR
   <div class="card">
     <h4>Graph Report Highlights</h4>
     <ul>
-      <li>1422 nodes · 2494 edges · 88 communities (78 shown, 10 thin omitted)</li>
-      <li>Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 88 edges (avg confidence: 0.8)</li>
+      <li>1504 nodes · 2580 edges · 94 communities (84 shown, 10 thin omitted)</li>
+      <li>Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 88 edges (avg confidence: 0.8)</li>
       <li>Token cost: 0 input · 0 output</li>
       <li>1. `el()` - 26 edges</li>
       <li>2. `PrintLogRow` - 25 edges</li>
@@ -170,12 +170,12 @@ flowchart LR
 <hr>
 <!-- ====== 2. Graph Build ====== -->
 <h2 id="build-graph">2. Graph Build</h2>
-<p>Graph Build groups implementation around server, netlify, colorado, upsert, mostly in script_server/colorado-upsert/upsert-colorado-json.js, scripts/sync-processed-print-orders.js, functions/_lib/db.js. This section covers 283 nodes and 465 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Graph Build groups implementation around server, colorado, upsert, netlify, mostly in .obsidian/core-plugins.json, .obsidian/workspace.json, script_server/colorado-upsert/upsert-colorado-json.js. This section covers 343 nodes and 518 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Graph Build (283 nodes, 465 edges)
+    %% Section: Graph Build (343 nodes, 518 edges)
     subgraph build_graph_functions_lib_db_js_e6141623["functions/_lib/db.js"]
         netlify_functions_lib_db_js_lib_db_getconnection_1d407cff("getConnectionString()<br/><small>functions/_lib/db.js</small>")
         netlify_functions_lib_db_js_lib_db_withclient_871d2a41("withClient()<br/><small>functions/_lib/db.js</small>")
@@ -213,7 +213,7 @@ flowchart LR
     netlify_functions_postpurchase_orders_js_66de0aec -->|imports| lib_db_checkratelimit_f646ff12
     netlify_functions_postpurchase_orders_js_66de0aec -->|imports| lib_db_getheader_4c1a2d13
     netlify_functions_processed_print_orders_js_8d1cdb4b -->|imports| lib_db_checkratelimit_f646ff12
-    %% Omitted for readability: 265 nodes, 0 edges
+    %% Omitted for readability: 325 nodes, 0 edges
     class netlify_functions_lib_db_js_lib_db_getconnection_1d407cff function;
     class netlify_functions_lib_db_js_lib_db_withclient_871d2a41 entry;
     class lib_db_getadminapikey_ae23a8ec api;
@@ -295,52 +295,6 @@ flowchart LR
 </tr>
 <tr>
   <td>6</td>
-  <td><code>daily-production-report.js</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>checkRateLimit()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br><code>json()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small><br>+1 more</td>
-  <td>daily-production-report.js node in netlify/functions/daily-production-report.js.</td>
-</tr>
-<tr>
-  <td>7</td>
-  <td><code>{
-  checkRateLimit,
-  json,
-  requirePostPurchaseAccess,
-  withClient,
-}</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>{
-  checkRateLimit,
-  json,
-  requirePostPurchaseAccess,
-  withClient,
-} node in netlify/functions/daily-production-report.js.</td>
-</tr>
-<tr>
-  <td>8</td>
-  <td><code>{
-  buildDailyProductionReport,
-}</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>{
-  buildDailyProductionReport,
-} node in netlify/functions/daily-production-report.js.</td>
-</tr>
-<tr>
-  <td>9</td>
-  <td><code>cleanApiError()</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>cleanApiError() node in netlify/functions/daily-production-report.js.</td>
-</tr>
-<tr>
-  <td>10</td>
   <td><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
   <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
@@ -348,7 +302,7 @@ flowchart LR
   <td>delete-stock-movement.js node in netlify/functions/delete-stock-movement.js.</td>
 </tr>
 <tr>
-  <td>11</td>
+  <td>7</td>
   <td><code>{ json, parseRequestBody, requireAdminPin, withClient }</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
   <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
@@ -356,7 +310,7 @@ flowchart LR
   <td>{ json, parseRequestBody, requireAdminPin, withClient } node in netlify/functions/delete-stock-movement.js.</td>
 </tr>
 <tr>
-  <td>12</td>
+  <td>8</td>
   <td><code>requestBody</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -364,7 +318,7 @@ flowchart LR
   <td>requestBody node in netlify/functions/delete-stock-movement.js.</td>
 </tr>
 <tr>
-  <td>13</td>
+  <td>9</td>
   <td><code>id</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -372,7 +326,7 @@ flowchart LR
   <td>id node in netlify/functions/delete-stock-movement.js.</td>
 </tr>
 <tr>
-  <td>14</td>
+  <td>10</td>
   <td><code>postpurchase-orders.js</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
   <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
@@ -380,7 +334,7 @@ flowchart LR
   <td>postpurchase-orders.js node in netlify/functions/postpurchase-orders.js.</td>
 </tr>
 <tr>
-  <td>15</td>
+  <td>11</td>
   <td><code>{
   checkRateLimit,
   getHeader,
@@ -404,7 +358,7 @@ flowchart LR
 } node in netlify/functions/postpurchase-orders.js.</td>
 </tr>
 <tr>
-  <td>16</td>
+  <td>12</td>
   <td><code>{
   listPrintOrdersReceived,
   syncPostPurchaseOrders,
@@ -420,7 +374,7 @@ flowchart LR
 } node in netlify/functions/postpurchase-orders.js.</td>
 </tr>
 <tr>
-  <td>17</td>
+  <td>13</td>
   <td><code>parseListOptions()</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -428,7 +382,7 @@ flowchart LR
   <td>parseListOptions() node in netlify/functions/postpurchase-orders.js.</td>
 </tr>
 <tr>
-  <td>18</td>
+  <td>14</td>
   <td><code>parseSyncOptions()</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -436,7 +390,7 @@ flowchart LR
   <td>parseSyncOptions() node in netlify/functions/postpurchase-orders.js.</td>
 </tr>
 <tr>
-  <td>19</td>
+  <td>15</td>
   <td><code>parseUpdateOptions()</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -444,7 +398,7 @@ flowchart LR
   <td>parseUpdateOptions() node in netlify/functions/postpurchase-orders.js.</td>
 </tr>
 <tr>
-  <td>20</td>
+  <td>16</td>
   <td><code>processed-print-orders.js</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-async">Async</span></td>
   <td>External entry / no inbound edge</td>
@@ -452,7 +406,7 @@ flowchart LR
   <td>processed-print-orders.js node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>21</td>
+  <td>17</td>
   <td><code>{
   checkRateLimit,
   json,
@@ -474,7 +428,7 @@ flowchart LR
 } node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>22</td>
+  <td>18</td>
   <td><code>{
   createReprintRequest,
   deleteReprintRequest,
@@ -496,7 +450,7 @@ flowchart LR
 } node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>23</td>
+  <td>19</td>
   <td><code>cleanApiError()</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-endpoint">API</span></td>
   <td>External entry / no inbound edge</td>
@@ -504,7 +458,7 @@ flowchart LR
   <td>cleanApiError() node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>24</td>
+  <td>20</td>
   <td><code>started</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -512,7 +466,7 @@ flowchart LR
   <td>started node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>25</td>
+  <td>21</td>
   <td><code>orderIds</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -520,7 +474,7 @@ flowchart LR
   <td>orderIds node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>26</td>
+  <td>22</td>
   <td><code>bodyInput</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -528,7 +482,7 @@ flowchart LR
   <td>bodyInput node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>27</td>
+  <td>23</td>
   <td><code>action</code><br><small style="color:var(--muted)">netlify/functions/processed-print-orders.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -536,15 +490,15 @@ flowchart LR
   <td>action node in netlify/functions/processed-print-orders.js.</td>
 </tr>
 <tr>
-  <td>28</td>
+  <td>24</td>
   <td><code>db.js</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
   <td><span class="tag tag-class">Module</span></td>
-  <td><code>checklist-evaluate.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small><br><code>daily-production-report.js</code><br><small style="color:var(--muted)">netlify/functions/daily-production-report.js</small><br><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small><br>+2 more</td>
+  <td><code>checklist-evaluate.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small><br><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small><br><code>postpurchase-orders.js</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small><br>+1 more</td>
   <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small><br><code>sync-processed-print-orders.js</code><br><small style="color:var(--muted)">scripts/sync-processed-print-orders.js</small></td>
   <td>db.js node in functions/_lib/db.js.</td>
 </tr>
 <tr>
-  <td>29</td>
+  <td>25</td>
   <td><code>{ Client }</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
   <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
@@ -552,12 +506,44 @@ flowchart LR
   <td>{ Client } node in functions/_lib/db.js.</td>
 </tr>
 <tr>
-  <td>30</td>
+  <td>26</td>
   <td><code>crypto</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td>No direct outbound edge</td>
   <td>crypto node in functions/_lib/db.js.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>json()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>checklist-evaluate.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small><br><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small><br><code>postpurchase-orders.js</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small><br>+1 more</td>
+  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small></td>
+  <td>json() node in functions/_lib/db.js.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>parseRequestBody()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>checklist-evaluate.js</code><br><small style="color:var(--muted)">netlify/functions/checklist-evaluate.js</small><br><code>delete-stock-movement.js</code><br><small style="color:var(--muted)">netlify/functions/delete-stock-movement.js</small><br><code>postpurchase-orders.js</code><br><small style="color:var(--muted)">netlify/functions/postpurchase-orders.js</small><br>+1 more</td>
+  <td><code>processed_print_orders</code><br><small style="color:var(--muted)">sql/</small></td>
+  <td>parseRequestBody() node in functions/_lib/db.js.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>getConnectionString()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>withClient()</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td>getConnectionString() node in functions/_lib/db.js.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>rateLimitBuckets</code><br><small style="color:var(--muted)">functions/_lib/db.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>rateLimitBuckets node in functions/_lib/db.js.</td>
 </tr>
 </table>
 
@@ -566,31 +552,31 @@ flowchart LR
     <h4>Key Files</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>script_server/colorado-upsert/upsert-colorado-json.js</code></td><td>28 nodes</td></tr>
+      <tr><td><code>.obsidian/core-plugins.json</code></td><td>32 nodes</td></tr>
+<tr><td><code>.obsidian/workspace.json</code></td><td>30 nodes</td></tr>
+<tr><td><code>script_server/colorado-upsert/upsert-colorado-json.js</code></td><td>28 nodes</td></tr>
 <tr><td><code>scripts/sync-processed-print-orders.js</code></td><td>26 nodes</td></tr>
 <tr><td><code>functions/_lib/db.js</code></td><td>24 nodes</td></tr>
 <tr><td><code>functions/_lib/processed-print-orders.js</code></td><td>24 nodes</td></tr>
 <tr><td><code>scan-capture/README.md</code></td><td>24 nodes</td></tr>
 <tr><td><code>README.md</code></td><td>20 nodes</td></tr>
-<tr><td><code>SERVER_BACKEND/script_server/Parse-ColoradoAcl_server.ps1</code></td><td>14 nodes</td></tr>
-<tr><td><code>package.json</code></td><td>14 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x264, calls x140, imports x38, imports x10. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x321, calls x140, imports x35, imports x9. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 3. Analysis & Clustering ====== -->
 <h2 id="analysis-clustering">3. Analysis &amp; Clustering</h2>
-<p>Analysis &amp; Clustering groups implementation around sync, submit, tool, logsjs, mostly in scan-capture/server.js, SubmitTool-sync/sync-submit-tool-logs.js, scripts/sync-submit-tool-logs.js. This section covers 77 nodes and 134 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Analysis &amp; Clustering groups implementation around sync, submit, tool, logsjs, mostly in scan-capture/server.js, SubmitTool-sync/sync-submit-tool-logs.js, scripts/sync-submit-tool-logs.js. This section covers 78 nodes and 134 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Analysis &amp; Clustering (77 nodes, 134 edges)
+    %% Section: Analysis &amp; Clustering (78 nodes, 134 edges)
     subgraph analysis_clustering_scan_capture_server_js_e09e6ed4["scan-capture/server.js"]
         scan_capture_server_json_12b11a68("json()<br/><small>scan-capture/server.js</small>")
         scan_capture_server_localdatestring_5b47625d("localDateString()<br/><small>scan-capture/server.js</small>")
@@ -628,7 +614,7 @@ flowchart LR
     scan_capture_server_readbody_8a67689d -->|calls| scan_capture_server_handlescan_25200fe8
     scan_capture_server_sanitizerequestpayload_85ca93b3 -->|calls| scan_capture_server_handlescan_25200fe8
     scan_capture_server_filedatefromiso_6f659b8a -->|calls| scan_capture_server_handledeletescan_02a992bf
-    %% Omitted for readability: 59 nodes, 0 edges
+    %% Omitted for readability: 60 nodes, 0 edges
     class scan_capture_server_json_12b11a68 function;
     class scan_capture_server_localdatestring_5b47625d function;
     class scan_capture_server_sanitizerequestpayload_85ca93b3 function;
@@ -673,7 +659,7 @@ flowchart LR
   <td><code>sync-submit-tool-logs.js</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small></td>
   <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ensureLifecycleEventsTable()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>ensureSchema()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small><br><code>findMatchingOrder()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small><br>+11 more</td>
+  <td><code>ensureLifecycleEventsTable()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br><code>ensureSchema()</code><br><small style="color:var(--muted)">SubmitTool-sync/sync-submit-tool-logs.js</small><br><code>findMatchingOrder()</code><br><small style="color:var(--muted)">scripts/sync-submit-tool-logs.js</small><br>+11 more</td>
   <td>sync-submit-tool-logs.js node in scripts/sync-submit-tool-logs.js.</td>
 </tr>
 <tr>
@@ -918,6 +904,7 @@ flowchart LR
       <tr><td><code>scan-capture/server.js</code></td><td>32 nodes</td></tr>
 <tr><td><code>SubmitTool-sync/sync-submit-tool-logs.js</code></td><td>23 nodes</td></tr>
 <tr><td><code>scripts/sync-submit-tool-logs.js</code></td><td>22 nodes</td></tr>
+<tr><td><code>_COMMUNITY_Community 53.md</code></td><td>1 nodes</td></tr>
     </table>
   </div>
   <div class="card">
@@ -929,12 +916,12 @@ flowchart LR
 
 <!-- ====== 4. Outputs & Docs ====== -->
 <h2 id="outputs-docs">4. Outputs &amp; Docs</h2>
-<p>Outputs &amp; Docs groups implementation around scripts, daily, reports, export, mostly in functions/_lib/daily-production-report.js, reports/colorado.js, scripts/export-colorado-monthly.js. This section covers 89 nodes and 154 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Outputs &amp; Docs groups implementation around daily, scripts, reports, export, mostly in functions/_lib/daily-production-report.js, reports/colorado.js, scripts/export-colorado-monthly.js. This section covers 93 nodes and 159 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Outputs &amp; Docs (89 nodes, 154 edges)
+    %% Section: Outputs &amp; Docs (93 nodes, 159 edges)
     subgraph outputs_docs_functions_lib_daily_production_repo_526ce889["functions/_lib/daily-production-report.js"]
         lib_daily_production_report_num_2f18570d("num()<br/><small>functions/_lib/daily-production-report.js</small>")
         lib_daily_production_report_cleandate_217c08ac("cleanDate()<br/><small>functions/_lib/daily-production-report.js</small>")
@@ -950,14 +937,12 @@ flowchart LR
         lib_daily_production_report_escapehtml_ed657a99("escapeHtml()<br/><small>functions/_lib/daily-production-report.js</small>")
         lib_daily_production_report_localtimestampdayfil_d9d9d117("localTimestampDayFilter()<br/><small>functions/_lib/daily-production-report.js</small>")
     end
-    subgraph outputs_docs_reports_colorado_js_e391f4b1["reports/colorado.js"]
-        reports_colorado_sortbytimestampasc_20b04e7d("sortByTimestampAsc()<br/><small>reports/colorado.js</small>")
-        reports_colorado_buildcoloradomonthlysummary_fa407204("buildColoradoMonthlySummary()<br/><small>reports/colorado.js</small>")
-    end
     subgraph outputs_docs_scripts_export_colorado_monthly_js_4506c7e7["scripts/export-colorado-monthly.js"]
         scripts_export_colorado_monthly_fail_61cd348c("fail()<br/><small>scripts/export-colorado-monthly.js</small>")
         scripts_export_colorado_monthly_pad_b46c50d3("pad()<br/><small>scripts/export-colorado-monthly.js</small>")
     end
+    netlify_functions_daily_production_report_js_1794d51b("daily-production-report.js")
+    reports_colorado_sortbytimestampasc_20b04e7d("sortByTimestampAsc()<br/><small>reports/colorado.js</small>")
     scripts_daily_report_ui_t_7df459e8("t()<br/><small>scripts/daily-report-ui.js</small>")
     lib_daily_production_report_cleandate_217c08ac -->|calls| lib_daily_production_report_selecteddate_7f258c98
     lib_daily_production_report_praguetoday_80a323f2 -->|calls| lib_daily_production_report_selecteddate_7f258c98
@@ -973,7 +958,8 @@ flowchart LR
     lib_daily_production_report_loadmachineoutput_a863fb31 -->|calls| lib_daily_production_report_builddailyproduction_e23f99f4
     lib_daily_production_report_loadpipelinesummary_dd51c6cb -->|calls| lib_daily_production_report_builddailyproduction_e23f99f4
     lib_daily_production_report_buildemail_87f242c9 -->|calls| lib_daily_production_report_builddailyproduction_e23f99f4
-    %% Omitted for readability: 71 nodes, 0 edges
+    netlify_functions_daily_production_report_js_1794d51b -->|imports| lib_daily_production_report_builddailyproduction_e23f99f4
+    %% Omitted for readability: 75 nodes, 0 edges
     class lib_daily_production_report_num_2f18570d function;
     class lib_daily_production_report_cleandate_217c08ac function;
     class lib_daily_production_report_selecteddate_7f258c98 function;
@@ -987,10 +973,10 @@ flowchart LR
     class lib_daily_production_report_buildemail_87f242c9 function;
     class lib_daily_production_report_escapehtml_ed657a99 function;
     class lib_daily_production_report_localtimestampdayfil_d9d9d117 function;
-    class reports_colorado_sortbytimestampasc_20b04e7d function;
-    class reports_colorado_buildcoloradomonthlysummary_fa407204 function;
     class scripts_export_colorado_monthly_fail_61cd348c function;
     class scripts_export_colorado_monthly_pad_b46c50d3 function;
+    class netlify_functions_daily_production_report_js_1794d51b module;
+    class reports_colorado_sortbytimestampasc_20b04e7d function;
     class scripts_daily_report_ui_t_7df459e8 function;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
@@ -1267,12 +1253,12 @@ flowchart LR
 <tr><td><code>scripts/export-utils.js</code></td><td>6 nodes</td></tr>
 <tr><td><code>reports/csv.js</code></td><td>5 nodes</td></tr>
 <tr><td><code>scripts/daily-report-api.js</code></td><td>5 nodes</td></tr>
-<tr><td><code>reports/date.js</code></td><td>4 nodes</td></tr>
+<tr><td><code>netlify/functions/daily-production-report.js</code></td><td>4 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x80, calls x67, imports x3, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x83, calls x67, imports x4, imports x3. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -1694,20 +1680,20 @@ flowchart LR
 
 <!-- ====== 7. Serving API ====== -->
 <h2 id="serve-api">7. Serving API</h2>
-<p>Serving API groups implementation around netlify, functions, order, checklist, mostly in functions/_lib/order-pipeline.js, ARCHITECTURE.md, reports/checklist-domain.ts. This section covers 200 nodes and 446 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Serving API groups implementation around netlify, functions, order, checklist, mostly in functions/_lib/order-pipeline.js, ARCHITECTURE.md, reports/checklist-domain.ts. This section covers 200 nodes and 447 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Serving API (200 nodes, 446 edges)
+    %% Section: Serving API (200 nodes, 447 edges)
     subgraph serve_api_functions_lib_order_pipeline_js_cf77cfe0["functions/_lib/order-pipeline.js"]
         lib_order_pipeline_cleanstring_bced6500("cleanString()<br/><small>functions/_lib/order-pipeline.js</small>")
         lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7("isDefaultOrderPipelineScope()<br/><small>functions/_lib/order-pipeline.js</small>")
         lib_order_pipeline_normalizesearchterm_7257f69e("normalizeSearchTerm()<br/><small>functions/_lib/order-pipeline.js</small>")
         lib_order_pipeline_normalizeorderidentitycandida_de1d520a("normalizeOrderIdentityCandidate()<br/><small>functions/_lib/order-pipeline.js</small>")
+        lib_order_pipeline_getcanonicalorderidentity_2e197f97("getCanonicalOrderIdentity()<br/><small>functions/_lib/order-pipeline.js</small>")
         lib_order_pipeline_ordersearchcandidates_23765ce3("orderSearchCandidates()<br/><small>functions/_lib/order-pipeline.js</small>")
         lib_order_pipeline_adddaterangefilter_1d52e380("addDateRangeFilter()<br/><small>functions/_lib/order-pipeline.js</small>")
-        lib_order_pipeline_addreprintfilter_ccf8527c("addReprintFilter()<br/><small>functions/_lib/order-pipeline.js</small>")
     end
     subgraph serve_api_netlify_functions_order_pipeline_js_e48848b2["netlify/functions/order-pipeline.js"]
         netlify_functions_order_pipeline_js_a0a591a2("order-pipeline.js")
@@ -1732,11 +1718,12 @@ flowchart LR
     functions_send_stock_alerts_normalizealerttypes_ea9e2d49 -->|calls| functions_send_stock_alerts_subscriptionmatchesa_da547de4
     lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_normalizesearchterm_7257f69e
     lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_normalizeorderidentitycandida_de1d520a
+    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_getcanonicalorderidentity_2e197f97
     lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_ordersearchcandidates_23765ce3
     lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7
     lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_adddaterangefilter_1d52e380
-    lib_order_pipeline_cleanstring_bced6500 -->|calls| lib_order_pipeline_addreprintfilter_ccf8527c
     lib_order_pipeline_normalizesearchterm_7257f69e -->|calls| lib_order_pipeline_ordersearchcandidates_23765ce3
+    lib_order_pipeline_normalizeorderidentitycandida_de1d520a -->|calls| lib_order_pipeline_getcanonicalorderidentity_2e197f97
     lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7 -->|calls| lib_order_pipeline_adddaterangefilter_1d52e380
     scripts_order_pipeline_api_t_ce153840 -->|calls| scripts_order_pipeline_api_readjsonresponse_3ee7d9c8
     %% Omitted for readability: 182 nodes, 0 edges
@@ -1744,9 +1731,9 @@ flowchart LR
     class lib_order_pipeline_isdefaultorderpipelinescope_233b9bc7 function;
     class lib_order_pipeline_normalizesearchterm_7257f69e function;
     class lib_order_pipeline_normalizeorderidentitycandida_de1d520a function;
+    class lib_order_pipeline_getcanonicalorderidentity_2e197f97 function;
     class lib_order_pipeline_ordersearchcandidates_23765ce3 function;
     class lib_order_pipeline_adddaterangefilter_1d52e380 function;
-    class lib_order_pipeline_addreprintfilter_ccf8527c function;
     class netlify_functions_order_pipeline_js_a0a591a2 module;
     class functions_order_pipeline_cleanstring_d323486c function;
     class functions_order_pipeline_parseincludestats_24a3c089 function;
@@ -1948,7 +1935,7 @@ flowchart LR
   <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>addDateRangeFilter()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>addReprintFilter()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>addStatusFilter()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br>+7 more</td>
+  <td><code>addDateRangeFilter()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>addReprintFilter()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>addStatusFilter()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br>+8 more</td>
   <td>cleanString() node in functions/_lib/order-pipeline.js.</td>
 </tr>
 <tr>
@@ -2003,7 +1990,7 @@ flowchart LR
   <td>26</td>
   <td><code>getCanonicalOrderIdentity()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small></td>
   <td><span class="tag tag-func">Function</span></td>
-  <td><code>normalizeOrderIdentityCandidate()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small></td>
+  <td><code>cleanString()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>normalizeOrderIdentityCandidate()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small></td>
   <td><code>dedupeDefaultPipelineRows()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>mapPipelineListRow()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br><code>mapPipelineRow()</code><br><small style="color:var(--muted)">functions/_lib/order-pipeline.js</small><br>+1 more</td>
   <td>getCanonicalOrderIdentity() node in functions/_lib/order-pipeline.js.</td>
 </tr>
@@ -2058,33 +2045,41 @@ flowchart LR
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x262, calls x172, imports x10, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x262, calls x173, imports x10, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 8. Tests & Fixtures ====== -->
 <h2 id="tests-fixtures">8. Tests &amp; Fixtures</h2>
-<p>Tests &amp; Fixtures groups implementation around send, test, pushjs, netlify, mostly in netlify/functions/send-test-push.js. This section covers 14 nodes and 13 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Tests &amp; Fixtures groups implementation around send, test, pushjs, netlify, mostly in netlify/functions/send-test-push.js, tests/order-pipeline-render-labels.test.js. This section covers 24 nodes and 22 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Tests &amp; Fixtures (14 nodes, 13 edges)
-    netlify_functions_send_test_push_js_94f24c97("send-test-push.js")
-    functions_send_test_push_client_b32a9af8("Client<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_json_30f50cb8("json()<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_loadwebpush_aa348812("loadWebPush()<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_getstatuscode_cbaec2f8("getStatusCode()<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_isvalidvapidsubject_4820b831("isValidVapidSubject()<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_getendpointsuffix_e5bfeb64("getEndpointSuffix()<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_geterrorbody_b7dbc9b9("getErrorBody()<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_webpush_19eb9673("webPush<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_failures_bbb8326c("failures<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_payload_39d0922e("payload<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_subscription_591c746f("subscription<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_statuscode_5796af39("statusCode<br/><small>netlify/functions/send-test-push.js</small>")
-    functions_send_test_push_errorbody_49e5aa43("errorBody<br/><small>netlify/functions/send-test-push.js</small>")
+    %% Section: Tests &amp; Fixtures (24 nodes, 22 edges)
+    subgraph tests_fixtures_netlify_functions_send_test_push_452c69d5["netlify/functions/send-test-push.js"]
+        netlify_functions_send_test_push_js_94f24c97("send-test-push.js")
+        functions_send_test_push_client_b32a9af8("Client<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_json_30f50cb8("json()<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_loadwebpush_aa348812("loadWebPush()<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_getstatuscode_cbaec2f8("getStatusCode()<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_isvalidvapidsubject_4820b831("isValidVapidSubject()<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_getendpointsuffix_e5bfeb64("getEndpointSuffix()<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_geterrorbody_b7dbc9b9("getErrorBody()<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_webpush_19eb9673("webPush<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_failures_bbb8326c("failures<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_payload_39d0922e("payload<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_subscription_591c746f("subscription<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_statuscode_5796af39("statusCode<br/><small>netlify/functions/send-test-push.js</small>")
+        functions_send_test_push_errorbody_49e5aa43("errorBody<br/><small>netlify/functions/send-test-push.js</small>")
+    end
+    subgraph tests_fixtures_tests_order_pipeline_render_label_0edff2d1["tests/order-pipeline-render-labels.test.js"]
+        tests_order_pipeline_render_labels_test_js_abfb0406("order-pipeline-render-labels.test.js")
+        tests_order_pipeline_render_labels_test_assert_9c3100b7("assert<br/><small>tests/order-pipeline-render-labels.test.js</small>")
+        tests_order_pipeline_render_labels_test_fs_38dd1a25("fs<br/><small>tests/order-pipeline-render-labels.test.js</small>")
+        tests_order_pipeline_render_labels_test_path_d5c25cd2("path<br/><small>tests/order-pipeline-render-labels.test.js</small>")
+    end
     netlify_functions_send_test_push_js_94f24c97 -->|contains| functions_send_test_push_client_b32a9af8
     netlify_functions_send_test_push_js_94f24c97 -->|contains| functions_send_test_push_json_30f50cb8
     netlify_functions_send_test_push_js_94f24c97 -->|contains| functions_send_test_push_loadwebpush_aa348812
@@ -2098,6 +2093,10 @@ flowchart LR
     netlify_functions_send_test_push_js_94f24c97 -->|contains| functions_send_test_push_subscription_591c746f
     netlify_functions_send_test_push_js_94f24c97 -->|contains| functions_send_test_push_statuscode_5796af39
     netlify_functions_send_test_push_js_94f24c97 -->|contains| functions_send_test_push_errorbody_49e5aa43
+    tests_order_pipeline_render_labels_test_js_abfb0406 -->|contains| tests_order_pipeline_render_labels_test_assert_9c3100b7
+    tests_order_pipeline_render_labels_test_js_abfb0406 -->|contains| tests_order_pipeline_render_labels_test_fs_38dd1a25
+    tests_order_pipeline_render_labels_test_js_abfb0406 -->|contains| tests_order_pipeline_render_labels_test_path_d5c25cd2
+    %% Omitted for readability: 6 nodes, 0 edges
     class netlify_functions_send_test_push_js_94f24c97 test;
     class functions_send_test_push_client_b32a9af8 test;
     class functions_send_test_push_json_30f50cb8 test;
@@ -2112,6 +2111,10 @@ flowchart LR
     class functions_send_test_push_subscription_591c746f test;
     class functions_send_test_push_statuscode_5796af39 test;
     class functions_send_test_push_errorbody_49e5aa43 test;
+    class tests_order_pipeline_render_labels_test_js_abfb0406 test;
+    class tests_order_pipeline_render_labels_test_assert_9c3100b7 test;
+    class tests_order_pipeline_render_labels_test_fs_38dd1a25 test;
+    class tests_order_pipeline_render_labels_test_path_d5c25cd2 test;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -2245,6 +2248,86 @@ flowchart LR
   <td>No direct outbound edge</td>
   <td>errorBody node in netlify/functions/send-test-push.js.</td>
 </tr>
+<tr>
+  <td>15</td>
+  <td><code>order-pipeline-render-labels.test.js</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Verifies imports, entry points, or version behavior.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>assert</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>assert node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>fs</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>fs node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>path</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>path node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>vm</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>vm node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>source</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>source node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>context</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>context node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>esc()</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>esc() node in tests/order-pipeline-render-labels.test.js.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>html</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Exports documentation data to a target format.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>prefixedHtml</code><br><small style="color:var(--muted)">tests/order-pipeline-render-labels.test.js</small></td>
+  <td><span class="tag tag-func">Test</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Exports documentation data to a target format.</td>
+</tr>
 </table>
 
 <div class="grid">
@@ -2253,11 +2336,12 @@ flowchart LR
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>netlify/functions/send-test-push.js</code></td><td>14 nodes</td></tr>
+<tr><td><code>tests/order-pipeline-render-labels.test.js</code></td><td>10 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x13. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x22. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -2646,8 +2730,351 @@ flowchart LR
 </div>
 <hr>
 
-<!-- ====== 10. Community 11 ====== -->
-<h2 id="community-11">10. Community 11</h2>
+<!-- ====== 10. Community 10 ====== -->
+<h2 id="community-10">10. Community 10</h2>
+<p>Community 10 groups implementation around order, pipeline, renderjs, scripts, mostly in scripts/order-pipeline-render.js. This section covers 40 nodes and 81 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Community 10 (40 nodes, 81 edges)
+    scripts_order_pipeline_render_t_191e06eb("t()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_getreprintkey_8e4708f2("getReprintKey()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_cleanlabel_47ebc64d("cleanLabel()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_getbusinessorderla_5dfa3844("getBusinessOrderLabels()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_statnumber_b6b5462e("statNumber()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_xmlstatusclass_58e9a731("xmlStatusClass()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderstatitem_b416c864("renderStatItem()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderdebugstatite_088a8276("renderDebugStatItem()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderpipelinestat_a436ae05("renderPipelineStats()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderpipelinebadg_82a2c63d("renderPipelineBadges()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderactionneeded_cdaf4790("renderActionNeeded()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderreprintstate_d957b41c("renderReprintStateBlock()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderpdffiles_eb9c02c7("renderPdfFiles()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderfullreprinta_95459bbf("renderFullReprintAction()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderprocessedrep_a24763cf("renderProcessedReprintRecords()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_renderorders_e829fab5("renderOrders()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_rendererror_61488998("renderError()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_istoday_8ee17b08("isToday()<br/><small>scripts/order-pipeline-render.js</small>")
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderstatitem_b416c864
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderdebugstatite_088a8276
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderpipelinestat_a436ae05
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderpipelinebadg_82a2c63d
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderactionneeded_cdaf4790
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderreprintstate_d957b41c
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderpdffiles_eb9c02c7
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderfullreprinta_95459bbf
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderprocessedrep_a24763cf
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderorders_e829fab5
+    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_rendererror_61488998
+    scripts_order_pipeline_render_xmlstatusclass_58e9a731 -->|calls| scripts_order_pipeline_render_renderpipelinebadg_82a2c63d
+    scripts_order_pipeline_render_xmlstatusclass_58e9a731 -->|calls| scripts_order_pipeline_render_renderactionneeded_cdaf4790
+    scripts_order_pipeline_render_statnumber_b6b5462e -->|calls| scripts_order_pipeline_render_renderstatitem_b416c864
+    scripts_order_pipeline_render_statnumber_b6b5462e -->|calls| scripts_order_pipeline_render_renderdebugstatite_088a8276
+    scripts_order_pipeline_render_renderstatitem_b416c864 -->|calls| scripts_order_pipeline_render_renderpipelinestat_a436ae05
+    scripts_order_pipeline_render_renderdebugstatite_088a8276 -->|calls| scripts_order_pipeline_render_renderpipelinestat_a436ae05
+    scripts_order_pipeline_render_renderpipelinestat_a436ae05 -->|calls| scripts_order_pipeline_render_renderorders_e829fab5
+    scripts_order_pipeline_render_renderactionneeded_cdaf4790 -->|calls| scripts_order_pipeline_render_renderreprintstate_d957b41c
+    scripts_order_pipeline_render_getreprintkey_8e4708f2 -->|calls| scripts_order_pipeline_render_renderfullreprinta_95459bbf
+    %% Omitted for readability: 22 nodes, 0 edges
+    class scripts_order_pipeline_render_t_191e06eb function;
+    class scripts_order_pipeline_render_getreprintkey_8e4708f2 function;
+    class scripts_order_pipeline_render_cleanlabel_47ebc64d function;
+    class scripts_order_pipeline_render_getbusinessorderla_5dfa3844 function;
+    class scripts_order_pipeline_render_statnumber_b6b5462e function;
+    class scripts_order_pipeline_render_xmlstatusclass_58e9a731 function;
+    class scripts_order_pipeline_render_renderstatitem_b416c864 function;
+    class scripts_order_pipeline_render_renderdebugstatite_088a8276 function;
+    class scripts_order_pipeline_render_renderpipelinestat_a436ae05 function;
+    class scripts_order_pipeline_render_renderpipelinebadg_82a2c63d function;
+    class scripts_order_pipeline_render_renderactionneeded_cdaf4790 function;
+    class scripts_order_pipeline_render_renderreprintstate_d957b41c function;
+    class scripts_order_pipeline_render_renderpdffiles_eb9c02c7 function;
+    class scripts_order_pipeline_render_renderfullreprinta_95459bbf function;
+    class scripts_order_pipeline_render_renderprocessedrep_a24763cf async;
+    class scripts_order_pipeline_render_renderorders_e829fab5 function;
+    class scripts_order_pipeline_render_rendererror_61488998 function;
+    class scripts_order_pipeline_render_istoday_8ee17b08 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>order-pipeline-render.js</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>order-pipeline-render.js node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderError()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br>+8 more</td>
+  <td>t() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>fileNameFromPath()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>fileNameFromPath() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>isToday()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>formatPipelineDateTime()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>isToday() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>formatPipelineDateTime()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>isToday()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>formatPipelineDateTime() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>getPageSizes()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>normalizePrintFiles()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>renderPdfFiles()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>normalizePrintFiles() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>getPipelineAgeMinutes()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getPipelineAgeMinutes() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getPipelineAgeMinutes()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderPipelineBadges()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getXmlStatus() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>xmlStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderPipelineBadges()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>xmlStatusClass() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>isReprintRow()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>isReprintRow() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>cleanLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>isInternalOrderIdLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>isPrefixedOrderLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>cleanLabel() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>getInternalOrderIds()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>isInternalOrderIdLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getInternalOrderIds() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>isInternalOrderIdLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>cleanLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getInternalOrderIds()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>isInternalOrderIdLabel() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>isPrefixedOrderLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>cleanLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>isPrefixedOrderLabel() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>getBusinessOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>getPrimaryOrderLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getRawOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getBusinessOrderLabels() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>getPrimaryOrderLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getBusinessOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>renderFullReprintAction()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getPrimaryOrderLabel() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>getRawOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getBusinessOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>getSecondaryOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getRawOrderLabels() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>getSecondaryOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getRawOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>getSecondaryOrderLabels() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>getAttentionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>getAttentionPriority()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getAttentionState() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>getAttentionPriority()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getAttentionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>getAttentionPriority() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>statNumber()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>statNumber() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>renderStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>statNumber()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>renderPipelineStats()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>renderStatItem() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>statNumber()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>renderPipelineStats()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>renderDebugStatItem() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>renderPipelineStats()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>renderOrders()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>renderPipelineStats() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>renderPipelineBadges()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>xmlStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>No direct outbound edge</td>
+  <td>renderPipelineBadges() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>xmlStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>getRowReprintState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderReprintStateBlock()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>renderActionNeeded() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>getFileHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getRowReprintState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br>+1 more</td>
+  <td>getReprintKey() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>getFileHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderFullReprintAction()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getFileHistory() node in scripts/order-pipeline-render.js.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>getFileHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td><code>renderReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
+  <td>getReprintActionState() node in scripts/order-pipeline-render.js.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>scripts/order-pipeline-render.js</code></td><td>40 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x42, contains x39. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 11. Community 11 ====== -->
+<h2 id="community-11">11. Community 11</h2>
 <p>Community 11 groups implementation around appjs, admin, authjs, app, mostly in app.js, app/admin-auth.js, scripts/core-utils.js. This section covers 39 nodes and 44 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
@@ -2978,8 +3405,8 @@ flowchart LR
 </div>
 <hr>
 
-<!-- ====== 11. Community 7 ====== -->
-<h2 id="community-7">11. Community 7</h2>
+<!-- ====== 12. Community 7 ====== -->
+<h2 id="community-7">12. Community 7</h2>
 <p>Community 7 groups implementation around postpurchase, ordersjs, netlify, functions, mostly in functions/_lib/postpurchase-orders.js, scripts/sync-postpurchase-orders.js, functions/_lib/order-pipeline.js. This section covers 39 nodes and 92 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
@@ -3329,8 +3756,8 @@ flowchart LR
 </div>
 <hr>
 
-<!-- ====== 12. Community 6 ====== -->
-<h2 id="community-6">12. Community 6</h2>
+<!-- ====== 13. Community 6 ====== -->
+<h2 id="community-6">13. Community 6</h2>
 <p>Community 6 groups implementation around postpurchase, server, ordersjs, sync, mostly in server-postpurchase/lib/postpurchase-orders.js, server-postpurchase/sync-postpurchase-orders.js, server-postpurchase/lib/db.js. This section covers 38 nodes and 78 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
@@ -3669,353 +4096,6 @@ flowchart LR
   <div class="card">
     <h4>Design Notes</h4>
     <p>This section comes from graphify community clustering. Relationship summary: calls x41, contains x35, imports x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
-  </div>
-</div>
-<hr>
-
-<!-- ====== 13. Community 10 ====== -->
-<h2 id="community-10">13. Community 10</h2>
-<p>Community 10 groups implementation around order, pipeline, renderjs, scripts, mostly in scripts/order-pipeline-render.js. This section covers 35 nodes and 71 internal edges; the diagram shows only representative relationships to stay readable.</p>
-
-<div class="mermaid">
-%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
-flowchart LR
-    %% Section: Community 10 (35 nodes, 71 edges)
-    scripts_order_pipeline_render_t_191e06eb("t()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_getreprintkey_8e4708f2("getReprintKey()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_statnumber_b6b5462e("statNumber()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_xmlstatusclass_58e9a731("xmlStatusClass()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_getfilehistory_9aa28238("getFileHistory()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_getxmlstatus_70dd59ef("getXmlStatus()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderstatitem_b416c864("renderStatItem()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderdebugstatite_088a8276("renderDebugStatItem()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderpipelinestat_a436ae05("renderPipelineStats()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderpipelinebadg_82a2c63d("renderPipelineBadges()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderactionneeded_cdaf4790("renderActionNeeded()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderreprintstate_d957b41c("renderReprintStateBlock()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderpdffiles_eb9c02c7("renderPdfFiles()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderfullreprinta_95459bbf("renderFullReprintAction()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderprocessedrep_a24763cf("renderProcessedReprintRecords()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_renderorders_e829fab5("renderOrders()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_rendererror_61488998("renderError()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_istoday_8ee17b08("isToday()<br/><small>scripts/order-pipeline-render.js</small>")
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderstatitem_b416c864
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderdebugstatite_088a8276
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderpipelinestat_a436ae05
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderpipelinebadg_82a2c63d
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderactionneeded_cdaf4790
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderreprintstate_d957b41c
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderpdffiles_eb9c02c7
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderfullreprinta_95459bbf
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderprocessedrep_a24763cf
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_renderorders_e829fab5
-    scripts_order_pipeline_render_t_191e06eb -->|calls| scripts_order_pipeline_render_rendererror_61488998
-    scripts_order_pipeline_render_getxmlstatus_70dd59ef -->|calls| scripts_order_pipeline_render_renderpipelinebadg_82a2c63d
-    scripts_order_pipeline_render_getxmlstatus_70dd59ef -->|calls| scripts_order_pipeline_render_renderactionneeded_cdaf4790
-    scripts_order_pipeline_render_xmlstatusclass_58e9a731 -->|calls| scripts_order_pipeline_render_renderpipelinebadg_82a2c63d
-    scripts_order_pipeline_render_xmlstatusclass_58e9a731 -->|calls| scripts_order_pipeline_render_renderactionneeded_cdaf4790
-    scripts_order_pipeline_render_statnumber_b6b5462e -->|calls| scripts_order_pipeline_render_renderstatitem_b416c864
-    scripts_order_pipeline_render_statnumber_b6b5462e -->|calls| scripts_order_pipeline_render_renderdebugstatite_088a8276
-    scripts_order_pipeline_render_renderstatitem_b416c864 -->|calls| scripts_order_pipeline_render_renderpipelinestat_a436ae05
-    scripts_order_pipeline_render_renderdebugstatite_088a8276 -->|calls| scripts_order_pipeline_render_renderpipelinestat_a436ae05
-    scripts_order_pipeline_render_renderpipelinestat_a436ae05 -->|calls| scripts_order_pipeline_render_renderorders_e829fab5
-    scripts_order_pipeline_render_renderactionneeded_cdaf4790 -->|calls| scripts_order_pipeline_render_renderreprintstate_d957b41c
-    scripts_order_pipeline_render_getreprintkey_8e4708f2 -->|calls| scripts_order_pipeline_render_getfilehistory_9aa28238
-    scripts_order_pipeline_render_getreprintkey_8e4708f2 -->|calls| scripts_order_pipeline_render_renderfullreprinta_95459bbf
-    scripts_order_pipeline_render_getfilehistory_9aa28238 -->|calls| scripts_order_pipeline_render_renderfullreprinta_95459bbf
-    %% Omitted for readability: 17 nodes, 0 edges
-    class scripts_order_pipeline_render_t_191e06eb function;
-    class scripts_order_pipeline_render_getreprintkey_8e4708f2 function;
-    class scripts_order_pipeline_render_statnumber_b6b5462e function;
-    class scripts_order_pipeline_render_xmlstatusclass_58e9a731 function;
-    class scripts_order_pipeline_render_getfilehistory_9aa28238 function;
-    class scripts_order_pipeline_render_getxmlstatus_70dd59ef function;
-    class scripts_order_pipeline_render_renderstatitem_b416c864 function;
-    class scripts_order_pipeline_render_renderdebugstatite_088a8276 function;
-    class scripts_order_pipeline_render_renderpipelinestat_a436ae05 function;
-    class scripts_order_pipeline_render_renderpipelinebadg_82a2c63d function;
-    class scripts_order_pipeline_render_renderactionneeded_cdaf4790 function;
-    class scripts_order_pipeline_render_renderreprintstate_d957b41c function;
-    class scripts_order_pipeline_render_renderpdffiles_eb9c02c7 function;
-    class scripts_order_pipeline_render_renderfullreprinta_95459bbf function;
-    class scripts_order_pipeline_render_renderprocessedrep_a24763cf async;
-    class scripts_order_pipeline_render_renderorders_e829fab5 function;
-    class scripts_order_pipeline_render_rendererror_61488998 function;
-    class scripts_order_pipeline_render_istoday_8ee17b08 function;
-    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
-    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
-    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
-    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
-    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
-    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
-    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
-    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
-    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
-</div>
-
-<h3>Call Details</h3>
-<table class="call-table">
-<tr>
-  <th style="width:5%">#</th>
-  <th style="width:28%">Node</th>
-  <th style="width:10%">Type</th>
-  <th style="width:17%">Caller</th>
-  <th style="width:20%">Callees</th>
-  <th style="width:20%">Description</th>
-</tr>
-<tr>
-  <td>1</td>
-  <td><code>order-pipeline-render.js</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>order-pipeline-render.js node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>2</td>
-  <td><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderError()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br>+8 more</td>
-  <td>t() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>3</td>
-  <td><code>fileNameFromPath()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>fileNameFromPath() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>4</td>
-  <td><code>isToday()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>formatPipelineDateTime()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>isToday() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>5</td>
-  <td><code>formatPipelineDateTime()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>isToday()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>No direct outbound edge</td>
-  <td>formatPipelineDateTime() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>6</td>
-  <td><code>getPageSizes()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>Organizes documentation pages, navigation, or content lookup.</td>
-</tr>
-<tr>
-  <td>7</td>
-  <td><code>normalizePrintFiles()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderPdfFiles()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>normalizePrintFiles() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>8</td>
-  <td><code>getPipelineAgeMinutes()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getPipelineAgeMinutes() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>9</td>
-  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getPipelineAgeMinutes()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderPipelineBadges()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getXmlStatus() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>10</td>
-  <td><code>xmlStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderPipelineBadges()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>xmlStatusClass() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>11</td>
-  <td><code>isReprintRow()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>isReprintRow() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>12</td>
-  <td><code>getPrimaryOrderLabel()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderFullReprintAction()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getPrimaryOrderLabel() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>13</td>
-  <td><code>getRawOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>getSecondaryOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getRawOrderLabels() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>14</td>
-  <td><code>getSecondaryOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getRawOrderLabels()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>No direct outbound edge</td>
-  <td>getSecondaryOrderLabels() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>15</td>
-  <td><code>getAttentionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>getAttentionPriority()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getAttentionState() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>16</td>
-  <td><code>getAttentionPriority()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getAttentionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>No direct outbound edge</td>
-  <td>getAttentionPriority() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>17</td>
-  <td><code>statNumber()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>statNumber() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>18</td>
-  <td><code>renderStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>statNumber()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderPipelineStats()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>renderStatItem() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>19</td>
-  <td><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>statNumber()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderPipelineStats()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>renderDebugStatItem() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>20</td>
-  <td><code>renderPipelineStats()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>renderDebugStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderStatItem()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderOrders()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>renderPipelineStats() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>21</td>
-  <td><code>renderPipelineBadges()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>xmlStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>No direct outbound edge</td>
-  <td>renderPipelineBadges() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>22</td>
-  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getXmlStatus()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>xmlStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>getRowReprintState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderReprintStateBlock()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>renderActionNeeded() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>23</td>
-  <td><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>getFileHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getRowReprintState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br>+1 more</td>
-  <td>getReprintKey() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>24</td>
-  <td><code>getFileHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderFullReprintAction()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getFileHistory() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>25</td>
-  <td><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getFileHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getReprintActionState() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>26</td>
-  <td><code>getRowReprintState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getReprintKey()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderFullReprintAction()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>getRowReprintState() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>27</td>
-  <td><code>reprintStatusClass()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>reprintStatusClass() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>28</td>
-  <td><code>renderReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>getReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><code>renderReprintStateBlock()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>renderReprintActionState() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>29</td>
-  <td><code>renderReprintStateBlock()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>renderActionNeeded()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>renderReprintActionState()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small><br><code>t()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td>No direct outbound edge</td>
-  <td>renderReprintStateBlock() node in scripts/order-pipeline-render.js.</td>
-</tr>
-<tr>
-  <td>30</td>
-  <td><code>renderReprintHistory()</code><br><small style="color:var(--muted)">scripts/order-pipeline-render.js</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>renderReprintHistory() node in scripts/order-pipeline-render.js.</td>
-</tr>
-</table>
-
-<div class="grid">
-  <div class="card">
-    <h4>Key Files</h4>
-    <table style="width:100%;font-size:0.85rem;">
-      <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>scripts/order-pipeline-render.js</code></td><td>35 nodes</td></tr>
-    </table>
-  </div>
-  <div class="card">
-    <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: calls x37, contains x34. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -4705,12 +4785,12 @@ flowchart LR
 
 <!-- ====== 16. Other ====== -->
 <h2 id="other">16. Other</h2>
-<p>Other groups implementation around scripts, netlify, functions, stock, mostly in app.js, netlify/functions/print-log-summary.js, scripts/checklist-render.js. This section covers 401 nodes and 560 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Other groups implementation around scripts, netlify, functions, stock, mostly in app.js, netlify/functions/print-log-summary.js, scripts/checklist-render.js. This section covers 403 nodes and 566 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Other (401 nodes, 560 edges)
+    %% Section: Other (403 nodes, 566 edges)
     subgraph other_app_js_ccee49be["app.js"]
         print_guard_dgfc_app_i18n_a7c2200b("i18n()<br/><small>app.js</small>")
         print_guard_dgfc_app_getcorecs_6e838821("getCoRecs()<br/><small>app.js</small>")
@@ -4728,10 +4808,8 @@ flowchart LR
         print_guard_dgfc_app_movementlabel_2171e703("movementLabel()<br/><small>app.js</small>")
         print_guard_dgfc_app_stockdbadapter_893b1586("stockDbAdapter()<br/><small>app.js</small>")
     end
-    subgraph other_reports_notification_model_js_49991ec8["reports/notification-model.js"]
-        reports_notification_model_normalizetext_6f228a21("normalizeText()<br/><small>reports/notification-model.js</small>")
-        reports_notification_model_createevent_403fb1d6("createEvent()<br/><small>reports/notification-model.js</small>")
-    end
+    reports_notification_model_normalizetext_6f228a21("normalizeText()<br/><small>reports/notification-model.js</small>")
+    scripts_reprint_xml_cleanvalue_3e635b42("cleanValue()<br/><small>scripts/reprint-xml.js</small>")
     scripts_stock_feature_requirecontext_f2538ea6("requireContext()<br/><small>scripts/stock-feature.js</small>")
     print_guard_dgfc_app_i18n_a7c2200b -->|calls| print_guard_dgfc_app_getcostunitpermonth_be1c3e44
     print_guard_dgfc_app_i18n_a7c2200b -->|calls| print_guard_dgfc_app_savemovement_36f4bb10
@@ -4753,8 +4831,7 @@ flowchart LR
     print_guard_dgfc_app_loadall_e94e9b1a -->|calls| print_guard_dgfc_app_rendercohistory_86169248
     print_guard_dgfc_app_getcorecs_6e838821 -->|calls| print_guard_dgfc_app_rendermachinecard_3f00019c
     print_guard_dgfc_app_getcorecs_6e838821 -->|calls| print_guard_dgfc_app_rendercohistory_86169248
-    reports_notification_model_normalizetext_6f228a21 -->|calls| reports_notification_model_createevent_403fb1d6
-    %% Omitted for readability: 383 nodes, 0 edges
+    %% Omitted for readability: 385 nodes, 0 edges
     class print_guard_dgfc_app_i18n_a7c2200b function;
     class print_guard_dgfc_app_getcorecs_6e838821 function;
     class print_guard_dgfc_app_loadall_e94e9b1a function;
@@ -4771,7 +4848,7 @@ flowchart LR
     class print_guard_dgfc_app_movementlabel_2171e703 function;
     class print_guard_dgfc_app_stockdbadapter_893b1586 function;
     class reports_notification_model_normalizetext_6f228a21 function;
-    class reports_notification_model_createevent_403fb1d6 function;
+    class scripts_reprint_xml_cleanvalue_3e635b42 function;
     class scripts_stock_feature_requirecontext_f2538ea6 function;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
@@ -5047,13 +5124,13 @@ flowchart LR
 <tr><td><code>netlify/functions/sync.js</code></td><td>17 nodes</td></tr>
 <tr><td><code>scripts/stock-domain.js</code></td><td>17 nodes</td></tr>
 <tr><td><code>docs/configuration.generated.md</code></td><td>16 nodes</td></tr>
+<tr><td><code>scripts/reprint-xml.js</code></td><td>13 nodes</td></tr>
 <tr><td><code>netlify/functions/send-app-notification.js</code></td><td>12 nodes</td></tr>
-<tr><td><code>reports/notification-model.js</code></td><td>12 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x324, calls x176. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x326, calls x180. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -5064,17 +5141,17 @@ flowchart LR
   <div class="card">
     <h4>Graph</h4>
     <table style="width:100%;font-size:0.85rem;">
-      <tr><td>Nodes</td><td>1422</td></tr>
-      <tr><td>Edges</td><td>2494</td></tr>
+      <tr><td>Nodes</td><td>1504</td></tr>
+      <tr><td>Edges</td><td>2580</td></tr>
       <tr><td>Hyperedges</td><td>0</td></tr>
-      <tr><td>Communities</td><td>88</td></tr>
+      <tr><td>Communities</td><td>94</td></tr>
       <tr><td>Documented Sections</td><td>15</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Edge Confidence</h4>
     <table style="width:100%;font-size:0.85rem;">
-      <tr><td>EXTRACTED</td><td>2406</td></tr>
+      <tr><td>EXTRACTED</td><td>2492</td></tr>
       <tr><td>INFERRED</td><td>88</td></tr>
       <tr><td>AMBIGUOUS</td><td>0</td></tr>
     </table>
@@ -5083,7 +5160,7 @@ flowchart LR
 
 <div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
   <p>print_guard_DGFC — Architecture Documentation</p>
-  <p>Generated: 2026-05-26 07:57 UTC · graphify callflow-html</p>
+  <p>Generated: 2026-05-26 08:58 UTC · graphify callflow-html</p>
 </div>
 
 </div><!-- .container -->

@@ -71,18 +71,60 @@
     return row && String(row.orderType || '').toUpperCase() === 'R';
   }
 
+  function cleanLabel(value) {
+    return String(value == null ? '' : value).trim();
+  }
+
+  function getInternalOrderIds(row) {
+    return new Set([
+      row && row.id,
+      row && row.processedOrderId,
+      row && row.processed_order_id,
+    ].map(cleanLabel).filter(Boolean));
+  }
+
+  function isInternalOrderIdLabel(row, value) {
+    const label = cleanLabel(value);
+    return Boolean(label && getInternalOrderIds(row).has(label));
+  }
+
+  function isPrefixedOrderLabel(value) {
+    return /^[A-Z]+\s*[-_]?\s*\d{4,}$/i.test(cleanLabel(value));
+  }
+
+  function getBusinessOrderLabels(row) {
+    if (!row) return [];
+    const labels = [
+      row.processedOrderName,
+      row.processed_order_name,
+      row.orderName,
+      row.order_name,
+      row.externalOrderId,
+      row.external_order_id,
+      row.orderNumber,
+      row.order_number,
+      row.customerOrderId,
+      row.customer_order_id,
+      row.receivedOrderId,
+      row.received_order_id,
+      row.displayOrderName,
+    ]
+      .map(cleanLabel)
+      .filter(Boolean)
+      .filter((value) => !isInternalOrderIdLabel(row, value));
+    const unique = labels.filter((value, index, list) => list.indexOf(value) === index);
+    return [
+      ...unique.filter(isPrefixedOrderLabel),
+      ...unique.filter((value) => !isPrefixedOrderLabel(value)),
+    ];
+  }
+
   function getPrimaryOrderLabel(row) {
-    const display = String(row && row.displayOrderName || '').trim();
-    if (display) return display;
-    return '';
+    return getBusinessOrderLabels(row)[0] || '';
   }
 
   function getRawOrderLabels(row) {
-    const external = String(row && row.externalOrderId || '').trim();
-    const customer = String(row && row.customerOrderId || '').trim();
-    const orderName = String(row && row.orderName || '').trim();
-    const processed = String(row && row.processedOrderName || '').trim();
-    return [external, customer, orderName, processed].filter(Boolean);
+    return getBusinessOrderLabels(row);
   }
 
   function getSecondaryOrderLabels(row, primaryLabel) {

@@ -2657,4 +2657,19 @@ textarea { resize: vertical; min-height: 58px; }
   .checklist-item-actions {
     justify-content: flex-start;
   }
+  .pp-orders-toolbar {
+    align-items: stretch;
+  }
+  .pp-toolbar-pin,
+  .pp-toolbar-actions {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+  .pp-toolbar-pin .input-sm {
+    width: 100%;
+    max-width: none;
+  }
+  .pp-toolbar-actions {
+    justify-content: flex-start;
+  }
 }

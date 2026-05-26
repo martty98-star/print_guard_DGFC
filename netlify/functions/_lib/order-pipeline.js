@@ -55,19 +55,29 @@ function normalizeOrderIdentityCandidate(value) {
 
 function getCanonicalOrderIdentity(row) {
   if (!row || typeof row !== 'object') return normalizeOrderIdentityCandidate(row);
+  const internalIds = new Set([
+    row.id,
+    row.processed_order_id,
+    row.processedOrderId,
+  ].map(cleanString).filter(Boolean));
   const candidates = [
     row.order_number,
     row.external_order_id,
     row.customer_order_id,
+    row.received_order_id,
     row.processed_order_name,
     row.orderName,
+    row.orderNumber,
     row.externalOrderId,
     row.customerOrderId,
+    row.receivedOrderId,
     row.processedOrderName,
   ];
   for (const candidate of candidates) {
+    const raw = cleanString(candidate);
+    if (raw && internalIds.has(raw)) continue;
     const identity = normalizeOrderIdentityCandidate(candidate);
-    if (identity) return identity;
+    if (identity && !internalIds.has(identity)) return identity;
   }
   return null;
 }
@@ -510,6 +520,7 @@ function mapPipelineRow(row) {
   const displayOrderName = getCanonicalOrderIdentity(row) || '';
   return {
     orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    orderNumber: row.order_number || '',
     displayOrderName,
     externalOrderId: row.external_order_id || '',
     customerOrderId: row.customer_order_id || '',
@@ -543,6 +554,7 @@ function mapPipelineListRow(row) {
   const displayOrderName = getCanonicalOrderIdentity(row) || '';
   return {
     orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    orderNumber: row.order_number || '',
     displayOrderName,
     externalOrderId: row.external_order_id || '',
     customerOrderId: row.customer_order_id || '',

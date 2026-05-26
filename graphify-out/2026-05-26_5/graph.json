@@ -18,7 +18,7 @@
       "source_file": "app.js",
       "source_location": "L90",
       "id": "print_guard_dgfc_app_i18n",
-      "community": 39,
+      "community": 38,
       "norm_label": "i18n()"
     },
     {
@@ -36,7 +36,7 @@
       "source_file": "app.js",
       "source_location": "L159",
       "id": "print_guard_dgfc_app_getcostunitpermonth",
-      "community": 39,
+      "community": 38,
       "norm_label": "getcostunitpermonth()"
     },
     {
@@ -1755,7 +1755,7 @@
       "source_file": "app/db.js",
       "source_location": "L41",
       "id": "app_db_idball",
-      "community": 39,
+      "community": 37,
       "norm_label": "idball()"
     },
     {
@@ -1899,7 +1899,7 @@
       "source_file": "app/settings-store.js",
       "source_location": "L26",
       "id": "app_settings_store_loadsettingsfromidb",
-      "community": 39,
+      "community": 37,
       "norm_label": "loadsettingsfromidb()"
     },
     {
@@ -2169,7 +2169,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L1",
       "id": "netlify_functions_daily_production_report_js",
-      "community": 17,
+      "community": 0,
       "norm_label": "daily-production-report.js"
     },
     {
@@ -2178,7 +2178,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L3",
       "id": "functions_daily_production_report_checkratelimit_json_requirepostpurchaseaccess_withclient",
-      "community": 17,
+      "community": 0,
       "norm_label": "{\r\n  checkratelimit,\r\n  json,\r\n  requirepostpurchaseaccess,\r\n  withclient,\r\n}"
     },
     {
@@ -2187,7 +2187,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L9",
       "id": "functions_daily_production_report_builddailyproductionreport",
-      "community": 17,
+      "community": 0,
       "norm_label": "{\r\n  builddailyproductionreport,\r\n}"
     },
     {
@@ -2196,7 +2196,7 @@
       "source_file": "netlify/functions/daily-production-report.js",
       "source_location": "L13",
       "id": "functions_daily_production_report_cleanapierror",
-      "community": 17,
+      "community": 0,
       "norm_label": "cleanapierror()"
     },
     {
@@ -4336,7 +4336,7 @@
       "label": "isOrderLikeSearch()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L85",
+      "source_location": "L75",
       "id": "lib_order_pipeline_isorderlikesearch",
       "community": 1,
       "norm_label": "isorderlikesearch()"
@@ -4345,7 +4345,7 @@
       "label": "orderSearchCandidates()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L90",
+      "source_location": "L80",
       "id": "lib_order_pipeline_ordersearchcandidates",
       "community": 1,
       "norm_label": "ordersearchcandidates()"
@@ -4354,16 +4354,16 @@
       "label": "normalizeOrderType()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L112",
+      "source_location": "L102",
       "id": "lib_order_pipeline_normalizeordertype",
-      "community": 7,
+      "community": 6,
       "norm_label": "normalizeordertype()"
     },
     {
       "label": "clampLimit()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L120",
+      "source_location": "L110",
       "id": "lib_order_pipeline_clamplimit",
       "community": 1,
       "norm_label": "clamplimit()"
@@ -4372,7 +4372,7 @@
       "label": "clampOffset()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L124",
+      "source_location": "L114",
       "id": "lib_order_pipeline_clampoffset",
       "community": 1,
       "norm_label": "clampoffset()"
@@ -4381,7 +4381,7 @@
       "label": "pipelineDateExpr()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L128",
+      "source_location": "L118",
       "id": "lib_order_pipeline_pipelinedateexpr",
       "community": 1,
       "norm_label": "pipelinedateexpr()"
@@ -4390,7 +4390,7 @@
       "label": "pipelineIncomingDateExpr()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L132",
+      "source_location": "L122",
       "id": "lib_order_pipeline_pipelineincomingdateexpr",
       "community": 1,
       "norm_label": "pipelineincomingdateexpr()"
@@ -4399,7 +4399,7 @@
       "label": "isDefaultOrderPipelineScope()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L136",
+      "source_location": "L126",
       "id": "lib_order_pipeline_isdefaultorderpipelinescope",
       "community": 1,
       "norm_label": "isdefaultorderpipelinescope()"
@@ -4408,7 +4408,7 @@
       "label": "pipelineSortExpr()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L147",
+      "source_location": "L137",
       "id": "lib_order_pipeline_pipelinesortexpr",
       "community": 1,
       "norm_label": "pipelinesortexpr()"
@@ -4417,7 +4417,7 @@
       "label": "parentMatchKeyExpr()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L164",
+      "source_location": "L154",
       "id": "lib_order_pipeline_parentmatchkeyexpr",
       "community": 1,
       "norm_label": "parentmatchkeyexpr()"
@@ -4426,7 +4426,7 @@
       "label": "orderIdentityKeySql()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L168",
+      "source_location": "L158",
       "id": "lib_order_pipeline_orderidentitykeysql",
       "community": 1,
       "norm_label": "orderidentitykeysql()"
@@ -4435,7 +4435,7 @@
       "label": "pipelineIdentityKeySql()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L178",
+      "source_location": "L168",
       "id": "lib_order_pipeline_pipelineidentitykeysql",
       "community": 1,
       "norm_label": "pipelineidentitykeysql()"
@@ -4444,7 +4444,7 @@
       "label": "defaultPipelineWhereSql()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L188",
+      "source_location": "L178",
       "id": "lib_order_pipeline_defaultpipelinewheresql",
       "community": 1,
       "norm_label": "defaultpipelinewheresql()"
@@ -4453,7 +4453,7 @@
       "label": "reprintParentMatchKeySql()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L198",
+      "source_location": "L188",
       "id": "lib_order_pipeline_reprintparentmatchkeysql",
       "community": 1,
       "norm_label": "reprintparentmatchkeysql()"
@@ -4462,7 +4462,7 @@
       "label": "buildFastPipelineBaseCte()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L207",
+      "source_location": "L197",
       "id": "lib_order_pipeline_buildfastpipelinebasecte",
       "community": 1,
       "norm_label": "buildfastpipelinebasecte()"
@@ -4471,7 +4471,7 @@
       "label": "requiresFullReprintView()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L324",
+      "source_location": "L314",
       "id": "lib_order_pipeline_requiresfullreprintview",
       "community": 1,
       "norm_label": "requiresfullreprintview()"
@@ -4480,7 +4480,7 @@
       "label": "ensureOrderPipelineView()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L328",
+      "source_location": "L318",
       "id": "lib_order_pipeline_ensureorderpipelineview",
       "community": 1,
       "norm_label": "ensureorderpipelineview()"
@@ -4489,7 +4489,7 @@
       "label": "mapPipelineRow()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L517",
+      "source_location": "L507",
       "id": "lib_order_pipeline_mappipelinerow",
       "community": 1,
       "norm_label": "mappipelinerow()"
@@ -4498,7 +4498,7 @@
       "label": "mapPipelineListRow()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L553",
+      "source_location": "L542",
       "id": "lib_order_pipeline_mappipelinelistrow",
       "community": 1,
       "norm_label": "mappipelinelistrow()"
@@ -4507,7 +4507,7 @@
       "label": "dedupeDefaultPipelineRows()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L589",
+      "source_location": "L577",
       "id": "lib_order_pipeline_dedupedefaultpipelinerows",
       "community": 1,
       "norm_label": "dedupedefaultpipelinerows()"
@@ -4516,7 +4516,7 @@
       "label": "isIsoDate()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L606",
+      "source_location": "L594",
       "id": "lib_order_pipeline_isisodate",
       "community": 1,
       "norm_label": "isisodate()"
@@ -4525,7 +4525,7 @@
       "label": "addDateRangeFilter()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L610",
+      "source_location": "L598",
       "id": "lib_order_pipeline_adddaterangefilter",
       "community": 1,
       "norm_label": "adddaterangefilter()"
@@ -4534,7 +4534,7 @@
       "label": "addReprintFilter()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L640",
+      "source_location": "L628",
       "id": "lib_order_pipeline_addreprintfilter",
       "community": 1,
       "norm_label": "addreprintfilter()"
@@ -4543,7 +4543,7 @@
       "label": "addStatusFilter()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L653",
+      "source_location": "L641",
       "id": "lib_order_pipeline_addstatusfilter",
       "community": 1,
       "norm_label": "addstatusfilter()"
@@ -4552,7 +4552,7 @@
       "label": "shouldUseAllTimeReprintScope()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L684",
+      "source_location": "L672",
       "id": "lib_order_pipeline_shouldusealltimereprintscope",
       "community": 1,
       "norm_label": "shouldusealltimereprintscope()"
@@ -4561,7 +4561,7 @@
       "label": "buildOrderPipelineFilters()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L699",
+      "source_location": "L687",
       "id": "lib_order_pipeline_buildorderpipelinefilters",
       "community": 1,
       "norm_label": "buildorderpipelinefilters()"
@@ -4570,7 +4570,7 @@
       "label": "mapPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L768",
+      "source_location": "L756",
       "id": "lib_order_pipeline_mappipelinestats",
       "community": 1,
       "norm_label": "mappipelinestats()"
@@ -4579,7 +4579,7 @@
       "label": "queryPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L780",
+      "source_location": "L768",
       "id": "lib_order_pipeline_querypipelinestats",
       "community": 1,
       "norm_label": "querypipelinestats()"
@@ -4588,7 +4588,7 @@
       "label": "queryFastPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L806",
+      "source_location": "L794",
       "id": "lib_order_pipeline_queryfastpipelinestats",
       "community": 1,
       "norm_label": "queryfastpipelinestats()"
@@ -4597,7 +4597,7 @@
       "label": "queryOperationalGlobalStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L830",
+      "source_location": "L818",
       "id": "lib_order_pipeline_queryoperationalglobalstats",
       "community": 1,
       "norm_label": "queryoperationalglobalstats()"
@@ -4606,7 +4606,7 @@
       "label": "getOrderPipelineStats()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L866",
+      "source_location": "L854",
       "id": "lib_order_pipeline_getorderpipelinestats",
       "community": 1,
       "norm_label": "getorderpipelinestats()"
@@ -4615,7 +4615,7 @@
       "label": "listOrderPipelineFullView()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L921",
+      "source_location": "L909",
       "id": "lib_order_pipeline_listorderpipelinefullview",
       "community": 1,
       "norm_label": "listorderpipelinefullview()"
@@ -4624,7 +4624,7 @@
       "label": "listOrderPipelineFast()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L997",
+      "source_location": "L985",
       "id": "lib_order_pipeline_listorderpipelinefast",
       "community": 1,
       "norm_label": "listorderpipelinefast()"
@@ -4633,7 +4633,7 @@
       "label": "listOrderPipeline()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1109",
+      "source_location": "L1097",
       "id": "lib_order_pipeline_listorderpipeline",
       "community": 1,
       "norm_label": "listorderpipeline()"
@@ -4642,7 +4642,7 @@
       "label": "getOrderPipelineDetail()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1120",
+      "source_location": "L1108",
       "id": "lib_order_pipeline_getorderpipelinedetail",
       "community": 1,
       "norm_label": "getorderpipelinedetail()"
@@ -4651,7 +4651,7 @@
       "label": "listPipelineMonths()",
       "file_type": "code",
       "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L1156",
+      "source_location": "L1144",
       "id": "lib_order_pipeline_listpipelinemonths",
       "community": 1,
       "norm_label": "listpipelinemonths()"
@@ -7659,7 +7659,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L4",
       "id": "scripts_core_utils_genid",
-      "community": 22,
+      "community": 39,
       "norm_label": "genid()"
     },
     {
@@ -7731,7 +7731,7 @@
       "source_file": "scripts/core-utils.js",
       "source_location": "L54",
       "id": "scripts_core_utils_fmtdays",
-      "community": 11,
+      "community": 22,
       "norm_label": "fmtdays()"
     },
     {
@@ -8437,55 +8437,10 @@
       "norm_label": "isreprintrow()"
     },
     {
-      "label": "cleanLabel()",
-      "file_type": "code",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L74",
-      "id": "scripts_order_pipeline_render_cleanlabel",
-      "community": 10,
-      "norm_label": "cleanlabel()"
-    },
-    {
-      "label": "getInternalOrderIds()",
-      "file_type": "code",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L78",
-      "id": "scripts_order_pipeline_render_getinternalorderids",
-      "community": 10,
-      "norm_label": "getinternalorderids()"
-    },
-    {
-      "label": "isInternalOrderIdLabel()",
-      "file_type": "code",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L86",
-      "id": "scripts_order_pipeline_render_isinternalorderidlabel",
-      "community": 10,
-      "norm_label": "isinternalorderidlabel()"
-    },
-    {
-      "label": "isPrefixedOrderLabel()",
-      "file_type": "code",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L91",
-      "id": "scripts_order_pipeline_render_isprefixedorderlabel",
-      "community": 10,
-      "norm_label": "isprefixedorderlabel()"
-    },
-    {
-      "label": "getBusinessOrderLabels()",
-      "file_type": "code",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L95",
-      "id": "scripts_order_pipeline_render_getbusinessorderlabels",
-      "community": 10,
-      "norm_label": "getbusinessorderlabels()"
-    },
-    {
       "label": "getPrimaryOrderLabel()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L122",
+      "source_location": "L74",
       "id": "scripts_order_pipeline_render_getprimaryorderlabel",
       "community": 10,
       "norm_label": "getprimaryorderlabel()"
@@ -8494,7 +8449,7 @@
       "label": "getRawOrderLabels()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L126",
+      "source_location": "L80",
       "id": "scripts_order_pipeline_render_getraworderlabels",
       "community": 10,
       "norm_label": "getraworderlabels()"
@@ -8503,7 +8458,7 @@
       "label": "getSecondaryOrderLabels()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L130",
+      "source_location": "L88",
       "id": "scripts_order_pipeline_render_getsecondaryorderlabels",
       "community": 10,
       "norm_label": "getsecondaryorderlabels()"
@@ -8512,7 +8467,7 @@
       "label": "getAttentionState()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L138",
+      "source_location": "L96",
       "id": "scripts_order_pipeline_render_getattentionstate",
       "community": 10,
       "norm_label": "getattentionstate()"
@@ -8521,7 +8476,7 @@
       "label": "getAttentionPriority()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L146",
+      "source_location": "L104",
       "id": "scripts_order_pipeline_render_getattentionpriority",
       "community": 10,
       "norm_label": "getattentionpriority()"
@@ -8530,7 +8485,7 @@
       "label": "statNumber()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L154",
+      "source_location": "L112",
       "id": "scripts_order_pipeline_render_statnumber",
       "community": 10,
       "norm_label": "statnumber()"
@@ -8539,7 +8494,7 @@
       "label": "renderStatItem()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L159",
+      "source_location": "L117",
       "id": "scripts_order_pipeline_render_renderstatitem",
       "community": 10,
       "norm_label": "renderstatitem()"
@@ -8548,7 +8503,7 @@
       "label": "renderDebugStatItem()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L174",
+      "source_location": "L132",
       "id": "scripts_order_pipeline_render_renderdebugstatitem",
       "community": 10,
       "norm_label": "renderdebugstatitem()"
@@ -8557,7 +8512,7 @@
       "label": "renderPipelineStats()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L189",
+      "source_location": "L147",
       "id": "scripts_order_pipeline_render_renderpipelinestats",
       "community": 10,
       "norm_label": "renderpipelinestats()"
@@ -8566,7 +8521,7 @@
       "label": "renderPipelineBadges()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L206",
+      "source_location": "L164",
       "id": "scripts_order_pipeline_render_renderpipelinebadges",
       "community": 10,
       "norm_label": "renderpipelinebadges()"
@@ -8575,7 +8530,7 @@
       "label": "renderActionNeeded()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L232",
+      "source_location": "L190",
       "id": "scripts_order_pipeline_render_renderactionneeded",
       "community": 10,
       "norm_label": "renderactionneeded()"
@@ -8584,7 +8539,7 @@
       "label": "getReprintKey()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L245",
+      "source_location": "L203",
       "id": "scripts_order_pipeline_render_getreprintkey",
       "community": 10,
       "norm_label": "getreprintkey()"
@@ -8593,7 +8548,7 @@
       "label": "getFileHistory()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L249",
+      "source_location": "L207",
       "id": "scripts_order_pipeline_render_getfilehistory",
       "community": 10,
       "norm_label": "getfilehistory()"
@@ -8602,7 +8557,7 @@
       "label": "getReprintActionState()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L254",
+      "source_location": "L212",
       "id": "scripts_order_pipeline_render_getreprintactionstate",
       "community": 10,
       "norm_label": "getreprintactionstate()"
@@ -8611,7 +8566,7 @@
       "label": "getRowReprintState()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L276",
+      "source_location": "L234",
       "id": "scripts_order_pipeline_render_getrowreprintstate",
       "community": 10,
       "norm_label": "getrowreprintstate()"
@@ -8620,7 +8575,7 @@
       "label": "reprintStatusClass()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L296",
+      "source_location": "L254",
       "id": "scripts_order_pipeline_render_reprintstatusclass",
       "community": 10,
       "norm_label": "reprintstatusclass()"
@@ -8629,7 +8584,7 @@
       "label": "renderReprintActionState()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L302",
+      "source_location": "L260",
       "id": "scripts_order_pipeline_render_renderreprintactionstate",
       "community": 10,
       "norm_label": "renderreprintactionstate()"
@@ -8638,7 +8593,7 @@
       "label": "renderReprintStateBlock()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L309",
+      "source_location": "L267",
       "id": "scripts_order_pipeline_render_renderreprintstateblock",
       "community": 10,
       "norm_label": "renderreprintstateblock()"
@@ -8647,7 +8602,7 @@
       "label": "renderReprintHistory()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L340",
+      "source_location": "L298",
       "id": "scripts_order_pipeline_render_renderreprinthistory",
       "community": 10,
       "norm_label": "renderreprinthistory()"
@@ -8656,7 +8611,7 @@
       "label": "renderPdfFiles()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L369",
+      "source_location": "L327",
       "id": "scripts_order_pipeline_render_renderpdffiles",
       "community": 10,
       "norm_label": "renderpdffiles()"
@@ -8665,7 +8620,7 @@
       "label": "renderFullReprintAction()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L408",
+      "source_location": "L366",
       "id": "scripts_order_pipeline_render_renderfullreprintaction",
       "community": 10,
       "norm_label": "renderfullreprintaction()"
@@ -8674,7 +8629,7 @@
       "label": "renderProcessedReprintRecords()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L422",
+      "source_location": "L380",
       "id": "scripts_order_pipeline_render_renderprocessedreprintrecords",
       "community": 10,
       "norm_label": "renderprocessedreprintrecords()"
@@ -8683,7 +8638,7 @@
       "label": "renderOrders()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L454",
+      "source_location": "L412",
       "id": "scripts_order_pipeline_render_renderorders",
       "community": 10,
       "norm_label": "renderorders()"
@@ -8692,7 +8647,7 @@
       "label": "renderError()",
       "file_type": "code",
       "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L527",
+      "source_location": "L485",
       "id": "scripts_order_pipeline_render_rendererror",
       "community": 10,
       "norm_label": "rendererror()"
@@ -9810,7 +9765,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L1",
       "id": "scripts_stock_ui_js",
-      "community": 92,
+      "community": 19,
       "norm_label": "stock-ui.js"
     },
     {
@@ -9819,7 +9774,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L7",
       "id": "scripts_stock_ui_statuslabel",
-      "community": 92,
+      "community": 19,
       "norm_label": "statuslabel()"
     },
     {
@@ -9828,7 +9783,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L11",
       "id": "scripts_stock_ui_movementlabel",
-      "community": 92,
+      "community": 19,
       "norm_label": "movementlabel()"
     },
     {
@@ -9846,7 +9801,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L92",
       "id": "scripts_stock_ui_buildmovementrows",
-      "community": 92,
+      "community": 19,
       "norm_label": "buildmovementrows()"
     },
     {
@@ -9855,7 +9810,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L121",
       "id": "scripts_stock_ui_buildstockhistorytable",
-      "community": 92,
+      "community": 19,
       "norm_label": "buildstockhistorytable()"
     },
     {
@@ -9864,7 +9819,7 @@
       "source_file": "scripts/stock-ui.js",
       "source_location": "L158",
       "id": "scripts_stock_ui_renderalerts",
-      "community": 92,
+      "community": 19,
       "norm_label": "renderalerts()"
     },
     {
@@ -11785,96 +11740,6 @@
       "norm_label": "{\n  getcanonicalorderidentity,\n  normalizeorderidentitycandidate,\n}"
     },
     {
-      "label": "order-pipeline-render-labels.test.js",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L1",
-      "id": "tests_order_pipeline_render_labels_test_js",
-      "community": 91,
-      "norm_label": "order-pipeline-render-labels.test.js"
-    },
-    {
-      "label": "assert",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L3",
-      "id": "tests_order_pipeline_render_labels_test_assert",
-      "community": 91,
-      "norm_label": "assert"
-    },
-    {
-      "label": "fs",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L4",
-      "id": "tests_order_pipeline_render_labels_test_fs",
-      "community": 91,
-      "norm_label": "fs"
-    },
-    {
-      "label": "path",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L5",
-      "id": "tests_order_pipeline_render_labels_test_path",
-      "community": 91,
-      "norm_label": "path"
-    },
-    {
-      "label": "vm",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L6",
-      "id": "tests_order_pipeline_render_labels_test_vm",
-      "community": 91,
-      "norm_label": "vm"
-    },
-    {
-      "label": "source",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L8",
-      "id": "tests_order_pipeline_render_labels_test_source",
-      "community": 91,
-      "norm_label": "source"
-    },
-    {
-      "label": "context",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L9",
-      "id": "tests_order_pipeline_render_labels_test_context",
-      "community": 91,
-      "norm_label": "context"
-    },
-    {
-      "label": "esc()",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L18",
-      "id": "tests_order_pipeline_render_labels_test_esc",
-      "community": 91,
-      "norm_label": "esc()"
-    },
-    {
-      "label": "html",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L25",
-      "id": "tests_order_pipeline_render_labels_test_html",
-      "community": 91,
-      "norm_label": "html"
-    },
-    {
-      "label": "prefixedHtml",
-      "file_type": "code",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L45",
-      "id": "tests_order_pipeline_render_labels_test_prefixedhtml",
-      "community": 91,
-      "norm_label": "prefixedhtml"
-    },
-    {
       "label": "AGENTS.md",
       "file_type": "document",
       "source_file": "AGENTS.md",
@@ -13344,7 +13209,7 @@
       "label": "Neon PostgreSQL",
       "file_type": "concept",
       "source_file": "ARCHITECTURE.md",
-      "community": 93,
+      "community": 11,
       "norm_label": "neon postgresql",
       "id": "architecture_neon_postgresql"
     },
@@ -13352,7 +13217,7 @@
       "label": "Netlify Functions",
       "file_type": "code",
       "source_file": "netlify/functions/",
-      "community": 93,
+      "community": 11,
       "norm_label": "netlify functions",
       "id": "architecture_netlify_functions"
     },
@@ -13360,7 +13225,7 @@
       "label": "app/sync.js",
       "file_type": "code",
       "source_file": "app/sync.js",
-      "community": 93,
+      "community": 11,
       "norm_label": "app/sync.js",
       "id": "architecture_sync_js"
     },
@@ -15817,9 +15682,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_file_explorer"
+      "target": "obsidian_core_plugins_file_explorer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15827,9 +15692,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_global_search"
+      "target": "obsidian_core_plugins_global_search",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15837,9 +15702,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_switcher"
+      "target": "obsidian_core_plugins_switcher",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15847,9 +15712,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_graph"
+      "target": "obsidian_core_plugins_graph",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15857,9 +15722,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_backlink"
+      "target": "obsidian_core_plugins_backlink",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15867,9 +15732,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_canvas"
+      "target": "obsidian_core_plugins_canvas",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15877,9 +15742,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_outgoing_link"
+      "target": "obsidian_core_plugins_outgoing_link",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15887,9 +15752,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L9",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_tag_pane"
+      "target": "obsidian_core_plugins_tag_pane",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15897,9 +15762,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_footnotes"
+      "target": "obsidian_core_plugins_footnotes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15907,9 +15772,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L11",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_properties"
+      "target": "obsidian_core_plugins_properties",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15917,9 +15782,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L12",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_page_preview"
+      "target": "obsidian_core_plugins_page_preview",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15927,9 +15792,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L13",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_daily_notes"
+      "target": "obsidian_core_plugins_daily_notes",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15937,9 +15802,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L14",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_templates"
+      "target": "obsidian_core_plugins_templates",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15947,9 +15812,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L15",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_note_composer"
+      "target": "obsidian_core_plugins_note_composer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15957,9 +15822,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L16",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_command_palette"
+      "target": "obsidian_core_plugins_command_palette",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15967,9 +15832,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L17",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_slash_command"
+      "target": "obsidian_core_plugins_slash_command",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15977,9 +15842,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_editor_status"
+      "target": "obsidian_core_plugins_editor_status",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15987,9 +15852,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L19",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_bookmarks"
+      "target": "obsidian_core_plugins_bookmarks",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -15997,9 +15862,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L20",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_markdown_importer"
+      "target": "obsidian_core_plugins_markdown_importer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16007,9 +15872,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L21",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_zk_prefixer"
+      "target": "obsidian_core_plugins_zk_prefixer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16017,9 +15882,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L22",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_random_note"
+      "target": "obsidian_core_plugins_random_note",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16027,9 +15892,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L23",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_outline"
+      "target": "obsidian_core_plugins_outline",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16037,9 +15902,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L24",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_word_count"
+      "target": "obsidian_core_plugins_word_count",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16047,9 +15912,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L25",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_slides"
+      "target": "obsidian_core_plugins_slides",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16057,9 +15922,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L26",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_audio_recorder"
+      "target": "obsidian_core_plugins_audio_recorder",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16067,9 +15932,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L27",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_workspaces"
+      "target": "obsidian_core_plugins_workspaces",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16077,9 +15942,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L28",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_file_recovery"
+      "target": "obsidian_core_plugins_file_recovery",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16087,9 +15952,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_publish"
+      "target": "obsidian_core_plugins_publish",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16097,9 +15962,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L30",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_sync"
+      "target": "obsidian_core_plugins_sync",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16107,9 +15972,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L31",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_bases"
+      "target": "obsidian_core_plugins_bases",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16117,9 +15982,9 @@
       "source_file": ".obsidian/core-plugins.json",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_core_plugins_json",
-      "target": "obsidian_core_plugins_webviewer"
+      "target": "obsidian_core_plugins_webviewer",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16127,9 +15992,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_json",
-      "target": "obsidian_workspace_main"
+      "target": "obsidian_workspace_main",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16137,9 +16002,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_json",
-      "target": "obsidian_workspace_left"
+      "target": "obsidian_workspace_left",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16147,9 +16012,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L83",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_json",
-      "target": "obsidian_workspace_right"
+      "target": "obsidian_workspace_right",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16157,9 +16022,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L175",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_json",
-      "target": "obsidian_workspace_left_ribbon"
+      "target": "obsidian_workspace_left_ribbon",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16167,9 +16032,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L186",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_json",
-      "target": "obsidian_workspace_active"
+      "target": "obsidian_workspace_active",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16177,9 +16042,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L187",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_json",
-      "target": "obsidian_workspace_lastopenfiles"
+      "target": "obsidian_workspace_lastopenfiles",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16187,9 +16052,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_main",
-      "target": "obsidian_workspace_main_id"
+      "target": "obsidian_workspace_main_id",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16197,9 +16062,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_main",
-      "target": "obsidian_workspace_main_type"
+      "target": "obsidian_workspace_main_type",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16207,9 +16072,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_main",
-      "target": "obsidian_workspace_main_children"
+      "target": "obsidian_workspace_main_children",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16217,9 +16082,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L27",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_main",
-      "target": "obsidian_workspace_main_direction"
+      "target": "obsidian_workspace_main_direction",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16227,9 +16092,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L30",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left",
-      "target": "obsidian_workspace_left_id"
+      "target": "obsidian_workspace_left_id",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16237,9 +16102,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L31",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left",
-      "target": "obsidian_workspace_left_type"
+      "target": "obsidian_workspace_left_type",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16247,9 +16112,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left",
-      "target": "obsidian_workspace_left_children"
+      "target": "obsidian_workspace_left_children",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16257,9 +16122,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L80",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left",
-      "target": "obsidian_workspace_left_direction"
+      "target": "obsidian_workspace_left_direction",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16267,9 +16132,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L81",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left",
-      "target": "obsidian_workspace_left_width"
+      "target": "obsidian_workspace_left_width",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16277,9 +16142,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L84",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_right",
-      "target": "obsidian_workspace_right_id"
+      "target": "obsidian_workspace_right_id",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16287,9 +16152,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L85",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_right",
-      "target": "obsidian_workspace_right_type"
+      "target": "obsidian_workspace_right_type",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16297,9 +16162,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L86",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_right",
-      "target": "obsidian_workspace_right_children"
+      "target": "obsidian_workspace_right_children",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16307,9 +16172,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L171",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_right",
-      "target": "obsidian_workspace_right_direction"
+      "target": "obsidian_workspace_right_direction",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16317,9 +16182,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L172",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_right",
-      "target": "obsidian_workspace_right_width"
+      "target": "obsidian_workspace_right_width",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16327,9 +16192,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L173",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_right",
-      "target": "obsidian_workspace_right_collapsed"
+      "target": "obsidian_workspace_right_collapsed",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16337,9 +16202,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L176",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon",
-      "target": "obsidian_workspace_left_ribbon_hiddenitems"
+      "target": "obsidian_workspace_left_ribbon_hiddenitems",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16347,9 +16212,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L177",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_switcher_open_quick_switcher"
+      "target": "obsidian_workspace_hiddenitems_switcher_open_quick_switcher",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16357,9 +16222,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L178",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_graph_open_graph_view"
+      "target": "obsidian_workspace_hiddenitems_graph_open_graph_view",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16367,9 +16232,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L179",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_canvas_create_new_canvas"
+      "target": "obsidian_workspace_hiddenitems_canvas_create_new_canvas",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16377,9 +16242,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L180",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_daily_notes_open_today_s_daily_note"
+      "target": "obsidian_workspace_hiddenitems_daily_notes_open_today_s_daily_note",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16387,9 +16252,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L181",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_templates_insert_template"
+      "target": "obsidian_workspace_hiddenitems_templates_insert_template",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16397,9 +16262,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L182",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_command_palette_open_command_palette"
+      "target": "obsidian_workspace_hiddenitems_command_palette_open_command_palette",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16407,9 +16272,9 @@
       "source_file": ".obsidian/workspace.json",
       "source_location": "L183",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "obsidian_workspace_left_ribbon_hiddenitems",
-      "target": "obsidian_workspace_hiddenitems_bases_create_new_base"
+      "target": "obsidian_workspace_hiddenitems_bases_create_new_base",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -22411,17 +22276,6 @@
       "confidence_score": 1.0,
       "source": "lib_order_pipeline_normalizeorderidentitycandidate",
       "target": "lib_order_pipeline_cleanstring"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "netlify/functions/_lib/order-pipeline.js",
-      "source_location": "L77",
-      "weight": 1.0,
-      "source": "lib_order_pipeline_getcanonicalorderidentity",
-      "target": "lib_order_pipeline_cleanstring",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -32067,56 +31921,6 @@
       "source_file": "scripts/order-pipeline-render.js",
       "source_location": "L74",
       "weight": 1.0,
-      "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_cleanlabel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L78",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_getinternalorderids",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L86",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_isinternalorderidlabel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L91",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_isprefixedorderlabel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L95",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_js",
-      "target": "scripts_order_pipeline_render_getbusinessorderlabels",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L74",
-      "weight": 1.0,
       "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_js",
       "target": "scripts_order_pipeline_render_getprimaryorderlabel"
@@ -32548,61 +32352,6 @@
       "confidence_score": 1.0,
       "source": "scripts_order_pipeline_render_renderactionneeded",
       "target": "scripts_order_pipeline_render_xmlstatusclass"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L87",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_isinternalorderidlabel",
-      "target": "scripts_order_pipeline_render_cleanlabel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L92",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_isprefixedorderlabel",
-      "target": "scripts_order_pipeline_render_cleanlabel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L88",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_isinternalorderidlabel",
-      "target": "scripts_order_pipeline_render_getinternalorderids",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L123",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_getprimaryorderlabel",
-      "target": "scripts_order_pipeline_render_getbusinessorderlabels",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/order-pipeline-render.js",
-      "source_location": "L127",
-      "weight": 1.0,
-      "source": "scripts_order_pipeline_render_getraworderlabels",
-      "target": "scripts_order_pipeline_render_getbusinessorderlabels",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -34040,9 +33789,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L28",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_js",
-      "target": "scripts_reprint_xml_normalizeorderidtoken"
+      "target": "scripts_reprint_xml_normalizeorderidtoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -34050,9 +33799,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L34",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_js",
-      "target": "scripts_reprint_xml_normalizeponumbertoken"
+      "target": "scripts_reprint_xml_normalizeponumbertoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -34185,9 +33934,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_normalizeorderidtoken",
-      "target": "scripts_reprint_xml_cleanvalue"
+      "target": "scripts_reprint_xml_cleanvalue",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -34196,9 +33945,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L35",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_normalizeponumbertoken",
-      "target": "scripts_reprint_xml_cleanvalue"
+      "target": "scripts_reprint_xml_cleanvalue",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -34240,9 +33989,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L61",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_pickoriginalorderid",
-      "target": "scripts_reprint_xml_normalizeorderidtoken"
+      "target": "scripts_reprint_xml_normalizeorderidtoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -34251,9 +34000,9 @@
       "source_file": "scripts/reprint-xml.js",
       "source_location": "L68",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "scripts_reprint_xml_normalizeponumber",
-      "target": "scripts_reprint_xml_normalizeponumbertoken"
+      "target": "scripts_reprint_xml_normalizeponumbertoken",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -38678,96 +38427,6 @@
       "confidence_score": 1.0,
       "source": "tests_order_pipeline_identity_test_js",
       "target": "tests_order_pipeline_identity_test_getcanonicalorderidentity_normalizeorderidentitycandidate"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L3",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_assert",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_fs",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L5",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_path",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_vm",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_source",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L9",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_context",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L18",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_esc",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L25",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_html",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/order-pipeline-render-labels.test.js",
-      "source_location": "L45",
-      "weight": 1.0,
-      "source": "tests_order_pipeline_render_labels_test_js",
-      "target": "tests_order_pipeline_render_labels_test_prefixedhtml",
-      "confidence_score": 1.0
     },
     {
       "relation": "contains",

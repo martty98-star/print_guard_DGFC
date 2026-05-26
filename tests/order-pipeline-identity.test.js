@@ -33,4 +33,12 @@ assert.strictEqual(getCanonicalOrderIdentity({
   processed_order_name: 'retry_2026_05_26',
 }), null);
 
+assert.strictEqual(getCanonicalOrderIdentity({
+  processed_order_id: 26850,
+  order_number: '26850',
+  external_order_id: '4770994',
+  customer_order_id: 'PS4770994',
+  processed_order_name: '26850',
+}), '4770994');
+
 console.log('order-pipeline identity tests passed');
