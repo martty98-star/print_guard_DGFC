@@ -342,10 +342,14 @@ function requiresFullReprintView(options = {}) {
   return options && options.deepScan === true;
 }
 
-async function ensureOrderPipelineView(client) {
-  if (orderPipelineViewReady) return;
+async function ensureOrderPipelineBaseTables(client) {
   await ensurePrintOrdersTable(client);
   await ensureProcessedPrintOrderTables(client);
+}
+
+async function ensureOrderPipelineView(client) {
+  if (orderPipelineViewReady) return;
+  await ensureOrderPipelineBaseTables(client);
   await client.query(`
     create or replace view v_print_order_pipeline as
     with reprint_summary as (
@@ -822,6 +826,7 @@ function mapPipelineStats(row) {
 }
 
 async function queryPipelineStats(client, filters) {
+  await ensureOrderPipelineView(client);
   const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
   const result = await client.query(
     `
@@ -854,6 +859,7 @@ async function queryPipelineStats(client, filters) {
 }
 
 async function queryFastPipelineStats(client, filters) {
+  await ensureOrderPipelineBaseTables(client);
   const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
   const result = await client.query(
     `
@@ -881,6 +887,7 @@ async function queryFastPipelineStats(client, filters) {
 }
 
 async function queryOperationalGlobalStats(client) {
+  await ensureOrderPipelineBaseTables(client);
   const filters = buildOrderPipelineFilters({ datePreset: 'this_month' });
   const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
   const result = await client.query(
@@ -1055,6 +1062,7 @@ async function listOrderPipelineFullView(client, options = {}) {
 }
 
 async function listOrderPipelineFast(client, options = {}) {
+  await ensureOrderPipelineBaseTables(client);
   const limit = clampLimit(options.limit);
   const offset = clampOffset(options.offset);
   const filters = buildOrderPipelineFilters(options);
@@ -1217,6 +1225,7 @@ async function getOrderPipelineDetail(client, options = {}) {
 }
 
 async function listPipelineMonths(client) {
+  await ensureOrderPipelineBaseTables(client);
   const result = await client.query(`
     with months as (
       select source_month as month

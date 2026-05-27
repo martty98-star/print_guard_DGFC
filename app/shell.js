@@ -28,8 +28,28 @@
     }
 
     function bindBottomNavs() {
+      const toggle = el('bottom-nav-toggle');
+      const setNavOpen = (open) => {
+        document.body.classList.toggle('nav-open', Boolean(open));
+        if (toggle) {
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+          toggle.setAttribute('aria-label', open ? 'Zavřít spodní navigaci' : 'Otevřít spodní navigaci');
+        }
+      };
+
+      toggle?.addEventListener('click', () => {
+        setNavOpen(!document.body.classList.contains('nav-open'));
+      });
+
       document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(button => {
-        button.addEventListener('click', () => navigate(button.dataset.screen));
+        button.addEventListener('click', () => {
+          navigate(button.dataset.screen);
+          setNavOpen(false);
+        });
+      });
+
+      global.addEventListener('keydown', event => {
+        if (event.key === 'Escape') setNavOpen(false);
       });
     }
 
