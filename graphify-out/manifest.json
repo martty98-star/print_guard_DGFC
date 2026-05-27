@@ -5,9 +5,9 @@
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\i18n.js": {
-    "mtime": 1779719250.9008665,
-    "ast_hash": "2656dcedf36f698b326e2e0f357a5b6f",
-    "semantic_hash": "2656dcedf36f698b326e2e0f357a5b6f"
+    "mtime": 1779874999.5276492,
+    "ast_hash": "2f8e8e21cd17081d003191d31deb2e48",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\manifest.json": {
     "mtime": 1779783165.0393772,
@@ -150,9 +150,9 @@
     "semantic_hash": "64697b935c88d342b4ca125a9e6a57dd"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\netlify\\functions\\processed-print-orders.js": {
-    "mtime": 1779700913.1117294,
-    "ast_hash": "ec60597ef9ebbc6d93264590d8aa38d1",
-    "semantic_hash": "ec60597ef9ebbc6d93264590d8aa38d1"
+    "mtime": 1779874157.3120854,
+    "ast_hash": "51f6e073551052f7dc7c51e78db6a0d7",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\netlify\\functions\\save-subscription.js": {
     "mtime": 1775640214.5940015,
@@ -200,19 +200,19 @@
     "semantic_hash": "5d1aad84b755db63b2341e1c15cb3167"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\netlify\\functions\\_lib\\order-pipeline.js": {
-    "mtime": 1779785791.301158,
-    "ast_hash": "b29ed384215de2a5fee0296d0aab457a",
-    "semantic_hash": "b29ed384215de2a5fee0296d0aab457a"
+    "mtime": 1779874570.613832,
+    "ast_hash": "01433ed5152aafde4f62c10b251f5e94",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\netlify\\functions\\_lib\\postpurchase-orders.js": {
-    "mtime": 1777299811.7314541,
-    "ast_hash": "7825b27354978a6739e8e6c2f3e1d936",
-    "semantic_hash": "7825b27354978a6739e8e6c2f3e1d936"
+    "mtime": 1779874088.1826472,
+    "ast_hash": "3417550217d03347b2f0f6e23550489c",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\netlify\\functions\\_lib\\processed-print-orders.js": {
-    "mtime": 1779703006.8768566,
-    "ast_hash": "e9f797bc1c8aff633d3c91166bf59cb1",
-    "semantic_hash": "e9f797bc1c8aff633d3c91166bf59cb1"
+    "mtime": 1779874123.9302564,
+    "ast_hash": "b1936358157150bb2b8d8ead8fec05d5",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\netlify\\functions\\_lib\\push-delivery.js": {
     "mtime": 1776151733.365876,
@@ -360,9 +360,9 @@
     "semantic_hash": "2d9fa7bf65aa19c814014af1490a42ba"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\order-pipeline-api.js": {
-    "mtime": 1779359876.9794505,
-    "ast_hash": "25bd3e1b2292a49bf99db7c6382ae8cd",
-    "semantic_hash": "25bd3e1b2292a49bf99db7c6382ae8cd"
+    "mtime": 1779874658.1905518,
+    "ast_hash": "e3d627bdcd3d7665fa5fe1c03b186d9b",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\order-pipeline-filters.js": {
     "mtime": 1779359872.3886676,
@@ -370,9 +370,9 @@
     "semantic_hash": "a1e6ba43bcf80663d115ca0f204720d2"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\order-pipeline-render.js": {
-    "mtime": 1779785893.2015905,
-    "ast_hash": "266517c07d38a804a801c439e81655df",
-    "semantic_hash": "266517c07d38a804a801c439e81655df"
+    "mtime": 1779874837.0426145,
+    "ast_hash": "8b846fdd40ebf7c785d7ced295f444bc",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\pdf-open-helper.js": {
     "mtime": 1777380131.7810528,
@@ -385,9 +385,9 @@
     "semantic_hash": "4c01589764351eea2aca1f09558b4f9a"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\postpurchase-ui.js": {
-    "mtime": 1779802635.9742827,
-    "ast_hash": "474dbd5e843b1d92a2f095877f37b382",
-    "semantic_hash": "474dbd5e843b1d92a2f095877f37b382"
+    "mtime": 1779874878.8660696,
+    "ast_hash": "ec4d4d85a4b18bbe32803e8198285174",
+    "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\scripts\\print-log-ui.js": {
     "mtime": 1775732825.973142,
@@ -837,36 +837,6 @@
   "C:\\PrintGuard\\print_guard_DGFC\\app\\settings-runtime.js": {
     "mtime": 1779808326.2297974,
     "ast_hash": "19d024496b24731d4854ff39bbd9594f",
-    "semantic_hash": ""
-  },
-  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-desktop.png": {
-    "mtime": 1779871856.3373268,
-    "ast_hash": "5147c258787ac3a3a3c5aa62ef6e44c4",
-    "semantic_hash": ""
-  },
-  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-mobile.png": {
-    "mtime": 1779871857.53618,
-    "ast_hash": "44b94a719acf71cc7c92d2a6aee95b25",
-    "semantic_hash": ""
-  },
-  "C:\\PrintGuard\\print_guard_DGFC\\reports\\industrial-refine-desktop.png": {
-    "mtime": 1779872815.5549643,
-    "ast_hash": "7d00cdd9ccdf69b9979cc7b2275068fa",
-    "semantic_hash": ""
-  },
-  "C:\\PrintGuard\\print_guard_DGFC\\reports\\industrial-refine-mobile.png": {
-    "mtime": 1779872817.0733619,
-    "ast_hash": "77d7dec720ecfaf3196180c742cb1bde",
-    "semantic_hash": ""
-  },
-  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-refined-desktop.png": {
-    "mtime": 1779872728.2333572,
-    "ast_hash": "230d8d282951d716e272ef58855eab72",
-    "semantic_hash": ""
-  },
-  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-refined-mobile.png": {
-    "mtime": 1779872729.9016037,
-    "ast_hash": "bda15d6d2b320e4193d88373ca06b84f",
     "semantic_hash": ""
   }
 }

@@ -136,6 +136,7 @@
   }
 
   function getAttentionState(row) {
+    if (row && (row.pipelineStatus === 'cancelled' || row.adminStatus === 'cancelled')) return 'cancelled';
     const status = String(row && row.pipelineStatus || '').toLowerCase();
     if (status === 'received_only') return 'unprocessed';
     if (status === 'processed_without_received') return 'orphan';
@@ -205,6 +206,9 @@
 
   function renderPipelineBadges(row) {
     const badges = [];
+    if (row.pipelineStatus === 'cancelled' || row.adminStatus === 'cancelled') {
+      badges.push(`<span class="pp-pipeline-badge cancelled">${t('processed.badge.cancelled')}</span>`);
+    }
     if (row.receivedAt || row.apiSeenAt || row.externalOrderId) {
       badges.push(`<span class="pp-pipeline-badge received">${t('processed.badge.received')}</span>`);
     }
@@ -230,6 +234,9 @@
   }
 
   function renderActionNeeded(row, options) {
+    if (row.pipelineStatus === 'cancelled' || row.adminStatus === 'cancelled') {
+      return `<span class="pp-pipeline-badge cancelled">${t('processed.badge.cancelled')}</span><span>${options.esc(row.adminNote || t('processed.action.cancelled-text'))}</span>`;
+    }
     const state = getRowReprintState(row, options);
     if (state.state === 'resolving' || state.state === 'resolved' || state.state === 'error') {
       return renderReprintStateBlock(row, state, options);
@@ -451,6 +458,18 @@
     </div>`;
   }
 
+  function renderAdminOrderActions(row, options) {
+    if (!options.isAdmin) return '';
+    const esc = options.esc;
+    const processedOrderId = row.processedOrderId || row.id || '';
+    const orderName = getPrimaryOrderLabel(row) || row.orderName || row.processedOrderName || '';
+    const cancelled = row.pipelineStatus === 'cancelled' || row.adminStatus === 'cancelled';
+    return `<div class="pp-admin-order-actions admin-only">
+      ${cancelled ? '' : `<button class="btn-sm" type="button" data-admin-order-action="cancel_order" data-admin-order-processed-id="${esc(processedOrderId)}" data-admin-order-external-id="${esc(row.externalOrderId || '')}" data-admin-order-number="${esc(orderName)}">${t('processed.button.cancel-order')}</button>`}
+      <button class="btn-sm danger" type="button" data-admin-order-action="delete_order" data-admin-order-processed-id="${esc(processedOrderId)}" data-admin-order-external-id="${esc(row.externalOrderId || '')}" data-admin-order-number="${esc(orderName)}">${t('processed.button.delete-order')}</button>
+    </div>`;
+  }
+
   function renderOrders(rows, options) {
     const esc = options.esc;
     const summary = renderPipelineStats(options.stats, options);
@@ -493,6 +512,7 @@
           </div>
           <div class="pp-pipeline-badges">${renderPipelineBadges(row)}</div>
           ${attentionNote ? `<div class="pp-attention-note">${esc(attentionNote)}</div>` : ''}
+          ${renderAdminOrderActions(row, options)}
           <div class="pp-processed-meta">
           <span><strong>${t('processed.label.workflow')}:</strong> ${esc(row.workflowName || row.printerName || '-')}</span>
           <span><strong>${t('processed.label.type')}:</strong> ${esc(row.orderType || '-')}</span>

@@ -551,6 +551,11 @@ async function ensurePrintOrdersTable(client) {
         issue_reason text null,
         issue_note text null,
         reprinted_at timestamptz null,
+        ignored boolean not null default false,
+        ignore_reason text null,
+        admin_status text null,
+        admin_note text null,
+        admin_updated_at timestamptz null,
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       )
@@ -571,6 +576,12 @@ async function ensurePrintOrdersTable(client) {
   await client.query(`alter table print_orders_received add column if not exists reprinted_at timestamptz null`);
   await client.query(`alter table print_orders_received add column if not exists submit_tool_at timestamptz null`);
   await client.query(`alter table print_orders_received add column if not exists submit_tool_status text null`);
+  await client.query(`alter table print_orders_received add column if not exists ignored boolean not null default false`);
+  await client.query(`alter table print_orders_received add column if not exists ignore_reason text null`);
+  await client.query(`alter table print_orders_received add column if not exists admin_status text null`);
+  await client.query(`alter table print_orders_received add column if not exists admin_note text null`);
+  await client.query(`alter table print_orders_received add column if not exists admin_updated_at timestamptz null`);
+  await client.query(`create index if not exists print_orders_received_ignored_idx on print_orders_received (ignored, admin_status)`);
 
   printOrdersSchemaReady = true;
 }
@@ -705,8 +716,14 @@ async function listPrintOrdersReceived(client, options) {
         issue_reason,
         issue_note,
         reprinted_at,
+        ignored,
+        ignore_reason,
+        admin_status,
+        admin_note,
+        admin_updated_at,
         source_payload
       from print_orders_received
+      where coalesce(ignored, false) = false
       order by coalesce(received_at, api_seen_at) desc, id desc
       limit $1
       offset $2
@@ -738,6 +755,11 @@ function mapPrintOrderRow(row) {
     issue_reason: row.issue_reason || '',
     issue_note: row.issue_note || '',
     reprinted_at: row.reprinted_at instanceof Date ? row.reprinted_at.toISOString() : row.reprinted_at,
+    ignored: Boolean(row.ignored),
+    ignore_reason: row.ignore_reason || '',
+    admin_status: row.admin_status || '',
+    admin_note: row.admin_note || '',
+    admin_updated_at: row.admin_updated_at instanceof Date ? row.admin_updated_at.toISOString() : row.admin_updated_at,
     statuses: {
       RECEIVED_FROM_API: true,
       SUBMIT_TOOL_PROCESSED: submitToolProcessed,
@@ -745,6 +767,73 @@ function mapPrintOrderRow(row) {
       COLORADO_PRINTED: coloradoPrinted,
     },
   };
+}
+
+async function updatePrintOrderAdminStatus(client, options) {
+  await ensurePrintOrdersTable(client);
+
+  const externalOrderId = cleanString(options && (options.externalOrderId || options.external_order_id));
+  const orderNumber = cleanString(options && (options.orderNumber || options.order_number));
+  const action = cleanString(options && options.action);
+  const note = cleanString(options && options.note);
+  if (!externalOrderId && !orderNumber) {
+    const error = new Error('Missing order identifier');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (action !== 'cancelled' && action !== 'deleted') {
+    const error = new Error('Invalid admin order action');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const params = [externalOrderId, orderNumber, note];
+  const result = await client.query(
+    `
+      update print_orders_received
+      set
+        ignored = case when $4 = 'deleted' then true else ignored end,
+        ignore_reason = case when $4 = 'deleted' then coalesce(nullif($3, ''), 'admin_deleted') else ignore_reason end,
+        admin_status = case when $4 = 'cancelled' then 'cancelled' else admin_status end,
+        admin_note = case when $4 = 'cancelled' then nullif($3, '') else admin_note end,
+        admin_updated_at = now(),
+        updated_at = now()
+      where (
+        ($1::text is not null and external_order_id = $1)
+        or ($2::text is not null and order_number = $2)
+        or ($2::text is not null and customer_order_id = $2)
+      )
+      returning
+        external_order_id,
+        order_number,
+        customer_order_id,
+        status,
+        received_at,
+        api_seen_at,
+        submit_tool_at,
+        submit_tool_status,
+        submit_tool_processed_at,
+        onyx_seen_at,
+        colorado_printed_at,
+        reprint_needed,
+        issue_reason,
+        issue_note,
+        reprinted_at,
+        ignored,
+        ignore_reason,
+        admin_status,
+        admin_note,
+        admin_updated_at,
+        source_payload
+    `,
+    [...params, action]
+  );
+  if (!result.rows.length) {
+    const error = new Error('Order not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  return mapPrintOrderRow(result.rows[0]);
 }
 
 async function updatePrintOrderLifecycleStatus(client, options) {
@@ -966,5 +1055,6 @@ module.exports = {
   fetchPostPurchaseOrders,
   listPrintOrdersReceived,
   syncPostPurchaseOrders,
+  updatePrintOrderAdminStatus,
   updatePrintOrderLifecycleStatus,
 };

@@ -99,6 +99,9 @@ async function ensureProcessedPrintOrderTables(client) {
       source_xml_hash text not null,
       ignored boolean not null default false,
       ignore_reason text null,
+      admin_status text null,
+      admin_note text null,
+      admin_updated_at timestamptz null,
       source_month text null,
       imported_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -107,11 +110,15 @@ async function ensureProcessedPrintOrderTables(client) {
   await client.query(`alter table processed_print_orders add column if not exists order_dedupe_key text null`);
   await client.query(`alter table processed_print_orders add column if not exists ignored boolean not null default false`);
   await client.query(`alter table processed_print_orders add column if not exists ignore_reason text null`);
+  await client.query(`alter table processed_print_orders add column if not exists admin_status text null`);
+  await client.query(`alter table processed_print_orders add column if not exists admin_note text null`);
+  await client.query(`alter table processed_print_orders add column if not exists admin_updated_at timestamptz null`);
   await client.query(`drop index if exists processed_print_orders_guid_idx`);
   await client.query(`create index if not exists processed_print_orders_dedupe_key_idx on processed_print_orders (order_dedupe_key)`);
   await client.query(`create index if not exists processed_print_orders_queued_idx on processed_print_orders (queued_date_time desc nulls last, id desc)`);
   await client.query(`create index if not exists processed_print_orders_source_month_idx on processed_print_orders (source_month)`);
   await client.query(`create index if not exists processed_print_orders_source_path_idx on processed_print_orders (source_xml_path)`);
+  await client.query(`create index if not exists processed_print_orders_ignored_idx on processed_print_orders (ignored, admin_status)`);
 
   await client.query(`
     create table if not exists processed_order_reprint_requests (
@@ -193,10 +200,57 @@ function mapProcessedOrderRow(row) {
     orderDedupeKey: row.order_dedupe_key,
     ignored: Boolean(row.ignored),
     ignoreReason: row.ignore_reason,
+    adminStatus: row.admin_status,
+    adminNote: row.admin_note,
+    adminUpdatedAt: row.admin_updated_at instanceof Date ? row.admin_updated_at.toISOString() : String(row.admin_updated_at || ''),
     sourceMonth: row.source_month,
     importedAt: row.imported_at instanceof Date ? row.imported_at.toISOString() : String(row.imported_at || ''),
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
   };
+}
+
+async function updateProcessedPrintOrderAdminStatus(client, input) {
+  await ensureProcessedPrintOrderTables(client);
+  const id = Number(input && (input.id || input.orderId || input.processedOrderId || input.processed_order_id));
+  const orderName = cleanString(input && (input.orderName || input.order_name));
+  const action = cleanString(input && input.action);
+  const note = cleanString(input && input.note);
+  if ((!Number.isInteger(id) || id <= 0) && !orderName) {
+    const error = new Error('Missing processed order identifier');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (action !== 'cancelled' && action !== 'deleted') {
+    const error = new Error('Invalid admin order action');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = await client.query(
+    `
+      update processed_print_orders
+      set
+        ignored = case when $3 = 'deleted' then true else ignored end,
+        ignore_reason = case when $3 = 'deleted' then coalesce(nullif($4, ''), 'admin_deleted') else ignore_reason end,
+        admin_status = case when $3 = 'cancelled' then 'cancelled' else admin_status end,
+        admin_note = case when $3 = 'cancelled' then nullif($4, '') else admin_note end,
+        admin_updated_at = now(),
+        updated_at = now()
+      where (
+        ($1::bigint > 0 and id = $1)
+        or ($2::text is not null and order_name = $2)
+      )
+      returning *
+    `,
+    [Number.isInteger(id) && id > 0 ? id : 0, orderName, action, note]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    const error = new Error('Processed order not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  return mapProcessedOrderRow(row);
 }
 
 async function upsertProcessedPrintOrder(client, input) {
@@ -559,5 +613,6 @@ module.exports = {
   listKnownProcessedXmlHashes,
   listReprintRequests,
   resolveReprintRequest,
+  updateProcessedPrintOrderAdminStatus,
   upsertProcessedPrintOrder,
 };

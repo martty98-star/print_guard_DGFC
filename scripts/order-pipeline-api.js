@@ -112,6 +112,25 @@
     return readJsonResponse(res, t('processed.toast.reprint-delete-failed'));
   }
 
+  async function updateOrderAdminStatus(options) {
+    const payload = options.payload || {};
+    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
+      method: 'POST',
+      headers: options.headers || {},
+      cache: 'no-store',
+      body: JSON.stringify({
+        action: payload.action,
+        processedOrderId: payload.processedOrderId,
+        orderId: payload.orderId,
+        orderName: payload.orderName,
+        orderNumber: payload.orderNumber,
+        externalOrderId: payload.externalOrderId,
+        note: payload.note,
+      }),
+    });
+    return readJsonResponse(res, t('processed.toast.order-action-failed'));
+  }
+
   window.PrintGuardOrderPipelineApi = {
     buildOrderPipelineUrl,
     createReprintRequest,
@@ -121,5 +140,6 @@
     loadOrderPipelineDetail,
     readJsonResponse,
     resolveReprintRequest,
+    updateOrderAdminStatus,
   };
 })();

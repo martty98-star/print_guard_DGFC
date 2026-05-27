@@ -567,6 +567,30 @@
     }
   }
 
+  async function updateOrderAdminStatus(payload) {
+    const action = payload && payload.action;
+    const confirmed = window.confirm(action === 'delete_order'
+      ? t('processed.confirm.delete-order')
+      : t('processed.confirm.cancel-order'));
+    if (!confirmed) return;
+    try {
+      await Api.updateOrderAdminStatus({
+        fetchImpl: state.fetchImpl,
+        headers: state.adminJsonHeaders(),
+        payload,
+      });
+      state.showToast(action === 'delete_order'
+        ? t('processed.toast.order-deleted')
+        : t('processed.toast.order-cancelled'), 'success');
+      state.S.postPurchaseLoaded = false;
+      await loadPostPurchaseOrders(true);
+    } catch (error) {
+      console.error('Admin order action failed', error);
+      state.showToast(error && error.message ? error.message : t('processed.toast.order-action-failed'), 'error');
+      throw error;
+    }
+  }
+
   function renderPostPurchaseOrders() {
     const wrap = state.el('postpurchase-orders-wrap');
     if (!wrap) return;
@@ -652,6 +676,19 @@
         deleteReprintRequest({
           id: button.dataset.deleteReprintRequestId,
           admin: button.dataset.deleteReprintAdmin === 'true',
+        }).catch(() => {
+          button.disabled = false;
+        });
+      });
+    });
+    wrap.querySelectorAll('[data-admin-order-action]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        updateOrderAdminStatus({
+          action: button.dataset.adminOrderAction,
+          processedOrderId: button.dataset.adminOrderProcessedId,
+          externalOrderId: button.dataset.adminOrderExternalId,
+          orderNumber: button.dataset.adminOrderNumber,
         }).catch(() => {
           button.disabled = false;
         });

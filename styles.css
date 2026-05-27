@@ -849,6 +849,8 @@ textarea { resize: vertical; min-height: 58px; }
   padding: 5px 13px; transition: all var(--tr); white-space: nowrap;
 }
 .btn-sm:hover { background: var(--accent-bg); border-color: var(--accent-light); }
+.btn-sm.danger { color: var(--crit); border-color: rgba(155,58,47,.32); }
+.btn-sm.danger:hover { background: var(--crit-dim); border-color: rgba(155,58,47,.48); }
 .btn-sm.active {
   background: var(--accent-bg);
   border-color: var(--accent-light);
@@ -1774,6 +1776,11 @@ textarea { resize: vertical; min-height: 58px; }
   border-color: rgba(92, 128, 184, .45);
   box-shadow: inset 3px 0 0 rgba(92, 128, 184, .3);
 }
+.pp-processed-card.pp-processed-card--cancelled {
+  border-color: rgba(120, 128, 132, .5);
+  box-shadow: inset 3px 0 0 rgba(120, 128, 132, .42);
+  background: linear-gradient(180deg, rgba(120, 128, 132, .08) 0%, var(--bg4) 24%);
+}
 .pp-processed-card.pp-processed-card--resolving,
 .pp-processed-card.pipeline-card--resolving {
   border-color: rgba(92, 128, 184, .5);
@@ -1894,6 +1901,13 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-pipeline-badge.error { border-color: var(--crit); color: var(--crit); background: var(--crit-dim); }
 .pp-pipeline-badge.missing { border-color: rgba(180, 95, 80, .4); color: var(--crit); }
 .pp-pipeline-badge.orphan { border-color: rgba(160, 130, 70, .4); }
+.pp-pipeline-badge.cancelled { border-color: rgba(120, 128, 132, .5); color: var(--text-dim); background: var(--bg2); }
+.pp-admin-order-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
 .pp-missing-warning {
   border-left: 3px solid var(--crit);
   color: var(--crit);
@@ -3166,6 +3180,16 @@ textarea {
   background: var(--accent-bg);
   border-color: var(--accent-light);
   color: var(--accent);
+}
+
+.btn-sm.danger,
+.btn-sm.danger:hover {
+  color: var(--crit);
+  border-color: color-mix(in srgb, var(--crit) 46%, var(--border));
+}
+
+.btn-sm.danger:hover {
+  background: var(--crit-dim);
 }
 
 .mov-type-btn,

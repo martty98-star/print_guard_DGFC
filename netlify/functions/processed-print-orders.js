@@ -15,7 +15,11 @@ const {
   listProcessedPrintOrders,
   listReprintRequests,
   resolveReprintRequest,
+  updateProcessedPrintOrderAdminStatus,
 } = require('./_lib/processed-print-orders');
+const {
+  updatePrintOrderAdminStatus,
+} = require('./_lib/postpurchase-orders');
 
 function cleanApiError(error) {
   const message = error && error.message ? error.message : 'processed-print-orders failed';
@@ -79,8 +83,65 @@ exports.handler = async function handler(event) {
     if (event.httpMethod === 'POST') {
       const bodyInput = parseRequestBody(event);
       const action = String(bodyInput.action || '').trim().toLowerCase();
-      if (action !== 'reprint' && action !== 'resolve_reprint' && action !== 'mark_reprinted' && action !== 'cancel_reprint' && action !== 'delete_reprint') {
+      if (
+        action !== 'reprint' &&
+        action !== 'resolve_reprint' &&
+        action !== 'mark_reprinted' &&
+        action !== 'cancel_reprint' &&
+        action !== 'delete_reprint' &&
+        action !== 'cancel_order' &&
+        action !== 'delete_order'
+      ) {
         return json(400, { ok: false, error: 'Unsupported action' });
+      }
+
+      if (action === 'cancel_order' || action === 'delete_order') {
+        requireAdminAccess(event);
+        const adminAction = action === 'cancel_order' ? 'cancelled' : 'deleted';
+        const body = await withClient(async (client) => {
+          const processedOrderId = bodyInput.processedOrderId || bodyInput.processed_order_id || bodyInput.orderId || bodyInput.order_id;
+          const externalOrderId = bodyInput.externalOrderId || bodyInput.external_order_id;
+          const orderNumber = bodyInput.orderNumber || bodyInput.order_number || bodyInput.orderName || bodyInput.order_name;
+          const results = {};
+          if (processedOrderId || orderNumber) {
+            try {
+              results.processedOrder = await updateProcessedPrintOrderAdminStatus(client, {
+                id: processedOrderId,
+                orderName: orderNumber,
+                action: adminAction,
+                note: bodyInput.note,
+              });
+            } catch (error) {
+              if (!externalOrderId || error.statusCode !== 404) throw error;
+            }
+          }
+          if (externalOrderId || orderNumber) {
+            try {
+              results.receivedOrder = await updatePrintOrderAdminStatus(client, {
+                externalOrderId,
+                orderNumber,
+                action: adminAction,
+                note: bodyInput.note,
+              });
+            } catch (error) {
+              if (!processedOrderId || error.statusCode !== 404) throw error;
+            }
+          }
+          if (!results.processedOrder && !results.receivedOrder) {
+            const error = new Error('Order not found');
+            error.statusCode = 404;
+            throw error;
+          }
+          return { ok: true, action: adminAction, ...results };
+        });
+        console.log('processed-print-orders timing', {
+          endpoint: 'processed-print-orders',
+          method: 'POST',
+          action,
+          rowCount: 1,
+          duration_ms: Date.now() - started,
+        });
+        return json(200, body);
       }
 
       if (action === 'delete_reprint') {

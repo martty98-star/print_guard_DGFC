@@ -232,7 +232,13 @@ function buildFastPipelineBaseCte() {
         p.order_type,
         p.print_files,
         p.source_xml_path,
-        p.source_month
+        p.source_month,
+        i.admin_status as received_admin_status,
+        i.admin_note as received_admin_note,
+        i.admin_updated_at as received_admin_updated_at,
+        p.admin_status as processed_admin_status,
+        p.admin_note as processed_admin_note,
+        p.admin_updated_at as processed_admin_updated_at
       from print_orders_received i
       left join lateral (
         select p.*
@@ -248,6 +254,7 @@ function buildFastPipelineBaseCte() {
         end, p.queued_date_time desc nulls last, p.id desc
         limit 1
       ) p on true
+      where coalesce(i.ignored, false) = false
     ),
     processed_orphans as (
       select
@@ -265,7 +272,13 @@ function buildFastPipelineBaseCte() {
         p.order_type,
         p.print_files,
         p.source_xml_path,
-        p.source_month
+        p.source_month,
+        null::text as received_admin_status,
+        null::text as received_admin_note,
+        null::timestamptz as received_admin_updated_at,
+        p.admin_status as processed_admin_status,
+        p.admin_note as processed_admin_note,
+        p.admin_updated_at as processed_admin_updated_at
       from processed_print_orders p
       where coalesce(p.ignored, false) = false
         and upper(coalesce(p.order_type, 'S')) <> 'R'
@@ -299,6 +312,9 @@ function buildFastPipelineBaseCte() {
         pr.print_files,
         pr.source_xml_path,
         pr.source_month,
+        coalesce(pr.received_admin_status, pr.processed_admin_status) as admin_status,
+        coalesce(pr.received_admin_note, pr.processed_admin_note) as admin_note,
+        coalesce(pr.received_admin_updated_at, pr.processed_admin_updated_at) as admin_updated_at,
         0::int as reprint_record_count,
         '[]'::jsonb as reprint_records,
         null::timestamptz as latest_reprint_record_at,
@@ -309,6 +325,7 @@ function buildFastPipelineBaseCte() {
         coalesce(r.reprint_pending_count, 0) > 0 as reprint_pending,
         false as is_reprint_record,
         case
+          when coalesce(pr.received_admin_status, pr.processed_admin_status) = 'cancelled' then 'cancelled'
           when coalesce(r.reprint_pending_count, 0) > 0 then 'reprint_pending'
           when pr.external_order_id is not null and pr.processed_order_id is not null then 'processed'
           when pr.external_order_id is not null and pr.processed_order_id is null then 'received_only'
@@ -378,7 +395,13 @@ async function ensureOrderPipelineView(client) {
         p.order_type,
         p.print_files,
         p.source_xml_path,
-        p.source_month
+        p.source_month,
+        i.admin_status as received_admin_status,
+        i.admin_note as received_admin_note,
+        i.admin_updated_at as received_admin_updated_at,
+        p.admin_status as processed_admin_status,
+        p.admin_note as processed_admin_note,
+        p.admin_updated_at as processed_admin_updated_at
       from print_orders_received i
       left join lateral (
         select p.*
@@ -396,6 +419,7 @@ async function ensureOrderPipelineView(client) {
         end, p.queued_date_time desc nulls last, p.id desc
         limit 1
       ) p on true
+      where coalesce(i.ignored, false) = false
     ),
     processed_orphans as (
       select
@@ -413,7 +437,13 @@ async function ensureOrderPipelineView(client) {
         p.order_type,
         p.print_files,
         p.source_xml_path,
-        p.source_month
+        p.source_month,
+        null::text as received_admin_status,
+        null::text as received_admin_note,
+        null::timestamptz as received_admin_updated_at,
+        p.admin_status as processed_admin_status,
+        p.admin_note as processed_admin_note,
+        p.admin_updated_at as processed_admin_updated_at
       from processed_normal p
       where not exists (
         select 1
@@ -490,6 +520,9 @@ async function ensureOrderPipelineView(client) {
       pr.print_files,
       pr.source_xml_path,
       pr.source_month,
+      coalesce(pr.received_admin_status, pr.processed_admin_status) as admin_status,
+      coalesce(pr.received_admin_note, pr.processed_admin_note) as admin_note,
+      coalesce(pr.received_admin_updated_at, pr.processed_admin_updated_at) as admin_updated_at,
       pr.reprint_record_count,
       pr.reprint_records,
       pr.latest_reprint_record_at,
@@ -502,6 +535,7 @@ async function ensureOrderPipelineView(client) {
         false
       ) as is_reprint_record,
       case
+        when coalesce(pr.received_admin_status, pr.processed_admin_status) = 'cancelled' then 'cancelled'
         when coalesce(r.reprint_pending_count, 0) > 0 then 'reprint_pending'
         when pr.external_order_id is not null and pr.processed_order_id is not null then 'processed'
         when pr.external_order_id is not null and pr.processed_order_id is null then 'received_only'
@@ -545,6 +579,9 @@ function mapPipelineRow(row) {
     reprintCompletedCount: Number(row.reprint_completed_count) || 0,
     latestReprintStatus: row.latest_reprint_status || '',
     reprintPending: Boolean(row.reprint_pending),
+    adminStatus: row.admin_status || '',
+    adminNote: row.admin_note || '',
+    adminUpdatedAt: toIso(row.admin_updated_at),
     isReprintRecord: Boolean(row.is_reprint_record),
     pipelineStatus: row.pipeline_status || 'received_only',
   };
@@ -580,6 +617,9 @@ function mapPipelineListRow(row) {
     reprintCompletedCount: Number(row.reprint_completed_count) || 0,
     latestReprintStatus: row.latest_reprint_status || '',
     reprintPending: Boolean(row.reprint_pending),
+    adminStatus: row.admin_status || '',
+    adminNote: row.admin_note || '',
+    adminUpdatedAt: toIso(row.admin_updated_at),
     isReprintRecord: Boolean(row.is_reprint_record),
     pipelineStatus: row.pipeline_status || 'received_only',
     hasDetail: false,
@@ -674,6 +714,10 @@ function addStatusFilter(where, value) {
   }
   if (status === 'no_api_match') {
     where.push(`pipeline_status = 'processed_without_received'`);
+    return;
+  }
+  if (status === 'cancelled') {
+    where.push(`pipeline_status = 'cancelled'`);
     return;
   }
   if (status === 'has_reprint') {
@@ -784,16 +828,22 @@ async function queryPipelineStats(client, filters) {
       select
         count(*)::int as total,
         count(*) filter (
-          where pipeline_status = 'received_only'
-            or coalesce(reprint_pending_count, 0) > 0
+          where pipeline_status <> 'cancelled'
+            and (
+              pipeline_status = 'received_only'
+              or coalesce(reprint_pending_count, 0) > 0
+            )
         )::int as needs_attention,
         count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
         count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
-        count(*) filter (where coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
-        count(*) filter (where processed_order_id is not null)::int as processed,
+        count(*) filter (where pipeline_status <> 'cancelled' and coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
+        count(*) filter (where pipeline_status <> 'cancelled' and processed_order_id is not null)::int as processed,
         count(*) filter (
-          where coalesce(reprint_request_count, 0) > 0
-            or coalesce(reprint_record_count, 0) > 0
+          where pipeline_status <> 'cancelled'
+            and (
+              coalesce(reprint_request_count, 0) > 0
+              or coalesce(reprint_record_count, 0) > 0
+            )
         )::int as has_reprint
       from v_print_order_pipeline
       ${whereSql}
@@ -811,14 +861,17 @@ async function queryFastPipelineStats(client, filters) {
       select
         count(*)::int as total,
         count(*) filter (
-          where pipeline_status = 'received_only'
-            or coalesce(reprint_pending_count, 0) > 0
+          where pipeline_status <> 'cancelled'
+            and (
+              pipeline_status = 'received_only'
+              or coalesce(reprint_pending_count, 0) > 0
+            )
         )::int as needs_attention,
         count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
         count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
-        count(*) filter (where coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
-        count(*) filter (where processed_order_id is not null)::int as processed,
-        count(*) filter (where coalesce(reprint_request_count, 0) > 0)::int as has_reprint
+        count(*) filter (where pipeline_status <> 'cancelled' and coalesce(reprint_pending_count, 0) > 0)::int as reprint_backlog,
+        count(*) filter (where pipeline_status <> 'cancelled' and processed_order_id is not null)::int as processed,
+        count(*) filter (where pipeline_status <> 'cancelled' and coalesce(reprint_request_count, 0) > 0)::int as has_reprint
       from pipeline_base
       ${whereSql}
     `,
@@ -837,13 +890,16 @@ async function queryOperationalGlobalStats(client) {
         select
           count(*)::int as total,
           count(*) filter (
-            where pipeline_status = 'received_only'
-              or coalesce(reprint_pending_count, 0) > 0
+            where pipeline_status <> 'cancelled'
+              and (
+                pipeline_status = 'received_only'
+                or coalesce(reprint_pending_count, 0) > 0
+              )
           )::int as needs_attention,
           count(*) filter (where pipeline_status = 'received_only')::int as unprocessed,
           count(*) filter (where pipeline_status = 'processed_without_received')::int as no_api_match,
-          count(*) filter (where processed_order_id is not null)::int as processed,
-          count(*) filter (where coalesce(reprint_request_count, 0) > 0)::int as has_reprint
+          count(*) filter (where pipeline_status <> 'cancelled' and processed_order_id is not null)::int as processed,
+          count(*) filter (where pipeline_status <> 'cancelled' and coalesce(reprint_request_count, 0) > 0)::int as has_reprint
         from pipeline_base
         ${whereSql}
       ),
@@ -853,6 +909,7 @@ async function queryOperationalGlobalStats(client) {
         join processed_print_orders p on p.id = r.order_id
         where r.status = 'pending'
           and coalesce(p.ignored, false) = false
+          and coalesce(p.admin_status, '') <> 'cancelled'
       )
       select current_scope.*, reprint_backlog.reprint_backlog
       from current_scope
@@ -947,6 +1004,9 @@ async function listOrderPipelineFullView(client, options = {}) {
         workflow_name,
         order_type,
         source_month,
+        admin_status,
+        admin_note,
+        admin_updated_at,
         reprint_record_count,
         latest_reprint_record_at,
         reprint_request_count,
@@ -1069,6 +1129,9 @@ async function listOrderPipelineFast(client, options = {}) {
         workflow_name,
         order_type,
         source_month,
+        admin_status,
+        admin_note,
+        admin_updated_at,
         fast_reprint_record_count as reprint_record_count,
         fast_latest_reprint_record_at as latest_reprint_record_at,
         reprint_request_count,
@@ -1171,6 +1234,7 @@ async function listPipelineMonths(client) {
       select to_char(coalesce(received_at, api_seen_at), 'YYYY-MM') as month
       from print_orders_received
       where coalesce(received_at, api_seen_at) is not null
+        and coalesce(ignored, false) = false
     )
     select month
     from months
