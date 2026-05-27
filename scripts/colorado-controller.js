@@ -669,7 +669,7 @@
         <div class="format-estimates">
           <div class="format-estimates-head">
             <span class="format-estimates-title">${i18n('colorado.card.formats.note')}</span>
-            <span class="format-estimates-subtitle">${basis ? `${fmtN(basis.sampleCount || 0, 0)} ${i18n('colorado.card.formats.intervals')}` : ''}</span>
+            <span class="format-estimates-subtitle">${basis ? `${fmtN(basis.intervalCount || 0, 0)} ${i18n('colorado.card.formats.intervals')}` : ''}</span>
           </div>
           <div class="table-wrap">
             <table class="data-table format-estimates-table">
