@@ -1,0 +1,11 @@
+graphify-out/
+.obsidian/
+.netlify/
+node_modules/
+SERVER_BACKEND/
+server-postpurchase/
+scan-capture/
+docs/
+icons/icons.zip
+*.md
+*.log
