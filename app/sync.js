@@ -5,6 +5,8 @@
   const SYNC_ONLINE_RETRY_DELAY_MS = 15 * 1000;
   const SYNC_DIRTY_REASONS_KEY = 'pg_sync_dirty_reasons';
   const SYNC_DIRTY_VERSION_KEY = 'pg_sync_dirty_version';
+  const COLORADO_ROLL_STORAGE_KEY = 'pg_colorado_roll_state_v1';
+  const COLORADO_ROLL_EVENTS_STORAGE_KEY = 'pg_colorado_roll_events_v1';
 
   function createSync(deps) {
     const {
@@ -57,6 +59,40 @@
       return Number.isFinite(ms) ? ms : 0;
     }
 
+    function getColoradoRollStatesForSync() {
+      return Object.values(S.coloradoRolls || {}).filter(state => state && state.machineId);
+    }
+
+    function getColoradoRollEventsForSync() {
+      return Object.values(S.coloradoRollEvents || {})
+        .flatMap(events => Array.isArray(events) ? events : [])
+        .filter(event => event && event.id && event.machineId);
+    }
+
+    function groupColoradoRollEvents(events) {
+      return (Array.isArray(events) ? events : []).reduce((grouped, event) => {
+        if (!event || !event.machineId) return grouped;
+        if (!grouped[event.machineId]) grouped[event.machineId] = [];
+        grouped[event.machineId].push(event);
+        return grouped;
+      }, {});
+    }
+
+    function mapColoradoRollStates(states) {
+      return (Array.isArray(states) ? states : []).reduce((mapped, state) => {
+        if (!state || !state.machineId) return mapped;
+        mapped[state.machineId] = state;
+        return mapped;
+      }, {});
+    }
+
+    function persistColoradoRollCloudState(states, events) {
+      S.coloradoRolls = mapColoradoRollStates(states);
+      S.coloradoRollEvents = groupColoradoRollEvents(events);
+      ls(COLORADO_ROLL_STORAGE_KEY, JSON.stringify(S.coloradoRolls));
+      ls(COLORADO_ROLL_EVENTS_STORAGE_KEY, JSON.stringify(S.coloradoRollEvents));
+    }
+
     function shouldRunBackgroundSync() {
       if (document.visibilityState !== 'visible') {
         console.log('background sync skipped: tab hidden');
@@ -91,6 +127,8 @@
           items: S.items,
           movements: S.movements,
           coRecords,
+          coloradoRollStates: getColoradoRollStatesForSync(),
+          coloradoRollEvents: getColoradoRollEventsForSync(),
           settings: [{
             key: 'config',
             weeksN: cfg.weeksN,
@@ -159,6 +197,8 @@
         const rawMoves = Array.isArray(remote?.movements) ? remote.movements : [];
         const rawCo = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
         const rawSettings = Array.isArray(remote?.settings) ? remote.settings : [];
+        const rawRollStates = Array.isArray(remote?.coloradoRollStates) ? remote.coloradoRollStates : [];
+        const rawRollEvents = Array.isArray(remote?.coloradoRollEvents) ? remote.coloradoRollEvents : [];
         const goodItems = [];
         const badItems = [];
         for (const it of rawItems) {
@@ -201,6 +241,7 @@
         for (const s of rawSettings) {
           if (s?.key) await idbPut(ST_SETTINGS, s);
         }
+        persistColoradoRollCloudState(rawRollStates, rawRollEvents);
         await loadAll();
         if (dirtyReasonsBeforeSync.includes('stock') || dirtyReasonsBeforeSync.includes('all')) {
           await sendStockNotifications({ silent: true, trigger: 'sync' });
@@ -211,6 +252,7 @@
         if (!silent) {
           showToast(
             `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}` +
+            ` · rolls:${pushRes?.upserted?.coloradoRollEvents ?? 0}` +
             (dropped ? ` · zahoz.:${dropped}` : ''),
             dropped ? 'warn' : 'success'
           );

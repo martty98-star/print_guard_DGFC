@@ -97,6 +97,7 @@
         loadedAt: String(source.loadedAt || '').trim() || null,
         loadedBy: String(source.loadedBy || '').trim() || '',
         note: String(source.note || '').trim() || '',
+        updatedAt: String(source.updatedAt || source.updated_at || source.loadedAt || '').trim() || null,
         lastLoadEventId: includeHistory ? (String(source.lastLoadEventId || '').trim() || null) : null,
         previousState,
       };
@@ -169,6 +170,7 @@
         timestamp: new Date().toISOString(),
         ...(payload && typeof payload === 'object' ? payload : {}),
       };
+      event.updatedAt = event.updatedAt || event.timestamp;
       S.coloradoRollEvents = {
         ...(S.coloradoRollEvents || {}),
         [machineId]: [...getColoradoRollEvents(machineId), event],
@@ -273,6 +275,7 @@
             <span class="roll-sheet-machine">${esc(compactLabel)}</span>
             <span class="roll-sheet-status">${esc(statusText)}</span>
           </div>
+          ${summary.loadedAt ? `<div class="roll-sheet-meta">Poslední výměna: ${esc(fmtDT(summary.loadedAt))}</div>` : ''}
           <div class="roll-battery" aria-hidden="true" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${summary.fillPercent}%` : '--roll-fill:0%'}">
             <span class="roll-battery-fill"></span>
           </div>
@@ -440,6 +443,7 @@
         loadedAt: now,
         loadedBy: cfg.userName || cfg.deviceId,
         machineName: machine.label,
+        updatedAt: now,
         previousState,
         lastLoadEventId: loadEventId,
       });
@@ -452,6 +456,7 @@
         baselineKnown,
         baselineRecordedAt: nextState.baselineRecordedAt,
       });
+      setSyncDirtyReason('colorado');
       closeColoradoRollModal();
       renderColoradoRollTracker();
       showToast(
@@ -462,6 +467,7 @@
           onClick: () => undoColoradoRollLoad(machine.id),
         }
       );
+      if (navigator.onLine && typeof runSync === 'function') void runSync({ silent: true });
     }
 
     function undoColoradoRollLoad(machineId) {
@@ -485,9 +491,11 @@
         before: current,
         after: restored,
       });
+      setSyncDirtyReason('colorado');
       renderColoradoRollTracker();
       closeColoradoRollSheet();
       showToast('Výměna vrácena', 'success');
+      if (navigator.onLine && typeof runSync === 'function') void runSync({ silent: true });
     }
 
     function resetColoradoRollState(machineId) {
@@ -502,9 +510,11 @@
         before,
         after: next,
       });
+      setSyncDirtyReason('colorado');
       renderColoradoRollTracker();
       closeColoradoRollSheet();
       showToast('Stav role resetován', 'success');
+      if (navigator.onLine && typeof runSync === 'function') void runSync({ silent: true });
     }
 
     function promptColoradoRollReset(machineId) {

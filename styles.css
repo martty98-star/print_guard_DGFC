@@ -401,6 +401,14 @@ html { scrollbar-gutter: stable; }
   color: var(--text);
   white-space: nowrap;
 }
+.roll-sheet-meta {
+  color: var(--text-dim);
+  font-family: var(--font-ui);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
 .roll-sheet-row.roll-ok .roll-sheet-status { color: var(--ok); }
 .roll-sheet-row.roll-warn .roll-sheet-status { color: var(--accent); }
 .roll-sheet-row.roll-low .roll-sheet-status,

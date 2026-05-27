@@ -100,6 +100,30 @@ function chunkArray(values, size) {
   return chunks;
 }
 
+async function ensureSyncTables(client) {
+  await client.query(`
+    create table if not exists public.pg_colorado_roll_states (
+      machine_id text primary key,
+      data jsonb not null,
+      updated_at timestamptz not null default now()
+    )
+  `);
+  await client.query(`
+    create table if not exists public.pg_colorado_roll_events (
+      id text primary key,
+      machine_id text not null,
+      event_type text not null,
+      timestamp timestamptz not null,
+      data jsonb not null,
+      updated_at timestamptz not null default now()
+    )
+  `);
+  await client.query(`
+    create index if not exists pg_colorado_roll_events_machine_time_idx
+      on public.pg_colorado_roll_events(machine_id, timestamp desc)
+  `);
+}
+
 async function batchUpsertItems(client, items) {
   const valid = items.filter((item) => item?.articleNumber);
   for (const chunk of chunkArray(valid, 500)) {
@@ -181,6 +205,81 @@ async function batchUpsertCoRecords(client, coRecords) {
   return valid.length;
 }
 
+function getPayloadUpdatedAt(value) {
+  return value?.updatedAt || value?.updated_at || value?.timestamp || value?.loadedAt || new Date().toISOString();
+}
+
+async function batchUpsertColoradoRollStates(client, rollStates) {
+  const valid = rollStates.filter((state) => state?.machineId);
+  for (const chunk of chunkArray(valid, 300)) {
+    const params = [];
+    const valuesSql = chunk.map((state, index) => {
+      const base = index * 3;
+      const updatedAt = getPayloadUpdatedAt(state);
+      const normalized = {
+        ...state,
+        updatedAt: state.updatedAt || updatedAt,
+      };
+      params.push(
+        normalized.machineId,
+        JSON.stringify(normalized),
+        updatedAt
+      );
+      return `($${base + 1}, $${base + 2}::jsonb, $${base + 3}::timestamptz)`;
+    }).join(",");
+
+    await client.query(
+      `insert into public.pg_colorado_roll_states(machine_id, data, updated_at)
+       values ${valuesSql}
+       on conflict (machine_id) do update
+       set data = excluded.data, updated_at = excluded.updated_at
+       where excluded.updated_at >= public.pg_colorado_roll_states.updated_at`,
+      params
+    );
+  }
+  return valid.length;
+}
+
+async function batchUpsertColoradoRollEvents(client, rollEvents) {
+  const valid = rollEvents.filter((event) => event?.id && event?.machineId && event?.type);
+  for (const chunk of chunkArray(valid, 300)) {
+    const params = [];
+    const valuesSql = chunk.map((event, index) => {
+      const base = index * 6;
+      const timestamp = event.timestamp || new Date().toISOString();
+      const updatedAt = getPayloadUpdatedAt(event);
+      const normalized = {
+        ...event,
+        timestamp,
+        updatedAt: event.updatedAt || updatedAt,
+      };
+      params.push(
+        normalized.id,
+        normalized.machineId,
+        normalized.type,
+        timestamp,
+        JSON.stringify(normalized),
+        updatedAt
+      );
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::timestamptz, $${base + 5}::jsonb, $${base + 6}::timestamptz)`;
+    }).join(",");
+
+    await client.query(
+      `insert into public.pg_colorado_roll_events(id, machine_id, event_type, timestamp, data, updated_at)
+       values ${valuesSql}
+       on conflict (id) do update
+       set machine_id = excluded.machine_id,
+           event_type = excluded.event_type,
+           timestamp = excluded.timestamp,
+           data = excluded.data,
+           updated_at = excluded.updated_at
+       where excluded.updated_at >= public.pg_colorado_roll_events.updated_at`,
+      params
+    );
+  }
+  return valid.length;
+}
+
 export async function handler(event) {
   const conn = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
   if (!conn) return resp(500, { ok: false, error: "Missing NEON_DATABASE_URL" });
@@ -204,6 +303,7 @@ export async function handler(event) {
 
   try {
     await client.connect();
+    await ensureSyncTables(client);
 
     // ---------- GET = pull ----------
     if (event.httpMethod === "GET") {
@@ -213,8 +313,16 @@ export async function handler(event) {
         ...(r.data || {}),
         updatedAt: r.data?.updatedAt || r.updated_at || null,
       }));
+      const coloradoRollStates = (await client.query("select data, updated_at from public.pg_colorado_roll_states order by machine_id asc")).rows.map((r) => ({
+        ...(r.data || {}),
+        updatedAt: r.data?.updatedAt || r.updated_at || null,
+      }));
+      const coloradoRollEvents = (await client.query("select data, updated_at from public.pg_colorado_roll_events order by timestamp asc, id asc")).rows.map((r) => ({
+        ...(r.data || {}),
+        updatedAt: r.data?.updatedAt || r.updated_at || null,
+      }));
 
-      return resp(200, { ok: true, items, movements, coRecords });
+      return resp(200, { ok: true, items, movements, coRecords, coloradoRollStates, coloradoRollEvents });
     }
 
     // ---------- POST = push ----------
@@ -223,17 +331,27 @@ export async function handler(event) {
       const items = Array.isArray(payload.items) ? payload.items : [];
       const movements = Array.isArray(payload.movements) ? payload.movements : [];
       const coRecords = Array.isArray(payload.coRecords) ? payload.coRecords : [];
+      const coloradoRollStates = Array.isArray(payload.coloradoRollStates) ? payload.coloradoRollStates : [];
+      const coloradoRollEvents = Array.isArray(payload.coloradoRollEvents) ? payload.coloradoRollEvents : [];
 
       await client.query("begin");
 
       const upsertedItems = await batchUpsertItems(client, items);
       const upsertedMovements = await batchUpsertMovements(client, movements);
       const upsertedCoRecords = await batchUpsertCoRecords(client, coRecords);
+      const upsertedColoradoRollStates = await batchUpsertColoradoRollStates(client, coloradoRollStates);
+      const upsertedColoradoRollEvents = await batchUpsertColoradoRollEvents(client, coloradoRollEvents);
 
       await client.query("commit");
       return resp(200, {
         ok: true,
-        upserted: { items: upsertedItems, movements: upsertedMovements, coRecords: upsertedCoRecords },
+        upserted: {
+          items: upsertedItems,
+          movements: upsertedMovements,
+          coRecords: upsertedCoRecords,
+          coloradoRollStates: upsertedColoradoRollStates,
+          coloradoRollEvents: upsertedColoradoRollEvents,
+        },
       });
     }
 
