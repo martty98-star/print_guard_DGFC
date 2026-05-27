@@ -1189,7 +1189,7 @@ async function listOrderPipeline(client, options = {}) {
 }
 
 async function getOrderPipelineDetail(client, options = {}) {
-  await ensureOrderPipelineView(client);
+  await ensureOrderPipelineBaseTables(client);
   const id = Number(options.id || options.processedOrderId || 0);
   const orderNumber = cleanString(options.orderNumber || options.order_number);
   if (!id && !orderNumber) {
@@ -1211,13 +1211,75 @@ async function getOrderPipelineDetail(client, options = {}) {
 
   const result = await client.query(
     `
+      ${buildFastPipelineBaseCte()},
+      detail_base as (
+        select *
+        from pipeline_base
+        where ${where.join(' or ')}
+        order by coalesce(received_at, api_seen_at, processed_at, queued_date_time, latest_reprint_record_at) desc nulls last,
+          nullif(regexp_replace(coalesce(order_number, ''), '[^0-9]+', '', 'g'), '')::bigint desc nulls last,
+          order_number desc
+        limit 1
+      ),
+      processed_reprints as (
+        select
+          p.id,
+          p.order_name,
+          p.xml_file_name,
+          p.status,
+          p.queued_date_time,
+          p.source_xml_path,
+          p.print_files,
+          ${reprintParentMatchKeySql('p')} as parent_match_key
+        from processed_print_orders p
+        where coalesce(p.ignored, false) = false
+          and upper(coalesce(p.order_type, 'S')) = 'R'
+      )
       select *
-      from v_print_order_pipeline
-      where ${where.join(' or ')}
-      order by coalesce(received_at, api_seen_at, processed_at, queued_date_time, latest_reprint_record_at) desc nulls last,
-        nullif(regexp_replace(coalesce(order_number, ''), '[^0-9]+', '', 'g'), '')::bigint desc nulls last,
-        order_number desc
-      limit 1
+      from (
+        select
+          db.*,
+          coalesce(rr.reprint_record_count, 0) as reprint_record_count,
+          coalesce(rr.reprint_records, '[]'::jsonb) as reprint_records,
+          rr.latest_reprint_record_at
+        from detail_base db
+        left join lateral (
+          select
+            count(*)::int as reprint_record_count,
+            max(rp.queued_date_time) as latest_reprint_record_at,
+            jsonb_agg(
+              jsonb_build_object(
+                'id', rp.id,
+                'orderName', rp.order_name,
+                'xmlFileName', rp.xml_file_name,
+                'status', rp.status,
+                'orderType', 'R',
+                'processedAt', rp.queued_date_time,
+                'queuedDateTime', rp.queued_date_time,
+                'sourceXmlPath', rp.source_xml_path,
+                'printFiles', rp.print_files,
+                'isFullReprint', jsonb_array_length(coalesce(rp.print_files, '[]'::jsonb)) > 1
+              )
+              order by rp.queued_date_time desc nulls last, rp.id desc
+            ) as reprint_records
+          from processed_reprints rp
+          where rp.parent_match_key = any(array_remove(array[
+            ${parentMatchKeyExpr('db', 'order_number')},
+            ${parentMatchKeyExpr('db', 'processed_order_name')},
+            ${parentMatchKeyExpr('db', 'external_order_id')},
+            ${parentMatchKeyExpr('db', 'customer_order_id')}
+          ], ''))
+          or exists (
+            select 1
+            from jsonb_array_elements(coalesce(db.print_files, '[]'::jsonb)) parent_file
+            join jsonb_array_elements(coalesce(rp.print_files, '[]'::jsonb)) reprint_file
+              on lower(coalesce(parent_file->>'printFilePath', '')) = lower(coalesce(reprint_file->>'printFilePath', ''))
+              or regexp_replace(lower(regexp_replace(coalesce(parent_file->>'printFilePath', ''), '^.*[\\\\/]', '')), '[[:space:]_-]+', '', 'g')
+                = regexp_replace(lower(regexp_replace(coalesce(reprint_file->>'printFilePath', ''), '^.*[\\\\/]', '')), '[[:space:]_-]+', '', 'g')
+            where coalesce(parent_file->>'printFilePath', '') <> ''
+          )
+        ) rr on true
+      ) detail_row
     `,
     params
   );
