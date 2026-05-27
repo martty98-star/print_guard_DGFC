@@ -181,6 +181,8 @@
   },
   "active": "2c63bc4979e0f508",
   "lastOpenFiles": [
+    "icons/icons.zip",
+    "icons/apple-touch-icon.zip",
     "graphify-out/2026-05-26_12/manifest.json",
     "graphify-out/2026-05-26_12/GRAPH_REPORT.md",
     "graphify-out/2026-05-26_12/graph.json",
@@ -192,9 +194,7 @@
     "graphify-out/2026-05-26_11",
     "graphify-out/cache/ast/cc7eba649c9c5078f03acf5cae3f24951b491ec0bc37b8839d9f809f489b82f4.json",
     "app/settings-runtime.js",
-    "graphify-out/2026-05-26_10/manifest.json",
     "graphify-out/2026-05-26_10/GRAPH_REPORT.md",
-    "graphify-out/2026-05-26_10/graph.json",
     "graphify-out/2026-05-26_9/GRAPH_REPORT.md",
     "docs/obsidian-vault/02_Systems/Submit Tool.md",
     "graphify-out/2026-05-26_8/GRAPH_REPORT.md",

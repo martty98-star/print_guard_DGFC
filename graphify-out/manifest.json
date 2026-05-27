@@ -695,8 +695,8 @@
     "semantic_hash": "7c877bea49eaeabb100563bd157b9051"
   },
   "C:\\PrintGuard\\print_guard_DGFC\\.obsidian\\workspace.json": {
-    "mtime": 1779808755.91081,
-    "ast_hash": "7ed9dfa0b1a03e3e225363250bf88ce1",
+    "mtime": 1779808951.920139,
+    "ast_hash": "d67090b38282762009e60b6632fd513a",
     "semantic_hash": ""
   },
   "C:\\PrintGuard\\print_guard_DGFC\\tests\\order-pipeline-render-labels.test.js": {
@@ -837,6 +837,36 @@
   "C:\\PrintGuard\\print_guard_DGFC\\app\\settings-runtime.js": {
     "mtime": 1779808326.2297974,
     "ast_hash": "19d024496b24731d4854ff39bbd9594f",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-desktop.png": {
+    "mtime": 1779871856.3373268,
+    "ast_hash": "5147c258787ac3a3a3c5aa62ef6e44c4",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-mobile.png": {
+    "mtime": 1779871857.53618,
+    "ast_hash": "44b94a719acf71cc7c92d2a6aee95b25",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\reports\\industrial-refine-desktop.png": {
+    "mtime": 1779872815.5549643,
+    "ast_hash": "7d00cdd9ccdf69b9979cc7b2275068fa",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\reports\\industrial-refine-mobile.png": {
+    "mtime": 1779872817.0733619,
+    "ast_hash": "77d7dec720ecfaf3196180c742cb1bde",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-refined-desktop.png": {
+    "mtime": 1779872728.2333572,
+    "ast_hash": "230d8d282951d716e272ef58855eab72",
+    "semantic_hash": ""
+  },
+  "C:\\PrintGuard\\print_guard_DGFC\\reports\\topbar-refined-mobile.png": {
+    "mtime": 1779872729.9016037,
+    "ast_hash": "bda15d6d2b320e4193d88373ca06b84f",
     "semantic_hash": ""
   }
 }
