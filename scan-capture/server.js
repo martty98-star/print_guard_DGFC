@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
 const { URL } = require('url');
+const { commitScans, getPendingScans } = require('./scan-commit');
 
 const HOST = process.env.PRINTGUARD_SCAN_HOST || '0.0.0.0';
 const PORT = Number(process.env.PRINTGUARD_SCAN_CAPTURE_PORT || 17910);
@@ -40,7 +41,7 @@ function json(res, statusCode, body) {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   });
   res.end(payload);
@@ -84,13 +85,25 @@ async function readRecentScans(count = 10) {
   try {
     const text = await fs.readFile(filePath, 'utf8');
     const lines = text.split(/\r?\n/).filter(Boolean);
-    return lines.slice(-count).reverse().map((line) => {
+    const parsed = lines.map((line) => {
       try {
         return JSON.parse(line);
       } catch (_) {
         return null;
       }
     }).filter(Boolean);
+    const cancelledScanIds = new Set();
+    parsed.forEach((row) => {
+      if (row && (row.action === 'scan_deleted' || row.source === 'job_label_scan_delete')) {
+        const targetScanId = safeText(row.targetScanId || row.target_scan_id, 180);
+        if (targetScanId) cancelledScanIds.add(targetScanId);
+      }
+    });
+    return parsed
+      .filter((row) => row && row.source !== 'job_label_scan_delete' && row.action !== 'scan_deleted')
+      .filter((row) => !cancelledScanIds.has(String(row.scanId || '')))
+      .slice(-count)
+      .reverse();
   } catch (error) {
     if (error && error.code === 'ENOENT') return [];
     throw error;
@@ -141,35 +154,6 @@ function cleanRawBarcode(value) {
   return String(value == null ? '' : value).slice(0, 200);
 }
 
-function fileDateFromIso(isoValue) {
-  return localDateString(new Date(isoValue || Date.now()));
-}
-
-async function rewriteJsonlFile(filePath, predicate) {
-  const text = await fs.readFile(filePath, 'utf8');
-  const lines = text.split(/\r?\n/).filter(Boolean);
-  const keep = [];
-  let removed = false;
-  for (const line of lines) {
-    let parsed = null;
-    try {
-      parsed = JSON.parse(line);
-    } catch (_) {
-      keep.push(line);
-      continue;
-    }
-    if (!predicate(parsed)) {
-      keep.push(line);
-    } else {
-      removed = true;
-    }
-  }
-  const tmpPath = `${filePath}.${Date.now()}.tmp`;
-  await fs.writeFile(tmpPath, keep.join('\n') + (keep.length ? '\n' : ''), 'utf8');
-  await fs.rename(tmpPath, filePath);
-  return removed;
-}
-
 async function handleScan(req, res) {
   const raw = await readBody(req);
   let payload;
@@ -216,6 +200,62 @@ async function handleScan(req, res) {
   }
 }
 
+async function readJsonPayload(req, limitBytes = 16384) {
+  const raw = await readBody(req, limitBytes);
+  if (!raw.trim()) return {};
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    const error = new Error('Invalid JSON');
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
+async function handlePendingScans(req, res) {
+  try {
+    const result = await getPendingScans({
+      inputDir: INPUT_DIR,
+      fallbackDir: FALLBACK_DIR,
+    });
+    json(res, 200, {
+      ...result,
+      outputDir: OUTPUT_DIR,
+      inputDir: INPUT_DIR,
+      fallbackDir: FALLBACK_DIR,
+    });
+  } catch (error) {
+    console.error('[scan-capture] pending scan status failed', error);
+    json(res, error.statusCode || 500, {
+      ok: false,
+      error: error.message || 'Pending scan status failed',
+      outputDir: OUTPUT_DIR,
+      inputDir: INPUT_DIR,
+      fallbackDir: FALLBACK_DIR,
+    });
+  }
+}
+
+async function handleCommitScans(req, res) {
+  try {
+    const payload = await readJsonPayload(req);
+    const result = await commitScans({
+      inputDir: INPUT_DIR,
+      fallbackDir: FALLBACK_DIR,
+      committedBy: safeText(payload.committedBy || payload.operator, 100),
+      station: safeText(payload.station, 100),
+      logger: console,
+    });
+    json(res, 200, result);
+  } catch (error) {
+    console.error('[scan-capture] scan commit failed', error);
+    json(res, error.statusCode || 500, {
+      ok: false,
+      error: error.message || 'Scan commit failed',
+    });
+  }
+}
+
 async function handleDeleteScan(req, res, url) {
   const scanId = cleanBarcode(url.searchParams.get('scanId'));
   const scannedAt = cleanBarcode(url.searchParams.get('scannedAt'));
@@ -224,31 +264,33 @@ async function handleDeleteScan(req, res, url) {
     return;
   }
 
-  const dateKey = fileDateFromIso(scannedAt);
-  const primaryFile = path.join(OUTPUT_DIR, `job-label-scans-${dateKey}.jsonl`);
-  const fallbackFile = path.join(FALLBACK_DIR, `failed-scans-${dateKey}.jsonl`);
+  const entry = {
+    scanId: crypto.randomUUID(),
+    scannedAt: new Date().toISOString(),
+    action: 'scan_deleted',
+    targetScanId: scanId,
+    targetScannedAt: scannedAt,
+    source: 'job_label_scan_delete',
+  };
 
-  let deleted = false;
-  let location = null;
-  for (const [filePath, fileLocation] of [[primaryFile, 'nas'], [fallbackFile, 'fallback']]) {
-    try {
-      deleted = await rewriteJsonlFile(filePath, (row) => String(row && row.scanId || '') === scanId);
-      if (deleted) {
-        location = fileLocation;
-        break;
-      }
-    } catch (error) {
-      if (error && error.code === 'ENOENT') continue;
-      throw error;
+  try {
+    const result = await appendScanLine(entry);
+    json(res, 200, { ok: true, deleted: true, scanId, cancellationScanId: entry.scanId, writeTarget: result.target });
+  } catch (error) {
+    if (error && error.writeTarget === 'fallback') {
+      json(res, 503, {
+        ok: false,
+        error: error.message || 'NAS write failed',
+        scanId,
+        cancellationScanId: entry.scanId,
+        fallbackDir: FALLBACK_DIR,
+        outputDir: OUTPUT_DIR,
+        inputDir: INPUT_DIR,
+      });
+      return;
     }
+    throw error;
   }
-
-  if (!deleted) {
-    json(res, 404, { ok: false, error: 'Scan not found' });
-    return;
-  }
-
-  json(res, 200, { ok: true, deleted: true, scanId, location });
 }
 
 function sendHealth(res) {
@@ -327,8 +369,16 @@ const server = http.createServer(async (req, res) => {
       await handleScan(req, res);
       return;
     }
+    if (req.method === 'POST' && url.pathname === '/commit-scans') {
+      await handleCommitScans(req, res);
+      return;
+    }
     if (req.method === 'DELETE' && url.pathname === '/scan') {
       await handleDeleteScan(req, res, url);
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/pending-scans') {
+      await handlePendingScans(req, res);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/recent') {
