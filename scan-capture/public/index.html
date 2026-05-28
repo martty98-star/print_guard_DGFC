@@ -74,6 +74,58 @@
     .btn-danger { border-color: var(--crit); color: var(--crit); }
     .btn-danger:hover { background: rgba(155,58,47,.10); border-color: var(--crit); color: var(--crit); }
     .scan-status { min-height: 24px; margin-top: 10px; }
+    .pending-panel {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg4);
+      padding: 12px 14px;
+    }
+    .pending-panel.hidden { display: none; }
+    .pending-panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .pending-panel-title {
+      font-family: var(--font-d);
+      font-size: .95rem;
+      font-weight: 500;
+      letter-spacing: .04em;
+    }
+    .pending-panel-count {
+      font-size: .68rem;
+      letter-spacing: var(--wide);
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .pending-list {
+      display: grid;
+      gap: 6px;
+    }
+    .pending-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.28);
+    }
+    .pending-row strong {
+      font-size: .82rem;
+      letter-spacing: .02em;
+      word-break: break-word;
+    }
+    .pending-row span {
+      font-size: .68rem;
+      letter-spacing: var(--wide);
+      text-transform: uppercase;
+      color: var(--text-faint);
+      white-space: nowrap;
+    }
     .commit-summary {
       margin-top: 12px;
       padding: 12px 14px;
@@ -243,8 +295,14 @@
     @media (max-width: 640px) {
       .scan-actions { flex-wrap: wrap; }
       .scan-actions .btn-secondary,
-      .scan-submit,
       .scan-commit { width: 100%; }
+      .pending-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .pending-row span {
+        white-space: normal;
+      }
       .commit-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
@@ -332,12 +390,12 @@
         </div>
         <div class="scan-actions">
           <button id="clear" class="btn-secondary" type="button">Vyčistit</button>
-          <button id="manual" class="btn-primary scan-submit" type="button">Zapsat scan</button>
           <button id="commit-scans" class="btn-primary scan-commit" type="button" disabled>Hotovo · Odeslat do PrintGuardu</button>
         </div>
       </div>
 
       <div id="echo" class="scan-echo"></div>
+      <div id="pending-panel" class="pending-panel hidden"></div>
       <div id="commit-summary" class="commit-summary hidden"></div>
 
       <div class="scan-divider"></div>
@@ -361,7 +419,6 @@
       const echoEl = document.getElementById('echo');
       const refreshBtn = document.getElementById('refresh');
       const clearBtn = document.getElementById('clear');
-      const manualBtn = document.getElementById('manual');
       const commitBtn = document.getElementById('commit-scans');
       const themeToggle = document.getElementById('themeToggle');
       const outputPathEl = document.getElementById('output-path');
@@ -370,6 +427,7 @@
       const fallbackNote = document.getElementById('fallback-note');
       const pendingPill = document.getElementById('pending-pill');
       const latestPendingPill = document.getElementById('latest-pending-pill');
+      const pendingPanel = document.getElementById('pending-panel');
       const commitSummaryEl = document.getElementById('commit-summary');
 
       const LS_OPERATOR = 'pg_scan_capture_operator';
@@ -427,6 +485,30 @@
         if (!html) commitSummaryEl.classList.add('hidden');
       }
 
+      function renderPendingPanel(pending) {
+        const list = Array.isArray(pending && pending.pendingScans) ? pending.pendingScans : [];
+        if (!pending || pending.ok === false || !list.length) {
+          pendingPanel.className = 'pending-panel hidden';
+          pendingPanel.innerHTML = '';
+          return;
+        }
+        pendingPanel.className = 'pending-panel';
+        pendingPanel.innerHTML = `
+          <div class="pending-panel-head">
+            <div class="pending-panel-title">Co čeká na commit</div>
+            <div class="pending-panel-count">${escapeHtml(list.length)} zobrazeno z ${escapeHtml(pending.pendingCount || 0)}</div>
+          </div>
+          <div class="pending-list">
+            ${list.map((scan) => `
+              <div class="pending-row">
+                <strong>${escapeHtml(scan.barcode || scan.orderNumber || scan.scanId || '—')}</strong>
+                <span>${escapeHtml(formatCsDate(scan.scannedAt || ''))}${formatCsTime(scan.scannedAt || '') ? ` · ${escapeHtml(formatCsTime(scan.scannedAt || ''))}` : ''}${scan.operator ? ` · ${escapeHtml(scan.operator)}` : ''}${scan.station ? ` · ${escapeHtml(scan.station)}` : ''}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
       function renderPendingStatus() {
         const pending = state.pendingStatus;
         if (!pending) {
@@ -436,6 +518,7 @@
           latestPendingPill.textContent = 'Poslední čekající: —';
           commitBtn.disabled = true;
           commitBtn.textContent = state.committing ? 'Odesílám…' : 'Hotovo · Odeslat do PrintGuardu';
+          renderPendingPanel(null);
           return;
         }
         if (pending.ok === false) {
@@ -446,6 +529,7 @@
           latestPendingPill.textContent = 'Commit není dostupný';
           commitBtn.disabled = true;
           commitBtn.textContent = state.committing ? 'Odesílám…' : 'Hotovo · Odeslat do PrintGuardu';
+          renderPendingPanel(null);
           return;
         }
 
@@ -459,6 +543,7 @@
           : 'Poslední čekající: —';
         commitBtn.disabled = state.committing || count < 1;
         commitBtn.textContent = state.committing ? 'Odesílám…' : 'Hotovo · Odeslat do PrintGuardu';
+        renderPendingPanel(pending);
       }
 
       function renderCommitSummary(summary) {
@@ -736,6 +821,7 @@
           renderRecent();
           loadPendingScans();
           setStatus(`Zrušeno ${entry.barcode || entry.scanId}`, 'ok');
+          await loadPendingScans();
         } catch (error) {
           setStatus(error.message || 'Delete failed', 'err');
         }
@@ -835,7 +921,6 @@
         setEcho('');
         barcodeEl.focus();
       });
-      manualBtn.addEventListener('click', handleBarcodeSubmit);
       commitBtn.addEventListener('click', commitPendingScans);
       recentEl.addEventListener('click', (event) => {
         const btn = event.target && event.target.closest && event.target.closest('[data-delete-scan-id]');

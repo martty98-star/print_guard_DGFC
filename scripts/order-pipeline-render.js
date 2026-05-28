@@ -60,6 +60,14 @@
     return 'Missing';
   }
 
+  function formatPrintedOutMeta(row) {
+    if (!row || !row.physicallyPrintedAt) return '';
+    const parts = [formatPipelineDateTime(row.physicallyPrintedAt)];
+    if (row.physicallyPrintedBy) parts.push(row.physicallyPrintedBy);
+    if (row.physicallyPrintedStation) parts.push(row.physicallyPrintedStation);
+    return parts.filter(Boolean).join(' · ');
+  }
+
   function xmlStatusClass(status) {
     const normalized = String(status || '').toLowerCase();
     if (normalized === 'missing') return 'missing';
@@ -214,6 +222,9 @@
     }
     if (row.processedOrderId || row.queuedDateTime || row.processedAt) {
       badges.push(`<span class="pp-pipeline-badge processed">${t('processed.badge.processed')}</span>`);
+    }
+    if (row.physicallyPrintedAt) {
+      badges.push(`<span class="pp-pipeline-badge done">${t('processed.badge.printed-out')}</span>`);
     }
     if (Array.isArray(row.printFiles) && row.printFiles.length) {
       badges.push('<span class="pp-pipeline-badge pdf">PDF</span>');
@@ -497,6 +508,7 @@
             : attentionState === 'orphan'
               ? t('processed.status.no-api-match')
               : '';
+        const printedOutMeta = formatPrintedOutMeta(row);
         return `
       <article class="pp-processed-card${cardClass}">
         <section class="pp-card-section pp-card-summary">
@@ -517,6 +529,7 @@
           <span><strong>${t('processed.label.workflow')}:</strong> ${esc(row.workflowName || row.printerName || '-')}</span>
           <span><strong>${t('processed.label.type')}:</strong> ${esc(row.orderType || '-')}</span>
           <span><strong>${t('processed.label.size')}:</strong> ${esc(getPageSizes(row))}</span>
+          ${printedOutMeta ? `<span><strong>${t('processed.label.printed-out')}:</strong> ${esc(printedOutMeta)}</span>` : ''}
           </div>
         </section>
         <section class="pp-card-section pp-action-needed">

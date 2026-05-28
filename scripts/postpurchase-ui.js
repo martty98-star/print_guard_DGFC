@@ -103,6 +103,8 @@
       received_only: 'processed.quick.unprocessed',
       reprint_pending: 'processed.quick.reprint-backlog',
       no_api_match: 'processed.quick.no-api-match',
+      physically_printed: 'processed.quick.printed-out',
+      printed_out: 'processed.quick.printed-out',
     };
     return t(labels[normalized] || labels.all);
   }

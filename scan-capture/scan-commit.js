@@ -3,9 +3,9 @@
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
-const { Pool } = require('pg');
 
 let pool = null;
+let PgPool = null;
 
 function safeText(value, maxLen = 100) {
   return String(value == null ? '' : value)
@@ -39,8 +39,18 @@ function getPool() {
     error.statusCode = 503;
     throw error;
   }
+  if (!PgPool) {
+    try {
+      ({ Pool: PgPool } = require('pg'));
+    } catch (error) {
+      const missing = new Error("Missing dependency 'pg'. Install it in the scan-capture runtime folder before using commit endpoints.");
+      missing.statusCode = 503;
+      missing.cause = error;
+      throw missing;
+    }
+  }
   if (!pool) {
-    pool = new Pool({
+    pool = new PgPool({
       connectionString,
       ssl: { rejectUnauthorized: false },
       max: 4,
@@ -389,6 +399,7 @@ async function getPendingScans(options) {
       totalScansRead: read.scans.length,
       pendingCount: pending.length,
       committedCount: read.scans.length - pending.length,
+      pendingScans: pending.slice(-12).reverse(),
       duplicateLines: read.duplicateLines,
       invalidJsonLines: read.invalidJsonLines,
       invalidScanLines: read.invalidScanLines,
@@ -426,6 +437,7 @@ async function commitScans(options) {
     invalidScanLines: read.invalidScanLines,
     cancelLines: read.cancelLines,
     legacyScanIdCount: read.legacyScanIdCount,
+    pendingScans: read.scans.slice(-12).reverse(),
     errors: read.errors.slice(0, 20),
   };
 
