@@ -36,9 +36,11 @@
       elSet,
       esc,
       fmtDT,
+      fmtFileDT,
       fmtN,
       genId,
       getNullableNumber,
+      dlBlob,
       idbPut,
       i18n,
       navigate,
@@ -58,7 +60,7 @@
     } = deps || {};
     let historyControlsBound = false;
 
-    if (!S || !Reports || !cfg || !ls || !el || !elSet || !esc || !fmtDT || !fmtN || !genId || !idbPut || !i18n || !navigate || !setSyncDirtyReason || !showConfirm || !showToast || !toISOfromDT || !toLocalDT || !dateRangeFilter) {
+    if (!S || !Reports || !cfg || !ls || !el || !elSet || !esc || !fmtDT || !fmtFileDT || !fmtN || !genId || !dlBlob || !idbPut || !i18n || !navigate || !setSyncDirtyReason || !showConfirm || !showToast || !toISOfromDT || !toLocalDT || !dateRangeFilter) {
       throw new Error('Missing Colorado controller dependencies');
     }
 
@@ -400,6 +402,119 @@
       if (toggle) toggle.setAttribute('aria-expanded', 'true');
     }
 
+    function getRollHistoryLabel(event) {
+      if (!event) return 'Událost';
+      if (event.type === 'roll_load_cancelled') return 'Výměna vrácena';
+      if (event.type === 'roll_reset') return 'Reset stavu role';
+      return 'Nová role';
+    }
+
+    function getColoradoRollHistoryEvents(machineId) {
+      return getColoradoRollEvents(machineId)
+        .filter(event => ['roll_loaded', 'roll_load_cancelled', 'roll_reset'].includes(event && event.type))
+        .slice()
+        .sort((a, b) => new Date(b.timestamp || b.updatedAt || 0) - new Date(a.timestamp || a.updatedAt || 0));
+    }
+
+    function exportColoradoRollHistoryCsv(machineId) {
+      const events = getColoradoRollHistoryEvents(machineId);
+      if (!events.length) {
+        showToast('Historie výměn je prázdná', 'error');
+        return;
+      }
+
+      const machineLabel = getMachineLabel(machineId);
+      const rows = events.map(event => {
+        const before = event.before && typeof event.before === 'object' ? event.before : {};
+        const after = event.after && typeof event.after === 'object' ? event.after : {};
+        const baselineValue = Number(after.baselineMediaTotalM2);
+        return {
+          machine: machineLabel,
+          type: getRollHistoryLabel(event),
+          eventType: event.type || '',
+          timestamp: event.timestamp || after.loadedAt || after.updatedAt || '',
+          loadedBy: after.loadedBy || event.loadedBy || '',
+          activeRollId: after.activeRollId || '',
+          baselineMediaTotalM2: Number.isFinite(baselineValue) ? baselineValue : '',
+          baselineRecordedAt: after.baselineRecordedAt || event.baselineRecordedAt || '',
+          previousLoadedAt: before.loadedAt || '',
+          previousRollId: before.activeRollId || '',
+          rollLengthM: after.rollLengthM || '',
+          mediaWidthMm: after.mediaWidthMm || before.mediaWidthMm || '',
+          eventId: event.eventId || event.id || '',
+          revertedEventId: event.revertedEventId || '',
+        };
+      });
+
+      const csv = Reports.csv.rowsToCsv(rows, [
+        { header: 'Tiskarna', value: row => row.machine },
+        { header: 'Typ', value: row => row.type },
+        { header: 'Interni typ', value: row => row.eventType },
+        { header: 'Cas', value: row => row.timestamp },
+        { header: 'Zadal', value: row => row.loadedBy },
+        { header: 'Aktivni role ID', value: row => row.activeRollId },
+        { header: 'Baseline media total m2', value: row => row.baselineMediaTotalM2 },
+        { header: 'Baseline cas', value: row => row.baselineRecordedAt },
+        { header: 'Predchozi vymena', value: row => row.previousLoadedAt },
+        { header: 'Predchozi role ID', value: row => row.previousRollId },
+        { header: 'Delka role m', value: row => row.rollLengthM },
+        { header: 'Sirka media mm', value: row => row.mediaWidthMm },
+        { header: 'Event ID', value: row => row.eventId },
+        { header: 'Vraceny event ID', value: row => row.revertedEventId },
+      ]);
+      const fileMachine = machineLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'colorado';
+      dlBlob(csv, 'text/csv;charset=utf-8', `historie_vymen_papiru_${fileMachine}_${fmtFileDT()}.csv`);
+    }
+
+    function renderColoradoRollModalHistory(machineId) {
+      const list = el('roll-modal-history-list');
+      const count = el('roll-modal-history-count');
+      const exportButton = el('roll-modal-history-export');
+      if (!list) return;
+
+      const events = getColoradoRollHistoryEvents(machineId);
+      const visibleEvents = events.slice(0, 5);
+
+      if (count) {
+        count.textContent = events.length === 1 ? '1 záznam' : `${events.length} záznamů`;
+      }
+      if (exportButton) {
+        exportButton.disabled = !events.length;
+        exportButton.dataset.machineId = machineId || '';
+        exportButton.onclick = () => exportColoradoRollHistoryCsv(exportButton.dataset.machineId || '');
+      }
+
+      if (!visibleEvents.length) {
+        list.innerHTML = '<div class="roll-modal-history-empty">Zatím žádná výměna pro tuhle tiskárnu.</div>';
+        return;
+      }
+
+      list.innerHTML = visibleEvents.map(event => {
+        const after = event.after && typeof event.after === 'object' ? event.after : {};
+        const before = event.before && typeof event.before === 'object' ? event.before : {};
+        const eventTime = event.timestamp || after.loadedAt || after.updatedAt || '';
+        const actor = after.loadedBy || event.loadedBy || '';
+        const baselineValue = Number(after.baselineMediaTotalM2);
+        const previousLoadedAt = before.loadedAt || '';
+        const baselineLabel = Number.isFinite(baselineValue)
+          ? `${fmtN(baselineValue, 2)} m2`
+          : (event.baselineKnown === false ? 'čeká na sync' : '');
+        const details = [
+          actor ? `Zadal: ${actor}` : '',
+          previousLoadedAt && event.type === 'roll_loaded' ? `Předchozí: ${fmtDT(previousLoadedAt)}` : '',
+          baselineLabel ? `Stav: ${baselineLabel}` : '',
+        ].filter(Boolean);
+
+        return `<article class="roll-modal-history-item ${esc(event.type || '')}">
+          <div class="roll-modal-history-item-top">
+            <strong>${esc(getRollHistoryLabel(event))}</strong>
+            <time>${esc(eventTime ? fmtDT(eventTime) : '-')}</time>
+          </div>
+          ${details.length ? `<div class="roll-modal-history-meta">${details.map(detail => `<span>${esc(detail)}</span>`).join('')}</div>` : ''}
+        </article>`;
+      }).join('');
+    }
+
     function openColoradoRollModal(machineId) {
       const modal = el('roll-modal');
       if (!modal) return;
@@ -412,6 +527,7 @@
 
       elSet('roll-modal-title', `Nová role  ${machine.label}`);
       elSet('roll-modal-summary', summary);
+      renderColoradoRollModalHistory(machine.id);
       modal.dataset.machineId = machine.id;
       modal.classList.remove('hidden');
     }
