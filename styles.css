@@ -409,6 +409,16 @@ html { scrollbar-gutter: stable; }
   letter-spacing: .035em;
   text-transform: uppercase;
 }
+.roll-sheet-meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.roll-sheet-meta-row .roll-sheet-meta {
+  min-width: 0;
+}
 .roll-sheet-row.roll-ok .roll-sheet-status { color: var(--ok); }
 .roll-sheet-row.roll-warn .roll-sheet-status { color: var(--accent); }
 .roll-sheet-row.roll-low .roll-sheet-status,

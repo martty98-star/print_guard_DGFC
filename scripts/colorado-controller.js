@@ -275,17 +275,22 @@
         const isFocused = focusMachineId && focusMachineId === summary.machineId;
         const canUndo = Boolean(summary.canUndo);
         const canReset = Boolean(isAdmin && isAdmin());
+        const historyCount = getColoradoRollHistoryEvents(summary.machineId).length;
         return `<div class="roll-sheet-row ${esc(rollClass)}${isFocused ? ' is-focused' : ''}">
           <div class="roll-sheet-head">
             <span class="roll-sheet-machine">${esc(compactLabel)}</span>
             <span class="roll-sheet-status">${esc(statusText)}</span>
           </div>
-          ${summary.loadedAt ? `<div class="roll-sheet-meta">Poslední výměna: ${esc(fmtDT(summary.loadedAt))}</div>` : ''}
+          <div class="roll-sheet-meta-row">
+            ${summary.loadedAt ? `<span class="roll-sheet-meta">Poslední výměna: ${esc(fmtDT(summary.loadedAt))}</span>` : '<span class="roll-sheet-meta">Zatím bez výměny</span>'}
+            <span class="roll-sheet-meta">${esc(historyCount)} ${historyCount === 1 ? 'záznam' : 'záznamů'}</span>
+          </div>
           <div class="roll-battery" aria-hidden="true" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${summary.fillPercent}%` : '--roll-fill:0%'}">
             <span class="roll-battery-fill"></span>
           </div>
           <div class="roll-sheet-actions">
             <button class="btn-secondary btn-sm" type="button" data-roll-load="${esc(summary.machineId)}" aria-label="Nová role">+</button>
+            <button class="btn-secondary btn-sm" type="button" data-roll-history-export="${esc(summary.machineId)}" ${historyCount ? '' : 'disabled'}>CSV</button>
             <button class="btn-secondary btn-sm" type="button" data-roll-undo="${esc(summary.machineId)}" ${canUndo ? '' : 'disabled'}>Zrušit poslední výměnu</button>
             ${canReset ? `<button class="btn-secondary btn-sm" type="button" data-roll-reset="${esc(summary.machineId)}">Resetovat stav role</button>` : ''}
           </div>
@@ -297,6 +302,10 @@
           closeColoradoRollSheet();
           openColoradoRollModal(button.dataset.rollLoad);
         });
+      });
+
+      wrap.querySelectorAll('[data-roll-history-export]').forEach(button => {
+        button.addEventListener('click', () => exportColoradoRollHistoryCsv(button.dataset.rollHistoryExport));
       });
 
       wrap.querySelectorAll('[data-roll-undo]').forEach(button => {
@@ -445,6 +454,7 @@
           baselineMediaTotalM2: Number.isFinite(baselineValue) ? baselineValue : '',
           baselineRecordedAt: after.baselineRecordedAt || event.baselineRecordedAt || '',
           previousLoadedAt: before.loadedAt || '',
+          previousBaselineMediaTotalM2: before.baselineMediaTotalM2 || '',
           previousRollId: before.activeRollId || '',
           rollLengthM: after.rollLengthM || '',
           mediaWidthMm: after.mediaWidthMm || before.mediaWidthMm || '',
@@ -463,6 +473,7 @@
         { header: 'Baseline media total m2', value: row => row.baselineMediaTotalM2 },
         { header: 'Baseline cas', value: row => row.baselineRecordedAt },
         { header: 'Predchozi vymena', value: row => row.previousLoadedAt },
+        { header: 'Predchozi baseline media total m2', value: row => row.previousBaselineMediaTotalM2 },
         { header: 'Predchozi role ID', value: row => row.previousRollId },
         { header: 'Delka role m', value: row => row.rollLengthM },
         { header: 'Sirka media mm', value: row => row.mediaWidthMm },
