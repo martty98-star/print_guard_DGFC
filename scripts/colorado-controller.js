@@ -502,20 +502,14 @@
         const rollClass = getColoradoRollUiClass(summary.status);
         const compactLabel = (summary.machineLabel || summary.machineId || 'Colorado').replace(/^Colorado\s+/i, 'C');
         const statusText = getColoradoRollStatusText(summary);
-        const fillPercent = Number.isFinite(summary.fillPercent) ? summary.fillPercent : 0;
         const freshnessText = getColoradoRollFreshnessText(summary);
-        const ariaLabel = `${summary.machineLabel || summary.machineId} ${statusText}`;
+        const detailLabel = [summary.machineLabel || summary.machineId, statusText, freshnessText].filter(Boolean).join(' · ');
         return `<div class="roll-group" data-roll-machine="${esc(summary.machineId)}">
-          <button class="roll-chip ${esc(rollClass)}" type="button" data-roll-detail="${esc(summary.machineId)}" aria-label="${esc(ariaLabel)}" style="${Number.isFinite(summary.fillPercent) ? `--roll-fill:${fillPercent}%` : '--roll-fill:0%'}">
+          <button class="roll-chip ${esc(rollClass)}" type="button" data-roll-detail="${esc(summary.machineId)}" aria-label="${esc(detailLabel)}" title="${esc(detailLabel)}">
             <div class="roll-chip-main">
-              <div class="roll-chip-head">
-                <span class="roll-chip-machine">${esc(compactLabel)}</span>
-                <span class="roll-chip-status">${esc(statusText)}</span>
-              </div>
-              <div class="roll-battery" aria-hidden="true">
-                <span class="roll-battery-fill"></span>
-              </div>
-              ${freshnessText ? `<div class="roll-chip-freshness">${esc(freshnessText)}</div>` : ''}
+              <span class="roll-status-dot" aria-hidden="true"></span>
+              <span class="roll-chip-machine">${esc(compactLabel)}</span>
+              <span class="roll-chip-status">${esc(statusText)}</span>
             </div>
           </button>
           <button class="icon-btn roll-action-button" type="button" data-roll-load="${esc(summary.machineId)}" title="Nová role" aria-label="Nová role">
