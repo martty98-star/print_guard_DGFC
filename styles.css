@@ -204,10 +204,6 @@ html { scrollbar-gutter: stable; }
 .roll-chip.roll-stale {
   border-color: rgba(180, 130, 60, .55);
 }
-.roll-chip.roll-no-data,
-.roll-chip.roll-error {
-  background: var(--bg3);
-}
 .roll-chip.roll-warn {
   background: rgba(184,115,51,.06);
 }
@@ -259,8 +255,6 @@ html { scrollbar-gutter: stable; }
 .roll-critical .roll-chip-status,
 .roll-empty .roll-chip-status { color: var(--crit); }
 .roll-stale .roll-chip-status { color: var(--accent); }
-.roll-error .roll-chip-status { color: var(--crit); }
-.roll-no-data .roll-chip-status { color: var(--text-faint); }
 .roll-unknown .roll-chip-status { color: var(--text-faint); }
 .roll-battery {
   height: 7px;
@@ -285,8 +279,6 @@ html { scrollbar-gutter: stable; }
 .roll-critical .roll-battery-fill,
 .roll-empty .roll-battery-fill { background: var(--crit); }
 .roll-stale .roll-battery-fill { background: var(--accent-light); }
-.roll-error .roll-battery-fill { background: var(--crit); }
-.roll-no-data .roll-battery-fill { background: var(--border-2); }
 .roll-unknown .roll-battery-fill { background: var(--border-2); }
 .roll-action-button {
   width: 28px;
@@ -339,8 +331,6 @@ html { scrollbar-gutter: stable; }
 .roll-mobile-toggle.roll-critical,
 .roll-mobile-toggle.roll-empty { border-color: rgba(155,58,47,.42); }
 .roll-mobile-toggle.roll-stale { border-color: rgba(184,130,60,.45); }
-.roll-mobile-toggle.roll-error { border-color: rgba(155,58,47,.42); }
-.roll-mobile-toggle.roll-no-data { border-color: var(--border); }
 .roll-mobile-toggle.roll-unknown { border-color: var(--border); }
 .roll-mobile-battery { display: inline-flex; align-items: center; color: var(--text-dim); }
 .roll-mobile-toggle.roll-ok .roll-mobile-battery { color: var(--ok); }
@@ -349,8 +339,6 @@ html { scrollbar-gutter: stable; }
 .roll-mobile-toggle.roll-critical .roll-mobile-battery,
 .roll-mobile-toggle.roll-empty .roll-mobile-battery { color: var(--crit); }
 .roll-mobile-toggle.roll-stale .roll-mobile-battery { color: var(--accent); }
-.roll-mobile-toggle.roll-error .roll-mobile-battery { color: var(--crit); }
-.roll-mobile-toggle.roll-no-data .roll-mobile-battery { color: var(--text-faint); }
 .roll-mobile-dot {
   width: 7px;
   height: 7px;
@@ -362,8 +350,6 @@ html { scrollbar-gutter: stable; }
 .roll-mobile-toggle.roll-ok .roll-mobile-dot { background: var(--ok); }
 .roll-mobile-toggle.roll-warn .roll-mobile-dot { background: var(--accent); }
 .roll-mobile-toggle.roll-stale .roll-mobile-dot { background: var(--accent); }
-.roll-mobile-toggle.roll-error .roll-mobile-dot { background: var(--crit); }
-.roll-mobile-toggle.roll-no-data .roll-mobile-dot { background: var(--text-faint); }
 .roll-mobile-toggle.roll-unknown .roll-mobile-dot { background: var(--text-faint); }
 
 .roll-sheet-overlay {
@@ -439,8 +425,6 @@ html { scrollbar-gutter: stable; }
 .roll-sheet-row.roll-critical .roll-sheet-status,
 .roll-sheet-row.roll-empty .roll-sheet-status { color: var(--crit); }
 .roll-sheet-row.roll-stale .roll-sheet-status { color: var(--accent); }
-.roll-sheet-row.roll-error .roll-sheet-status { color: var(--crit); }
-.roll-sheet-row.roll-no-data .roll-sheet-status { color: var(--text-faint); }
 .roll-sheet-row.roll-unknown .roll-sheet-status { color: var(--text-faint); }
 .roll-sheet-actions {
   display: flex;

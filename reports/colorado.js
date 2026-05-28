@@ -76,7 +76,11 @@
     const accountingMediaLengthM = accountingUsage ? Number(accountingUsage.mediaLengthM) : NaN;
     const hasAccountingUsage = Number.isFinite(accountingMediaLengthM) && Number.isFinite(accountingSampleAtMs);
     const staleMinutes = Math.max(1, Number(cfg.staleMinutes) || 90);
-    const statusSampleAtMs = hasAccountingUsage ? accountingSampleAtMs : latestSampleAtMs;
+    const statusSampleAtMs = hasAccountingUsage
+      ? accountingSampleAtMs
+      : Number.isFinite(latestSampleAtMs)
+        ? latestSampleAtMs
+        : loadedAtMs;
     const sampleAgeMinutes = Number.isFinite(statusSampleAtMs) ? (nowMs - statusSampleAtMs) / 60000 : null;
     const hasActiveRoll = Boolean(
       state.activeRollId
@@ -115,11 +119,17 @@
       }
     } else if (!hasActiveRoll) {
       status = 'no_data';
-    } else if (!mediaWidthMm) {
-      status = 'no_data';
-    } else if (!hasBaseline) {
-      status = 'no_data';
-    } else if (!latest) {
+    } else if (!latest && Number.isFinite(loadedAtMs)) {
+      usedAreaM2 = 0;
+      usedLinearM = 0;
+      remainingM = rollLengthM;
+      remainingPct = 1;
+      bucketStatus = bucketRemainingState(remainingM);
+      status = bucketStatus;
+      if (Number.isFinite(sampleAgeMinutes) && sampleAgeMinutes > staleMinutes) {
+        status = 'stale';
+      }
+    } else if (!mediaWidthMm || !hasBaseline || !latest) {
       status = 'no_data';
     } else {
       usedAreaM2 = Math.max(0, toNumber(latest.mediaTotalM2) - baselineMediaTotalM2);
@@ -173,6 +183,8 @@
         ? formatApproxAgeLabel(sampleAgeMinutes)
         : latest
           ? formatApproxAgeLabel(sampleAgeMinutes)
+          : Number.isFinite(sampleAgeMinutes)
+            ? formatApproxAgeLabel(sampleAgeMinutes)
           : status === 'loading'
             ? 'loading accounting'
             : status === 'error'

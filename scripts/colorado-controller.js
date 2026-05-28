@@ -159,7 +159,15 @@
 
     function getColoradoRollState(machineId) {
       if (!machineId) return null;
-      return normalizeRollState(machineId, S.coloradoRolls && S.coloradoRolls[machineId]);
+      const stored = normalizeRollState(machineId, S.coloradoRolls && S.coloradoRolls[machineId]);
+      if (stored && stored.loadedAt) return stored;
+
+      const fallback = getLatestColoradoRollLoadedState(machineId);
+      if (!fallback) return stored;
+      return normalizeRollState(machineId, {
+        ...(stored || {}),
+        ...fallback,
+      });
     }
 
     function getColoradoAccountingPrinterName(machineId) {
@@ -185,6 +193,29 @@
     function getColoradoRollEvents(machineId) {
       if (!machineId) return [];
       return Array.isArray(S.coloradoRollEvents && S.coloradoRollEvents[machineId]) ? S.coloradoRollEvents[machineId] : [];
+    }
+
+    function getLatestColoradoRollLoadedState(machineId) {
+      const event = getColoradoRollEvents(machineId)
+        .filter(item => item && item.type === 'roll_loaded')
+        .slice()
+        .sort((a, b) => new Date(b.timestamp || b.updatedAt || 0) - new Date(a.timestamp || a.updatedAt || 0))[0];
+      if (!event) return null;
+
+      const after = event.after && typeof event.after === 'object' ? event.after : {};
+      const mediaWidthMm = getConfiguredRollWidthMm(after);
+      return {
+        ...after,
+        machineId,
+        machineName: after.machineName || getMachineLabel(machineId),
+        activeRollId: after.activeRollId || event.activeRollId || event.rollId || null,
+        rollLengthM: after.rollLengthM || COLORADO_ROLL_LENGTH_M,
+        mediaWidthMm,
+        loadedAt: after.loadedAt || event.timestamp || event.updatedAt || null,
+        loadedBy: after.loadedBy || event.loadedBy || '',
+        updatedAt: after.updatedAt || event.updatedAt || event.timestamp || null,
+        lastLoadEventId: after.lastLoadEventId || event.eventId || event.id || null,
+      };
     }
 
     function appendColoradoRollEvent(machineId, type, payload) {
@@ -250,8 +281,8 @@
         case 'critical': return 'roll-critical';
         case 'empty': return 'roll-empty';
         case 'stale': return 'roll-stale';
-        case 'error': return 'roll-error';
-        case 'no_data': return 'roll-no-data';
+        case 'error': return 'roll-critical';
+        case 'no_data': return 'roll-unknown';
         case 'loading': return 'roll-wait';
         case 'waiting': return 'roll-wait';
         default: return 'roll-unknown';
@@ -291,6 +322,7 @@
 
     function logColoradoRollStatusDiagnostics(stage, payload) {
       if (typeof console === 'undefined' || typeof console.debug !== 'function') return;
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('pg_debug_colorado_roll') !== '1') return;
       console.debug(`[Colorado roll status] ${stage}`, payload);
     }
 
