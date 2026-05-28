@@ -55,6 +55,7 @@
   function buildColoradoRollSummary(records, rollState, options) {
     const cfg = options || {};
     const state = rollState || {};
+    const accountingUsage = cfg.accountingUsage && typeof cfg.accountingUsage === 'object' ? cfg.accountingUsage : null;
     const machineId = String(state.machineId || '');
     const latest = machineId ? getLatestColoradoRecord(records, machineId) : null;
     const nowMs = Number.isFinite(Number(cfg.nowMs)) ? Number(cfg.nowMs) : Date.now();
@@ -65,8 +66,18 @@
     const hasBaseline = Number.isFinite(baselineMediaTotalM2);
     const loadedAtMs = state.loadedAt ? new Date(state.loadedAt).getTime() : null;
     const latestSampleAtMs = latest && latest.timestamp ? new Date(latest.timestamp).getTime() : null;
+    const accountingSampleCandidates = accountingUsage
+      ? [accountingUsage.latestReadyAt, accountingUsage.latestImportedAt]
+        .map(value => ({ value, ms: value ? new Date(value).getTime() : NaN }))
+        .filter(item => Number.isFinite(item.ms))
+      : [];
+    const accountingSample = accountingSampleCandidates.sort((a, b) => b.ms - a.ms)[0] || null;
+    const accountingSampleAtMs = accountingSample ? accountingSample.ms : null;
+    const accountingMediaLengthM = accountingUsage ? Number(accountingUsage.mediaLengthM) : NaN;
+    const hasAccountingUsage = Number.isFinite(accountingMediaLengthM) && Number.isFinite(accountingSampleAtMs);
     const staleMinutes = Math.max(1, Number(cfg.staleMinutes) || 90);
-    const sampleAgeMinutes = Number.isFinite(latestSampleAtMs) ? (nowMs - latestSampleAtMs) / 60000 : null;
+    const statusSampleAtMs = hasAccountingUsage ? accountingSampleAtMs : latestSampleAtMs;
+    const sampleAgeMinutes = Number.isFinite(statusSampleAtMs) ? (nowMs - statusSampleAtMs) / 60000 : null;
     const hasActiveRoll = Boolean(
       state.activeRollId
       || state.loadedAt
@@ -88,12 +99,28 @@
     let remainingPct = null;
     let bucketStatus = 'waiting';
 
-    if (!mediaWidthMm) {
-      status = 'waiting';
+    if (accountingUsage && accountingUsage.error) {
+      status = 'error';
+    } else if (accountingUsage && accountingUsage.loading) {
+      status = 'loading';
+    } else if (hasAccountingUsage) {
+      usedLinearM = Math.max(0, accountingMediaLengthM);
+      usedAreaM2 = mediaWidthMm ? usedLinearM * (mediaWidthMm / 1000) : null;
+      remainingM = Math.max(0, rollLengthM - usedLinearM);
+      remainingPct = rollLengthM > 0 ? remainingM / rollLengthM : null;
+      bucketStatus = bucketRemainingState(remainingM);
+      status = bucketStatus;
+      if (Number.isFinite(sampleAgeMinutes) && sampleAgeMinutes > staleMinutes) {
+        status = 'stale';
+      }
+    } else if (!hasActiveRoll) {
+      status = 'no_data';
+    } else if (!mediaWidthMm) {
+      status = 'no_data';
     } else if (!hasBaseline) {
-      status = 'waiting';
+      status = 'no_data';
     } else if (!latest) {
-      status = 'waiting';
+      status = 'no_data';
     } else {
       usedAreaM2 = Math.max(0, toNumber(latest.mediaTotalM2) - baselineMediaTotalM2);
       usedLinearM = widthM ? usedAreaM2 / widthM : null;
@@ -106,15 +133,15 @@
       }
     }
 
-    const canEstimate = Boolean(mediaWidthMm && hasBaseline && latest);
+    const canEstimate = Boolean(hasAccountingUsage || (mediaWidthMm && hasBaseline && latest));
     const fillPercent = canEstimate ? bucketFillPercent(remainingPct) : null;
-    const remainingLabel = !hasActiveRoll
+    const remainingLabel = status === 'loading'
       ? 'WAIT'
-      : !mediaWidthMm
-      ? 'WAIT'
-      : !hasBaseline
-        ? 'WAIT'
-        : formatApproxRemainingMeters(remainingM);
+      : status === 'error'
+        ? 'ERR'
+        : status === 'no_data'
+          ? 'NO DATA'
+          : formatApproxRemainingMeters(remainingM);
 
     return {
       machineId,
@@ -142,11 +169,16 @@
       remainingM,
       remainingPct,
       remainingLabel,
-      freshnessLabel: latest
+      freshnessLabel: hasAccountingUsage
         ? formatApproxAgeLabel(sampleAgeMinutes)
-        : hasActiveRoll
-          ? 'waiting for next sync'
-          : 'no active roll',
+        : latest
+          ? formatApproxAgeLabel(sampleAgeMinutes)
+          : status === 'loading'
+            ? 'loading accounting'
+            : status === 'error'
+              ? 'accounting error'
+              : 'no data',
+      accountingUsage: accountingUsage || null,
       latest,
     };
   }

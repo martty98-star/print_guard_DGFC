@@ -19,6 +19,7 @@
   const COLORADO_ROLL_EVENTS_STORAGE_KEY = 'pg_colorado_roll_events_v1';
   const COLORADO_ROLL_LENGTH_M = 130;
   const COLORADO_ROLL_STALE_MINUTES = 90;
+  const COLORADO_ROLL_ACCOUNTING_REFRESH_MS = 60 * 1000;
 
   function normalizePositiveNumber(value, fallback = null) {
     const number = Number(value);
@@ -161,6 +162,26 @@
       return normalizeRollState(machineId, S.coloradoRolls && S.coloradoRolls[machineId]);
     }
 
+    function getColoradoAccountingPrinterName(machineId) {
+      if (machineId === 'colorado1') return 'Colorado-91';
+      if (machineId === 'colorado2') return 'Colorado-92';
+      return '';
+    }
+
+    function getColoradoRollAccountingState(machineId) {
+      if (!S.coloradoRollAccountingStatus) S.coloradoRollAccountingStatus = {};
+      return S.coloradoRollAccountingStatus[machineId] || null;
+    }
+
+    function setColoradoRollAccountingState(machineId, nextState) {
+      if (!S.coloradoRollAccountingStatus) S.coloradoRollAccountingStatus = {};
+      S.coloradoRollAccountingStatus[machineId] = {
+        ...(S.coloradoRollAccountingStatus[machineId] || {}),
+        ...(nextState || {}),
+      };
+      return S.coloradoRollAccountingStatus[machineId];
+    }
+
     function getColoradoRollEvents(machineId) {
       if (!machineId) return [];
       return Array.isArray(S.coloradoRollEvents && S.coloradoRollEvents[machineId]) ? S.coloradoRollEvents[machineId] : [];
@@ -229,6 +250,9 @@
         case 'critical': return 'roll-critical';
         case 'empty': return 'roll-empty';
         case 'stale': return 'roll-stale';
+        case 'error': return 'roll-error';
+        case 'no_data': return 'roll-no-data';
+        case 'loading': return 'roll-wait';
         case 'waiting': return 'roll-wait';
         default: return 'roll-unknown';
       }
@@ -236,6 +260,9 @@
 
     function getColoradoRollStatusText(summary) {
       if (!summary) return 'WAIT';
+      if (summary.status === 'loading') return 'WAIT';
+      if (summary.status === 'error') return 'CHYBA';
+      if (summary.status === 'no_data') return 'BEZ DAT';
       if (summary.status === 'stale') return 'STALE';
       if (summary.status === 'ok') return 'OK';
       if (summary.status === 'warn' || summary.status === 'low') return 'LOW';
@@ -245,12 +272,11 @@
 
     function getColoradoRollFreshnessText(summary) {
       if (!summary || !summary.freshnessLabel) return '';
-      if (summary.status === 'waiting') return '';
       return summary.freshnessLabel;
     }
 
     function getColoradoRollAggregate(summaries) {
-      const rank = { stale: 6, empty: 5, critical: 4, low: 3, warn: 2, ok: 1, waiting: 0 };
+      const rank = { error: 8, stale: 7, empty: 6, critical: 5, low: 4, warn: 3, no_data: 2, loading: 1, waiting: 1, ok: 0 };
       const worst = [...(summaries || [])].sort((a, b) => (rank[b.status] || 0) - (rank[a.status] || 0))[0] || null;
       const hasWarning = Boolean((summaries || []).find(summary => summary && summary.status !== 'ok'));
       return {
@@ -261,6 +287,78 @@
           ? `${worst.machineId || 'Colorado'} · ${getColoradoRollStatusText(worst)}`
           : 'Papír',
       };
+    }
+
+    function logColoradoRollStatusDiagnostics(stage, payload) {
+      if (typeof console === 'undefined' || typeof console.debug !== 'function') return;
+      console.debug(`[Colorado roll status] ${stage}`, payload);
+    }
+
+    function shouldRefreshColoradoRollAccounting(machineId, rollState) {
+      if (!rollState || !rollState.loadedAt) return false;
+      const current = getColoradoRollAccountingState(machineId);
+      if (current && current.loading) return false;
+      if (!current || current.loadedAt !== rollState.loadedAt) return true;
+      const fetchedAtMs = Date.parse(current.fetchedAt || '');
+      return !Number.isFinite(fetchedAtMs) || Date.now() - fetchedAtMs > COLORADO_ROLL_ACCOUNTING_REFRESH_MS;
+    }
+
+    async function refreshColoradoRollAccountingStatus(machineId, rollState) {
+      const printerName = getColoradoAccountingPrinterName(machineId);
+      if (!machineId || !rollState || !rollState.loadedAt || !printerName) return null;
+      setColoradoRollAccountingState(machineId, {
+        loading: true,
+        error: '',
+        loadedAt: rollState.loadedAt,
+      });
+
+      const params = new URLSearchParams({
+        printer: printerName,
+        from_at: rollState.loadedAt,
+        limit: '1',
+      });
+
+      try {
+        const response = await fetch(`/.netlify/functions/print-log-summary?${params.toString()}`, { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
+        logColoradoRollStatusDiagnostics('raw api response', {
+          machineId,
+          printerName,
+          loadedAt: rollState.loadedAt,
+          ok: response.ok,
+          payload,
+        });
+        if (!response.ok || !payload.ok) throw new Error(payload.error || 'Print log summary failed');
+
+        const printerSummary = payload.summary && payload.summary.byPrinter
+          ? payload.summary.byPrinter[printerName]
+          : null;
+        const nextState = setColoradoRollAccountingState(machineId, {
+          loading: false,
+          error: '',
+          loadedAt: rollState.loadedAt,
+          printerName,
+          mediaLengthM: Number(printerSummary && printerSummary.mediaLengthM) || 0,
+          latestReadyAt: printerSummary && printerSummary.latestReadyAt ? printerSummary.latestReadyAt : null,
+          latestImportedAt: printerSummary && printerSummary.latestImportedAt ? printerSummary.latestImportedAt : null,
+          generatedAt: payload.generatedAt || new Date().toISOString(),
+          fetchedAt: new Date().toISOString(),
+          raw: printerSummary || null,
+        });
+        renderColoradoRollTracker();
+        return nextState;
+      } catch (error) {
+        const nextState = setColoradoRollAccountingState(machineId, {
+          loading: false,
+          error: error && error.message ? error.message : String(error || 'Unknown error'),
+          loadedAt: rollState.loadedAt,
+          printerName,
+          fetchedAt: new Date().toISOString(),
+        });
+        logColoradoRollStatusDiagnostics('api error', { machineId, printerName, error: nextState.error });
+        renderColoradoRollTracker();
+        return nextState;
+      }
     }
 
     function renderColoradoRollSheet(summaries, focusMachineId) {
@@ -331,9 +429,35 @@
 
       const summaries = MACHINES.map(({ id, label }) => {
         const rollState = getColoradoRollState(id);
+        if (shouldRefreshColoradoRollAccounting(id, rollState)) {
+          void refreshColoradoRollAccountingStatus(id, rollState);
+        }
+        const accountingState = getColoradoRollAccountingState(id);
+        const accountingUsage = accountingState
+          ? {
+            loading: Boolean(accountingState.loading),
+            error: accountingState.error || '',
+            mediaLengthM: accountingState.mediaLengthM,
+            latestReadyAt: accountingState.latestReadyAt,
+            latestImportedAt: accountingState.latestImportedAt,
+            generatedAt: accountingState.generatedAt,
+          }
+          : (rollState && rollState.loadedAt ? { loading: true } : null);
         const summary = helper(S.coRecords || [], rollState || { machineId: id }, {
           staleMinutes: COLORADO_ROLL_STALE_MINUTES,
           nowMs: Date.now(),
+          accountingUsage,
+        });
+        logColoradoRollStatusDiagnostics('computed', {
+          machineId: id,
+          machineLabel: label,
+          rollLoadedAt: rollState && rollState.loadedAt,
+          latestLegacyRecordAt: summary.latestSampleAt,
+          accountingUsage,
+          finalStatus: summary.status,
+          finalLabel: getColoradoRollStatusText(summary),
+          remainingM: summary.remainingM,
+          sampleAgeMinutes: summary.sampleAgeMinutes,
         });
         return {
           ...summary,

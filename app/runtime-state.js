@@ -9,6 +9,7 @@
       coRecords: [],
       coloradoRolls: {},
       coloradoRollEvents: {},
+      coloradoRollAccountingStatus: {},
       mode: 'stock',
       stockFilter: 'all',
       stockSearch: '',

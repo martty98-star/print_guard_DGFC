@@ -347,6 +347,7 @@ const syncApi = PrintGuardSync.createSync({
   idbPut,
   loadAll,
   ls,
+  renderColoradoRollTracker: (...args) => renderColoradoRollTracker(...args),
   sendStockNotifications,
   showToast,
   stockDbAdapter,

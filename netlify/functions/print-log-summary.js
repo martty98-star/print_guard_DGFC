@@ -251,6 +251,16 @@ function buildAccountingInkJoin(query, viewMap, accountingCols, values) {
 function buildFilters(query, map, values) {
   const where = [];
 
+  if (query.from_at) {
+    values.push(query.from_at);
+    where.push(`${map.readyAt} >= $${values.length}::timestamptz`);
+  }
+
+  if (query.to_at) {
+    values.push(query.to_at);
+    where.push(`${map.readyAt} <= $${values.length}::timestamptz`);
+  }
+
   if (query.from) {
     values.push(`${query.from}T00:00:00.000Z`);
     where.push(`${map.readyAt} >= $${values.length}`);
@@ -280,6 +290,16 @@ function buildSourceFilters(query, values, { readyExpr, printerExpr, resultExpr,
   if (onlyPrintRows && rowTypeExpr) {
     values.push("print");
     where.push(`${rowTypeExpr} = $${values.length}`);
+  }
+
+  if (query.from_at) {
+    values.push(query.from_at);
+    where.push(`${readyExpr} >= $${values.length}::timestamptz`);
+  }
+
+  if (query.to_at) {
+    values.push(query.to_at);
+    where.push(`${readyExpr} <= $${values.length}::timestamptz`);
   }
 
   if (query.from) {
@@ -547,7 +567,9 @@ export async function handler(event) {
           coalesce(sum(ink_yellow_l), 0)::float8                       as ink_yellow_l,
           coalesce(sum(ink_black_l), 0)::float8                        as ink_black_l,
           coalesce(sum(ink_white_l), 0)::float8                        as ink_white_l,
-          coalesce(sum(duration_sec), 0)::float8                       as total_duration_sec
+          coalesce(sum(duration_sec), 0)::float8                       as total_duration_sec,
+          max(ready_at)                                                as latest_ready_at,
+          max(imported_at)                                             as latest_imported_at
         from ranked
         where source_rn = 1`;
 
@@ -563,7 +585,9 @@ export async function handler(event) {
           coalesce(sum(ink_magenta_l), 0)::float8                           as ink_magenta_l,
           coalesce(sum(ink_yellow_l), 0)::float8                            as ink_yellow_l,
           coalesce(sum(ink_black_l), 0)::float8                             as ink_black_l,
-          coalesce(sum(ink_white_l), 0)::float8                             as ink_white_l
+          coalesce(sum(ink_white_l), 0)::float8                             as ink_white_l,
+          max(ready_at)                                                     as latest_ready_at,
+          max(imported_at)                                                  as latest_imported_at
         from ranked
         where source_rn = 1
         group by printer_name`;
@@ -587,6 +611,8 @@ export async function handler(event) {
           inkYellowL:    Number(row.ink_yellow_l || 0),
           inkBlackL:     Number(row.ink_black_l || 0),
           inkWhiteL:     Number(row.ink_white_l || 0),
+          latestReadyAt:  row.latest_ready_at || null,
+          latestImportedAt: row.latest_imported_at || null,
         };
       }
 
@@ -606,6 +632,8 @@ export async function handler(event) {
           inkWhiteL:        Number(totals.ink_white_l        || 0),
           inkDataAvailable: true,
           totalDurationSec: Number(totals.total_duration_sec || 0),
+          latestReadyAt: totals.latest_ready_at || null,
+          latestImportedAt: totals.latest_imported_at || null,
           byPrinter,
         },
         generatedAt: new Date().toISOString(),

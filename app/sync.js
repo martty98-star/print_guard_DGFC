@@ -11,7 +11,7 @@
   function createSync(deps) {
     const {
       S, ST_CORECS, ST_ITEMS, ST_MOVES, ST_SETTINGS, StockStore, adminHeaders,
-      applyRoleUI, cfg, el, idbClear, idbPut, loadAll, ls, sendStockNotifications,
+      applyRoleUI, cfg, el, idbClear, idbPut, loadAll, ls, renderColoradoRollTracker, sendStockNotifications,
       showToast, stockDbAdapter, updateOfflineBanner,
       idbAll,
     } = deps;
@@ -243,6 +243,7 @@
         }
         persistColoradoRollCloudState(rawRollStates, rawRollEvents);
         await loadAll();
+        if (typeof renderColoradoRollTracker === 'function') renderColoradoRollTracker();
         if (dirtyReasonsBeforeSync.includes('stock') || dirtyReasonsBeforeSync.includes('all')) {
           await sendStockNotifications({ silent: true, trigger: 'sync' });
         } else {
