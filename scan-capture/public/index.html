@@ -3,325 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="theme-color" content="#f5f2ed">
+  <meta name="theme-color" content="#111517">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="PrintGuard Scan Capture">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>
     (function () {
       try {
         var theme = localStorage.getItem('pg_theme') === 'dark' ? 'dark' : 'light';
         document.documentElement.dataset.theme = theme;
         var metaTheme = document.querySelector('meta[name="theme-color"]');
-        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#171512' : '#f5f2ed');
+        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#111517' : '#ECEFF0');
       } catch (_) {}
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.0.9">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=7.0.10">
   <title>PrintGuard — Scan Capture</title>
-  <style>
-    .scan-shell { max-width: 900px; margin: 0 auto; }
-    .scan-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: nowrap;
-      justify-content: flex-end;
-      align-items: center;
-    }
-    .scan-submit {
-      width: auto;
-      min-width: 170px;
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-    .scan-commit {
-      width: auto;
-      min-width: 210px;
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-    .scan-commit:disabled {
-      background: var(--bg3);
-      border-color: var(--border);
-      color: var(--text-faint);
-      cursor: not-allowed;
-    }
-    .scan-hint { margin-top: 6px; }
-    .scan-meta {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .scan-meta .pill { cursor: default; }
-    .scan-item-card { cursor: default; }
-    .scan-item-card .item-card-top { align-items: center; margin-bottom: 10px; }
-    .scan-item-card .item-card-code { word-break: break-word; text-transform: none; letter-spacing: .02em; }
-    .scan-item-card .item-card-name { font-size: 1.18rem; }
-    .scan-item-card .badge { border-color: var(--accent); color: var(--accent); }
-    .scan-item-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-    .scan-item-actions .btn-secondary { width: auto; padding: 8px 12px; }
-    .btn-danger { border-color: var(--crit); color: var(--crit); }
-    .btn-danger:hover { background: rgba(155,58,47,.10); border-color: var(--crit); color: var(--crit); }
-    .scan-status { min-height: 24px; margin-top: 10px; }
-    .pending-panel {
-      margin-top: 12px;
-      border: 1px solid var(--border);
-      background: var(--bg4);
-      padding: 12px 14px;
-    }
-    .pending-panel.hidden { display: none; }
-    .pending-panel-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-    .pending-panel-title {
-      font-family: var(--font-d);
-      font-size: .95rem;
-      font-weight: 500;
-      letter-spacing: .04em;
-    }
-    .pending-panel-count {
-      font-size: .68rem;
-      letter-spacing: var(--wide);
-      text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .pending-list {
-      display: grid;
-      gap: 6px;
-    }
-    .pending-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.28);
-    }
-    .pending-row strong {
-      font-size: .82rem;
-      letter-spacing: .02em;
-      word-break: break-word;
-    }
-    .pending-row span {
-      font-size: .68rem;
-      letter-spacing: var(--wide);
-      text-transform: uppercase;
-      color: var(--text-faint);
-      white-space: nowrap;
-    }
-    .commit-summary {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      background: var(--bg4);
-      color: var(--text-dim);
-      font-size: .78rem;
-      line-height: 1.45;
-    }
-    .commit-summary.hidden { display: none; }
-    .commit-summary.warn {
-      border-color: rgba(184,115,51,.42);
-      background: rgba(184,115,51,.07);
-      color: var(--text);
-    }
-    .commit-summary.crit {
-      border-color: rgba(155,58,47,.42);
-      background: rgba(155,58,47,.07);
-      color: var(--text);
-    }
-    .commit-summary strong { color: var(--text); }
-    .commit-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .commit-summary-grid span {
-      display: block;
-      padding: 7px 8px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.32);
-      text-align: center;
-      white-space: nowrap;
-    }
-    .scan-echo { margin-top: 8px; font-family: var(--font-d); font-size: 2rem; font-weight: 500; letter-spacing: .04em; word-break: break-word; }
-    .scan-divider { height: 1px; background: var(--border); margin: 12px 0; }
-    .latest-wrap { display: grid; gap: 10px; margin-bottom: 12px; }
-    .latest-card {
-      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--bg4)), var(--bg4));
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--accent);
-      padding: 14px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .latest-card.duplicate {
-      border-left-color: #9b5f2f;
-      box-shadow: 0 0 0 1px rgba(155,95,47,.22), 0 18px 32px rgba(155,95,47,.10), var(--shadow);
-    }
-    .latest-card-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      margin-bottom: 10px;
-    }
-      .latest-card-title {
-      font-family: var(--font-d);
-      font-size: 1.45rem;
-      font-weight: 500;
-      letter-spacing: .03em;
-    }
-    .latest-card-sub {
-      font-size: .72rem;
-      letter-spacing: var(--wide);
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin-top: 4px;
-    }
-    .barcode-preview {
-      margin-top: 10px;
-      padding: 10px 8px 6px;
-      background: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,0));
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-    .barcode-preview svg {
-      display: block;
-      width: 100%;
-      height: 88px;
-    }
-    .barcode-preview .human-read {
-      margin-top: 6px;
-      text-align: center;
-      font-family: var(--font-ui);
-      font-size: .72rem;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      word-break: break-word;
-    }
-    .scan-list {
-      display: grid;
-      gap: 8px;
-    }
-    .scan-group-card {
-      padding: 10px 12px;
-    }
-    .scan-group-card.duplicate {
-      border-color: rgba(155,95,47,.42);
-      box-shadow: 0 0 0 1px rgba(155,95,47,.14), 0 14px 24px rgba(155,95,47,.08), var(--shadow);
-    }
-    .scan-group-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: flex-start;
-      margin-bottom: 6px;
-    }
-    .scan-group-title {
-      font-family: var(--font-d);
-      font-size: 1rem;
-      font-weight: 500;
-      letter-spacing: .03em;
-      word-break: break-word;
-    }
-    .scan-group-count {
-      font-size: .72rem;
-      letter-spacing: var(--wide);
-      text-transform: uppercase;
-      color: var(--accent);
-      white-space: nowrap;
-    }
-    .scan-group-meta {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      font-size: .72rem;
-      color: var(--text-dim);
-    }
-    .scan-group-meta strong {
-      color: var(--text);
-      font-weight: 600;
-    }
-    .scan-group-badges {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .scan-group-badges .badge {
-      border-color: var(--border);
-      color: var(--text-dim);
-    }
-    .scan-item-card.compact {
-      padding: 10px 12px;
-    }
-    .scan-item-card.compact.duplicate {
-      border-color: rgba(155,95,47,.42);
-      box-shadow: 0 0 0 1px rgba(155,95,47,.16), 0 14px 24px rgba(155,95,47,.08), var(--shadow);
-    }
-    .scan-item-card.compact .item-card-top { margin-bottom: 6px; }
-    .scan-item-card.compact .item-card-name { font-size: 1rem; }
-    .scan-item-card.compact .item-card-code { font-size: .58rem; }
-    .scan-item-card.compact .scan-item-meta {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      font-size: .72rem;
-      color: var(--text-dim);
-    }
-    .scan-item-card.compact .scan-item-actions { margin-top: 8px; }
-    @media (max-width: 640px) {
-      .scan-actions { flex-wrap: wrap; }
-      .scan-actions .btn-secondary,
-      .scan-commit { width: 100%; }
-      .pending-row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .pending-row span {
-        white-space: normal;
-      }
-      .commit-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-  </style>
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-left">
       <div class="brand-lockup">
         <span class="brand-name">PRINTGUARD</span>
-        <div class="brand-partner" aria-label="ScanCapture">
-          <span class="brand-partner-prefix">SCAN</span>
-          <span class="dgfc-wordmark">CAPTURE</span>
+        <div class="brand-partner" aria-label="DGFC">
+          <span class="brand-partner-prefix">FOR</span>
+          <span class="dgfc-wordmark">DGFC</span>
         </div>
       </div>
     </div>
     <div class="topbar-center">
       <div class="mode-toggle" aria-hidden="true">
         <button class="mode-btn active" type="button">
-          <span>Capture</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path d="M4 7V5a1 1 0 0 1 1-1h2"></path>
+            <path d="M20 7V5a1 1 0 0 0-1-1h-2"></path>
+            <path d="M4 17v2a1 1 0 0 0 1 1h2"></path>
+            <path d="M20 17v2a1 1 0 0 1-1 1h-2"></path>
+            <path d="M7 12h10"></path>
+          </svg>
+          <span>Scan Capture</span>
         </button>
       </div>
     </div>
@@ -447,7 +172,7 @@
       function setTheme(theme) {
         document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
         var metaTheme = document.querySelector('meta[name="theme-color"]');
-        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#171512' : '#f5f2ed');
+        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#111517' : '#ECEFF0');
         localStorage.setItem(LS_THEME, document.documentElement.dataset.theme);
       }
 
@@ -932,6 +657,18 @@
       });
 
       window.addEventListener('focus', () => barcodeEl.focus());
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.info('[scan-capture] service worker registered', registration.scope);
+            })
+            .catch((error) => {
+              console.warn('[scan-capture] service worker registration failed', error);
+            });
+        });
+      }
 
       loadPrefs();
       renderRecent();
