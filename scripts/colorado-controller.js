@@ -59,8 +59,11 @@
       runSync,
     } = deps || {};
     let historyControlsBound = false;
+    const exportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUtils) || {};
+    const downloadCsvBlob = dlBlob || exportUtils.dlBlob;
+    const getExportFileStamp = fmtFileDT || exportUtils.fmtFileDT;
 
-    if (!S || !Reports || !cfg || !ls || !el || !elSet || !esc || !fmtDT || !fmtFileDT || !fmtN || !genId || !dlBlob || !idbPut || !i18n || !navigate || !setSyncDirtyReason || !showConfirm || !showToast || !toISOfromDT || !toLocalDT || !dateRangeFilter) {
+    if (!S || !Reports || !cfg || !ls || !el || !elSet || !esc || !fmtDT || !fmtN || !genId || !idbPut || !i18n || !navigate || !setSyncDirtyReason || !showConfirm || !showToast || !toISOfromDT || !toLocalDT || !dateRangeFilter) {
       throw new Error('Missing Colorado controller dependencies');
     }
 
@@ -422,6 +425,10 @@
         showToast('Historie výměn je prázdná', 'error');
         return;
       }
+      if (!downloadCsvBlob || !getExportFileStamp || !Reports.csv || typeof Reports.csv.rowsToCsv !== 'function') {
+        showToast('Export CSV není dostupný', 'error');
+        return;
+      }
 
       const machineLabel = getMachineLabel(machineId);
       const rows = events.map(event => {
@@ -463,7 +470,7 @@
         { header: 'Vraceny event ID', value: row => row.revertedEventId },
       ]);
       const fileMachine = machineLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'colorado';
-      dlBlob(csv, 'text/csv;charset=utf-8', `historie_vymen_papiru_${fileMachine}_${fmtFileDT()}.csv`);
+      downloadCsvBlob(csv, 'text/csv;charset=utf-8', `historie_vymen_papiru_${fileMachine}_${getExportFileStamp()}.csv`);
     }
 
     function renderColoradoRollModalHistory(machineId) {
