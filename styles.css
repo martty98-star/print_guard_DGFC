@@ -3759,7 +3759,7 @@ body.nav-open .bottom-nav-toggle {
 
 @media (max-width: 760px), (hover: none), (pointer: coarse) {
   body {
-    padding-bottom: calc(var(--nav-mobile-peek) + 14px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom));
   }
 
   body.nav-open {
@@ -3768,11 +3768,11 @@ body.nav-open .bottom-nav-toggle {
 
   .bottom-nav {
     bottom: max(8px, env(safe-area-inset-bottom));
-    transform: translate(-50%, calc(100% - var(--nav-mobile-peek)));
+    transform: translate(-50%, 0);
   }
 
   .bottom-nav:hover {
-    transform: translate(-50%, calc(100% - var(--nav-mobile-peek)));
+    transform: translate(-50%, 0);
   }
 
   .bottom-nav:focus-within,
@@ -3781,7 +3781,7 @@ body.nav-open .bottom-nav-toggle {
   }
 
   .bottom-nav-toggle {
-    display: flex;
+    display: none;
   }
 
   .nav-item svg {
