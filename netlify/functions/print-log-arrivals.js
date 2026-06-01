@@ -1,6 +1,7 @@
 import pg from "pg";
 const { Client } = pg;
 const columnCache = new Map();
+const PRINT_LOG_TIMEZONE = "Europe/Prague";
 
 function resp(statusCode, body) {
   return {
@@ -56,7 +57,11 @@ function pickOptional(cols, candidates) {
   return null;
 }
 
-function buildFilters(query, map, values, arrivalExpr) {
+function zonedTimestampExpr(columnExpr) {
+  return `((${columnExpr}) at time zone '${PRINT_LOG_TIMEZONE}')`;
+}
+
+function buildFilters(query, map, values, arrivalLocalExpr, arrivalZonedExpr) {
   const where = [];
 
   if (map.rowType) {
@@ -65,13 +70,23 @@ function buildFilters(query, map, values, arrivalExpr) {
   }
 
   if (query.from) {
-    values.push(`${query.from}T00:00:00.000Z`);
-    where.push(`${arrivalExpr} >= $${values.length}`);
+    values.push(`${query.from}T00:00:00.000`);
+    where.push(`${arrivalLocalExpr} >= $${values.length}::timestamp`);
   }
 
   if (query.to) {
-    values.push(`${query.to}T23:59:59.999Z`);
-    where.push(`${arrivalExpr} <= $${values.length}`);
+    values.push(`${query.to}T23:59:59.999`);
+    where.push(`${arrivalLocalExpr} <= $${values.length}::timestamp`);
+  }
+
+  if (query.from_at) {
+    values.push(query.from_at);
+    where.push(`${arrivalZonedExpr} >= $${values.length}::timestamptz`);
+  }
+
+  if (query.to_at) {
+    values.push(query.to_at);
+    where.push(`${arrivalZonedExpr} <= $${values.length}::timestamptz`);
   }
 
   if (query.printer && query.printer !== "all") {
@@ -132,18 +147,20 @@ export async function handler(event) {
         importedAt: pickOptional(cols, ["imported_at", "importedat", "importedAt"]),
       };
 
-      const arrivalExpr = map.receptionAt
+      const arrivalLocalExpr = map.receptionAt
         ? `coalesce(${map.receptionAt}, ${map.readyAt})`
         : map.readyAt;
-      const logicalJobExpr = buildLogicalJobExpr(map, arrivalExpr);
+      const arrivalZonedExpr = zonedTimestampExpr(arrivalLocalExpr);
+      const logicalJobExpr = buildLogicalJobExpr(map, arrivalLocalExpr);
       const sourcePriorityExpr = buildSourcePriorityExpr(map);
 
       const values = [];
-      const where = buildFilters(query, map, values, arrivalExpr);
+      const where = buildFilters(query, map, values, arrivalLocalExpr, arrivalZonedExpr);
       const baseSql = `
         with ranked as (
           select
-            ${arrivalExpr} as arrival_at,
+            ${arrivalLocalExpr} as arrival_local_at,
+            ${arrivalZonedExpr} as arrival_at,
             ${map.printerName} as printer_name,
             ${map.result} as result,
             ${logicalJobExpr} as logical_job_key,
@@ -154,11 +171,11 @@ export async function handler(event) {
                 ${map.printerName},
                 ${logicalJobExpr},
                 lower(${map.result}),
-                ${arrivalExpr}
+                ${arrivalLocalExpr}
               order by
                 ${sourcePriorityExpr} desc,
                 ${map.importedAt ? `${map.importedAt} desc nulls last,` : ``}
-                ${arrivalExpr} desc nulls last
+                ${arrivalLocalExpr} desc nulls last
             ) as source_rn
           from public.print_accounting_rows
           ${where}
@@ -182,7 +199,7 @@ export async function handler(event) {
       const dailySql = `
         ${baseSql}
         select
-          arrival_at::date as arrival_date,
+          arrival_local_at::date as arrival_date,
           printer_name,
           count(*)::int as total_jobs,
           count(*) filter (where lower(result) = 'done')::int as done_jobs,
@@ -195,8 +212,8 @@ export async function handler(event) {
           max(source_file) as sample_source_file
         from ranked
         where source_rn = 1
-        group by arrival_at::date, printer_name
-        order by arrival_at::date desc, printer_name asc
+        group by arrival_local_at::date, printer_name
+        order by arrival_local_at::date desc, printer_name asc
       `;
 
       const [totalsRes, dailyRes] = await Promise.all([

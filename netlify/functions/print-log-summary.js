@@ -1,6 +1,7 @@
 import pg from "pg";
 const { Client } = pg;
 const columnCache = new Map();
+const PRINT_LOG_TIMEZONE = "Europe/Prague";
 
 function resp(statusCode, body) {
   return {
@@ -70,6 +71,10 @@ function pickOptional(cols, candidates) {
     if (cols.has(name)) return name;
   }
   return null;
+}
+
+function zonedTimestampExpr(columnExpr) {
+  return `((${columnExpr}) at time zone '${PRINT_LOG_TIMEZONE}')`;
 }
 
 function litersExpr(litersColumn, milliLitersColumn) {
@@ -187,18 +192,20 @@ function buildAccountingInkJoin(query, viewMap, accountingCols, values) {
     inkWhiteL:     pickOptional(accountingCols, ["ink_white_l", "inkWhiteL"]),
     inkWhite:      pickOptional(accountingCols, ["ink_white", "inkwhite"]),
   };
+  accountingMap.readyAtLocalExpr = `${accountingMap.readyAt}`;
+  accountingMap.readyAtZonedExpr = zonedTimestampExpr(accountingMap.readyAt);
 
   const inkExprs = buildAccountingInkExpressions(accountingMap);
   if (inkExprs.inkTotalExpr === "null") return null;
 
   const accountingWhere = buildFilters(query, accountingMap, values);
   const selectParts = [
-    `${accountingMap.readyAt} as "_readyAt"`,
+    `${accountingMap.readyAtZonedExpr} as "_readyAt"`,
     `${accountingMap.printerName} as "_printerName"`,
     `${accountingMap.result} as "_result"`,
   ];
   const groupByParts = [
-    accountingMap.readyAt,
+    accountingMap.readyAtZonedExpr,
     accountingMap.printerName,
     accountingMap.result,
   ];
@@ -250,25 +257,27 @@ function buildAccountingInkJoin(query, viewMap, accountingCols, values) {
 
 function buildFilters(query, map, values) {
   const where = [];
+  const readyLocalExpr = map.readyAtLocalExpr || map.readyAt;
+  const readyZonedExpr = map.readyAtZonedExpr || map.readyAt;
 
   if (query.from_at) {
     values.push(query.from_at);
-    where.push(`${map.readyAt} >= $${values.length}::timestamptz`);
+    where.push(`${readyZonedExpr} >= $${values.length}::timestamptz`);
   }
 
   if (query.to_at) {
     values.push(query.to_at);
-    where.push(`${map.readyAt} <= $${values.length}::timestamptz`);
+    where.push(`${readyZonedExpr} <= $${values.length}::timestamptz`);
   }
 
   if (query.from) {
-    values.push(`${query.from}T00:00:00.000Z`);
-    where.push(`${map.readyAt} >= $${values.length}`);
+    values.push(`${query.from}T00:00:00.000`);
+    where.push(`${readyLocalExpr} >= $${values.length}::timestamp`);
   }
 
   if (query.to) {
-    values.push(`${query.to}T23:59:59.999Z`);
-    where.push(`${map.readyAt} <= $${values.length}`);
+    values.push(`${query.to}T23:59:59.999`);
+    where.push(`${readyLocalExpr} <= $${values.length}::timestamp`);
   }
 
   if (query.printer && query.printer !== "all") {
@@ -286,6 +295,8 @@ function buildFilters(query, map, values) {
 
 function buildSourceFilters(query, values, { readyExpr, printerExpr, resultExpr, rowTypeExpr, onlyPrintRows }) {
   const where = [];
+  const readyLocalExpr = readyExpr.local || readyExpr;
+  const readyZonedExpr = readyExpr.zoned || readyExpr;
 
   if (onlyPrintRows && rowTypeExpr) {
     values.push("print");
@@ -294,22 +305,22 @@ function buildSourceFilters(query, values, { readyExpr, printerExpr, resultExpr,
 
   if (query.from_at) {
     values.push(query.from_at);
-    where.push(`${readyExpr} >= $${values.length}::timestamptz`);
+    where.push(`${readyZonedExpr} >= $${values.length}::timestamptz`);
   }
 
   if (query.to_at) {
     values.push(query.to_at);
-    where.push(`${readyExpr} <= $${values.length}::timestamptz`);
+    where.push(`${readyZonedExpr} <= $${values.length}::timestamptz`);
   }
 
   if (query.from) {
-    values.push(`${query.from}T00:00:00.000Z`);
-    where.push(`${readyExpr} >= $${values.length}`);
+    values.push(`${query.from}T00:00:00.000`);
+    where.push(`${readyLocalExpr} >= $${values.length}::timestamp`);
   }
 
   if (query.to) {
-    values.push(`${query.to}T23:59:59.999Z`);
-    where.push(`${readyExpr} <= $${values.length}`);
+    values.push(`${query.to}T23:59:59.999`);
+    where.push(`${readyLocalExpr} <= $${values.length}::timestamp`);
   }
 
   if (query.printer && query.printer !== "all") {
@@ -409,6 +420,8 @@ export async function handler(event) {
         inkWhiteL:     pickOptional(cols, ["ink_white_l", "inkWhiteL"]),
         inkWhite:      pickOptional(cols, ["ink_white", "inkwhite"]),
       };
+      map.readyAtLocalExpr = `${map.readyAt}`;
+      map.readyAtZonedExpr = zonedTimestampExpr(map.readyAt);
 
       const query = event.queryStringParameters || {};
       const values = [];
@@ -445,13 +458,15 @@ export async function handler(event) {
             inkWhiteL:       pickOptional(accountingCols, ["ink_white_l", "inkWhiteL"]),
             inkWhite:        pickOptional(accountingCols, ["ink_white", "inkwhite"]),
           };
+          accountingMap.readyAtLocalExpr = `${accountingMap.readyAt}`;
+          accountingMap.readyAtZonedExpr = zonedTimestampExpr(accountingMap.readyAt);
         } catch {
           accountingMap = null;
         }
       }
 
       const viewWhere = buildSourceFilters(query, values, {
-        readyExpr: map.readyAt,
+        readyExpr: { local: map.readyAtLocalExpr, zoned: map.readyAtZonedExpr },
         printerExpr: map.printerName,
         resultExpr: map.result,
         rowTypeExpr: map.rowType,
@@ -459,7 +474,7 @@ export async function handler(event) {
       });
       const accountingWhere = accountingMap
         ? buildSourceFilters(query, values, {
-            readyExpr: accountingMap.readyAt,
+            readyExpr: { local: accountingMap.readyAtLocalExpr, zoned: accountingMap.readyAtZonedExpr },
             printerExpr: accountingMap.printerName,
             resultExpr: accountingMap.result,
             rowTypeExpr: accountingMap.rowType,
@@ -471,7 +486,7 @@ export async function handler(event) {
       const viewHasInkExpr = buildInkPresenceExpr(viewInk);
       const viewHasInkChannelsExpr = buildInkChannelPresenceExpr(viewInk);
       const viewSourceFileExpr = map.sourceFile ? `${map.sourceFile}` : "null::text";
-      const viewLogicalJobExpr = buildLogicalJobExpr(map, map.readyAt);
+      const viewLogicalJobExpr = buildLogicalJobExpr(map, map.readyAtLocalExpr);
 
       const accountingInk = accountingMap
         ? buildAccountingInkExpressions(accountingMap)
@@ -480,7 +495,7 @@ export async function handler(event) {
       const accountingHasInkChannelsExpr = buildInkChannelPresenceExpr(accountingInk);
       const accountingSourceFileExpr = accountingMap?.sourceFile ? `${accountingMap.sourceFile}` : "null::text";
       const accountingLogicalJobExpr = accountingMap
-        ? buildLogicalJobExpr(accountingMap, accountingMap.readyAt)
+        ? buildLogicalJobExpr(accountingMap, accountingMap.readyAtLocalExpr)
         : "null::text";
       const accountingAreaExpr = accountingMap
         ? squareMetersExpr(accountingMap.printedAreaM2, accountingMap.printedAreaRaw)
@@ -500,7 +515,7 @@ export async function handler(event) {
       const mergedSql = `
         with merged_rows as (
           select
-            ${map.readyAt} as ready_at,
+            ${map.readyAtZonedExpr} as ready_at,
             ${map.printerName} as printer_name,
             ${map.result} as result,
             ${map.printedAreaM2}::float8 as printed_area_m2,
@@ -522,7 +537,7 @@ export async function handler(event) {
           ${accountingMap ? `
           union all
           select
-            ${accountingMap.readyAt} as ready_at,
+            ${accountingMap.readyAtZonedExpr} as ready_at,
             ${accountingMap.printerName} as printer_name,
             ${accountingMap.result} as result,
             ${accountingAreaExpr}::float8 as printed_area_m2,
@@ -538,7 +553,7 @@ export async function handler(event) {
             ${accountingHasInkChannelsExpr} as has_ink_channels,
             ${accountingLogicalJobExpr} as logical_job_key,
             ${buildSourcePriorityExpr(accountingSourceFileExpr)} as source_rank,
-            ${accountingMap.importedAt ? `${accountingMap.importedAt}` : "null::timestamptz"} as imported_at
+            ${accountingMap.importedAt ? zonedTimestampExpr(accountingMap.importedAt) : "null::timestamptz"} as imported_at
           from public.print_accounting_rows
           ${accountingWhere}` : ""}
         ),
