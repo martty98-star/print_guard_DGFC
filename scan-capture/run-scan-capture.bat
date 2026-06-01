@@ -3,7 +3,7 @@ setlocal
 
 set "ROOT=%~dp0"
 set "LOG_DIR=C:\PrintGuard\logs"
-set "SCAN_HOST=0.0.0.0"
+set "SCAN_HOST=127.0.0.1"
 set "SCAN_PORT=17910"
 set "SCAN_OUTPUT=\\NAS01\Data\PrintGuard\scans"
 set "SCAN_INPUT=\\NAS01\Data\PrintGuard\scans"

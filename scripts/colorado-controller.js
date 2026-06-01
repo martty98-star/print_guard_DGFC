@@ -72,6 +72,15 @@
       return MACHINES.find(machine => machine.id === machineId)?.label || machineId || 'Colorado';
     }
 
+    function fmtInkLitersEstimate(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return '—';
+      const abs = Math.abs(numeric);
+      if (abs > 0 && abs < 0.001) return fmtN(numeric, 5);
+      if (abs > 0 && abs < 0.01) return fmtN(numeric, 4);
+      return fmtN(numeric, 3);
+    }
+
     function getConfiguredRollWidthMm(currentState = null) {
       const currentWidth = currentState && Number(currentState.mediaWidthMm);
       if (Number.isFinite(currentWidth) && currentWidth > 0) return currentWidth;
@@ -980,7 +989,7 @@
                   <tr>
                     <td><strong>${esc(row.label)}</strong></td>
                     <td class="num">${fmtN(row.areaM2, 2)} m²</td>
-                    <td class="num">${fmtN(row.inkL, 3)} L</td>
+                    <td class="num">${fmtInkLitersEstimate(row.inkL)} L</td>
                     ${hasCosts ? `<td class="num">${row.cost !== null ? fmtN(row.cost, 2) : '—'}</td>` : ''}
                   </tr>
                 `).join('')}

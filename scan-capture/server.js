@@ -7,7 +7,7 @@ const path = require('path');
 const { URL } = require('url');
 const { commitScans, getPendingScans } = require('./scan-commit');
 
-const HOST = process.env.PRINTGUARD_SCAN_HOST || '0.0.0.0';
+const HOST = process.env.PRINTGUARD_SCAN_HOST || '127.0.0.1';
 const PORT = Number(process.env.PRINTGUARD_SCAN_CAPTURE_PORT || 17910);
 const OUTPUT_DIR = process.env.PRINTGUARD_SCAN_OUTPUT_DIR || 'C:\\PrintGuard\\Scans';
 const INPUT_DIR = process.env.PRINTGUARD_SCAN_INPUT_DIR || OUTPUT_DIR;
@@ -410,7 +410,7 @@ ensureOutputDir().catch((error) => {
   process.exit(1);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log(`PrintGuard Scan Capture listening on http://${HOST}:${PORT}`);
   console.log(`[scan-capture] output dir: ${OUTPUT_DIR}`);
   console.log(`[scan-capture] input dir: ${INPUT_DIR}`);

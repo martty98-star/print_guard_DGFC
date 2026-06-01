@@ -495,7 +495,7 @@
           if (!res.ok || !data.ok) throw new Error('Health check failed');
           setStatus(`Connected to ${data.service}`, 'ok');
         } catch (_) {
-          setStatus('Cannot reach scan server. Open http://10.25.0.15:17910 or check firewall/Node service.', 'err');
+          setStatus('Cannot reach scan server. Open https://printguard-scan.dgfc.local or check Caddy/Node service.', 'err');
         }
       }
 
@@ -613,7 +613,7 @@
           if (error && error.status === 503 && fallbackDir) {
             setStatus(`NAS write failed; scan saved to fallback queue: ${fallbackDir}`, 'err');
           } else {
-            setStatus('Cannot reach scan server. Open http://10.25.0.15:17910 or check firewall/Node service.', 'err');
+            setStatus('Cannot reach scan server. Open https://printguard-scan.dgfc.local or check Caddy/Node service.', 'err');
           }
           barcodeEl.focus();
           barcodeEl.select();

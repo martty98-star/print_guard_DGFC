@@ -18,6 +18,11 @@ Neon writes happen only after the operator clicks **Hotovo / Odeslat do PrintGua
   - default: `17910`
   - port for the local Node capture server
 
+- `PRINTGUARD_SCAN_HOST`
+  - default: `127.0.0.1`
+  - host/interface for the local Node capture server
+  - keep it on loopback when Caddy is the public HTTPS entrypoint
+
 - `PRINTGUARD_SCAN_OUTPUT_DIR`
   - default: `C:\PrintGuard\Scans`
   - primary JSONL output folder
@@ -69,25 +74,98 @@ scan-capture\run-scan-capture.bat
 
 That batch file sets:
 
-- `PRINTGUARD_SCAN_HOST=0.0.0.0`
+- `PRINTGUARD_SCAN_HOST=127.0.0.1`
 - `PRINTGUARD_SCAN_CAPTURE_PORT=17910`
 - `PRINTGUARD_SCAN_OUTPUT_DIR=\\NAS01\Data\PrintGuard\scans`
 - `PRINTGUARD_SCAN_INPUT_DIR=\\NAS01\Data\PrintGuard\scans`
 - `PRINTGUARD_SCAN_FALLBACK_DIR=C:\PrintGuard\ScansFallback`
 
-Start the server on the print server, then open from an operator PC:
+Start the server on the print server. For the HTTPS deployment behind Caddy, use:
 
-`http://10.25.0.15:17910`
+`https://printguard-scan.dgfc.local`
 
 Health check:
 
-`http://10.25.0.15:17910/health`
+`https://printguard-scan.dgfc.local/health`
 
-Firewall rule:
+If you need direct LAN access without Caddy for a temporary test only, set `PRINTGUARD_SCAN_HOST=0.0.0.0` before starting Node and use:
+
+`http://10.25.0.15:17910`
+
+## Caddy HTTPS reverse proxy
+
+Use Caddy as the only user-facing endpoint for the scan UI. The Node server stays on loopback and keeps port `17910`.
+
+`scan-capture/Caddyfile`:
+
+```caddyfile
+printguard-scan.dgfc.local {
+    tls internal
+    reverse_proxy 127.0.0.1:17910
+}
+```
+
+Recommended rollout on the print server:
+
+1. Start the Node server with `PRINTGUARD_SCAN_HOST=127.0.0.1`.
+2. Install Caddy and load `scan-capture/Caddyfile`.
+3. Open inbound firewall ports `80` and `443`.
+4. Ensure name resolution for `printguard-scan.dgfc.local` points to `10.25.0.15`.
+5. Trust Caddy's internal root CA on each operator PC before testing PWA installability.
+
+Firewall rules for Caddy:
 
 ```powershell
-New-NetFirewallRule -DisplayName "PrintGuard Scan Capture 17910" -Direction Inbound -Protocol TCP -LocalPort 17910 -Action Allow
+New-NetFirewallRule -DisplayName "PrintGuard Scan Capture HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+New-NetFirewallRule -DisplayName "PrintGuard Scan Capture HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
 ```
+
+DNS or hosts mapping example:
+
+```text
+10.25.0.15 printguard-scan.dgfc.local
+```
+
+Windows hosts file path:
+
+```text
+C:\Windows\System32\drivers\etc\hosts
+```
+
+Export Caddy's internal root certificate on the print server:
+
+```powershell
+caddy trust
+```
+
+If operator PCs do not have Caddy installed, copy the root CA certificate from Caddy's data directory and import it into `Trusted Root Certification Authorities` on each PC.
+
+Typical Windows path:
+
+```text
+%AppData%\Caddy\pki\authorities\local\root.crt
+```
+
+Import on an operator PC:
+
+```powershell
+Import-Certificate -FilePath "C:\path\to\root.crt" -CertStoreLocation Cert:\LocalMachine\Root
+```
+
+Verification checklist:
+
+```powershell
+Invoke-WebRequest https://printguard-scan.dgfc.local/health | Select-Object -ExpandProperty Content
+Invoke-WebRequest https://printguard-scan.dgfc.local/manifest.webmanifest | Select-Object -ExpandProperty Content
+```
+
+Browser checks:
+
+- `https://printguard-scan.dgfc.local/health` returns JSON with `"ok": true`
+- the page loads with a secure lock indicator
+- `manifest.webmanifest` loads without mixed-content errors
+- the service worker registers successfully
+- the browser offers PWA install when local policy/browser support allows it
 
 ## Windows PowerShell examples
 
