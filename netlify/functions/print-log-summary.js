@@ -344,8 +344,8 @@ function squareMetersExpr(squareMetersColumn, rawMm2Column) {
 
 function metersExpr(metersColumn, rawMmColumn) {
   if (metersColumn) return `${metersColumn}`;
-  // Colorado accounting raw media_length_used is stored in 1e-5 meters.
-  if (rawMmColumn) return `(${rawMmColumn} / 100000.0)`;
+  // Colorado accounting raw media_length_used is stored in 1e-4 meters.
+  if (rawMmColumn) return `(${rawMmColumn} / 10000.0)`;
   return "null";
 }
 
@@ -403,8 +403,10 @@ export async function handler(event) {
         documentId:    pickOptional(cols, ["document_id", "documentid", "documentId"]),
         rowType:       pickOptional(cols, ["row_type", "rowtype", "rowType"]),
         sourceFile:    pickOptional(cols, ["source_file", "sourcefile", "source", "sourceFile", "file_name", "filename"]),
-        printedAreaM2: pick(cols, ["printed_area_m2", "printedaream2", "printed_area", "printedAreaM2", "area_m2"], "printedAreaM2"),
-        mediaLengthM:  pick(cols, ["media_length_m", "medialengthm", "media_length", "mediaLengthM", "length_m"], "mediaLengthM"),
+        printedAreaM2: pickOptional(cols, ["printed_area_m2", "printedaream2", "printed_area_metric", "printedAreaM2", "area_m2"]),
+        printedAreaRaw: pickOptional(cols, ["printed_area", "printedarea"]),
+        mediaLengthM:  pickOptional(cols, ["media_length_m", "medialengthm", "media_length_metric", "mediaLengthM", "length_m"]),
+        mediaLengthRaw: pickOptional(cols, ["media_length_used", "medialengthused"]),
         durationSec:   pick(cols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"], "durationSec"),
         activeTimeSec: pickOptional(cols, ["active_time_sec", "activetime_sec", "activeTimeSec", "active_seconds"]),
         inkTotalL:     pickOptional(cols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
@@ -487,6 +489,8 @@ export async function handler(event) {
       const viewHasInkChannelsExpr = buildInkChannelPresenceExpr(viewInk);
       const viewSourceFileExpr = map.sourceFile ? `${map.sourceFile}` : "null::text";
       const viewLogicalJobExpr = buildLogicalJobExpr(map, map.readyAtLocalExpr);
+      const viewAreaExpr = squareMetersExpr(map.printedAreaM2, map.printedAreaRaw);
+      const viewLengthExpr = metersExpr(map.mediaLengthM, map.mediaLengthRaw);
 
       const accountingInk = accountingMap
         ? buildAccountingInkExpressions(accountingMap)
@@ -518,8 +522,8 @@ export async function handler(event) {
             ${map.readyAtZonedExpr} as ready_at,
             ${map.printerName} as printer_name,
             ${map.result} as result,
-            ${map.printedAreaM2}::float8 as printed_area_m2,
-            ${map.mediaLengthM}::float8 as media_length_m,
+            ${viewAreaExpr}::float8 as printed_area_m2,
+            ${viewLengthExpr}::float8 as media_length_m,
             ${viewDurationExpr}::float8 as duration_sec,
             ${viewInk.inkTotalExpr === "null" ? "null" : `${viewInk.inkTotalExpr}`}::float8 as ink_total_l,
             ${(viewInk.inkCyanExpr || "null")}::float8 as ink_cyan_l,

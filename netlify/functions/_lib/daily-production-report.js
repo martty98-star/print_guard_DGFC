@@ -97,8 +97,8 @@ async function loadMachineOutput(client, date) {
       count(*) filter (where lower(coalesce(result, '')) = 'done')::int as done_jobs,
       count(*) filter (where lower(coalesce(result, '')) in ('abrt', 'aborted'))::int as aborted_jobs,
       count(*) filter (where lower(coalesce(result, '')) = 'deleted')::int as deleted_jobs,
-      coalesce(sum(printed_area_m2) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as printed_area_m2,
-      coalesce(sum(media_length_m) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as media_length_m,
+      coalesce(sum((printed_area)::numeric / 1000000.0) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as printed_area_m2,
+      coalesce(sum((media_length_used)::numeric / 10000.0) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as media_length_m,
       count(*)::int as total_rows
     from public.v_print_log_rows
     where ${printLogDayFilter()}
@@ -118,8 +118,8 @@ async function loadMachineOutput(client, date) {
       count(*) filter (where lower(coalesce(result, '')) = 'done')::int as done_jobs,
       count(*) filter (where lower(coalesce(result, '')) in ('abrt', 'aborted'))::int as aborted_jobs,
       count(*) filter (where lower(coalesce(result, '')) = 'deleted')::int as deleted_jobs,
-      coalesce(sum(printed_area_m2) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as printed_area_m2,
-      coalesce(sum(media_length_m) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as media_length_m
+      coalesce(sum((printed_area)::numeric / 1000000.0) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as printed_area_m2,
+      coalesce(sum((media_length_used)::numeric / 10000.0) filter (where lower(coalesce(result, '')) = 'done'), 0)::float8 as media_length_m
     from public.v_print_log_rows
     where ${printLogDayFilter()}
       and (row_type is null or lower(row_type) = 'print')
