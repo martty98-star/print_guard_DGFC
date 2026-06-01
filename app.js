@@ -556,6 +556,7 @@ const {
 navigationApi = PrintGuardNavigation.createNavigation({
   applyRoleUI,
   el,
+  loadManagementReporting: window.PrintGuardManagementReportingUI && window.PrintGuardManagementReportingUI.loadManagementReporting,
   loadPostPurchaseOrders,
   loadPrintLog,
   loadSettingsUI,

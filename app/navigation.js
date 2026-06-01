@@ -7,7 +7,7 @@
 
   function createNavigation(deps) {
     const {
-      applyRoleUI, el, loadPostPurchaseOrders, loadPrintLog, loadSettingsUI,
+      applyRoleUI, el, loadManagementReporting, loadPostPurchaseOrders, loadPrintLog, loadSettingsUI,
       ls, renderAlerts, renderChecklistScreen, renderCoHistory, renderItemsMgmt,
       renderStockLog, state,
     } = deps;
@@ -26,7 +26,7 @@
     }
 
     function getModeForScreen(screenId) {
-      return ['co-dashboard', 'co-entry', 'co-history', 'print-log', 'postpurchase-orders'].includes(screenId)
+      return ['co-dashboard', 'co-entry', 'co-history', 'print-log', 'postpurchase-orders', 'management-reporting'].includes(screenId)
         ? 'colorado'
         : 'stock';
     }
@@ -66,6 +66,7 @@
       if (screenId === 'co-history') renderCoHistory();
       if (screenId === 'print-log') loadPrintLog();
       if (screenId === 'postpurchase-orders') loadPostPurchaseOrders();
+      if (screenId === 'management-reporting' && typeof loadManagementReporting === 'function') loadManagementReporting();
       if (screenId === 'settings') loadSettingsUI();
       persistScreenRoute(screenId, options);
       global.scrollTo(0, 0);

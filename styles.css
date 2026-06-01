@@ -1783,6 +1783,81 @@ textarea { resize: vertical; min-height: 58px; }
   text-decoration: none;
 }
 
+.reporting-section {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.reporting-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.reporting-section-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.08rem;
+}
+.reporting-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reporting-kpi-grid {
+  margin-bottom: 0;
+}
+.reporting-subgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 14px;
+}
+.reporting-warnings {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(166, 106, 34, .28);
+  background: var(--warn-dim);
+  color: var(--text-dim);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+.reporting-warnings p {
+  margin: 0;
+}
+.reporting-trend {
+  min-height: 140px;
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  padding: 18px 8px 8px;
+}
+.reporting-trend-item {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  align-items: end;
+  gap: 7px;
+  min-width: 0;
+}
+.reporting-trend-bar {
+  width: 100%;
+  max-width: 42px;
+  border-radius: 10px 10px 3px 3px;
+  background: linear-gradient(180deg, var(--accent), rgba(166, 106, 34, .35));
+}
+.reporting-trend-item span {
+  color: var(--text-faint);
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.reporting-table td,
+.reporting-table th {
+  white-space: nowrap;
+}
+
 /* Info note */
 .info-note {
   background: var(--accent-bg); border: 1px solid rgba(139,108,74,.2);
@@ -2855,9 +2930,14 @@ textarea { resize: vertical; min-height: 58px; }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .daily-report-meta,
-  .daily-report-actions {
+  .daily-report-actions,
+  .reporting-section-head,
+  .reporting-controls {
     flex-direction: column;
     align-items: stretch;
+  }
+  .reporting-subgrid {
+    grid-template-columns: 1fr;
   }
   .checklist-summary-row,
   .checklist-form-grid {
