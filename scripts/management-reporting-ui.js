@@ -135,7 +135,7 @@
     document.getElementById('reporting-eod-kpis').innerHTML = [
       metric('API received orders', fmt(report.api_received_sales_orders)),
       metric('Processed XML', fmt(report.processed_xml_count)),
-      metric('Waiting / expected / missing', `${fmt(report.waiting_count)} / ${fmt(report.expected_count)} / ${fmt(report.missing_count)}`),
+      metric('Processed orders / API incoming / missing', `${fmt(report.processed_sales_order_count)} / ${fmt(report.expected_count)} / ${fmt(report.missing_count)}`),
       metric('Nett printing hours', fmt(report.nett_printing_time_hours, 3, ' h')),
       metric('Consumed media', fmt(report.consumed_media_m2, 3, ' m²')),
       metric('Consumed ink', fmt(report.consumed_ink_l, 4, ' L')),

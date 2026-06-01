@@ -621,6 +621,7 @@ async function loadIncomingPeriodSummary(client, period) {
       (select count(*)::int from matched_xml) as api_received_xml_count,
       (select coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int from matched_xml) as api_received_file_count,
       (select count(*)::int from matched_xml) as processed_xml_count,
+      (select count(distinct sales_order_key)::int from matched_orders) as processed_sales_order_count,
       (select count(distinct sales_order_key)::int from incoming_keys) as expected_count,
       (select count(distinct sales_order_key)::int from incoming_keys where sales_order_key not in (select sales_order_key from matched_orders)) as missing_count
   `, params);
@@ -630,6 +631,7 @@ async function loadIncomingPeriodSummary(client, period) {
     apiReceivedXmlCount: int(row.api_received_xml_count),
     apiReceivedFileCount: int(row.api_received_file_count),
     processedXmlCount: int(row.processed_xml_count),
+    processedSalesOrderCount: int(row.processed_sales_order_count),
     expectedCount: int(row.expected_count),
     missingCount: int(row.missing_count),
     waitingCount: int(row.missing_count),
@@ -756,6 +758,7 @@ async function loadEodReport(client, options = {}) {
     api_received_xml_count: incoming.apiReceivedXmlCount,
     api_received_file_count: incoming.apiReceivedFileCount,
     processed_xml_count: incoming.processedXmlCount,
+    processed_sales_order_count: incoming.processedSalesOrderCount,
     waiting_count: incoming.waitingCount,
     expected_count: incoming.expectedCount,
     missing_count: incoming.missingCount,
@@ -767,8 +770,8 @@ async function loadEodReport(client, options = {}) {
     consumed_ink_l: production.accounting.consumedInkL,
     production,
     statusBreakdown: [
-      { status: 'processed', count: incoming.processedXmlCount },
-      { status: 'waiting_or_missing', count: incoming.missingCount },
+      { status: 'processed_orders', count: incoming.processedSalesOrderCount },
+      { status: 'missing_orders', count: incoming.missingCount },
     ],
     warnings,
     generatedAt: new Date().toISOString(),
