@@ -1,11 +1,33 @@
 'use strict';
 
 (() => {
-  function uncToFileHref(value) {
-    const raw = String(value || '').trim();
-    if (!raw) return '';
-    if (!raw.startsWith('\\\\')) return raw;
-    return 'file://///' + raw.replace(/^\\\\/, '').replace(/\\/g, '/');
+  const DEFAULT_PDF_PROXY_BASE = 'https://printguard-scan.dgfc.local';
+
+  function getPdfProxyBase() {
+    const configured = String(
+      window.PRINTGUARD_PDF_PROXY_BASE ||
+      window.SCAN_CAPTURE_API_BASE ||
+      DEFAULT_PDF_PROXY_BASE
+    ).trim();
+    return configured.replace(/\/+$/, '');
+  }
+
+  function buildPdfProxyUrl(options) {
+    const params = new URLSearchParams();
+    const orderId = Number(options && options.orderId);
+    const fileIndex = Number(options && options.fileIndex);
+    const orderName = String(options && options.orderName || '').trim();
+    if (Number.isInteger(orderId) && orderId > 0) {
+      params.set('orderId', String(orderId));
+    } else if (orderName) {
+      params.set('orderName', orderName);
+    } else {
+      return '';
+    }
+    if (!Number.isInteger(fileIndex) || fileIndex < 0) return '';
+    params.set('fileIndex', String(fileIndex));
+    if (options && options.download) params.set('download', '1');
+    return `${getPdfProxyBase()}/pdf-open?${params.toString()}`;
   }
 
   async function copyText(value) {
@@ -26,44 +48,28 @@
     area.remove();
   }
 
-  async function openPdfPath(options) {
-    const pdfPath = String(options.path || '').trim();
-    if (!pdfPath) return;
+  function openPdfUrl(options) {
+    const pdfUrl = String(options.url || '').trim();
+    if (!pdfUrl) return;
     const showToast = options.showToast || function noop() {};
-    const fetchImpl = options.fetchImpl || window.fetch.bind(window);
-    const helperUrls = [
-      'http://127.0.0.1:17891/open-pdf',
-      'http://localhost:17891/open-pdf',
-    ];
-
-    for (const url of helperUrls) {
-      try {
-        const response = await fetchImpl(url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ path: pdfPath }),
-        });
-        if (response.ok) {
-          showToast('PDF open request sent', 'success');
-          return;
-        }
-      } catch (error) {
-        console.debug('PDF helper unavailable', url, error);
-      }
-    }
-
     try {
-      window.open(options.fileHref || uncToFileHref(pdfPath), '_blank', 'noreferrer');
+      const popup = window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+      if (popup) return;
     } catch (error) {
-      console.debug('Direct PDF open blocked', error);
+      console.debug('PDF proxy open blocked', error);
     }
-    await copyText(pdfPath);
-    showToast('PDF path copied. Browser blocked direct open.', 'error');
+    const anchor = document.createElement('a');
+    anchor.href = pdfUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.click();
+    showToast('PDF opening blocked by browser popup settings.', 'error');
   }
 
   window.PrintGuardPdfOpen = {
+    buildPdfProxyUrl,
     copyText,
-    openPdfPath,
-    uncToFileHref,
+    getPdfProxyBase,
+    openPdfUrl,
   };
 })();

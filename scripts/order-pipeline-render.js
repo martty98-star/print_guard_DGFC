@@ -394,8 +394,10 @@
     return files.map((file, index) => {
       const path = file.printFilePath || '';
       const label = fileNameFromPath(path) || `PDF ${index + 1}`;
-      const href = options.toFileHref(path);
       const orderId = row.processedOrderId || row.id;
+      const pdfUrl = typeof options.toPdfHref === 'function'
+        ? options.toPdfHref({ orderId, orderName: row.orderName || row.processedOrderName || '', fileIndex: index })
+        : '';
       const history = getFileHistory(orderId, path, options);
       const actionState = getReprintActionState(orderId, path, options);
       const pending = actionState.state === 'pending' || actionState.state === 'resolving';
@@ -414,7 +416,7 @@
           ${errored ? `<span class="pp-pipeline-badge error">${t('processed.status.resolve-failed')}</span>` : ''}
         </div>
         <div class="pp-file-actions">
-          <button class="btn-sm" type="button" data-open-pdf-path="${esc(path)}" data-open-pdf-href="${esc(href)}">${t('processed.button.open-pdf')}</button>
+          <button class="btn-sm" type="button" data-open-pdf-url="${esc(pdfUrl)}" ${pdfUrl ? '' : 'disabled'}>${t('processed.button.open-pdf')}</button>
           <button class="btn-sm" type="button" data-copy-path="${esc(path)}">${t('processed.button.copy-path')}</button>
           ${actionState.state === 'idle' ? `<button class="btn-sm" type="button" data-reprint-order-id="${esc(orderId || '')}" data-reprint-order-name="${esc(displayOrderName || row.orderName || '')}" data-print-file-path="${esc(path)}" data-print-file-label="${esc(label)}" ${reprintDisabled ? 'disabled' : ''}>${t('processed.button.request-reprint')}</button>` : ''}
         </div>

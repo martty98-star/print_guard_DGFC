@@ -773,56 +773,56 @@
 
   <main id="screen-scan-capture" class="screen">
     <div class="screen-header">
-      <h1>Scan objednávek</h1>
-      <div class="header-meta" id="scan-capture-status">Lokální scan fronta</div>
+      <h1 data-i18n="scan.title">Scan objednávek</h1>
+      <div class="header-meta" id="scan-capture-status" data-i18n="scan.status.local-ready">Lokální scan fronta</div>
     </div>
 
     <section class="settings-card scan-capture-card">
       <div class="scan-config-row">
         <div class="form-group compact">
-          <label for="scan-operator-input">Operátor</label>
-          <input type="text" id="scan-operator-input" class="input-sm" placeholder="Jméno" autocomplete="off">
+          <label for="scan-operator-input" data-i18n="scan.operator">Operátor</label>
+          <input type="text" id="scan-operator-input" class="input-sm" placeholder="Jméno" autocomplete="off" data-i18n-placeholder="scan.operator.placeholder">
         </div>
         <div class="form-group compact">
-          <label for="scan-station-input">Stanice</label>
+          <label for="scan-station-input" data-i18n="scan.station">Stanice</label>
           <input type="text" id="scan-station-input" class="input-sm" placeholder="SCAN-STATION-01" autocomplete="off">
         </div>
         <div class="form-group compact">
-          <label for="scan-postpurchase-pin">PIN pro odeslání</label>
-          <input type="password" id="scan-postpurchase-pin" class="input-sm" placeholder="PIN operátora" autocomplete="off">
+          <label for="scan-postpurchase-pin" data-i18n="scan.pin">PIN pro odeslání</label>
+          <input type="password" id="scan-postpurchase-pin" class="input-sm" placeholder="PIN operátora" autocomplete="off" data-i18n-placeholder="processed.pin.placeholder">
         </div>
-        <button class="btn-sm" id="scan-refresh-btn" type="button">Obnovit</button>
+        <button class="btn-sm" id="scan-refresh-btn" type="button" data-i18n="btn.refresh">Obnovit</button>
       </div>
 
       <div class="scan-input-row">
-        <input type="text" id="scan-barcode-input" placeholder="Naskenuj čárový kód objednávky…" autocomplete="off" inputmode="text">
-        <button class="btn-primary" id="scan-submit-btn" type="button">Uložit scan</button>
+        <input type="text" id="scan-barcode-input" placeholder="Naskenuj čárový kód objednávky…" autocomplete="off" inputmode="text" data-i18n-placeholder="scan.barcode.placeholder">
+        <button class="btn-primary" id="scan-submit-btn" type="button" data-i18n="scan.save">Uložit scan</button>
       </div>
 
       <div class="metrics-grid scan-kpi-grid">
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-pending">0</span><span class="metric-unit">Pending scans</span><span class="metric-desc">čekají v browser queue</span></div>
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-last">—</span><span class="metric-unit">Poslední barcode</span><span class="metric-desc">poslední scan v této obrazovce</span></div>
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-read">0</span><span class="metric-unit">Lokální fronta</span><span class="metric-desc">uloženo v tomto prohlížeči</span></div>
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-committed">0</span><span class="metric-unit">Poslední commit</span><span class="metric-desc">nově zapsáno do PrintGuardu</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-pending">0</span><span class="metric-unit" data-i18n="scan.kpi.pending">Pending scans</span><span class="metric-desc" data-i18n="scan.kpi.pending.desc">čekají v browser queue</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-last">—</span><span class="metric-unit" data-i18n="scan.kpi.last">Poslední barcode</span><span class="metric-desc" data-i18n="scan.kpi.last.desc">poslední scan v této obrazovce</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-read">0</span><span class="metric-unit" data-i18n="scan.kpi.local">Lokální fronta</span><span class="metric-desc" data-i18n="scan.kpi.local.desc">uloženo v tomto prohlížeči</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-committed">0</span><span class="metric-unit" data-i18n="scan.kpi.commit">Poslední commit</span><span class="metric-desc" data-i18n="scan.kpi.commit.desc">nově zapsáno do PrintGuardu</span></div>
       </div>
     </section>
 
     <section class="settings-card scan-capture-card">
       <div class="mc-header">
-        <span class="mc-label">Commit do PrintGuardu</span>
-        <button class="btn-primary" id="scan-commit-btn" type="button">Odeslat do PrintGuardu</button>
+        <span class="mc-label" data-i18n="scan.commit.title">Commit do PrintGuardu</span>
+        <button class="btn-primary" id="scan-commit-btn" type="button" data-i18n="scan.commit.button">Odeslat do PrintGuardu</button>
       </div>
-      <div class="hint">Scany se nejdřív ukládají lokálně v prohlížeči. Do Neon DB se odešlou až po potvrzení operátorem.</div>
+      <div class="hint" data-i18n="scan.commit.hint">Scany se nejdřív ukládají lokálně v prohlížeči. Do Neon DB se odešlou až po potvrzení operátorem.</div>
       <div id="scan-commit-result"></div>
     </section>
 
     <section class="settings-card scan-capture-card">
       <div class="mc-header">
-        <span class="mc-label">Poslední scany</span>
-        <span class="mc-badge">lokální queue</span>
+        <span class="mc-label" data-i18n="scan.recent.title">Poslední scany</span>
+        <span class="mc-badge" data-i18n="scan.recent.badge">lokální queue</span>
       </div>
       <div id="scan-recent-list" class="scan-recent-list">
-        <div class="loading-state"><div class="spinner"></div><p>Načítám scany…</p></div>
+        <div class="loading-state"><div class="spinner"></div><p data-i18n="scan.loading">Načítám scany…</p></div>
       </div>
     </section>
   </main>
@@ -1091,7 +1091,7 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=8.0.10"></script>
+  <script src="i18n.js?v=8.0.13"></script>
   <script src="reports/date.js"></script>
   <script src="reports/csv.js"></script>
   <script src="reports/colorado.js?v=8.0.10"></script>
@@ -1121,11 +1121,11 @@
   <script src="scripts/checklist-ui.js?v=8.0.10"></script>
   <script src="scripts/order-pipeline-filters.js?v=8.0.10"></script>
   <script src="scripts/order-pipeline-api.js?v=8.0.10"></script>
-  <script src="scripts/pdf-open.js?v=8.0.10"></script>
-  <script src="scripts/order-pipeline-render.js?v=8.0.10"></script>
+  <script src="scripts/pdf-open.js?v=8.0.15"></script>
+  <script src="scripts/order-pipeline-render.js?v=8.0.15"></script>
   <script src="scripts/reprint-modal.js?v=8.0.10"></script>
   <script src="scripts/reprint-xml.js?v=8.0.10"></script>
-  <script src="scripts/postpurchase-ui.js?v=8.0.10"></script>
+  <script src="scripts/postpurchase-ui.js?v=8.0.15"></script>
   <script src="scripts/colorado-controller.js?v=8.0.10"></script>
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
@@ -1136,8 +1136,8 @@
   <script src="scripts/daily-report-ui.js?v=8.0.10"></script>
   <script src="scripts/management-reporting-api.js?v=8.0.10"></script>
   <script src="scripts/management-reporting-ui.js?v=8.0.10"></script>
-  <script src="scripts/scan-capture-api.js?v=8.0.12"></script>
-  <script src="scripts/scan-capture-ui.js?v=8.0.12"></script>
+  <script src="scripts/scan-capture-api.js?v=8.0.13"></script>
+  <script src="scripts/scan-capture-ui.js?v=8.0.13"></script>
   <script src="app/db.js?v=8.0.10"></script>
   <script src="app/settings-store.js?v=8.0.10"></script>
   <script src="app/push-bridge.js?v=8.0.10"></script>

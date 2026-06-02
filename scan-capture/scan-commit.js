@@ -539,6 +539,7 @@ async function commitScans(options) {
 
 module.exports = {
   commitScans,
+  getPool,
   getPendingScans,
   readScanFiles,
 };

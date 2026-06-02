@@ -52,6 +52,10 @@
     });
   }
 
+  function t(key) {
+    return global.I18N && typeof global.I18N.t === 'function' ? global.I18N.t(key) : key;
+  }
+
   function getInputValue(id) {
     return String(el(id)?.value || '').trim();
   }
@@ -202,7 +206,7 @@
     if (!wrap) return;
     const rows = pendingScans();
     if (!rows.length) {
-      wrap.innerHTML = '<div class="empty-state">Lokální fronta je prázdná.</div>';
+      wrap.innerHTML = `<div class="empty-state">${esc(t('scan.queue.empty'))}</div>`;
       return;
     }
     wrap.innerHTML = rows.slice(0, 50).map((scan) => `
@@ -211,7 +215,7 @@
           <strong>${esc(scan.barcode || scan.orderNumber || scan.rawBarcode || '—')}</strong>
           <span>${esc(scan.operator || '—')} · ${esc(scan.station || '—')} · ${esc(fmtDateTime(scan.scannedAt))}</span>
         </div>
-        <button class="btn-sm scan-delete-btn" type="button" data-scan-id="${esc(scan.scanId)}">Smazat</button>
+        <button class="btn-sm scan-delete-btn" type="button" data-scan-id="${esc(scan.scanId)}">${esc(t('scan.delete'))}</button>
       </div>
     `).join('');
   }
@@ -221,17 +225,17 @@
     if (!wrap) return;
     const result = state.commitResult;
     if (!result) {
-      wrap.innerHTML = '<div class="hint">Souhrn se zobrazí po kliknutí na Odeslat do PrintGuardu.</div>';
+      wrap.innerHTML = `<div class="hint">${esc(t('scan.commit.summary-empty'))}</div>`;
       return;
     }
     const skipped = Number(result.duplicateCount || 0) + Number(result.skippedAlreadyCommitted || 0);
     const cells = [
-      ['Přečteno', result.totalScansRead],
-      ['Commitnuto', result.newScansCommitted],
-      ['Spárováno', result.matchedCount],
-      ['Nespárováno', Number(result.unmatchedCount || 0) + Number(result.ambiguousCount || 0)],
-      ['Duplicity / přeskočeno', skipped],
-      ['Chyby', result.errorCount],
+      [t('scan.summary.read'), result.totalScansRead],
+      [t('scan.summary.committed'), result.newScansCommitted],
+      [t('scan.summary.matched'), result.matchedCount],
+      [t('scan.summary.unmatched'), Number(result.unmatchedCount || 0) + Number(result.ambiguousCount || 0)],
+      [t('scan.summary.skipped'), skipped],
+      [t('scan.summary.errors'), result.errorCount],
     ];
     wrap.innerHTML = `
       <div class="scan-result-grid">
@@ -256,7 +260,7 @@
     state.queue = await queueAll();
     renderAll();
     const fallback = state.useLocalStorageFallback ? ' · localStorage fallback' : '';
-    setStatus(`Lokální scan fronta připravena${fallback}`, 'ok');
+    setStatus(`${t('scan.status.local-ready')}${fallback}`, 'ok');
   }
 
   async function submitScan() {
@@ -285,10 +289,10 @@
       state.commitResult = null;
       if (input) input.value = '';
       await refreshScanCapture();
-      setStatus('Scan uložen do lokální browser fronty.', 'ok');
+      setStatus(t('scan.status.saved-local'), 'ok');
       input?.focus();
     } catch (error) {
-      setStatus(`Scan se nepodařilo uložit lokálně: ${error.message || error}`, 'error');
+      setStatus(`${t('scan.status.save-failed')}: ${error.message || error}`, 'error');
       input?.focus();
     }
   }
@@ -311,7 +315,7 @@
   async function commitScans() {
     const scans = pendingScans();
     if (!scans.length) {
-      setStatus('Lokální fronta je prázdná.', 'ok');
+      setStatus(t('scan.queue.empty'), 'ok');
       return;
     }
     const operator = getInputValue('scan-operator-input');
@@ -319,7 +323,7 @@
     const button = el('scan-commit-btn');
     if (button) button.disabled = true;
     try {
-      setStatus('Odesílám lokální scan batch do PrintGuardu…');
+      setStatus(t('scan.status.committing'));
       state.commitResult = await Api.commitScanBatch({
         fetchImpl: global.fetch.bind(global),
         headers: scanCommitHeaders(),
@@ -336,9 +340,9 @@
       if (removeIds.size) await queueDeleteMany(Array.from(removeIds));
       await refreshScanCapture();
       renderCommitResult();
-      setStatus('Commit hotový. Spárované objednávky jsou označené jako Dotisknuto.', 'ok');
+      setStatus(t('scan.status.commit-done'), 'ok');
     } catch (error) {
-      setStatus(`Commit selhal: ${error.message || error}`, 'error');
+      setStatus(`${t('scan.status.commit-failed')}: ${error.message || error}`, 'error');
     } finally {
       if (button) button.disabled = false;
     }
@@ -350,9 +354,9 @@
     try {
       await queueDelete(scanId);
       await refreshScanCapture();
-      setStatus('Scan smazán z lokální fronty.', 'ok');
+      setStatus(t('scan.status.deleted'), 'ok');
     } catch (error) {
-      setStatus(`Scan nejde smazat: ${error.message || error}`, 'error');
+      setStatus(`${t('scan.status.delete-failed')}: ${error.message || error}`, 'error');
     }
   }
 
@@ -386,11 +390,17 @@
       const button = event.target && event.target.closest('.scan-delete-btn');
       if (button) deleteScan(button);
     });
+    global.addEventListener('i18n:changed', () => {
+      const screen = el('screen-scan-capture');
+      if (!screen || !screen.classList.contains('active')) return;
+      renderAll();
+      setStatus(t('scan.status.local-ready'), 'ok');
+    });
   }
 
   function loadScanCaptureScreen() {
     if (!Api) {
-      setStatus('Chybí PrintGuardScanCaptureApi.', 'error');
+      setStatus(t('scan.status.missing-api'), 'error');
       return;
     }
     bindOnce();

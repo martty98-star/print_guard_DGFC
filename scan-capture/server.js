@@ -2,16 +2,18 @@
 
 const http = require('http');
 const crypto = require('crypto');
-const fs = require('fs/promises');
+const fs = require('fs');
+const fsp = require('fs/promises');
 const path = require('path');
 const { URL } = require('url');
-const { commitScans, getPendingScans } = require('./scan-commit');
+const { commitScans, getPendingScans, getPool } = require('./scan-commit');
 
 const HOST = process.env.PRINTGUARD_SCAN_HOST || '127.0.0.1';
 const PORT = Number(process.env.PRINTGUARD_SCAN_CAPTURE_PORT || 17910);
 const OUTPUT_DIR = process.env.PRINTGUARD_SCAN_OUTPUT_DIR || 'C:\\PrintGuard\\Scans';
 const INPUT_DIR = process.env.PRINTGUARD_SCAN_INPUT_DIR || OUTPUT_DIR;
 const FALLBACK_DIR = process.env.PRINTGUARD_SCAN_FALLBACK_DIR || 'C:\\PrintGuard\\ScansFallback';
+const PDF_ROOT = process.env.PRINTGUARD_PDF_ROOT || '\\\\NAS01\\Data\\onyx\\prints';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -35,6 +37,54 @@ function safeText(value, maxLen = 100) {
     .slice(0, maxLen);
 }
 
+function cleanPathText(value, maxLen = 400) {
+  return String(value == null ? '' : value)
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .trim()
+    .slice(0, maxLen);
+}
+
+function toPositiveInteger(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : null;
+}
+
+function normalizeWindowsPath(value) {
+  const raw = String(value || '').trim().replace(/\//g, '\\');
+  return path.win32.normalize(raw).replace(/[\\\/]+$/, '');
+}
+
+function getAllowedPdfRoot() {
+  return normalizeWindowsPath(PDF_ROOT);
+}
+
+function isAllowedPdfPath(filePath) {
+  const normalizedFile = normalizeWindowsPath(filePath);
+  const normalizedRoot = getAllowedPdfRoot();
+  if (!normalizedFile || !/\.pdf$/i.test(normalizedFile)) return false;
+  const fileLower = normalizedFile.toLowerCase();
+  const rootLower = normalizedRoot.toLowerCase();
+  return fileLower === rootLower || fileLower.startsWith(rootLower + '\\');
+}
+
+function contentDisposition(fileName, download) {
+  const safeName = String(fileName || 'document.pdf').replace(/["\r\n]/g, '_');
+  return `${download ? 'attachment' : 'inline'}; filename="${safeName}"`;
+}
+
+function queryValue(query, ...keys) {
+  if (!query) return '';
+  for (const key of keys) {
+    if (query && typeof query.get === 'function') {
+      const value = query.get(key);
+      if (value != null && value !== '') return value;
+      continue;
+    }
+    if (query[key] != null && query[key] !== '') return query[key];
+  }
+  return '';
+}
+
 function json(res, statusCode, body) {
   const payload = JSON.stringify(body);
   res.writeHead(statusCode, {
@@ -48,11 +98,11 @@ function json(res, statusCode, body) {
 }
 
 async function ensureOutputDir() {
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  await fsp.mkdir(OUTPUT_DIR, { recursive: true });
 }
 
 async function ensureFallbackDir() {
-  await fs.mkdir(FALLBACK_DIR, { recursive: true });
+  await fsp.mkdir(FALLBACK_DIR, { recursive: true });
 }
 
 function getJsonlPath(date = new Date()) {
@@ -67,11 +117,11 @@ async function appendScanLine(entry) {
   const line = JSON.stringify(entry) + '\n';
   await ensureOutputDir();
   try {
-    await fs.appendFile(getJsonlPath(new Date(entry.scannedAt || Date.now())), line, 'utf8');
+    await fsp.appendFile(getJsonlPath(new Date(entry.scannedAt || Date.now())), line, 'utf8');
     return { target: 'nas' };
   } catch (error) {
     await ensureFallbackDir();
-    await fs.appendFile(getFallbackJsonlPath(new Date(entry.scannedAt || Date.now())), line, 'utf8');
+    await fsp.appendFile(getFallbackJsonlPath(new Date(entry.scannedAt || Date.now())), line, 'utf8');
     const fallbackError = new Error(`NAS write failed, stored locally in fallback queue: ${error.message || error}`);
     fallbackError.statusCode = 503;
     fallbackError.writeTarget = 'fallback';
@@ -83,7 +133,7 @@ async function appendScanLine(entry) {
 async function readRecentScans(count = 10) {
   const filePath = getJsonlPath();
   try {
-    const text = await fs.readFile(filePath, 'utf8');
+    const text = await fsp.readFile(filePath, 'utf8');
     const lines = text.split(/\r?\n/).filter(Boolean);
     const parsed = lines.map((line) => {
       try {
@@ -293,6 +343,117 @@ async function handleDeleteScan(req, res, url) {
   }
 }
 
+async function findPdfRecord(query) {
+  const fileIndex = toPositiveInteger(queryValue(query, 'fileIndex', 'fileId', 'index'));
+  if (fileIndex == null) {
+    const error = new Error('Missing or invalid fileIndex');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const orderId = toPositiveInteger(queryValue(query, 'orderId'));
+  const orderName = safeText(queryValue(query, 'orderName', 'id'), 120);
+  if (orderId == null && !orderName) {
+    const error = new Error('Missing orderId or orderName');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const pool = getPool();
+  const sqlById = `
+    select id, order_name, print_files
+    from public.processed_print_orders
+    where id = $1
+      and coalesce(ignored, false) = false
+    limit 1
+  `;
+  const sqlByOrderName = `
+    select id, order_name, print_files
+    from public.processed_print_orders
+    where order_name = $1
+      and coalesce(ignored, false) = false
+    order by queued_date_time desc nulls last, updated_at desc, id desc
+    limit 1
+  `;
+  const result = orderId != null
+    ? await pool.query(sqlById, [orderId])
+    : await pool.query(sqlByOrderName, [orderName]);
+  const row = result && result.rows && result.rows[0];
+  if (!row) {
+    const error = new Error('Processed order not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const files = Array.isArray(row.print_files) ? row.print_files : [];
+  const file = files[fileIndex];
+  const pdfPath = cleanPathText(file && (file.printFilePath || file.print_file_path), 400);
+  if (!pdfPath) {
+    const error = new Error('PDF file not found for fileIndex');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (!isAllowedPdfPath(pdfPath)) {
+    const error = new Error('PDF path is outside the allowed print root');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return {
+    orderId: Number(row.id),
+    orderName: row.order_name || '',
+    fileIndex,
+    pdfPath: normalizeWindowsPath(pdfPath),
+  };
+}
+
+async function handlePdfOpen(req, res, url) {
+  try {
+    const record = await findPdfRecord(url.searchParams);
+    const stat = await fsp.stat(record.pdfPath);
+    if (!stat.isFile()) {
+      const error = new Error('PDF file not found on print server');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const download = String(queryValue(url.searchParams, 'download') || '') === '1';
+    const fileName = path.win32.basename(record.pdfPath);
+
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': contentDisposition(fileName, download),
+      'Content-Length': String(stat.size),
+      'Cache-Control': 'private, max-age=60',
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    console.log('[scan-capture] served pdf', {
+      orderId: record.orderId,
+      orderName: record.orderName,
+      fileIndex: record.fileIndex,
+      fileName,
+      timestamp: new Date().toISOString(),
+    });
+
+    const stream = fs.createReadStream(record.pdfPath);
+    stream.on('error', (error) => {
+      console.error('[scan-capture] pdf stream failed', error);
+      if (!res.headersSent) {
+        json(res, 500, { ok: false, error: 'PDF stream failed' });
+        return;
+      }
+      res.destroy(error);
+    });
+    stream.pipe(res);
+  } catch (error) {
+    json(res, error.statusCode || 500, {
+      ok: false,
+      error: error.message || 'PDF open failed',
+    });
+  }
+}
+
 function sendHealth(res) {
   json(res, 200, { ok: true, service: 'printguard-scan-capture' });
 }
@@ -317,7 +478,7 @@ async function serveStatic(req, res, pathname) {
     return;
   }
   try {
-    const data = await fs.readFile(resolved);
+    const data = await fsp.readFile(resolved);
     res.writeHead(200, {
       'Content-Type': contentTypeFor(resolved),
       'Cache-Control': 'no-store',
@@ -336,7 +497,7 @@ async function serveStatic(req, res, pathname) {
 async function serveRootStyles(req, res) {
   const filePath = path.join(PUBLIC_DIR, 'styles.css');
   try {
-    const data = await fs.readFile(filePath);
+    const data = await fsp.readFile(filePath);
     res.writeHead(200, {
       'Content-Type': 'text/css; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -362,6 +523,10 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.pathname === '/health') {
       sendHealth(res);
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/pdf-open') {
+      await handlePdfOpen(req, res, url);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/styles.css') {
@@ -415,4 +580,5 @@ server.listen(PORT, HOST, () => {
   console.log(`[scan-capture] output dir: ${OUTPUT_DIR}`);
   console.log(`[scan-capture] input dir: ${INPUT_DIR}`);
   console.log(`[scan-capture] fallback dir: ${FALLBACK_DIR}`);
+  console.log(`[scan-capture] pdf root: ${getAllowedPdfRoot()}`);
 });

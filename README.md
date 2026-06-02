@@ -173,6 +173,16 @@ The public key is embedded in `index.html`; the private key stays server-side in
 - `scripts/sync-processed-print-orders.js`
 - `scripts/sync-submit-tool-logs.js`
 
+## PDF opening
+
+Processed order PDF buttons now open through the local print-server helper endpoint at `https://printguard-scan.dgfc.local/pdf-open` instead of direct UNC/file links.
+
+Key setting:
+
+- `PRINTGUARD_PDF_ROOT`
+
+The print-server helper resolves the requested processed order from Neon, validates that the stored PDF path stays under the configured NAS print root, and then returns the PDF with `application/pdf`. `?download=1` switches the response from inline viewing to attachment download.
+
 ## Notes for operators
 
 - Keep the service worker in mind during deploys: stale caches can make an old shell look healthy.

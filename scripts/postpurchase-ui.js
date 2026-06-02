@@ -206,7 +206,7 @@
       reprintHistoryByKey: state.reprintHistoryByKey,
       reprintPendingKeys: state.reprintPendingKeys,
       stats: state.S.postPurchaseStats,
-      toFileHref: PdfOpen.uncToFileHref,
+      toPdfHref: PdfOpen.buildPdfProxyUrl,
     };
   }
 
@@ -639,12 +639,10 @@
         button.disabled = false;
       });
     });
-    wrap.querySelectorAll('[data-open-pdf-path]').forEach((button) => {
+    wrap.querySelectorAll('[data-open-pdf-url]').forEach((button) => {
       button.addEventListener('click', () => {
-        PdfOpen.openPdfPath({
-          path: button.dataset.openPdfPath || '',
-          fileHref: button.dataset.openPdfHref || '',
-          fetchImpl: state.fetchImpl,
+        PdfOpen.openPdfUrl({
+          url: button.dataset.openPdfUrl || '',
           showToast: state.showToast,
         });
       });

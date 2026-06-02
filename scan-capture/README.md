@@ -43,6 +43,11 @@ Neon writes happen only after the operator clicks **Hotovo / Odeslat do PrintGua
   - server-side only; never expose it to the browser
   - legacy aliases `DATABASE_URL` and `NETLIFY_DATABASE_URL` also work if aligned with `NEON_DATABASE_URL`
 
+- `PRINTGUARD_PDF_ROOT`
+  - default: `\\NAS01\Data\onyx\prints`
+  - used by `GET /pdf-open` on the print server
+  - only PDFs under this root are served
+
 ## JSONL files
 
 One file per day:
@@ -87,6 +92,10 @@ Start the server on the print server. For the HTTPS deployment behind Caddy, use
 Health check:
 
 `https://printguard-scan.dgfc.local/health`
+
+PDF proxy:
+
+`https://printguard-scan.dgfc.local/pdf-open?orderName=PS123456&fileIndex=0`
 
 If you need direct LAN access without Caddy for a temporary test only, set `PRINTGUARD_SCAN_HOST=0.0.0.0` before starting Node and use:
 
