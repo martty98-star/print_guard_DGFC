@@ -1,0 +1,54 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintGuard - 04 Operations runbook</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell"><div class="print-note">Otevři v prohlížeči a tiskni jako A4. Doporučení: Scale 100 %, Background graphics ON.</div><main class="doc">
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">04 · Provozní runbook</div><div class="h2">Scheduled jobs a stroje</div></div><div class="page-no">09</div></div>
+  <table class="table"><tr><th>Job</th><th>Runner</th><th>Env</th><th>Frekvence</th></tr>
+    <tr><td>PrintGuard Submit Tool Sync</td><td><code>C:\PrintGuard\SubmitTool-syncun-submit-tool-sync.bat</code></td><td><code>NEON_DATABASE_URL</code>, <code>SUBMIT_TOOL_LOG_ROOT</code></td><td>každých 5 minut</td></tr>
+    <tr><td>Colorado Pipeline</td><td><code>C:\PrintGuardun_colorado_pipeline.bat</code></td><td>DB env + <code>COLORADO_ACCOUNTING_ROOT</code></td><td>hourly window</td></tr>
+    <tr><td>Post Purchase sync</td><td><code>C:\PrintGuard\PostPurchaseun-postpurchase-sync.bat</code></td><td>Post Purchase API + DB env</td><td>dle nastavení</td></tr>
+  </table>
+  <div class="h3">Print server musí mít</div>
+  <ul class="checklist">
+    <li>Node.js + npm</li>
+    <li>správné Windows Machine ENV</li>
+    <li>přístup k NAS cestám</li>
+    <li>existující <code>C:\PrintGuard\logs</code></li>
+    <li>tasky spuštěné pod účtem s NAS právy</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · operations · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">04 · Provozní runbook</div><div class="h2">Cutover / migration checklist</div></div><div class="page-no">10</div></div>
+  <div class="callout"><strong>Model:</strong> jedna production DB. Po přepnutí na Frankfurt DB nesmí aktivní klienti a tasky zapisovat do staré Ohio DB.</div>
+  <ol>
+    <li>ověřit restore dat do nové Frankfurt DB</li>
+    <li>přepsat Netlify ENV: <code>NEON_DATABASE_URL</code> + legacy aliasy</li>
+    <li>redeploy Netlify s clear cache</li>
+    <li>přepsat Windows Machine ENV na print serveru</li>
+    <li>zkontrolovat <code>.env</code> soubory mimo Git</li>
+    <li>restartovat scheduled tasky / terminály</li>
+    <li>spustit smoke test v appce</li>
+    <li>sledovat starou Ohio DB, jestli se už neaktualizuje</li>
+  </ol>
+  <div class="h3">PowerShell kontroly</div>
+  <div class="code">[Environment]::GetEnvironmentVariable("NEON_DATABASE_URL","Machine")
+[Environment]::GetEnvironmentVariable("DATABASE_URL","Machine")
+[Environment]::GetEnvironmentVariable("NETLIFY_DATABASE_URL","Machine")
+Get-ChildItem C:\PrintGuard -Recurse -Force -Include ".env*"</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · operations · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">04 · Provozní runbook</div><div class="h2">Troubleshooting</div></div><div class="page-no">11</div></div>
+  <table class="table"><tr><th>Symptom</th><th>První kontrola</th><th>Pravděpodobná příčina</th></tr>
+    <tr><td>Netlify function 500</td><td>Function logs + ENV vars</td><td>chybí DB URL / VAPID / API token</td></tr>
+    <tr><td>Sync nejede</td><td><code>NEON_DATABASE_URL</code>, legacy aliases</td><td>stale DB alias nebo service worker cache</td></tr>
+    <tr><td>Submit Tool data nepřibývají</td><td>Task Scheduler + NAS path</td><td>task neběží / nemá NAS práva</td></tr>
+    <tr><td>Colorado logy nepřibývají</td><td>ColoradoAccounting folder + pipeline logs</td><td>parser/upsert fail nebo špatná machine ENV</td></tr>
+    <tr><td>Push nejde</td><td>VAPID public/private pair + subscription table</td><td>nesoulad klíčů / expired subscription</td></tr>
+    <tr><td>Reprint se zobrazuje samostatně</td><td><code>order_type = R</code> + pipeline view</td><td>reprint není namatchovaný na parent order</td></tr>
+  </table>
+  <div class="callout warn"><strong>Service worker:</strong> při podezření na cache problém vyčistit site data / unregister service worker a znovu načíst.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · operations · 3</span></div>
+</section>
+</main></div></body></html>

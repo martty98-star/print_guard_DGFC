@@ -1,0 +1,36 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintGuard - 05 Database appendix</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell"><div class="print-note">Otevři v prohlížeči a tiskni jako A4. Doporučení: Scale 100 %, Background graphics ON.</div><main class="doc">
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">05 · DB appendix</div><div class="h2">Hlavní tabulky</div></div><div class="page-no">12</div></div>
+  <table class="table"><tr><th>Skupina</th><th>Tabulky</th><th>Účel</th></tr>
+    <tr><td>Stock</td><td><code>pg_items</code>, <code>pg_movements</code>, <code>pg_co_records</code></td><td>sklad, pohyby, Colorado stavové záznamy</td></tr>
+    <tr><td>Print accounting</td><td><code>print_accounting_rows</code>, <code>print_accounting_acl_files</code></td><td>CSV/ACL logy z Colorada</td></tr>
+    <tr><td>Order pipeline</td><td><code>print_orders_received</code>, <code>processed_print_orders</code>, <code>processed_order_reprint_requests</code></td><td>API orders, processed XML, reprinty</td></tr>
+    <tr><td>Checklist</td><td><code>checklist_tasks</code>, <code>checklist_reminder_state</code>, <code>checklist_occurrence_completion</code></td><td>úkoly, připomínky, audit splnění</td></tr>
+    <tr><td>Push</td><td><code>push_subscriptions</code>, <code>push_notification_state</code></td><td>registrace zařízení, dedupe notifikací</td></tr>
+    <tr><td>Views</td><td><code>v_print_log_rows</code>, <code>v_print_log_daily</code>, <code>v_print_order_pipeline</code></td><td>read modely pro UI a reporty</td></tr>
+  </table>
+  <div class="callout"><strong>Neon auth schema:</strong> <code>neon_auth.*</code> existuje v DB, ale není hlavní provozní datový model PrintGuardu.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · database · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">05 · DB appendix</div><div class="h2">Důležité primární klíče a dedupe</div></div><div class="page-no">13</div></div>
+  <table class="table"><tr><th>Tabulka</th><th>Klíč / dedupe</th><th>Poznámka</th></tr>
+    <tr><td><code>pg_items</code></td><td><code>article_number</code></td><td>jedna položka skladu</td></tr>
+    <tr><td><code>pg_movements</code></td><td><code>id</code></td><td>skladový pohyb</td></tr>
+    <tr><td><code>pg_co_records</code></td><td><code>id</code></td><td>Colorado lifetime / state record</td></tr>
+    <tr><td><code>print_accounting_rows</code></td><td><code>dedupe_key</code> unique</td><td>brání duplicitám z CSV/ACL importu</td></tr>
+    <tr><td><code>processed_print_orders</code></td><td><code>order_key</code> unique</td><td>processed XML order identity</td></tr>
+    <tr><td><code>checklist_occurrence_completion</code></td><td><code>occurrence_key</code></td><td>jedno splnění jednoho occurrence</td></tr>
+    <tr><td><code>push_subscriptions</code></td><td><code>endpoint</code> unique</td><td>jedna browser push subscription</td></tr>
+  </table>
+  <div class="h3">Budoucí DB práce</div>
+  <ul>
+    <li>normalizovat DB env aliasy v kódu na jeden canonical název</li>
+    <li>přejít z full sync na delta sync až bude stabilní kontrakt</li>
+    <li>držet SQL migrace v repozitáři jako source of truth</li>
+    <li>neoptimalizovat indexy naslepo, řešit podle pomalých endpointů</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · database · 2</span></div>
+</section>
+</main></div></body></html>

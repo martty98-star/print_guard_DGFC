@@ -1,0 +1,42 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintGuard - 01 Management overview</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell"><div class="print-note">Otevři v prohlížeči a tiskni jako A4. Doporučení: Scale 100 %, Background graphics ON.</div><main class="doc">
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">01 · Management overview</div><div class="h2">Co PrintGuard řeší</div></div><div class="page-no">01</div></div>
+  <p class="lead">PrintGuard propojuje provozní data z tisku, skladu, checklistů a externích systémů do jednoho interního nástroje pro rychlé rozhodování a kontrolu výroby.</p>
+  <div class="grid2" style="margin-top:12px">
+    <div class="card"><h4>Stock & inventory</h4><p>Pohyby materiálu, stavy skladu, alerty na kritické položky a audit změn.</p></div>
+    <div class="card"><h4>Print log</h4><p>Colorado CSV/ACL accounting, délky tisku, job statusy a historický reporting.</p></div>
+    <div class="card"><h4>Submit / processed orders</h4><p>Processed XML z NAS, pipeline orderů, reprinty a vazba na původní zakázku.</p></div>
+    <div class="card"><h4>Checklist & push</h4><p>Provozní checklisty, splnění úkolů, připomínky a push notifikace.</p></div>
+  </div>
+  <div class="h3">Praktický efekt</div>
+  <ul>
+    <li>méně ručního dohledávání v NAS / Submit Tool / Onyx / Colorado logách</li>
+    <li>lepší kontrola, jestli se order poslal, zpracoval a vytiskl</li>
+    <li>auditní stopa pro checklisty a reprinty</li>
+    <li>nižší riziko provozní slepoty při chybách v print procesu</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · management · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">01 · Management overview</div><div class="h2">Produktový stav</div></div><div class="page-no">02</div></div>
+  <div class="grid3">
+    <div class="metric"><strong>Interní</strong><span>DGFC tooling</span></div>
+    <div class="metric"><strong>Offline-first</strong><span>PWA + IndexedDB</span></div>
+    <div class="metric"><strong>Server-side</strong><span>Netlify + Windows scripts</span></div>
+  </div>
+  <div class="h3">Současný charakter systému</div>
+  <p>PrintGuard už není jednoduchý prototyp. Je to interní provozní systém napojený na databázi, NAS, Netlify Functions, Windows Task Scheduler, Post Purchase API, Submit Tool logy a Colorado accounting.</p>
+  <div class="callout ok"><strong>Doporučený režim vývoje:</strong> feature freeze pro nové nápady, prioritně stabilizace, dokumentace, env cleanup, DB governance a release workflow.</div>
+  <div class="h3">Hlavní závislosti</div>
+  <div class="flow"><div class="node">Browser PWA</div><div class="arrow">→</div><div class="node">Netlify Functions</div><div class="arrow">→</div><div class="node">Neon PostgreSQL</div><div class="arrow">↔</div><div class="node">Windows/NAS pipelines</div></div>
+  <div class="h3">Business risk</div>
+  <ul>
+    <li>bez správně nastavených ENV proměnných část funkcí selže</li>
+    <li>stará DB connection může způsobit split-brain mezi Ohio a Frankfurt DB</li>
+    <li>scheduled task bez NAS práv nebude ingestovat data</li>
+    <li>service worker může dočasně skrýt rozbitý deploy cacheovanou verzí appky</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · management · 2</span></div>
+</section>
+</main></div></body></html>

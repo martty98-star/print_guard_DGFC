@@ -35,8 +35,10 @@ function readBody(req) {
 }
 
 function isAllowedPdfPath(value) {
-  const raw = String(value || '').trim();
+  const raw = String(value || '').trim().replace(/\//g, '\\');
+
   if (!raw || !/\.pdf$/i.test(raw)) return false;
+
   return /^\\\\[^\\]+\\Data\\onyx\\prints\\/i.test(raw) ||
     /^\\\\10\.25\.0\.20\\Data\\onyx\\prints\\/i.test(raw);
 }

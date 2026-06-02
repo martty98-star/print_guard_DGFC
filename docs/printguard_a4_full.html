@@ -1,0 +1,240 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintGuard A4 Documentation - Full</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell"><div class="print-note">Otevři v prohlížeči a tiskni jako A4. Doporučení: Scale 100 %, Background graphics ON.</div><main class="doc">
+<section class="page">
+  <div class="kicker">Interní dokumentace · A4 printable</div>
+  <div class="h1">PrintGuard</div>
+  <p class="lead">Offline-first produkční helper aplikace pro DGFC print operations. Dokument shrnuje účel systému, architekturu, konfiguraci, provozní procesy, DB závislosti a základní recovery postupy.</p>
+  <div class="grid3" style="margin-top:18px">
+    <div class="metric"><strong>PWA</strong><span>frontend</span></div>
+    <div class="metric"><strong>Neon</strong><span>PostgreSQL DB</span></div>
+    <div class="metric"><strong>Netlify</strong><span>backend functions</span></div>
+  </div>
+  <div class="callout" style="margin-top:18px"><strong>Účel:</strong> sjednotit sklad, print logy, Submit Tool / processed XML, reprint workflow, checklisty a notifikace do jednoho provozního nástroje.</div>
+  <div class="meta">Verze dokumentace: 2026-05-18 · Zdroj: README, ARCHITECTURE, configuration.generated, database-schema.generated</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · cover</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">Obsah</div><div class="h2">Dokumentační části</div></div><div class="page-no">00</div></div>
+  <div class="toc">
+    <a href="01_management_overview.html">01 Management overview <span>hodnota, scope, rizika</span></a>
+    <a href="02_technical_architecture.html">02 Technická architektura <span>frontend, backend, datové toky</span></a>
+    <a href="03_configuration_security.html">03 Konfigurace a zabezpečení <span>env vars, secrets, ownership</span></a>
+    <a href="04_operations_runbook.html">04 Provozní runbook <span>tasky, sync, checklisty, troubleshooting</span></a>
+    <a href="05_database_appendix.html">05 DB a schema appendix <span>tabulky, views, canonical data</span></a>
+  </div>
+  <div class="callout warn"><strong>Poznámka:</strong> dokument neobsahuje reálné hodnoty secretů. Uvádí pouze názvy proměnných, jejich účel a místo konfigurace.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · contents</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">01 · Management overview</div><div class="h2">Co PrintGuard řeší</div></div><div class="page-no">01</div></div>
+  <p class="lead">PrintGuard propojuje provozní data z tisku, skladu, checklistů a externích systémů do jednoho interního nástroje pro rychlé rozhodování a kontrolu výroby.</p>
+  <div class="grid2" style="margin-top:12px">
+    <div class="card"><h4>Stock & inventory</h4><p>Pohyby materiálu, stavy skladu, alerty na kritické položky a audit změn.</p></div>
+    <div class="card"><h4>Print log</h4><p>Colorado CSV/ACL accounting, délky tisku, job statusy a historický reporting.</p></div>
+    <div class="card"><h4>Submit / processed orders</h4><p>Processed XML z NAS, pipeline orderů, reprinty a vazba na původní zakázku.</p></div>
+    <div class="card"><h4>Checklist & push</h4><p>Provozní checklisty, splnění úkolů, připomínky a push notifikace.</p></div>
+  </div>
+  <div class="h3">Praktický efekt</div>
+  <ul>
+    <li>méně ručního dohledávání v NAS / Submit Tool / Onyx / Colorado logách</li>
+    <li>lepší kontrola, jestli se order poslal, zpracoval a vytiskl</li>
+    <li>auditní stopa pro checklisty a reprinty</li>
+    <li>nižší riziko provozní slepoty při chybách v print procesu</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · management · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">01 · Management overview</div><div class="h2">Produktový stav</div></div><div class="page-no">02</div></div>
+  <div class="grid3">
+    <div class="metric"><strong>Interní</strong><span>DGFC tooling</span></div>
+    <div class="metric"><strong>Offline-first</strong><span>PWA + IndexedDB</span></div>
+    <div class="metric"><strong>Server-side</strong><span>Netlify + Windows scripts</span></div>
+  </div>
+  <div class="h3">Současný charakter systému</div>
+  <p>PrintGuard už není jednoduchý prototyp. Je to interní provozní systém napojený na databázi, NAS, Netlify Functions, Windows Task Scheduler, Post Purchase API, Submit Tool logy a Colorado accounting.</p>
+  <div class="callout ok"><strong>Doporučený režim vývoje:</strong> feature freeze pro nové nápady, prioritně stabilizace, dokumentace, env cleanup, DB governance a release workflow.</div>
+  <div class="h3">Hlavní závislosti</div>
+  <div class="flow"><div class="node">Browser PWA</div><div class="arrow">→</div><div class="node">Netlify Functions</div><div class="arrow">→</div><div class="node">Neon PostgreSQL</div><div class="arrow">↔</div><div class="node">Windows/NAS pipelines</div></div>
+  <div class="h3">Business risk</div>
+  <ul>
+    <li>bez správně nastavených ENV proměnných část funkcí selže</li>
+    <li>stará DB connection může způsobit split-brain mezi Ohio a Frankfurt DB</li>
+    <li>scheduled task bez NAS práv nebude ingestovat data</li>
+    <li>service worker může dočasně skrýt rozbitý deploy cacheovanou verzí appky</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · management · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">02 · Technická architektura</div><div class="h2">Runtime shape</div></div><div class="page-no">03</div></div>
+  <div class="grid2">
+    <div class="card"><h4>Frontend</h4><p>Classic-script vanilla JS PWA. Shell je v <code>index.html</code>, orchestraci stále částečně drží <code>app.js</code>, nové části jsou v <code>app/</code>, <code>scripts/</code> a <code>reports/</code>.</p></div>
+    <div class="card"><h4>Backend</h4><p>Netlify Functions pro HTTP API. Sdílené helpery jsou v <code>netlify/functions/_lib/</code>.</p></div>
+    <div class="card"><h4>Database</h4><p>Neon PostgreSQL. Persistují se sklad, Colorado záznamy, print accounting, processed ordery, push subscriptions a checklist audit.</p></div>
+    <div class="card"><h4>Server pipelines</h4><p>Windows/Node/PowerShell skripty pro NAS, Submit Tool, Post Purchase a Colorado accounting.</p></div>
+  </div>
+  <div class="h3">Základní datový tok</div>
+  <div class="flow"><div class="node">UI</div><div class="arrow">→</div><div class="node">IndexedDB</div><div class="arrow">→</div><div class="node">Sync</div><div class="arrow">→</div><div class="node">Netlify</div><div class="arrow">→</div><div class="node">Neon</div></div>
+  <div class="callout"><strong>Aktuální optimalizace:</strong> background sync už není timer-driven. Automaticky běží jen pokud je tab visible, browser online a existuje local dirty reason.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · architecture · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">02 · Technická architektura</div><div class="h2">Modularizace frontend části</div></div><div class="page-no">04</div></div>
+  <table class="table"><tr><th>Oblast</th><th>Moduly</th><th>Role</th></tr>
+    <tr><td>Bootstrap / core</td><td><code>app/config.js</code>, <code>app/db.js</code>, <code>app/utils.js</code></td><td>konfigurace, IndexedDB, helpery</td></tr>
+    <tr><td>Auth / navigation</td><td><code>app/admin-auth.js</code>, <code>app/navigation.js</code></td><td>role, routing, mode switching</td></tr>
+    <tr><td>Sync / push</td><td><code>app/sync.js</code>, <code>app/push.js</code>, <code>app/push-bridge.js</code></td><td>cloud sync, dirty flags, notifications</td></tr>
+    <tr><td>Feature slices</td><td><code>scripts/stock-*</code>, <code>checklist-*</code>, <code>order-pipeline-*</code></td><td>UI a business části mimo app.js</td></tr>
+    <tr><td>Domain reports</td><td><code>reports/stock.js</code>, <code>reports/colorado.js</code>, <code>reports/checklist-domain.js</code></td><td>čistší výpočty bez DOM vazby</td></tr>
+  </table>
+  <div class="callout ok"><strong>Doporučení:</strong> pokračovat po feature boundary. Ne přesunout 25 věcí najednou. TS migrace až po stabilních JS modulech.</div>
+  <div class="h3">Další bezpečný směr</div>
+  <ul>
+    <li>nepřidávat nové feature do <code>app.js</code></li>
+    <li>novou domain logiku psát jako izolovaný modul</li>
+    <li>UI moduly držet odděleně od DB/API normalizace</li>
+    <li>TypeScript nejdřív pro domain / API DTO / normalizaci, ne pro celé UI</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · architecture · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">02 · Technická architektura</div><div class="h2">Hlavní integrační toky</div></div><div class="page-no">05</div></div>
+  <div class="card soft"><h4>Stock / inventory</h4><div class="flow"><div class="node">IndexedDB</div><div class="arrow">→</div><div class="node">/.netlify/functions/sync</div><div class="arrow">→</div><div class="node">pg_items / pg_movements</div></div></div>
+  <div class="card soft"><h4>Processed orders</h4><div class="flow"><div class="node">NAS processed XML</div><div class="arrow">→</div><div class="node">sync-processed-print-orders</div><div class="arrow">→</div><div class="node">processed_print_orders</div></div></div>
+  <div class="card soft"><h4>Colorado print log</h4><div class="flow"><div class="node">Colorado CSV/ACL</div><div class="arrow">→</div><div class="node">PowerShell parser</div><div class="arrow">→</div><div class="node">print_accounting_rows</div></div></div>
+  <div class="card soft"><h4>Checklist + push</h4><div class="flow"><div class="node">Checklist UI</div><div class="arrow">→</div><div class="node">checklist functions</div><div class="arrow">→</div><div class="node">completion/reminder tables</div><div class="arrow">→</div><div class="node">Web Push</div></div></div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · architecture · 3</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">03 · Konfigurace a zabezpečení</div><div class="h2">Canonical ENV variables</div></div><div class="page-no">06</div></div>
+  <div class="callout warn"><strong>Pravidlo:</strong> reálné secrets nepatří do Gitu, HTML, frontend JS ani dokumentace. Dokumentovat názvy, účel a umístění; hodnoty držet v Netlify ENV / Windows Machine ENV.</div>
+  <table class="table"><tr><th>Skupina</th><th>Proměnné</th><th>Kde</th></tr>
+    <tr><td>Database</td><td><code>NEON_DATABASE_URL</code>, legacy <code>DATABASE_URL</code>, <code>NETLIFY_DATABASE_URL</code></td><td>Netlify, lokální PC, print server</td></tr>
+    <tr><td>Admin</td><td><code>ADMIN_API_KEY</code>, <code>ADMIN_PIN</code>, <code>POSTPURCHASE_OPERATOR_PIN</code></td><td>Netlify</td></tr>
+    <tr><td>Post Purchase</td><td><code>POST_PURCHASE_API_BASE_URL</code>, <code>POST_PURCHASE_API_TOKEN</code>, <code>POST_PURCHASE_API_ORDERS_PATH</code>, <code>POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE</code></td><td>Netlify / server scripts</td></tr>
+    <tr><td>Push</td><td><code>VAPID_PUBLIC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, <code>VAPID_SUBJECT</code></td><td>public key frontend, private key Netlify</td></tr>
+    <tr><td>Server paths</td><td><code>SUBMIT_TOOL_LOG_ROOT</code>, <code>PROCESSED_PRINT_ORDERS_ROOT</code>, <code>COLORADO_ACCOUNTING_ROOT</code></td><td>Windows print server</td></tr>
+  </table>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · config · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">03 · Konfigurace a zabezpečení</div><div class="h2">Security posture</div></div><div class="page-no">07</div></div>
+  <div class="grid2">
+    <div class="card"><h4>Dobře</h4><ul><li>DB connection není ve frontendu</li><li>backend operace jdou přes Netlify Functions</li><li>VAPID private key zůstává server-side</li><li>admin endpointy mají server-side guard</li></ul></div>
+    <div class="card"><h4>Slabší místa</h4><ul><li>není OAuth / Entra ID</li><li>admin PIN není enterprise identity</li><li>legacy DB aliasy můžou ukazovat na starou DB</li><li>service worker cache může mást při deployi</li></ul></div>
+  </div>
+  <div class="h3">Minimální provozní pravidla</div>
+  <ul class="checklist">
+    <li>Netlify ENV držet ve firemním účtu</li>
+    <li>Frankfurt Neon DB je canonical production DB</li>
+    <li>všechny DB aliasy musí ukazovat na stejnou DB, dokud nejsou odstraněné</li>
+    <li>po migraci sledovat starou DB, jestli se do ní stále nezapisuje</li>
+    <li>nepouštět scheduled tasky pod účtem bez NAS přístupu</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · config · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">03 · Konfigurace a zabezpečení</div><div class="h2">Netlify setup checklist</div></div><div class="page-no">08</div></div>
+  <div class="grid2">
+    <div class="card"><h4>Required</h4><ul><li><code>NEON_DATABASE_URL</code></li><li><code>ADMIN_API_KEY</code></li><li><code>ADMIN_PIN</code></li><li><code>POSTPURCHASE_OPERATOR_PIN</code></li><li><code>POST_PURCHASE_API_BASE_URL</code></li><li><code>POST_PURCHASE_API_TOKEN</code></li><li><code>VAPID_PUBLIC_KEY</code></li><li><code>VAPID_PRIVATE_KEY</code></li><li><code>VAPID_SUBJECT</code></li></ul></div>
+    <div class="card"><h4>Compatibility během cutover</h4><ul><li><code>DATABASE_URL</code></li><li><code>NETLIFY_DATABASE_URL</code></li></ul><p class="small">Dokud část kódu čte legacy aliasy, držet je zarovnané na stejnou Frankfurt DB.</p></div>
+  </div>
+  <div class="callout crit"><strong>Nekonfigurovat:</strong> žádné reálné secrety v <code>index.html</code>, <code>app.js</code>, README, screenshots nebo Git commitech.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · config · 3</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">04 · Provozní runbook</div><div class="h2">Scheduled jobs a stroje</div></div><div class="page-no">09</div></div>
+  <table class="table"><tr><th>Job</th><th>Runner</th><th>Env</th><th>Frekvence</th></tr>
+    <tr><td>PrintGuard Submit Tool Sync</td><td><code>C:\PrintGuard\SubmitTool-syncun-submit-tool-sync.bat</code></td><td><code>NEON_DATABASE_URL</code>, <code>SUBMIT_TOOL_LOG_ROOT</code></td><td>každých 5 minut</td></tr>
+    <tr><td>Colorado Pipeline</td><td><code>C:\PrintGuardun_colorado_pipeline.bat</code></td><td>DB env + <code>COLORADO_ACCOUNTING_ROOT</code></td><td>hourly window</td></tr>
+    <tr><td>Post Purchase sync</td><td><code>C:\PrintGuard\PostPurchaseun-postpurchase-sync.bat</code></td><td>Post Purchase API + DB env</td><td>dle nastavení</td></tr>
+  </table>
+  <div class="h3">Print server musí mít</div>
+  <ul class="checklist">
+    <li>Node.js + npm</li>
+    <li>správné Windows Machine ENV</li>
+    <li>přístup k NAS cestám</li>
+    <li>existující <code>C:\PrintGuard\logs</code></li>
+    <li>tasky spuštěné pod účtem s NAS právy</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · operations · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">04 · Provozní runbook</div><div class="h2">Cutover / migration checklist</div></div><div class="page-no">10</div></div>
+  <div class="callout"><strong>Model:</strong> jedna production DB. Po přepnutí na Frankfurt DB nesmí aktivní klienti a tasky zapisovat do staré Ohio DB.</div>
+  <ol>
+    <li>ověřit restore dat do nové Frankfurt DB</li>
+    <li>přepsat Netlify ENV: <code>NEON_DATABASE_URL</code> + legacy aliasy</li>
+    <li>redeploy Netlify s clear cache</li>
+    <li>přepsat Windows Machine ENV na print serveru</li>
+    <li>zkontrolovat <code>.env</code> soubory mimo Git</li>
+    <li>restartovat scheduled tasky / terminály</li>
+    <li>spustit smoke test v appce</li>
+    <li>sledovat starou Ohio DB, jestli se už neaktualizuje</li>
+  </ol>
+  <div class="h3">PowerShell kontroly</div>
+  <div class="code">[Environment]::GetEnvironmentVariable("NEON_DATABASE_URL","Machine")
+[Environment]::GetEnvironmentVariable("DATABASE_URL","Machine")
+[Environment]::GetEnvironmentVariable("NETLIFY_DATABASE_URL","Machine")
+Get-ChildItem C:\PrintGuard -Recurse -Force -Include ".env*"</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · operations · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">04 · Provozní runbook</div><div class="h2">Troubleshooting</div></div><div class="page-no">11</div></div>
+  <table class="table"><tr><th>Symptom</th><th>První kontrola</th><th>Pravděpodobná příčina</th></tr>
+    <tr><td>Netlify function 500</td><td>Function logs + ENV vars</td><td>chybí DB URL / VAPID / API token</td></tr>
+    <tr><td>Sync nejede</td><td><code>NEON_DATABASE_URL</code>, legacy aliases</td><td>stale DB alias nebo service worker cache</td></tr>
+    <tr><td>Submit Tool data nepřibývají</td><td>Task Scheduler + NAS path</td><td>task neběží / nemá NAS práva</td></tr>
+    <tr><td>Colorado logy nepřibývají</td><td>ColoradoAccounting folder + pipeline logs</td><td>parser/upsert fail nebo špatná machine ENV</td></tr>
+    <tr><td>Push nejde</td><td>VAPID public/private pair + subscription table</td><td>nesoulad klíčů / expired subscription</td></tr>
+    <tr><td>Reprint se zobrazuje samostatně</td><td><code>order_type = R</code> + pipeline view</td><td>reprint není namatchovaný na parent order</td></tr>
+  </table>
+  <div class="callout warn"><strong>Service worker:</strong> při podezření na cache problém vyčistit site data / unregister service worker a znovu načíst.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · operations · 3</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">05 · DB appendix</div><div class="h2">Hlavní tabulky</div></div><div class="page-no">12</div></div>
+  <table class="table"><tr><th>Skupina</th><th>Tabulky</th><th>Účel</th></tr>
+    <tr><td>Stock</td><td><code>pg_items</code>, <code>pg_movements</code>, <code>pg_co_records</code></td><td>sklad, pohyby, Colorado stavové záznamy</td></tr>
+    <tr><td>Print accounting</td><td><code>print_accounting_rows</code>, <code>print_accounting_acl_files</code></td><td>CSV/ACL logy z Colorada</td></tr>
+    <tr><td>Order pipeline</td><td><code>print_orders_received</code>, <code>processed_print_orders</code>, <code>processed_order_reprint_requests</code></td><td>API orders, processed XML, reprinty</td></tr>
+    <tr><td>Checklist</td><td><code>checklist_tasks</code>, <code>checklist_reminder_state</code>, <code>checklist_occurrence_completion</code></td><td>úkoly, připomínky, audit splnění</td></tr>
+    <tr><td>Push</td><td><code>push_subscriptions</code>, <code>push_notification_state</code></td><td>registrace zařízení, dedupe notifikací</td></tr>
+    <tr><td>Views</td><td><code>v_print_log_rows</code>, <code>v_print_log_daily</code>, <code>v_print_order_pipeline</code></td><td>read modely pro UI a reporty</td></tr>
+  </table>
+  <div class="callout"><strong>Neon auth schema:</strong> <code>neon_auth.*</code> existuje v DB, ale není hlavní provozní datový model PrintGuardu.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · database · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">05 · DB appendix</div><div class="h2">Důležité primární klíče a dedupe</div></div><div class="page-no">13</div></div>
+  <table class="table"><tr><th>Tabulka</th><th>Klíč / dedupe</th><th>Poznámka</th></tr>
+    <tr><td><code>pg_items</code></td><td><code>article_number</code></td><td>jedna položka skladu</td></tr>
+    <tr><td><code>pg_movements</code></td><td><code>id</code></td><td>skladový pohyb</td></tr>
+    <tr><td><code>pg_co_records</code></td><td><code>id</code></td><td>Colorado lifetime / state record</td></tr>
+    <tr><td><code>print_accounting_rows</code></td><td><code>dedupe_key</code> unique</td><td>brání duplicitám z CSV/ACL importu</td></tr>
+    <tr><td><code>processed_print_orders</code></td><td><code>order_key</code> unique</td><td>processed XML order identity</td></tr>
+    <tr><td><code>checklist_occurrence_completion</code></td><td><code>occurrence_key</code></td><td>jedno splnění jednoho occurrence</td></tr>
+    <tr><td><code>push_subscriptions</code></td><td><code>endpoint</code> unique</td><td>jedna browser push subscription</td></tr>
+  </table>
+  <div class="h3">Budoucí DB práce</div>
+  <ul>
+    <li>normalizovat DB env aliasy v kódu na jeden canonical název</li>
+    <li>přejít z full sync na delta sync až bude stabilní kontrakt</li>
+    <li>držet SQL migrace v repozitáři jako source of truth</li>
+    <li>neoptimalizovat indexy naslepo, řešit podle pomalých endpointů</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · database · 2</span></div>
+</section>
+</main></div></body></html>

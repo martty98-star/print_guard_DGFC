@@ -1,0 +1,44 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintGuard - 02 Technical architecture</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell"><div class="print-note">Otevři v prohlížeči a tiskni jako A4. Doporučení: Scale 100 %, Background graphics ON.</div><main class="doc">
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">02 · Technická architektura</div><div class="h2">Runtime shape</div></div><div class="page-no">03</div></div>
+  <div class="grid2">
+    <div class="card"><h4>Frontend</h4><p>Classic-script vanilla JS PWA. Shell je v <code>index.html</code>, orchestraci stále částečně drží <code>app.js</code>, nové části jsou v <code>app/</code>, <code>scripts/</code> a <code>reports/</code>.</p></div>
+    <div class="card"><h4>Backend</h4><p>Netlify Functions pro HTTP API. Sdílené helpery jsou v <code>netlify/functions/_lib/</code>.</p></div>
+    <div class="card"><h4>Database</h4><p>Neon PostgreSQL. Persistují se sklad, Colorado záznamy, print accounting, processed ordery, push subscriptions a checklist audit.</p></div>
+    <div class="card"><h4>Server pipelines</h4><p>Windows/Node/PowerShell skripty pro NAS, Submit Tool, Post Purchase a Colorado accounting.</p></div>
+  </div>
+  <div class="h3">Základní datový tok</div>
+  <div class="flow"><div class="node">UI</div><div class="arrow">→</div><div class="node">IndexedDB</div><div class="arrow">→</div><div class="node">Sync</div><div class="arrow">→</div><div class="node">Netlify</div><div class="arrow">→</div><div class="node">Neon</div></div>
+  <div class="callout"><strong>Aktuální optimalizace:</strong> background sync už není timer-driven. Automaticky běží jen pokud je tab visible, browser online a existuje local dirty reason.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · architecture · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">02 · Technická architektura</div><div class="h2">Modularizace frontend části</div></div><div class="page-no">04</div></div>
+  <table class="table"><tr><th>Oblast</th><th>Moduly</th><th>Role</th></tr>
+    <tr><td>Bootstrap / core</td><td><code>app/config.js</code>, <code>app/db.js</code>, <code>app/utils.js</code></td><td>konfigurace, IndexedDB, helpery</td></tr>
+    <tr><td>Auth / navigation</td><td><code>app/admin-auth.js</code>, <code>app/navigation.js</code></td><td>role, routing, mode switching</td></tr>
+    <tr><td>Sync / push</td><td><code>app/sync.js</code>, <code>app/push.js</code>, <code>app/push-bridge.js</code></td><td>cloud sync, dirty flags, notifications</td></tr>
+    <tr><td>Feature slices</td><td><code>scripts/stock-*</code>, <code>checklist-*</code>, <code>order-pipeline-*</code></td><td>UI a business části mimo app.js</td></tr>
+    <tr><td>Domain reports</td><td><code>reports/stock.js</code>, <code>reports/colorado.js</code>, <code>reports/checklist-domain.js</code></td><td>čistší výpočty bez DOM vazby</td></tr>
+  </table>
+  <div class="callout ok"><strong>Doporučení:</strong> pokračovat po feature boundary. Ne přesunout 25 věcí najednou. TS migrace až po stabilních JS modulech.</div>
+  <div class="h3">Další bezpečný směr</div>
+  <ul>
+    <li>nepřidávat nové feature do <code>app.js</code></li>
+    <li>novou domain logiku psát jako izolovaný modul</li>
+    <li>UI moduly držet odděleně od DB/API normalizace</li>
+    <li>TypeScript nejdřív pro domain / API DTO / normalizaci, ne pro celé UI</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · architecture · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">02 · Technická architektura</div><div class="h2">Hlavní integrační toky</div></div><div class="page-no">05</div></div>
+  <div class="card soft"><h4>Stock / inventory</h4><div class="flow"><div class="node">IndexedDB</div><div class="arrow">→</div><div class="node">/.netlify/functions/sync</div><div class="arrow">→</div><div class="node">pg_items / pg_movements</div></div></div>
+  <div class="card soft"><h4>Processed orders</h4><div class="flow"><div class="node">NAS processed XML</div><div class="arrow">→</div><div class="node">sync-processed-print-orders</div><div class="arrow">→</div><div class="node">processed_print_orders</div></div></div>
+  <div class="card soft"><h4>Colorado print log</h4><div class="flow"><div class="node">Colorado CSV/ACL</div><div class="arrow">→</div><div class="node">PowerShell parser</div><div class="arrow">→</div><div class="node">print_accounting_rows</div></div></div>
+  <div class="card soft"><h4>Checklist + push</h4><div class="flow"><div class="node">Checklist UI</div><div class="arrow">→</div><div class="node">checklist functions</div><div class="arrow">→</div><div class="node">completion/reminder tables</div><div class="arrow">→</div><div class="node">Web Push</div></div></div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · architecture · 3</span></div>
+</section>
+</main></div></body></html>

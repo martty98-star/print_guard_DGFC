@@ -1,0 +1,41 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintGuard - 03 Configuration and security</title><link rel="stylesheet" href="styles.css"></head><body><div class="shell"><div class="print-note">Otevři v prohlížeči a tiskni jako A4. Doporučení: Scale 100 %, Background graphics ON.</div><main class="doc">
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">03 · Konfigurace a zabezpečení</div><div class="h2">Canonical ENV variables</div></div><div class="page-no">06</div></div>
+  <div class="callout warn"><strong>Pravidlo:</strong> reálné secrets nepatří do Gitu, HTML, frontend JS ani dokumentace. Dokumentovat názvy, účel a umístění; hodnoty držet v Netlify ENV / Windows Machine ENV.</div>
+  <table class="table"><tr><th>Skupina</th><th>Proměnné</th><th>Kde</th></tr>
+    <tr><td>Database</td><td><code>NEON_DATABASE_URL</code>, legacy <code>DATABASE_URL</code>, <code>NETLIFY_DATABASE_URL</code></td><td>Netlify, lokální PC, print server</td></tr>
+    <tr><td>Admin</td><td><code>ADMIN_API_KEY</code>, <code>ADMIN_PIN</code>, <code>POSTPURCHASE_OPERATOR_PIN</code></td><td>Netlify</td></tr>
+    <tr><td>Post Purchase</td><td><code>POST_PURCHASE_API_BASE_URL</code>, <code>POST_PURCHASE_API_TOKEN</code>, <code>POST_PURCHASE_API_ORDERS_PATH</code>, <code>POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE</code></td><td>Netlify / server scripts</td></tr>
+    <tr><td>Push</td><td><code>VAPID_PUBLIC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, <code>VAPID_SUBJECT</code></td><td>public key frontend, private key Netlify</td></tr>
+    <tr><td>Server paths</td><td><code>SUBMIT_TOOL_LOG_ROOT</code>, <code>PROCESSED_PRINT_ORDERS_ROOT</code>, <code>COLORADO_ACCOUNTING_ROOT</code></td><td>Windows print server</td></tr>
+  </table>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · config · 1</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">03 · Konfigurace a zabezpečení</div><div class="h2">Security posture</div></div><div class="page-no">07</div></div>
+  <div class="grid2">
+    <div class="card"><h4>Dobře</h4><ul><li>DB connection není ve frontendu</li><li>backend operace jdou přes Netlify Functions</li><li>VAPID private key zůstává server-side</li><li>admin endpointy mají server-side guard</li></ul></div>
+    <div class="card"><h4>Slabší místa</h4><ul><li>není OAuth / Entra ID</li><li>admin PIN není enterprise identity</li><li>legacy DB aliasy můžou ukazovat na starou DB</li><li>service worker cache může mást při deployi</li></ul></div>
+  </div>
+  <div class="h3">Minimální provozní pravidla</div>
+  <ul class="checklist">
+    <li>Netlify ENV držet ve firemním účtu</li>
+    <li>Frankfurt Neon DB je canonical production DB</li>
+    <li>všechny DB aliasy musí ukazovat na stejnou DB, dokud nejsou odstraněné</li>
+    <li>po migraci sledovat starou DB, jestli se do ní stále nezapisuje</li>
+    <li>nepouštět scheduled tasky pod účtem bez NAS přístupu</li>
+  </ul>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · config · 2</span></div>
+</section>
+
+<section class="page compact">
+  <div class="page-title"><div><div class="kicker">03 · Konfigurace a zabezpečení</div><div class="h2">Netlify setup checklist</div></div><div class="page-no">08</div></div>
+  <div class="grid2">
+    <div class="card"><h4>Required</h4><ul><li><code>NEON_DATABASE_URL</code></li><li><code>ADMIN_API_KEY</code></li><li><code>ADMIN_PIN</code></li><li><code>POSTPURCHASE_OPERATOR_PIN</code></li><li><code>POST_PURCHASE_API_BASE_URL</code></li><li><code>POST_PURCHASE_API_TOKEN</code></li><li><code>VAPID_PUBLIC_KEY</code></li><li><code>VAPID_PRIVATE_KEY</code></li><li><code>VAPID_SUBJECT</code></li></ul></div>
+    <div class="card"><h4>Compatibility během cutover</h4><ul><li><code>DATABASE_URL</code></li><li><code>NETLIFY_DATABASE_URL</code></li></ul><p class="small">Dokud část kódu čte legacy aliasy, držet je zarovnané na stejnou Frankfurt DB.</p></div>
+  </div>
+  <div class="callout crit"><strong>Nekonfigurovat:</strong> žádné reálné secrety v <code>index.html</code>, <code>app.js</code>, README, screenshots nebo Git commitech.</div>
+  <div class="footer"><span class="brand">PRINTGUARD / DGFC</span><span>Interní dokumentace · config · 3</span></div>
+</section>
+</main></div></body></html>

@@ -14,15 +14,15 @@ Scope:
 Notes:
 - No real secret values were found in tracked source files.
 - The only concrete key-like value in the frontend is the public VAPID public key in `index.html`; it is intended to be public.
-- Several scripts still accept legacy DB aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`) after `NEON_DATABASE_URL`. Keep aliases unset or aligned until they are retired.
+- Several scripts still accept legacy DB aliases (`DATABASE_URL`, `NETLIFY_DATABASE_URL`). Keep them aligned until the code is normalized.
 
 ## 1. Required environment variables
 
 | Variable name | Required where | Used by files | Purpose | Required or optional | Safe to expose publicly? | Notes |
 |---|---|---|---|---|---|---|
-| `NEON_DATABASE_URL` | Netlify, local PC, print server, cron | `netlify/functions/save-subscription.js`, `send-app-notification.js`, `send-stock-alerts.js`, `send-test-push.js`; `netlify/functions/_lib/db.js`; `netlify/functions/sync.js`; `scripts/audit-db-schema.js`; `scripts/sync-submit-tool-logs.js`; `server-postpurchase/lib/db.js`; `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js`; `SubmitTool-sync/sync-submit-tool-logs.js` | Primary Neon/Postgres connection string | Required | No | Canonical DB variable and first DB source. Some code still falls back to legacy aliases only if this is missing. |
+| `NEON_DATABASE_URL` | Netlify, local PC, print server, cron | `netlify/functions/save-subscription.js`, `send-app-notification.js`, `send-stock-alerts.js`, `send-test-push.js`; `netlify/functions/_lib/db.js`; `scripts/audit-db-schema.js`; `scripts/sync-submit-tool-logs.js`; `server-postpurchase/lib/db.js`; `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js`; `SubmitTool-sync/sync-submit-tool-logs.js` | Primary Neon/Postgres connection string | Required | No | Canonical DB variable. Some code still falls back to legacy aliases. |
 | `DATABASE_URL` | Legacy compatibility on Netlify/local/print server | `netlify/functions/_lib/db.js`; `netlify/functions/print-log-arrivals.js`; `print-log-rows.js`; `print-log-summary.js`; `sync.js`; `scripts/audit-db-schema.js`; `server-postpurchase/lib/db.js`; `SubmitTool-sync/sync-submit-tool-logs.js`; `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js` | Legacy DB alias | Optional / legacy | No | Keep only while older code paths still reference it. |
-| `NETLIFY_DATABASE_URL` | Netlify compatibility | `netlify/functions/_lib/db.js`; `netlify/functions/print-log-arrivals.js`; `print-log-rows.js`; `print-log-summary.js`; `netlify/functions/sync.js`; `server-postpurchase/lib/db.js`; `SubmitTool-sync/sync-submit-tool-logs.js`; `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js` | Legacy DB alias used by older Netlify code | Optional / legacy | No | Legacy fallback after `NEON_DATABASE_URL` and `DATABASE_URL`. |
+| `NETLIFY_DATABASE_URL` | Netlify compatibility | `netlify/functions/_lib/db.js`; `netlify/functions/print-log-arrivals.js`; `print-log-rows.js`; `print-log-summary.js`; `netlify/functions/sync.js`; `server-postpurchase/lib/db.js`; `SubmitTool-sync/sync-submit-tool-logs.js`; `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js` | Legacy DB alias used by older Netlify code | Optional / legacy | No | `netlify/functions/sync.js` still expects this alias first. |
 | `ADMIN_API_KEY` | Netlify | `netlify/functions/_lib/db.js`; `netlify/functions/sync.js` | Server-to-server/internal admin auth | Required for admin endpoints | No | Do not expose to browser code, HTML, storage, or logs. |
 | `ADMIN_PIN` | Netlify, local PC/browser testing | `netlify/functions/_lib/db.js`; `netlify/functions/sync.js` | Browser admin mode PIN | Required for admin mode | No | Browser sends it as `x-admin-pin`. |
 | `POSTPURCHASE_OPERATOR_PIN` | Netlify | `netlify/functions/_lib/db.js` | Operator access PIN for Post Purchase workflows | Required if operator PIN access is used | No | Legacy fallback alias `POSTPURCHASE_PIN` also exists. |
@@ -45,11 +45,12 @@ Notes:
 
 ## 2. Secret inventory
 
-No real secret values were in tracked files. Only placeholders.
+No real secret values were found in tracked files. Only placeholders were found.
 
 | Name | File / location | Masked value | Action needed |
 |---|---|---|---|
 | `POST_PURCHASE_API_TOKEN` | `run-postpurchase-sync.bat`; `server-postpurchase/run-postpurchase-sync.bat` | `REPLACE_WITH_POST_PURCHASE_API_TOKEN` | Move to env; do not keep inline placeholders in production runners. |
+| `NEON_DATABASE_URL` | `run-postpurchase-sync.bat`; `server-postpurchase/run-postpurchase-sync.bat` | `REPLACE_WITH_NEON_DATABASE_URL` | Move to env; do not keep inline placeholders in production runners. |
 | `NEON_DATABASE_URL` example | `SubmitTool-sync/env.example.txt`; `README.md`; `server-postpurchase/README.md`; `SubmitTool-sync/README.md` | `postgresql://USER:PASSWORD@HOST/DB?sslmode=require` / `postgresql://...` / `PASTE_NEON_DATABASE_URL_HERE` | Keep as example only; do not commit a real connection string. |
 | `ADMIN_API_KEY` example | `README.md` | `long_random_server_key` | Keep as example only. |
 | `ADMIN_PIN` example | `README.md` | `human_admin_pin_or_password` | Keep as example only. |
@@ -94,10 +95,10 @@ Set these in the Netlify site that serves PrintGuard:
 - `VAPID_PRIVATE_KEY` — required for push delivery.
 - `VAPID_SUBJECT` — required for push delivery.
 
-Compatibility variables, only if an external platform still requires them. If present, keep them aligned with `NEON_DATABASE_URL`:
+Compatibility variables that should also be set until the code is normalized:
 
-- `DATABASE_URL`
-- `NETLIFY_DATABASE_URL`
+- `NETLIFY_DATABASE_URL` — still read by `netlify/functions/sync.js` and several shared DB helpers.
+- `DATABASE_URL` — still read by several shared DB helpers.
 
 Recommended, but not strictly required by every route:
 
@@ -158,9 +159,9 @@ If you are only auditing configuration, keep the environment read-only and avoid
 
 ### Mismatches and risks
 
-- DB helpers now prefer `NEON_DATABASE_URL` first, then legacy aliases. A stale alias can still be risky if `NEON_DATABASE_URL` is missing, so scheduled jobs and Netlify should set the canonical key.
-- `netlify/functions/_lib/db.js`, `server-postpurchase/lib/db.js`, `SubmitTool-sync/sync-submit-tool-logs.js`, and `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js` accept three DB aliases. That is convenient, but aliases must stay unset or aligned.
-- `run-postpurchase-sync.bat` and `server-postpurchase/run-postpurchase-sync.bat` read `NEON_DATABASE_URL` from the environment and fail if it is missing.
+- `netlify/functions/sync.js` still reads `NETLIFY_DATABASE_URL || DATABASE_URL` and does not read `NEON_DATABASE_URL`.
+- `netlify/functions/_lib/db.js`, `server-postpurchase/lib/db.js`, `SubmitTool-sync/sync-submit-tool-logs.js`, and `SERVER_BACKEND/script_server/colorado-upsert/upsert-colorado-json.js` accept three DB aliases. That is convenient, but it also allows stale values to keep pointing at the wrong database.
+- `run-postpurchase-sync.bat` and `server-postpurchase/run-postpurchase-sync.bat` hardcode placeholder env assignments. They override external env values until edited.
 - `run-submit-tool-sync.bat` and `run-processed-print-orders-sync.bat` are intentionally env-driven, but they will fail if the machine env is not set.
 - `index.html` hardcodes the public VAPID key. That is expected, but the matching private key must stay synchronized in Netlify.
 - No stale Ohio / `us-east` / `neon.tech` connection strings were found in tracked repo files.
