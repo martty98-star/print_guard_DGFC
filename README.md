@@ -175,7 +175,7 @@ The public key is embedded in `index.html`; the private key stays server-side in
 
 ## PDF opening
 
-Processed order PDF buttons now open through the local print-server helper endpoint at `https://printguard-scan.dgfc.local/pdf-open` instead of direct UNC/file links.
+Processed order PDF buttons now open through the local print-server helper endpoint at `https://printguard-scan.desenio.cz/pdf-open` instead of direct UNC/file links.
 
 Key setting:
 

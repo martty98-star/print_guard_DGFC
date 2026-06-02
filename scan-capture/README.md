@@ -87,15 +87,15 @@ That batch file sets:
 
 Start the server on the print server. For the HTTPS deployment behind Caddy, use:
 
-`https://printguard-scan.dgfc.local`
+`https://printguard-scan.desenio.cz`
 
 Health check:
 
-`https://printguard-scan.dgfc.local/health`
+`https://printguard-scan.desenio.cz/health`
 
 PDF proxy:
 
-`https://printguard-scan.dgfc.local/pdf-open?orderName=PS123456&fileIndex=0`
+`https://printguard-scan.desenio.cz/pdf-open?orderName=PS123456&fileIndex=0`
 
 If you need direct LAN access without Caddy for a temporary test only, set `PRINTGUARD_SCAN_HOST=0.0.0.0` before starting Node and use:
 
@@ -108,9 +108,9 @@ Use Caddy as the only user-facing endpoint for the scan UI. The Node server stay
 `scan-capture/Caddyfile`:
 
 ```caddyfile
-printguard-scan.dgfc.local {
-    tls internal
-    reverse_proxy 127.0.0.1:17910
+printguard-scan.desenio.cz {
+  tls internal
+  reverse_proxy 127.0.0.1:17910
 }
 ```
 
@@ -119,7 +119,7 @@ Recommended rollout on the print server:
 1. Start the Node server with `PRINTGUARD_SCAN_HOST=127.0.0.1`.
 2. Install Caddy and load `scan-capture/Caddyfile`.
 3. Open inbound firewall ports `80` and `443`.
-4. Ensure name resolution for `printguard-scan.dgfc.local` points to `10.25.0.15`.
+4. Ensure name resolution for `printguard-scan.desenio.cz` points to `10.25.0.15`.
 5. Trust Caddy's internal root CA on each operator PC before testing PWA installability.
 
 Firewall rules for Caddy:
@@ -132,7 +132,7 @@ New-NetFirewallRule -DisplayName "PrintGuard Scan Capture HTTPS" -Direction Inbo
 DNS or hosts mapping example:
 
 ```text
-10.25.0.15 printguard-scan.dgfc.local
+10.25.0.15 printguard-scan.desenio.cz
 ```
 
 Windows hosts file path:
@@ -164,13 +164,13 @@ Import-Certificate -FilePath "C:\path\to\root.crt" -CertStoreLocation Cert:\Loca
 Verification checklist:
 
 ```powershell
-Invoke-WebRequest https://printguard-scan.dgfc.local/health | Select-Object -ExpandProperty Content
-Invoke-WebRequest https://printguard-scan.dgfc.local/manifest.webmanifest | Select-Object -ExpandProperty Content
+Invoke-WebRequest https://printguard-scan.desenio.cz/health | Select-Object -ExpandProperty Content
+Invoke-WebRequest https://printguard-scan.desenio.cz/manifest.webmanifest | Select-Object -ExpandProperty Content
 ```
 
 Browser checks:
 
-- `https://printguard-scan.dgfc.local/health` returns JSON with `"ok": true`
+- `https://printguard-scan.desenio.cz/health` returns JSON with `"ok": true`
 - the page loads with a secure lock indicator
 - `manifest.webmanifest` loads without mixed-content errors
 - the service worker registers successfully

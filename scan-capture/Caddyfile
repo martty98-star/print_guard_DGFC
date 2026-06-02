@@ -1,4 +1,4 @@
-printguard-scan.dgfc.local {
+printguard-scan.desenio.cz {
     tls internal
     reverse_proxy 127.0.0.1:17910
 }

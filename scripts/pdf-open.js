@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const DEFAULT_PDF_PROXY_BASE = 'https://printguard-scan.dgfc.local';
+  const DEFAULT_PDF_PROXY_BASE = 'https://printguard-scan.desenio.cz';
 
   function getPdfProxyBase() {
     const configured = String(
