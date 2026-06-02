@@ -774,15 +774,11 @@
   <main id="screen-scan-capture" class="screen">
     <div class="screen-header">
       <h1>Scan objednávek</h1>
-      <div class="header-meta" id="scan-capture-status">Scan Capture backend</div>
+      <div class="header-meta" id="scan-capture-status">Lokální scan fronta</div>
     </div>
 
     <section class="settings-card scan-capture-card">
       <div class="scan-config-row">
-        <div class="form-group compact scan-api-base-field">
-          <label for="scan-api-base-input">Scan Capture API</label>
-          <input type="url" id="scan-api-base-input" class="input-sm" placeholder="http://10.25.0.15:17910" autocomplete="off">
-        </div>
         <div class="form-group compact">
           <label for="scan-operator-input">Operátor</label>
           <input type="text" id="scan-operator-input" class="input-sm" placeholder="Jméno" autocomplete="off">
@@ -790,6 +786,10 @@
         <div class="form-group compact">
           <label for="scan-station-input">Stanice</label>
           <input type="text" id="scan-station-input" class="input-sm" placeholder="SCAN-STATION-01" autocomplete="off">
+        </div>
+        <div class="form-group compact">
+          <label for="scan-postpurchase-pin">PIN pro odeslání</label>
+          <input type="password" id="scan-postpurchase-pin" class="input-sm" placeholder="PIN operátora" autocomplete="off">
         </div>
         <button class="btn-sm" id="scan-refresh-btn" type="button">Obnovit</button>
       </div>
@@ -800,26 +800,26 @@
       </div>
 
       <div class="metrics-grid scan-kpi-grid">
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-pending">0</span><span class="metric-unit">Pending scans</span><span class="metric-desc">čekají v NAS JSONL queue</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-pending">0</span><span class="metric-unit">Pending scans</span><span class="metric-desc">čekají v browser queue</span></div>
         <div class="metric-block"><span class="metric-big" id="scan-kpi-last">—</span><span class="metric-unit">Poslední barcode</span><span class="metric-desc">poslední scan v této obrazovce</span></div>
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-read">0</span><span class="metric-unit">Přečteno</span><span class="metric-desc">scany načtené z queue</span></div>
-        <div class="metric-block"><span class="metric-big" id="scan-kpi-committed">0</span><span class="metric-unit">Už commitnuto</span><span class="metric-desc">existuje v PrintGuard DB</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-read">0</span><span class="metric-unit">Lokální fronta</span><span class="metric-desc">uloženo v tomto prohlížeči</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-committed">0</span><span class="metric-unit">Poslední commit</span><span class="metric-desc">nově zapsáno do PrintGuardu</span></div>
       </div>
     </section>
 
     <section class="settings-card scan-capture-card">
       <div class="mc-header">
         <span class="mc-label">Commit do PrintGuardu</span>
-        <button class="btn-primary" id="scan-commit-btn" type="button">Hotovo · Odeslat do PrintGuardu</button>
+        <button class="btn-primary" id="scan-commit-btn" type="button">Odeslat do PrintGuardu</button>
       </div>
-      <div class="hint">Commit probíhá až po potvrzení operátorem. Do té doby scany zůstávají jako NAS JSONL queue.</div>
+      <div class="hint">Scany se nejdřív ukládají lokálně v prohlížeči. Do Neon DB se odešlou až po potvrzení operátorem.</div>
       <div id="scan-commit-result"></div>
     </section>
 
     <section class="settings-card scan-capture-card">
       <div class="mc-header">
         <span class="mc-label">Poslední scany</span>
-        <span class="mc-badge">/recent</span>
+        <span class="mc-badge">lokální queue</span>
       </div>
       <div id="scan-recent-list" class="scan-recent-list">
         <div class="loading-state"><div class="spinner"></div><p>Načítám scany…</p></div>
@@ -1136,8 +1136,8 @@
   <script src="scripts/daily-report-ui.js?v=8.0.10"></script>
   <script src="scripts/management-reporting-api.js?v=8.0.10"></script>
   <script src="scripts/management-reporting-ui.js?v=8.0.10"></script>
-  <script src="scripts/scan-capture-api.js?v=8.0.10"></script>
-  <script src="scripts/scan-capture-ui.js?v=8.0.10"></script>
+  <script src="scripts/scan-capture-api.js?v=8.0.12"></script>
+  <script src="scripts/scan-capture-ui.js?v=8.0.12"></script>
   <script src="app/db.js?v=8.0.10"></script>
   <script src="app/settings-store.js?v=8.0.10"></script>
   <script src="app/push-bridge.js?v=8.0.10"></script>

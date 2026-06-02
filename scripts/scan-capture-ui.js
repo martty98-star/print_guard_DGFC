@@ -3,16 +3,22 @@
 (function attachScanCaptureUI(global) {
   const LS_OPERATOR = 'pg_scan_capture_operator';
   const LS_STATION = 'pg_scan_capture_station';
+  const LS_QUEUE_FALLBACK = 'pg_scan_capture_local_queue';
+  const DB_NAME = 'printguard-scan-capture-local';
+  const DB_VERSION = 1;
+  const STORE_SCANS = 'scans';
   const DEFAULT_STATION = 'SCAN-STATION-01';
   const Api = global.PrintGuardScanCaptureApi;
+  const Auth = global.PrintGuardAuth;
 
   const state = {
     bound: false,
     loading: false,
     lastBarcode: '',
-    pending: null,
-    recent: [],
+    queue: [],
     commitResult: null,
+    dbPromise: null,
+    useLocalStorageFallback: false,
   };
 
   function el(id) {
@@ -50,6 +56,13 @@
     return String(el(id)?.value || '').trim();
   }
 
+  function makeScanId() {
+    if (global.crypto && typeof global.crypto.randomUUID === 'function') {
+      return `browser-${global.crypto.randomUUID()}`;
+    }
+    return `browser-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
   function setStatus(message, tone = '') {
     const node = el('scan-capture-status');
     if (!node) return;
@@ -58,17 +71,124 @@
     node.classList.toggle('is-ok', tone === 'ok');
   }
 
-  function renderKpis() {
-    const pending = state.pending || {};
-    const pendingCount = pending.pendingCount != null ? pending.pendingCount : state.recent.length;
-    const latest = state.lastBarcode || (pending.latestScan && (pending.latestScan.barcode || pending.latestScan.orderNumber)) || '—';
-    const totalRead = pending.totalScansRead != null ? pending.totalScansRead : state.recent.length;
-    const committed = pending.committedCount != null ? pending.committedCount : 0;
+  function openQueueDB() {
+    if (state.dbPromise) return state.dbPromise;
+    if (!global.indexedDB) {
+      state.useLocalStorageFallback = true;
+      state.dbPromise = Promise.resolve(null);
+      return state.dbPromise;
+    }
+    state.dbPromise = new Promise((resolve, reject) => {
+      const request = global.indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(STORE_SCANS)) {
+          const store = db.createObjectStore(STORE_SCANS, { keyPath: 'scanId' });
+          store.createIndex('commitStatus', 'commitStatus', { unique: false });
+          store.createIndex('scannedAt', 'scannedAt', { unique: false });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
+    }).catch(() => {
+      state.useLocalStorageFallback = true;
+      return null;
+    });
+    return state.dbPromise;
+  }
 
+  function readFallbackQueue() {
+    try {
+      const rows = JSON.parse(global.localStorage.getItem(LS_QUEUE_FALLBACK) || '[]');
+      return Array.isArray(rows) ? rows : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeFallbackQueue(rows) {
+    try {
+      global.localStorage.setItem(LS_QUEUE_FALLBACK, JSON.stringify(rows || []));
+    } catch (_) {}
+  }
+
+  async function queueAll() {
+    const db = await openQueueDB();
+    if (!db) {
+      return readFallbackQueue().sort((a, b) => String(b.scannedAt || '').localeCompare(String(a.scannedAt || '')));
+    }
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SCANS, 'readonly');
+      const request = tx.objectStore(STORE_SCANS).getAll();
+      request.onsuccess = () => {
+        const rows = Array.isArray(request.result) ? request.result : [];
+        resolve(rows.sort((a, b) => String(b.scannedAt || '').localeCompare(String(a.scannedAt || ''))));
+      };
+      request.onerror = () => reject(request.error || new Error('IndexedDB read failed'));
+    });
+  }
+
+  async function queuePut(scan) {
+    const db = await openQueueDB();
+    if (!db) {
+      const rows = readFallbackQueue().filter((row) => row.scanId !== scan.scanId);
+      rows.push(scan);
+      writeFallbackQueue(rows);
+      return;
+    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SCANS, 'readwrite');
+      tx.objectStore(STORE_SCANS).put(scan);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error('IndexedDB write failed'));
+    });
+  }
+
+  async function queueDelete(scanId) {
+    if (!scanId) return;
+    const db = await openQueueDB();
+    if (!db) {
+      writeFallbackQueue(readFallbackQueue().filter((row) => row.scanId !== scanId));
+      return;
+    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SCANS, 'readwrite');
+      tx.objectStore(STORE_SCANS).delete(scanId);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error('IndexedDB delete failed'));
+    });
+  }
+
+  async function queueDeleteMany(scanIds) {
+    const ids = Array.from(new Set((scanIds || []).filter(Boolean)));
+    if (!ids.length) return;
+    const db = await openQueueDB();
+    if (!db) {
+      const idSet = new Set(ids);
+      writeFallbackQueue(readFallbackQueue().filter((row) => !idSet.has(row.scanId)));
+      return;
+    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SCANS, 'readwrite');
+      const store = tx.objectStore(STORE_SCANS);
+      ids.forEach((scanId) => store.delete(scanId));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error('IndexedDB batch delete failed'));
+    });
+  }
+
+  function pendingScans() {
+    return state.queue.filter((scan) => String(scan.commitStatus || 'pending') === 'pending');
+  }
+
+  function renderKpis() {
+    const pending = pendingScans();
+    const latest = state.lastBarcode || (pending[0] && (pending[0].barcode || pending[0].orderNumber)) || '—';
+    const committed = state.commitResult ? Number(state.commitResult.newScansCommitted || 0) : 0;
     const map = {
-      'scan-kpi-pending': fmtInt(pendingCount),
+      'scan-kpi-pending': fmtInt(pending.length),
       'scan-kpi-last': latest,
-      'scan-kpi-read': fmtInt(totalRead),
+      'scan-kpi-read': fmtInt(state.queue.length),
       'scan-kpi-committed': fmtInt(committed),
     };
     Object.entries(map).forEach(([id, value]) => {
@@ -80,23 +200,20 @@
   function renderRecent() {
     const wrap = el('scan-recent-list');
     if (!wrap) return;
-    if (!state.recent.length) {
-      wrap.innerHTML = '<div class="empty-state">Zatím žádné scany.</div>';
+    const rows = pendingScans();
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="empty-state">Lokální fronta je prázdná.</div>';
       return;
     }
-    wrap.innerHTML = state.recent.map((scan) => {
-      const barcode = scan.barcode || scan.orderNumber || scan.rawBarcode || '—';
-      const scanId = scan.scanId || scan.scan_id || '';
-      return `
-        <div class="scan-recent-row">
-          <div>
-            <strong>${esc(barcode)}</strong>
-            <span>${esc(scan.operator || '—')} · ${esc(scan.station || '—')} · ${esc(fmtDateTime(scan.scannedAt || scan.scanned_at))}</span>
-          </div>
-          <button class="btn-sm scan-delete-btn" type="button" data-scan-id="${esc(scanId)}" data-scanned-at="${esc(scan.scannedAt || scan.scanned_at || '')}">Smazat</button>
+    wrap.innerHTML = rows.slice(0, 50).map((scan) => `
+      <div class="scan-recent-row">
+        <div>
+          <strong>${esc(scan.barcode || scan.orderNumber || scan.rawBarcode || '—')}</strong>
+          <span>${esc(scan.operator || '—')} · ${esc(scan.station || '—')} · ${esc(fmtDateTime(scan.scannedAt))}</span>
         </div>
-      `;
-    }).join('');
+        <button class="btn-sm scan-delete-btn" type="button" data-scan-id="${esc(scan.scanId)}">Smazat</button>
+      </div>
+    `).join('');
   }
 
   function renderCommitResult() {
@@ -104,7 +221,7 @@
     if (!wrap) return;
     const result = state.commitResult;
     if (!result) {
-      wrap.innerHTML = '<div class="hint">Souhrn se zobrazí po kliknutí na Hotovo / Odeslat do PrintGuardu.</div>';
+      wrap.innerHTML = '<div class="hint">Souhrn se zobrazí po kliknutí na Odeslat do PrintGuardu.</div>';
       return;
     }
     const skipped = Number(result.duplicateCount || 0) + Number(result.skippedAlreadyCommitted || 0);
@@ -136,24 +253,10 @@
   }
 
   async function refreshScanCapture() {
-    if (!Api || state.loading) return;
-    state.loading = true;
-    setStatus('Načítám scan backend…');
-    try {
-      const [pending, recent] = await Promise.all([
-        Api.pending(),
-        Api.recent(25),
-      ]);
-      state.pending = pending || {};
-      state.recent = Array.isArray(recent && recent.scans) ? recent.scans : [];
-      renderAll();
-      setStatus(`Scan backend OK · ${Api.getConfiguredBase() || 'same origin'}`, 'ok');
-    } catch (error) {
-      setStatus(`Scan backend není dostupný: ${error.message || error}`, 'error');
-      renderAll();
-    } finally {
-      state.loading = false;
-    }
+    state.queue = await queueAll();
+    renderAll();
+    const fallback = state.useLocalStorageFallback ? ' · localStorage fallback' : '';
+    setStatus(`Lokální scan fronta připravena${fallback}`, 'ok');
   }
 
   async function submitScan() {
@@ -165,47 +268,75 @@
     }
     const operator = getInputValue('scan-operator-input');
     const station = getInputValue('scan-station-input') || DEFAULT_STATION;
+    const scan = {
+      scanId: makeScanId(),
+      scannedAt: new Date().toISOString(),
+      barcode,
+      rawBarcode: barcode,
+      orderNumber: barcode,
+      operator,
+      station,
+      source: 'job_label_scan',
+      commitStatus: 'pending',
+    };
     try {
-      setStatus('Ukládám scan do NAS JSONL queue…');
-      const result = await Api.scan({
-        barcode,
-        rawBarcode: barcode,
-        orderNumber: barcode,
-        operator,
-        station,
-        source: 'main_printguard_scan_tab',
-      });
+      await queuePut(scan);
       state.lastBarcode = barcode;
       state.commitResult = null;
       if (input) input.value = '';
-      if (result && result.fallback) {
-        setStatus('Scan uložen do fallback queue. NAS cestu zkontroluj později.', 'error');
-      } else {
-        setStatus('Scan uložen do NAS JSONL queue.', 'ok');
-      }
       await refreshScanCapture();
+      setStatus('Scan uložen do lokální browser fronty.', 'ok');
       input?.focus();
     } catch (error) {
-      setStatus(`Scan se nepodařilo uložit: ${error.message || error}`, 'error');
+      setStatus(`Scan se nepodařilo uložit lokálně: ${error.message || error}`, 'error');
       input?.focus();
     }
   }
 
+  function scanCommitHeaders() {
+    const pin = getInputValue('scan-postpurchase-pin');
+    if (pin) {
+      return {
+        'content-type': 'application/json',
+        'x-postpurchase-pin': pin,
+        'x-admin-pin': pin,
+      };
+    }
+    if (Auth && typeof Auth.postPurchaseJsonHeaders === 'function') {
+      return Auth.postPurchaseJsonHeaders();
+    }
+    return { 'content-type': 'application/json' };
+  }
+
   async function commitScans() {
+    const scans = pendingScans();
+    if (!scans.length) {
+      setStatus('Lokální fronta je prázdná.', 'ok');
+      return;
+    }
     const operator = getInputValue('scan-operator-input');
     const station = getInputValue('scan-station-input') || DEFAULT_STATION;
     const button = el('scan-commit-btn');
     if (button) button.disabled = true;
     try {
-      setStatus('Commituji pending scany do PrintGuardu…');
-      state.commitResult = await Api.commit({
+      setStatus('Odesílám lokální scan batch do PrintGuardu…');
+      state.commitResult = await Api.commitScanBatch({
+        fetchImpl: global.fetch.bind(global),
+        headers: scanCommitHeaders(),
+        scans,
         committedBy: operator,
         operator,
         station,
       });
+      const removeIds = new Set([
+        ...(state.commitResult.committedScanIds || []),
+        ...(state.commitResult.duplicateScanIds || []),
+      ]);
+      (state.commitResult.errorScanIds || []).forEach((scanId) => removeIds.delete(scanId));
+      if (removeIds.size) await queueDeleteMany(Array.from(removeIds));
+      await refreshScanCapture();
       renderCommitResult();
       setStatus('Commit hotový. Spárované objednávky jsou označené jako Dotisknuto.', 'ok');
-      await refreshScanCapture();
     } catch (error) {
       setStatus(`Commit selhal: ${error.message || error}`, 'error');
     } finally {
@@ -215,13 +346,11 @@
 
   async function deleteScan(target) {
     const scanId = target?.dataset?.scanId || '';
-    const scannedAt = target?.dataset?.scannedAt || '';
-    if (!scanId && !scannedAt) return;
+    if (!scanId) return;
     try {
-      setStatus('Mažu scan z pending queue…');
-      await Api.deleteScan({ scanId, scannedAt });
+      await queueDelete(scanId);
       await refreshScanCapture();
-      setStatus('Scan smazán z pending queue.', 'ok');
+      setStatus('Scan smazán z lokální fronty.', 'ok');
     } catch (error) {
       setStatus(`Scan nejde smazat: ${error.message || error}`, 'error');
     }
@@ -230,22 +359,14 @@
   function bindOnce() {
     if (state.bound) return;
     state.bound = true;
-    const apiBase = el('scan-api-base-input');
     const operator = el('scan-operator-input');
     const station = el('scan-station-input');
-    if (apiBase) apiBase.value = Api ? Api.getConfiguredBase() : '';
     try {
       if (operator) operator.value = global.localStorage.getItem(LS_OPERATOR) || '';
       if (station) station.value = global.localStorage.getItem(LS_STATION) || DEFAULT_STATION;
     } catch (_) {
       if (station) station.value = DEFAULT_STATION;
     }
-
-    apiBase?.addEventListener('change', () => {
-      Api.setConfiguredBase(apiBase.value);
-      apiBase.value = Api.getConfiguredBase();
-      refreshScanCapture();
-    });
     operator?.addEventListener('change', () => {
       try { global.localStorage.setItem(LS_OPERATOR, operator.value.trim()); } catch (_) {}
     });
@@ -273,7 +394,6 @@
       return;
     }
     bindOnce();
-    renderAll();
     refreshScanCapture();
     setTimeout(() => el('scan-barcode-input')?.focus(), 0);
   }
