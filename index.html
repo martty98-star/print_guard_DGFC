@@ -19,12 +19,12 @@
       } catch (_) {}
     })();
   </script>
-  <link rel="manifest" href="manifest.json?v=7.0.1">
+  <link rel="manifest" href="manifest.json?v=8.0.10">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7.0.10">
-  <link rel="icon" href="/icons/icon-192.png?v=7.0.1">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=7.0.1">
+  <link rel="stylesheet" href="styles.css?v=8.0.10">
+  <link rel="icon" href="/icons/icon-192.png?v=8.0.10">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=8.0.10">
   <title>PrintGuard</title>
 </head>
 <body>
@@ -143,6 +143,10 @@
     <button class="nav-item" data-screen="postpurchase-orders">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l1 2h4v16H4V5h4l1-2z"></path><path d="M9 13h6"></path><path d="M9 17h6"></path><path d="M10 7h4"></path></svg>
       <span data-i18n="nav.processed">Zpracované</span>
+    </button>
+    <button class="nav-item" data-screen="scan-capture">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V5a2 2 0 0 1 2-2h2"></path><path d="M16 3h2a2 2 0 0 1 2 2v2"></path><path d="M20 17v2a2 2 0 0 1-2 2h-2"></path><path d="M8 21H6a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path></svg>
+      <span>SCAN</span>
     </button>
     <button class="nav-item" data-screen="management-reporting">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16V9"></path><path d="M12 16V7"></path><path d="M16 16v-5"></path></svg>
@@ -767,6 +771,62 @@
     </section>
   </main>
 
+  <main id="screen-scan-capture" class="screen">
+    <div class="screen-header">
+      <h1>Scan objednávek</h1>
+      <div class="header-meta" id="scan-capture-status">Scan Capture backend</div>
+    </div>
+
+    <section class="settings-card scan-capture-card">
+      <div class="scan-config-row">
+        <div class="form-group compact scan-api-base-field">
+          <label for="scan-api-base-input">Scan Capture API</label>
+          <input type="url" id="scan-api-base-input" class="input-sm" placeholder="http://10.25.0.15:17910" autocomplete="off">
+        </div>
+        <div class="form-group compact">
+          <label for="scan-operator-input">Operátor</label>
+          <input type="text" id="scan-operator-input" class="input-sm" placeholder="Jméno" autocomplete="off">
+        </div>
+        <div class="form-group compact">
+          <label for="scan-station-input">Stanice</label>
+          <input type="text" id="scan-station-input" class="input-sm" placeholder="SCAN-STATION-01" autocomplete="off">
+        </div>
+        <button class="btn-sm" id="scan-refresh-btn" type="button">Obnovit</button>
+      </div>
+
+      <div class="scan-input-row">
+        <input type="text" id="scan-barcode-input" placeholder="Naskenuj čárový kód objednávky…" autocomplete="off" inputmode="text">
+        <button class="btn-primary" id="scan-submit-btn" type="button">Uložit scan</button>
+      </div>
+
+      <div class="metrics-grid scan-kpi-grid">
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-pending">0</span><span class="metric-unit">Pending scans</span><span class="metric-desc">čekají v NAS JSONL queue</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-last">—</span><span class="metric-unit">Poslední barcode</span><span class="metric-desc">poslední scan v této obrazovce</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-read">0</span><span class="metric-unit">Přečteno</span><span class="metric-desc">scany načtené z queue</span></div>
+        <div class="metric-block"><span class="metric-big" id="scan-kpi-committed">0</span><span class="metric-unit">Už commitnuto</span><span class="metric-desc">existuje v PrintGuard DB</span></div>
+      </div>
+    </section>
+
+    <section class="settings-card scan-capture-card">
+      <div class="mc-header">
+        <span class="mc-label">Commit do PrintGuardu</span>
+        <button class="btn-primary" id="scan-commit-btn" type="button">Hotovo · Odeslat do PrintGuardu</button>
+      </div>
+      <div class="hint">Commit probíhá až po potvrzení operátorem. Do té doby scany zůstávají jako NAS JSONL queue.</div>
+      <div id="scan-commit-result"></div>
+    </section>
+
+    <section class="settings-card scan-capture-card">
+      <div class="mc-header">
+        <span class="mc-label">Poslední scany</span>
+        <span class="mc-badge">/recent</span>
+      </div>
+      <div id="scan-recent-list" class="scan-recent-list">
+        <div class="loading-state"><div class="spinner"></div><p>Načítám scany…</p></div>
+      </div>
+    </section>
+  </main>
+
   <!-- ═══════════════════════════════════════════
        NASTAVENÍ
   ═══════════════════════════════════════════ -->
@@ -1031,72 +1091,74 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=7.0.10"></script>
+  <script src="i18n.js?v=8.0.10"></script>
   <script src="reports/date.js"></script>
   <script src="reports/csv.js"></script>
-  <script src="reports/colorado.js?v=7.0.3"></script>
+  <script src="reports/colorado.js?v=8.0.10"></script>
   <script src="reports/stock.js"></script>
   <script src="reports/notification-model.js"></script>
   <script src="reports/notification-rules.js"></script>
   <script src="reports/notification-dispatch.js"></script>
   <script src="reports/printLog.js"></script>
-  <script src="reports/checklist-domain.js?v=7.0.0"></script>
+  <script src="reports/checklist-domain.js?v=8.0.10"></script>
   <script src="scripts/core-utils.js"></script>
-  <script src="scripts/dom-utils.js?v=7.0.1"></script>
+  <script src="scripts/dom-utils.js?v=8.0.10"></script>
   <script src="scripts/push-utils.js"></script>
-  <script src="scripts/settings-ui.js?v=7.0.1"></script>
+  <script src="scripts/settings-ui.js?v=8.0.10"></script>
   <script src="scripts/export-utils.js"></script>
-  <script src="scripts/stock-domain.js?v=7.0.5"></script>
-  <script src="scripts/stock-ui.js?v=7.0.5"></script>
-  <script src="scripts/stock-store.js?v=7.0.5"></script>
-  <script src="scripts/stock-controller.js?v=7.0.5"></script>
-  <script src="scripts/stock-feature.js?v=7.0.5"></script>
-  <script src="scripts/stock-actions.js?v=7.0.5"></script>
-  <script src="scripts/stock-log.js?v=7.0.5"></script>
+  <script src="scripts/stock-domain.js?v=8.0.10"></script>
+  <script src="scripts/stock-ui.js?v=8.0.10"></script>
+  <script src="scripts/stock-store.js?v=8.0.10"></script>
+  <script src="scripts/stock-controller.js?v=8.0.10"></script>
+  <script src="scripts/stock-feature.js?v=8.0.10"></script>
+  <script src="scripts/stock-actions.js?v=8.0.10"></script>
+  <script src="scripts/stock-log.js?v=8.0.10"></script>
   <script src="scripts/print-log-ui.js"></script>
-  <script src="scripts/checklist-api.js?v=7.0.0"></script>
-  <script src="scripts/checklist-state.js?v=7.0.0"></script>
-  <script src="scripts/checklist-render.js?v=7.0.0"></script>
-  <script src="scripts/checklist-events.js?v=7.0.0"></script>
-  <script src="scripts/checklist-ui.js?v=7.0.0"></script>
-  <script src="scripts/order-pipeline-filters.js?v=7.0.6"></script>
-  <script src="scripts/order-pipeline-api.js?v=7.0.6"></script>
-  <script src="scripts/pdf-open.js?v=7.0.0"></script>
-  <script src="scripts/order-pipeline-render.js?v=7.0.6"></script>
-  <script src="scripts/reprint-modal.js?v=7.0.5"></script>
-  <script src="scripts/reprint-xml.js?v=7.0.5"></script>
-  <script src="scripts/postpurchase-ui.js?v=7.0.6"></script>
-  <script src="scripts/colorado-controller.js?v=7.0.12"></script>
+  <script src="scripts/checklist-api.js?v=8.0.10"></script>
+  <script src="scripts/checklist-state.js?v=8.0.10"></script>
+  <script src="scripts/checklist-render.js?v=8.0.10"></script>
+  <script src="scripts/checklist-events.js?v=8.0.10"></script>
+  <script src="scripts/checklist-ui.js?v=8.0.10"></script>
+  <script src="scripts/order-pipeline-filters.js?v=8.0.10"></script>
+  <script src="scripts/order-pipeline-api.js?v=8.0.10"></script>
+  <script src="scripts/pdf-open.js?v=8.0.10"></script>
+  <script src="scripts/order-pipeline-render.js?v=8.0.10"></script>
+  <script src="scripts/reprint-modal.js?v=8.0.10"></script>
+  <script src="scripts/reprint-xml.js?v=8.0.10"></script>
+  <script src="scripts/postpurchase-ui.js?v=8.0.10"></script>
+  <script src="scripts/colorado-controller.js?v=8.0.10"></script>
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
   </script>
-  <script src="app/config.js?v=7.0.5"></script>
-  <script src="app/auth.js?v=7.0.1"></script>
-  <script src="scripts/daily-report-api.js?v=7.0.0"></script>
-  <script src="scripts/daily-report-ui.js?v=7.0.2"></script>
-  <script src="scripts/management-reporting-api.js?v=7.0.0"></script>
-  <script src="scripts/management-reporting-ui.js?v=7.0.0"></script>
-  <script src="app/db.js?v=7.0.1"></script>
-  <script src="app/settings-store.js?v=7.0.1"></script>
-  <script src="app/push-bridge.js?v=7.0.1"></script>
-  <script src="app/utils.js?v=7.0.5"></script>
-  <script src="app/update-checks.js?v=7.0.5"></script>
-  <script src="app/admin-auth.js?v=7.0.5"></script>
-  <script src="app/navigation.js?v=7.0.5"></script>
-  <script src="app/access.js?v=7.0.5"></script>
-  <script src="app/settings-runtime.js?v=7.0.5"></script>
-  <script src="app/runtime-ui.js?v=7.0.5"></script>
-  <script src="app/runtime-state.js?v=7.0.5"></script>
-  <script src="app/colorado-runtime.js?v=7.0.5"></script>
-  <script src="app/postpurchase-runtime.js?v=7.0.5"></script>
-  <script src="app/stock-runtime.js?v=7.0.5"></script>
-  <script src="app/shell.js?v=7.0.5"></script>
-  <script src="app/print-log.js?v=7.0.5"></script>
-  <script src="app/print-log-runtime.js?v=7.0.5"></script>
-  <script src="app/reporting.js?v=7.0.5"></script>
-  <script src="app/date-filters.js?v=7.0.5"></script>
-  <script src="app/push.js?v=7.0.5"></script>
-  <script src="app/sync.js?v=7.0.11"></script>
-  <script src="app.js?v=7.0.11"></script>
+  <script src="app/config.js?v=8.0.10"></script>
+  <script src="app/auth.js?v=8.0.10"></script>
+  <script src="scripts/daily-report-api.js?v=8.0.10"></script>
+  <script src="scripts/daily-report-ui.js?v=8.0.10"></script>
+  <script src="scripts/management-reporting-api.js?v=8.0.10"></script>
+  <script src="scripts/management-reporting-ui.js?v=8.0.10"></script>
+  <script src="scripts/scan-capture-api.js?v=8.0.10"></script>
+  <script src="scripts/scan-capture-ui.js?v=8.0.10"></script>
+  <script src="app/db.js?v=8.0.10"></script>
+  <script src="app/settings-store.js?v=8.0.10"></script>
+  <script src="app/push-bridge.js?v=8.0.10"></script>
+  <script src="app/utils.js?v=8.0.10"></script>
+  <script src="app/update-checks.js?v=8.0.10"></script>
+  <script src="app/admin-auth.js?v=8.0.10"></script>
+  <script src="app/navigation.js?v=8.0.10"></script>
+  <script src="app/access.js?v=8.0.10"></script>
+  <script src="app/settings-runtime.js?v=8.0.10"></script>
+  <script src="app/runtime-ui.js?v=8.0.10"></script>
+  <script src="app/runtime-state.js?v=8.0.10"></script>
+  <script src="app/colorado-runtime.js?v=8.0.10"></script>
+  <script src="app/postpurchase-runtime.js?v=8.0.10"></script>
+  <script src="app/stock-runtime.js?v=8.0.10"></script>
+  <script src="app/shell.js?v=8.0.10"></script>
+  <script src="app/print-log.js?v=8.0.10"></script>
+  <script src="app/print-log-runtime.js?v=8.0.10"></script>
+  <script src="app/reporting.js?v=8.0.10"></script>
+  <script src="app/date-filters.js?v=8.0.10"></script>
+  <script src="app/push.js?v=8.0.10"></script>
+  <script src="app/sync.js?v=8.0.10"></script>
+  <script src="app.js?v=8.0.10"></script>
 </body>
 </html>

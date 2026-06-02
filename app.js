@@ -559,6 +559,7 @@ navigationApi = PrintGuardNavigation.createNavigation({
   loadManagementReporting: window.PrintGuardManagementReportingUI && window.PrintGuardManagementReportingUI.loadManagementReporting,
   loadPostPurchaseOrders,
   loadPrintLog,
+  loadScanCaptureScreen: window.PrintGuardScanCaptureUI && window.PrintGuardScanCaptureUI.loadScanCaptureScreen,
   loadSettingsUI,
   ls,
   renderAlerts,
