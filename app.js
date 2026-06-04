@@ -92,6 +92,8 @@ const PrintGuardStockRuntime = typeof window !== 'undefined' && window.PrintGuar
 if (!PrintGuardStockRuntime) throw new Error('Missing PrintGuardStockRuntime');
 const PrintGuardShell = typeof window !== 'undefined' && window.PrintGuardShell;
 if (!PrintGuardShell) throw new Error('Missing PrintGuardShell');
+const PrintGuardAppLifecycle = typeof window !== 'undefined' && window.PrintGuardAppLifecycle;
+if (!PrintGuardAppLifecycle) throw new Error('Missing PrintGuardAppLifecycle');
 const PrintGuardPrintLogRuntime = typeof window !== 'undefined' && window.PrintGuardPrintLogRuntime;
 if (!PrintGuardPrintLogRuntime) throw new Error('Missing PrintGuardPrintLogRuntime');
 const PrintGuardReporting = typeof window !== 'undefined' && window.PrintGuardReporting;
@@ -595,87 +597,51 @@ const shellApi = PrintGuardShell.createShell({
 });
 const { bindShellControls } = shellApi;
 
-// ══════════════════════════════════════════════════════════
-//  UTILITIES
-// ══════════════════════════════════════════════════════════
-
-window.enablePushNotifications = enablePushNotifications;
-
-// ══════════════════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════════════════
-
-async function init() {
-  if (window.I18N && typeof window.I18N.init === 'function') {
-    window.I18N.init();
-  }
-  setDb(await openDB());
-  S.coloradoRolls = loadColoradoRollStates();
-  S.coloradoRollEvents = loadColoradoRollEvents();
-  bindShellControls();
-
-  initStockFeature();
-
-  // Colorado history tabs
-  setupCoEntry();
-  bindColoradoHistoryControls({
-    exportCSVCurrentMonthCo,
-    exportCSVRawCo,
-  });
-  ChecklistUI.initChecklistUI({
-    applyRoleUI,
-    adminErrorMessage,
-    adminHeaders,
-    cfg,
-    el,
-    fetchImpl: appFetch,
-    i18n,
-    showConfirm,
-    showToast,
-  });
-  initSettingsRuntime();
-  initPostPurchaseRuntime();
-  bindPostPurchaseControls();
-
-  bindPrintLogControls({
-    exportCSVPrintLog,
-  });
-
-  setupAdminAuthHandlers();
-
-  await loadAll();
-  applyRoleUI(); // ✅ IMPORTANT
-  setupBackgroundSync();
-  showPendingUpdateToast();
-
-  // Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then((registration) => {
-        registration.update().catch(() => {});
-      })
-      .catch(e => console.warn('[SW]', e));
-    setupAppUpdateChecks();
-  }
-
-  navigate(getInitialScreen(), { replace: true });
-  applyRoleUI();
-}
-
-window.addEventListener('i18n:changed', () => {
-  const costCurrencySelect = el('cfg-cost-currency');
-  if (costCurrencySelect && !ls('pg_cost_currency')) {
-    costCurrencySelect.value = cfg.costCurrency;
-  }
-  try { renderStockOverview(); } catch (_) {}
-  try { renderAlerts(); } catch (_) {}
-  try { renderItemsMgmt(); } catch (_) {}
-  try { renderStockLog(); } catch (_) {}
-  try { renderCoDashboard(); } catch (_) {}
-  try { renderCoHistory(); } catch (_) {}
-  try { renderPrintLogRows(); } catch (_) {}
-  try { renderPostPurchaseOrders(); } catch (_) {}
-  try { renderChecklistScreen(false); } catch (_) {}
+const lifecycleApi = PrintGuardAppLifecycle.createAppLifecycle({
+  ChecklistUI,
+  adminErrorMessage,
+  adminHeaders,
+  appFetch,
+  applyRoleUI,
+  bindColoradoHistoryControls,
+  bindPostPurchaseControls,
+  bindPrintLogControls,
+  bindShellControls,
+  cfg,
+  el,
+  enablePushNotifications,
+  exportCSVCurrentMonthCo,
+  exportCSVPrintLog,
+  exportCSVRawCo,
+  getInitialScreen,
+  i18n,
+  initPostPurchaseRuntime,
+  initSettingsRuntime,
+  initStockFeature,
+  loadAll,
+  loadColoradoRollEvents,
+  loadColoradoRollStates,
+  navigate,
+  openDB,
+  renderAlerts,
+  renderChecklistScreen,
+  renderCoDashboard,
+  renderCoHistory,
+  renderItemsMgmt,
+  renderPostPurchaseOrders,
+  renderPrintLogRows,
+  renderStockLog,
+  renderStockOverview,
+  setDb,
+  setupAdminAuthHandlers,
+  setupAppUpdateChecks,
+  setupBackgroundSync,
+  setupCoEntry,
+  showConfirm,
+  showPendingUpdateToast,
+  showToast,
+  state: S,
+  storage: ls,
 });
 
-document.addEventListener('DOMContentLoaded', init);
+lifecycleApi.bindLifecycleEvents();

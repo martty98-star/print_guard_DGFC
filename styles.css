@@ -2136,12 +2136,24 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-processed-head > * {
   min-width: 0;
 }
+.pp-order-state {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  color: var(--text-dim);
+  font-size: .64rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.pp-order-state strong {
+  font-size: .58rem;
+}
 .pp-processed-time {
   color: var(--text-dim);
   font-size: .72rem;
   white-space: nowrap;
 }
-.pp-processed-meta {
+.pp-processed-operational-meta {
   display: flex;
   gap: 8px 14px;
   flex-wrap: wrap;
@@ -2248,7 +2260,7 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-reprint-history {
   margin-top: 10px;
   display: grid;
-  gap: 7px;
+  gap: 10px;
 }
 .pp-reprint-records {
   border-top: 1px solid var(--border);
@@ -2268,9 +2280,9 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-reprint-history-entry {
   border: 1px solid var(--border);
   background: var(--bg);
-  padding: 8px 9px;
+  padding: 10px 11px;
   display: grid;
-  gap: 5px;
+  gap: 10px;
   min-width: 0;
 }
 .pp-reprint-history-top,
@@ -2283,9 +2295,42 @@ textarea { resize: vertical; min-height: 58px; }
 }
 .pp-reprint-history-top strong {
   color: var(--text);
-  font-size: .78rem;
+  font-size: .85rem;
   line-height: 1.35;
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pp-reprint-history-top--workflow {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.pp-reprint-primary-grid,
+.pp-reprint-tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.pp-reprint-primary-item,
+.pp-reprint-tech-item {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg4) 70%, var(--bg2));
+}
+.pp-reprint-primary-item span,
+.pp-reprint-tech-item span {
+  color: var(--text-faint);
+  font-size: .62rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.pp-reprint-primary-item strong,
+.pp-reprint-tech-item strong {
+  color: var(--text);
+  font-size: .76rem;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 .pp-reprint-history-meta {
@@ -2297,6 +2342,40 @@ textarea { resize: vertical; min-height: 58px; }
   font-size: .72rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+.pp-reprint-timeline {
+  display: grid;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+}
+.pp-reprint-timeline-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-size: .72rem;
+}
+.pp-reprint-timeline-row strong {
+  color: var(--text);
+}
+.pp-reprint-timeline-row span {
+  color: var(--text-dim);
+}
+.pp-reprint-tech-details {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.pp-reprint-tech-details summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.pp-reprint-tech-grid {
+  margin-top: 8px;
 }
 .pp-file-name {
   color: var(--text-faint);
@@ -2624,6 +2703,9 @@ textarea { resize: vertical; min-height: 58px; }
   .pp-xml-source {
     flex-direction: column;
     align-items: stretch;
+  }
+  .pp-order-state {
+    justify-items: start;
   }
   .pp-orders-toolbar {
     flex-direction: column;
