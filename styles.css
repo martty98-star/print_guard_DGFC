@@ -2148,6 +2148,38 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-order-state strong {
   font-size: .58rem;
 }
+.pp-order-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.pp-order-chip {
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--bg4);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  padding: 4px 7px;
+  text-transform: uppercase;
+}
+.pp-order-chip.single,
+.pp-order-chip.combi,
+.pp-order-chip.pdf-count {
+  color: var(--text);
+}
+.pp-order-chip.reprint-active,
+.pp-order-chip.reprint-full {
+  border-color: rgba(92, 128, 184, .55);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.pp-order-chip.done {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: var(--ok-dim);
+}
 .pp-processed-time {
   color: var(--text-dim);
   font-size: .72rem;
@@ -2249,6 +2281,11 @@ textarea { resize: vertical; min-height: 58px; }
   overflow-wrap: anywhere;
   margin-bottom: 7px;
 }
+.pp-file-meta {
+  color: var(--text-faint);
+  font-size: .68rem;
+  line-height: 1.4;
+}
 .pp-file-actions {
   display: flex;
   align-items: center;
@@ -2303,6 +2340,21 @@ textarea { resize: vertical; min-height: 58px; }
 .pp-reprint-history-top--workflow {
   justify-content: space-between;
   align-items: flex-start;
+}
+.pp-reprint-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  color: var(--text-faint);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.pp-reprint-title-line strong {
+  color: var(--accent);
+  font-size: .62rem;
 }
 .pp-reprint-primary-grid,
 .pp-reprint-tech-grid {

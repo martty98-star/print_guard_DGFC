@@ -168,6 +168,7 @@
         if (entry && String(entry.status || '').toLowerCase() === 'pending') {
           entry.status = request.status || 'done';
           if (!entry.confirmedAt) entry.confirmedAt = request.confirmedAt || new Date().toISOString();
+          if (!entry.confirmedBy && request.confirmedBy) entry.confirmedBy = request.confirmedBy;
         }
       });
       state.reprintHistoryByKey.set(key, history);
@@ -431,7 +432,10 @@
       const result = await Api.resolveReprintRequest({
         fetchImpl: state.fetchImpl,
         headers: state.postPurchaseJsonHeaders(),
-        payload,
+        payload: {
+          ...payload,
+          confirmedBy: getOperatorName(),
+        },
       });
       markReprintHistoryDone(result.request);
       adjustStatsAfterReprintResolve();

@@ -180,6 +180,7 @@ exports.handler = async function handler(event) {
           const request = await resolveReprintRequest(client, {
             orderId: bodyInput.orderId || bodyInput.order_id,
             printFilePath: bodyInput.printFilePath || bodyInput.print_file_path,
+            confirmedBy: bodyInput.confirmedBy || bodyInput.confirmed_by,
           });
           return { ok: true, request };
         });

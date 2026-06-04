@@ -93,6 +93,7 @@
         action: 'mark_reprinted',
         orderId: payload.orderId,
         printFilePath: payload.printFilePath,
+        confirmedBy: payload.confirmedBy,
       }),
     });
     return readJsonResponse(res, t('processed.toast.reprint-resolve-failed'));

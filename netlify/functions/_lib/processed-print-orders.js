@@ -130,6 +130,7 @@ async function ensureProcessedPrintOrderTables(client) {
       requested_by text null,
       requested_at timestamptz not null default now(),
       confirmed_at timestamptz null,
+      confirmed_by text null,
       workstation_id text null,
       status text not null default 'pending',
       note text null
@@ -138,6 +139,7 @@ async function ensureProcessedPrintOrderTables(client) {
   await client.query(`alter table processed_order_reprint_requests add column if not exists reason text null`);
   await client.query(`alter table processed_order_reprint_requests add column if not exists note text null`);
   await client.query(`alter table processed_order_reprint_requests add column if not exists confirmed_at timestamptz null`);
+  await client.query(`alter table processed_order_reprint_requests add column if not exists confirmed_by text null`);
   await client.query(`create index if not exists processed_reprint_order_idx on processed_order_reprint_requests (order_id, requested_at desc)`);
   await client.query(`create index if not exists processed_reprint_order_status_idx on processed_order_reprint_requests (order_id, status, requested_at desc)`);
   await client.query(`create index if not exists processed_reprint_status_order_idx on processed_order_reprint_requests (status, order_id, requested_at desc)`);
@@ -457,7 +459,7 @@ async function createReprintRequest(client, input) {
         order_id, order_name, print_file_path, reason, requested_by, requested_at, workstation_id, status, note
       )
       values ($1, $2, $3, $4, $5, now(), $6, 'pending', $7)
-      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, workstation_id, status, note
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, confirmed_by, workstation_id, status, note
     `,
     [
       order.id,
@@ -480,6 +482,7 @@ async function createReprintRequest(client, input) {
     requestedBy: row.requested_by,
     requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
     confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
     note: row.note,
@@ -491,12 +494,14 @@ async function resolveReprintRequest(client, input) {
   const orderId = Number(input && input.orderId);
   if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
   const printFilePath = cleanString(input && input.printFilePath);
+  const confirmedBy = cleanString(input && input.confirmedBy);
 
   const result = await client.query(
     `
       update processed_order_reprint_requests
       set status = 'done',
-          confirmed_at = coalesce(confirmed_at, now())
+          confirmed_at = coalesce(confirmed_at, now()),
+          confirmed_by = coalesce(confirmed_by, nullif($3::text, ''))
       where id = (
         select id
         from processed_order_reprint_requests
@@ -506,9 +511,9 @@ async function resolveReprintRequest(client, input) {
         order by requested_at desc, id desc
         limit 1
       )
-      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, workstation_id, status, note
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, confirmed_by, workstation_id, status, note
     `,
-    [orderId, printFilePath]
+    [orderId, printFilePath, confirmedBy]
   );
 
   const row = result.rows[0];
@@ -527,6 +532,7 @@ async function resolveReprintRequest(client, input) {
     requestedBy: row.requested_by,
     requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
     confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
     note: row.note,
@@ -544,7 +550,7 @@ async function deleteReprintRequest(client, input) {
       delete from processed_order_reprint_requests
       where id = $1
         and ($2::boolean = false or status = 'pending')
-      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, workstation_id, status, note
+      returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, confirmed_by, workstation_id, status, note
     `,
     [id, onlyPending]
   );
@@ -563,6 +569,7 @@ async function deleteReprintRequest(client, input) {
     requestedBy: row.requested_by,
     requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
     confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
     note: row.note,
@@ -579,7 +586,7 @@ async function listReprintRequests(client, orderIds) {
   const result = await client.query(
     `
       select id, order_id, order_name, print_file_path, reason, requested_by, requested_at,
-        confirmed_at, workstation_id, status, note
+        confirmed_at, confirmed_by, workstation_id, status, note
       from processed_order_reprint_requests
       where order_id = any($1::bigint[])
       order by requested_at desc, id desc
@@ -596,6 +603,7 @@ async function listReprintRequests(client, orderIds) {
     requestedBy: row.requested_by,
     requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
     confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
     note: row.note,
