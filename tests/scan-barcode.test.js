@@ -83,6 +83,26 @@ assert.deepStrictEqual(parseBarcode('PO-123456-RC'), {
   reprintKind: 'combi',
 });
 
+assert.deepStrictEqual(parseBarcode('PS4775605RS'), {
+  ok: true,
+  rawBarcode: 'PS4775605RS',
+  barcode: 'PS4775605RS',
+  poNumber: 'PS4775605',
+  orderType: 'RS',
+  isReprint: true,
+  reprintKind: 'single',
+});
+
+assert.deepStrictEqual(parseBarcode('PS4775605RC'), {
+  ok: true,
+  rawBarcode: 'PS4775605RC',
+  barcode: 'PS4775605RC',
+  poNumber: 'PS4775605',
+  orderType: 'RC',
+  isReprint: true,
+  reprintKind: 'combi',
+});
+
 assert.strictEqual(parseBarcode('123456-XYZ').ok, false);
 assert.match(parseBarcode('123456-XYZ').error, /unsupported barcode order type suffix/);
 

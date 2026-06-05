@@ -129,10 +129,15 @@ async function fetchExistingScanIds(client, scanIds) {
 }
 
 function orderCandidatesForScan(scan) {
-  return Array.from(new Set([
+  const candidates = [
     cleanBarcode(scan.orderNumber),
     cleanBarcode(scan.barcode),
-  ].filter(Boolean)));
+  ].filter(Boolean);
+  for (const candidate of [...candidates]) {
+    const psMatch = candidate.match(/^PS(\d+)$/i);
+    if (psMatch) candidates.push(psMatch[1]);
+  }
+  return Array.from(new Set(candidates));
 }
 
 function normalizeOrderType(value) {

@@ -57,6 +57,12 @@ function parseBarcode(value) {
         reprintKind: null,
       };
     }
+  } else {
+    const compactReprintMatch = normalizedBarcode.match(/^(.+\d)(RS|RC)$/i);
+    if (compactReprintMatch) {
+      poNumber = compactReprintMatch[1].trim();
+      orderType = compactReprintMatch[2].toUpperCase();
+    }
   }
 
   if (!poNumber) {
