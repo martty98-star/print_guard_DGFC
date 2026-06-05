@@ -1149,6 +1149,7 @@ async function listOrderPipelineFast(client, options = {}) {
           p.status,
           p.queued_date_time,
           p.source_xml_path,
+          p.order_type,
           p.print_files,
           ${reprintParentMatchKeySql('p')} as parent_match_key
         from processed_print_orders p
@@ -1285,6 +1286,7 @@ async function getOrderPipelineDetail(client, options = {}) {
           p.status,
           p.queued_date_time,
           p.source_xml_path,
+          p.order_type,
           p.print_files,
           ${reprintParentMatchKeySql('p')} as parent_match_key
         from processed_print_orders p
