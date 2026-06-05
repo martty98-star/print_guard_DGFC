@@ -165,7 +165,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
         count(*)::int as total,
         count(*) filter (where upper(coalesce(order_type, 'S')) = 'S')::int as single_count,
         count(*) filter (where upper(coalesce(order_type, 'S')) = 'C')::int as combi_count,
-        count(*) filter (where upper(coalesce(order_type, 'S')) = 'R')::int as reprint_xml_count
+        count(*) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R')::int as reprint_xml_count
       from public.processed_print_orders
       where ${zonedTimestamptzDayFilter(processedDateColumn)}
         and coalesce(ignored, false) = false
@@ -183,7 +183,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
         and not exists (
           select 1
           from public.processed_print_orders p
-          where upper(coalesce(p.order_type, 'S')) <> 'R'
+          where left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
             and coalesce(p.ignored, false) = false
             and ${match}
         )
@@ -193,7 +193,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
       from public.processed_print_orders p
       where ${zonedTimestamptzDayFilter(processedDateColumn)}
         and coalesce(p.ignored, false) = false
-        and upper(coalesce(p.order_type, 'S')) <> 'R'
+        and left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
         and not exists (
           select 1
           from public.print_orders_received i
@@ -203,7 +203,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
     client.query(`
       select count(*)::int as count
       from public.processed_print_orders p
-      where upper(coalesce(p.order_type, 'S')) <> 'R'
+      where left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
         and coalesce(p.ignored, false) = false
         and not exists (
           select 1
@@ -230,7 +230,7 @@ async function loadPipelineSummary(client, date, slaMinutes) {
         and not exists (
           select 1
           from public.processed_print_orders p
-          where upper(coalesce(p.order_type, 'S')) <> 'R'
+          where left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
             and coalesce(p.ignored, false) = false
             and ${match}
         )

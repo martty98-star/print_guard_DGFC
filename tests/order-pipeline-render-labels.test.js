@@ -60,4 +60,21 @@ const prefixedHtml = Render.renderOrders([{
 assert.match(prefixedHtml, /<div class="pp-order-main">PS4770994<\/div>/);
 assert.match(prefixedHtml, /<div class="pp-order-sub">4770994<\/div>/);
 
+const smartReprintHtml = Render.renderOrders([{
+  id: 26851,
+  processedOrderId: 26851,
+  processedOrderName: '4770994',
+  orderName: '4770994',
+  orderType: 'RS',
+  pipelineStatus: 'processed',
+}], {
+  esc,
+  stats: null,
+  reprintHistoryByKey: new Map(),
+  reprintActionStateByKey: new Map(),
+  reprintPendingKeys: new Set(),
+});
+
+assert.match(smartReprintHtml, /<span class="pp-order-chip reprint-single is-reprint-single">RS<\/span>/);
+
 console.log('order-pipeline render label tests passed');

@@ -2165,9 +2165,32 @@ textarea { resize: vertical; min-height: 58px; }
   text-transform: uppercase;
 }
 .pp-order-chip.single,
+.pp-order-chip.is-single,
 .pp-order-chip.combi,
+.pp-order-chip.is-combi,
 .pp-order-chip.pdf-count {
   color: var(--text);
+}
+.pp-order-chip.is-single {
+  border-color: rgba(180, 130, 60, .55);
+  background: var(--warning-dim);
+}
+.pp-order-chip.is-combi {
+  border-color: rgba(155, 58, 47, .5);
+  background: var(--crit-dim);
+}
+.pp-order-chip.is-reprint,
+.pp-order-chip.is-reprint-single,
+.pp-order-chip.is-reprint-combi {
+  border-color: rgba(92, 128, 184, .55);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.pp-order-chip.is-reprint-single {
+  box-shadow: inset 3px 0 0 rgba(180, 130, 60, .7);
+}
+.pp-order-chip.is-reprint-combi {
+  box-shadow: inset 3px 0 0 rgba(155, 58, 47, .7);
 }
 .pp-order-chip.reprint-active,
 .pp-order-chip.reprint-full {

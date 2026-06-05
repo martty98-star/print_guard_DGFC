@@ -71,6 +71,8 @@ function normalizeOrderType(value) {
   if (normalized === 'S') return 'S';
   if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
+  if (normalized === 'RS') return 'RS';
+  if (normalized === 'RC') return 'RC';
   return 'S';
 }
 

@@ -54,11 +54,11 @@ group by 1, 2, 3;
 create or replace view public.v_reporting_monthly_reprints as
 select
   to_char(date_trunc('month', coalesce(queued_date_time, imported_at) at time zone 'Europe/Prague'), 'YYYY-MM') as month,
-  coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_file_count,
-  coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprinted_file_count,
+  coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_file_count,
+  coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprinted_file_count,
   (
-    coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::numeric
-    / nullif(coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0), 0)
+    coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::numeric
+    / nullif(coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0), 0)
   ) as reprinted_files_per_standard_file
 from public.processed_print_orders
 where coalesce(ignored, false) = false
@@ -70,8 +70,8 @@ with file_counts as (
     to_char(date_trunc('month', coalesce(queued_date_time, imported_at) at time zone 'Europe/Prague'), 'YYYY-MM') as month,
     count(*)::int as total_xml_count,
     coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int as total_files,
-    coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_files,
-    coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprint_files
+    coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_files,
+    coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprint_files
   from public.processed_print_orders
   where coalesce(ignored, false) = false
   group by 1

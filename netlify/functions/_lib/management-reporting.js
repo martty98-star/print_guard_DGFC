@@ -247,10 +247,10 @@ async function ensureReportingSchema(client) {
     create or replace view public.v_reporting_monthly_reprints as
     select
       to_char(date_trunc('month', coalesce(queued_date_time, imported_at) at time zone 'Europe/Prague'), 'YYYY-MM') as month,
-      coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_file_count,
-      coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprinted_file_count,
-      coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::numeric
-        / nullif(coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0), 0) as reprinted_files_per_standard_file
+      coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_file_count,
+      coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprinted_file_count,
+      coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::numeric
+        / nullif(coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0), 0) as reprinted_files_per_standard_file
     from public.processed_print_orders
     where coalesce(ignored, false) = false
     group by 1
@@ -262,8 +262,8 @@ async function ensureReportingSchema(client) {
         to_char(date_trunc('month', coalesce(queued_date_time, imported_at) at time zone 'Europe/Prague'), 'YYYY-MM') as month,
         count(*)::int as total_xml_count,
         coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int as total_files,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_files,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprint_files
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_files,
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprint_files
       from public.processed_print_orders
       where coalesce(ignored, false) = false
       group by 1
@@ -395,8 +395,8 @@ async function queryMonthlyTrend(client, month) {
         date_trunc('month', coalesce(queued_date_time, imported_at) at time zone $3)::date as month_start,
         count(*)::int as total_xml_count,
         coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int as total_files,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprint_files,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_files
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprint_files,
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_files
       from public.processed_print_orders
       where coalesce(ignored, false) = false
       group by 1
@@ -504,10 +504,10 @@ async function loadMonthlyReport(client, options = {}) {
   const filesResult = await client.query(`
       select
         count(*)::int as total_xml_count,
-        count(*) filter (where upper(coalesce(order_type, 'S')) = 'R')::int as reprint_xml_count,
+        count(*) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R')::int as reprint_xml_count,
         coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int as total_files,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprinted_file_count,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_file_count
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprinted_file_count,
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_file_count
       from public.processed_print_orders
       where coalesce(ignored, false) = false
         and (coalesce(queued_date_time, imported_at) at time zone $3)::date >= $1::date
@@ -607,14 +607,14 @@ async function loadIncomingPeriodSummary(client, period) {
       from public.processed_print_orders p
       join incoming_keys i on p.order_name = any(array_remove(array[i.order_number, i.external_order_id, i.customer_order_id], null))
       where coalesce(p.ignored, false) = false
-        and upper(coalesce(p.order_type, 'S')) <> 'R'
+        and left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
     ),
     matched_orders as (
       select distinct i.sales_order_key
       from incoming_keys i
       join public.processed_print_orders p on p.order_name = any(array_remove(array[i.order_number, i.external_order_id, i.customer_order_id], null))
       where coalesce(p.ignored, false) = false
-        and upper(coalesce(p.order_type, 'S')) <> 'R'
+        and left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
     )
     select
       (select count(distinct sales_order_key)::int from incoming_keys) as api_received_sales_orders,
@@ -645,8 +645,8 @@ async function loadEodProductionSummary(client, reportDate) {
       select
         count(*)::int as total_xml_count,
         coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int as total_files,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) = 'R'), 0)::int as reprint_file_count,
-        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where upper(coalesce(order_type, 'S')) <> 'R'), 0)::int as standard_file_count
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R'), 0)::int as reprint_file_count,
+        coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))) filter (where left(upper(coalesce(order_type, 'S')), 1) <> 'R'), 0)::int as standard_file_count
       from public.processed_print_orders
       where coalesce(ignored, false) = false
         and (coalesce(queued_date_time, imported_at) at time zone $3)::date >= $1::date

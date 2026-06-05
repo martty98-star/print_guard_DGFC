@@ -48,8 +48,11 @@
 
   function getOrderTypeInfo(row) {
     const normalized = String(row && row.orderType || '').trim().toUpperCase();
-    if (normalized === 'C') return { label: t('processed.order-type.combi'), className: 'combi' };
-    if (normalized === 'S' || !normalized) return { label: t('processed.order-type.single'), className: 'single' };
+    if (normalized === 'RC') return { label: 'RC', className: 'reprint-combi is-reprint-combi' };
+    if (normalized === 'RS') return { label: 'RS', className: 'reprint-single is-reprint-single' };
+    if (normalized === 'R') return { label: 'R', className: 'reprint is-reprint' };
+    if (normalized === 'C') return { label: t('processed.order-type.combi'), className: 'combi is-combi' };
+    if (normalized === 'S' || !normalized) return { label: t('processed.order-type.single'), className: 'single is-single' };
     return { label: '', className: '' };
   }
 
@@ -92,7 +95,7 @@
   }
 
   function isReprintRow(row) {
-    return row && String(row.orderType || '').toUpperCase() === 'R';
+    return row && String(row.orderType || '').toUpperCase().startsWith('R');
   }
 
   function cleanLabel(value) {

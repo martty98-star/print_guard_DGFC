@@ -91,6 +91,28 @@
     return poNumber;
   }
 
+  function normalizeOrderType(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    if (normalized === 'S') return 'S';
+    if (normalized === 'C') return 'C';
+    if (normalized === 'R') return 'R';
+    if (normalized === 'RS') return 'RS';
+    if (normalized === 'RC') return 'RC';
+    return '';
+  }
+
+  function getReprintOrderType(order) {
+    const parentType = normalizeOrderType(order && (
+      order.orderType ||
+      order.order_type ||
+      order.OrderType
+    ));
+    if (parentType === 'S') return 'RS';
+    if (parentType === 'C') return 'RC';
+    if (parentType === 'RS' || parentType === 'RC') return parentType;
+    return 'R';
+  }
+
   function xmlDocument(pageSize, copies, printFilePath) {
     const localFileName = fileNameFromPath(printFilePath);
     return `  <XmlPrintDocument LocalFileName="${escXml(localFileName)}" FullPath="${escXml(printFilePath)}">
@@ -101,6 +123,7 @@
   function generateReprintXml(order, printFile) {
     const orderId = pickOriginalOrderId(order);
     const poNumber = assertCleanReprintTokens(order);
+    const orderType = getReprintOrderType(order);
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
@@ -109,7 +132,7 @@
       return xmlDocument(pageSize, copies, printFilePath);
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
-<XmlPrintJob OrderId="${escXml(orderId)}" PoNumber="${escXml(poNumber)}" OrderDate="${escXml(new Date().toISOString())}" OrderType="R">
+<XmlPrintJob OrderId="${escXml(orderId)}" PoNumber="${escXml(poNumber)}" OrderDate="${escXml(new Date().toISOString())}" OrderType="${escXml(orderType)}">
 ${printFileXml}
 </XmlPrintJob>
 `;
@@ -134,6 +157,7 @@ ${printFileXml}
     downloadXml,
     fileNameFromPath,
     generateReprintXml,
+    getReprintOrderType,
     pickOriginalOrderId,
   };
 })();

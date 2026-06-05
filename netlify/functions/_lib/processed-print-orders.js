@@ -24,7 +24,13 @@ function normalizeOrderType(value) {
   if (normalized === 'S') return 'S';
   if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
+  if (normalized === 'RS') return 'RS';
+  if (normalized === 'RC') return 'RC';
   return 'S';
+}
+
+function isReprintOrderType(value) {
+  return normalizeOrderType(value).startsWith('R');
 }
 
 function toIsoOrNull(value) {
@@ -280,7 +286,7 @@ async function upsertProcessedPrintOrder(client, input) {
     sourceXmlHash,
     sourceMonth: cleanString(input.sourceMonth),
   };
-  if (order.orderType === 'R') {
+  if (isReprintOrderType(order.orderType)) {
     order.guid = null;
   }
   const orderDedupeKey = makeOrderDedupeKey(order);
@@ -381,7 +387,7 @@ async function listProcessedPrintOrders(client, options = {}) {
       or coalesce(order_type, '') ilike $${params.length - 1}
       or print_files::text ilike $${params.length - 1}
       or case
-        when upper(coalesce(order_type, 'S')) = 'R' then 'REPRINT RE'
+        when left(upper(coalesce(order_type, 'S')), 1) = 'R' then 'REPRINT RE'
         else ''
       end ilike $${params.length - 1}
       or regexp_replace(lower(order_name), '[[:space:]_-]+', '', 'g') ilike $${params.length}

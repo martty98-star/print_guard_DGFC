@@ -114,6 +114,8 @@ function normalizeOrderType(value) {
   if (normalized === 'S') return 'S';
   if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
+  if (normalized === 'RS') return 'RS';
+  if (normalized === 'RC') return 'RC';
   return '';
 }
 
@@ -249,7 +251,7 @@ function buildFastPipelineBaseCte() {
         select p.*
         from processed_print_orders p
         where coalesce(p.ignored, false) = false
-          and upper(coalesce(p.order_type, 'S')) <> 'R'
+          and left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
           and p.order_name in (i.order_number, i.external_order_id, i.customer_order_id)
         order by case
           when p.order_name = i.order_number then 1
@@ -291,7 +293,7 @@ function buildFastPipelineBaseCte() {
         p.admin_updated_at as processed_admin_updated_at
       from processed_print_orders p
       where coalesce(p.ignored, false) = false
-        and upper(coalesce(p.order_type, 'S')) <> 'R'
+        and left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
         and not exists (
           select 1
           from print_orders_received i
@@ -380,7 +382,7 @@ async function ensureOrderPipelineView(client) {
     processed_normal as (
       select p.*
       from processed_print_orders p
-      where upper(coalesce(p.order_type, 'S')) <> 'R'
+      where left(upper(coalesce(p.order_type, 'S')), 1) <> 'R'
         and coalesce(p.ignored, false) = false
     ),
     processed_reprints as (
@@ -391,7 +393,7 @@ async function ensureOrderPipelineView(client) {
           nullif(regexp_replace(regexp_replace(lower(coalesce(p.xml_file_name, '')), '([[:space:]_-]*reprint.*|\\.xml)$', '', 'i'), '[[:space:]_-]+', '', 'g'), '')
         ) as parent_match_key
       from processed_print_orders p
-      where upper(coalesce(p.order_type, 'S')) = 'R'
+      where left(upper(coalesce(p.order_type, 'S')), 1) = 'R'
         and coalesce(p.ignored, false) = false
       order by coalesce(nullif(source_xml_path, ''), nullif(xml_file_name, ''), id::text),
         queued_date_time desc nulls last,
@@ -506,7 +508,7 @@ async function ensureOrderPipelineView(client) {
               'orderName', rp.order_name,
               'xmlFileName', rp.xml_file_name,
               'status', rp.status,
-              'orderType', 'R',
+              'orderType', coalesce(rp.order_type, 'R'),
               'processedAt', rp.queued_date_time,
               'queuedDateTime', rp.queued_date_time,
               'sourceXmlPath', rp.source_xml_path,
@@ -1151,7 +1153,7 @@ async function listOrderPipelineFast(client, options = {}) {
           ${reprintParentMatchKeySql('p')} as parent_match_key
         from processed_print_orders p
         where coalesce(p.ignored, false) = false
-          and upper(coalesce(p.order_type, 'S')) = 'R'
+          and left(upper(coalesce(p.order_type, 'S')), 1) = 'R'
       ),
       page_rows as (
         select
@@ -1287,7 +1289,7 @@ async function getOrderPipelineDetail(client, options = {}) {
           ${reprintParentMatchKeySql('p')} as parent_match_key
         from processed_print_orders p
         where coalesce(p.ignored, false) = false
-          and upper(coalesce(p.order_type, 'S')) = 'R'
+          and left(upper(coalesce(p.order_type, 'S')), 1) = 'R'
       )
       select *
       from (
@@ -1307,7 +1309,7 @@ async function getOrderPipelineDetail(client, options = {}) {
                 'orderName', rp.order_name,
                 'xmlFileName', rp.xml_file_name,
                 'status', rp.status,
-                'orderType', 'R',
+                'orderType', coalesce(rp.order_type, 'R'),
                 'processedAt', rp.queued_date_time,
                 'queuedDateTime', rp.queued_date_time,
                 'sourceXmlPath', rp.source_xml_path,

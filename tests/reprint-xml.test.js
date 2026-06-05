@@ -1,0 +1,52 @@
+'use strict';
+
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'reprint-xml.js'), 'utf8');
+const context = {
+  Blob: class BlobMock {},
+  URL: {
+    createObjectURL: () => 'blob:test',
+    revokeObjectURL: () => {},
+  },
+  document: {
+    createElement: () => ({ click() {}, remove() {} }),
+    body: { appendChild() {} },
+  },
+  window: {
+    setTimeout: () => {},
+  },
+};
+vm.createContext(context);
+vm.runInContext(source, context);
+
+const ReprintXml = context.window.PrintGuardReprintXml;
+
+function sampleOrder(orderType) {
+  return {
+    orderName: '123456',
+    externalOrderId: '123456',
+    orderType,
+    printFiles: [{
+      printFilePath: '\\\\nas\\processed\\123456.pdf',
+      pageSize: '500x700',
+      copies: 1,
+    }],
+  };
+}
+
+assert.strictEqual(ReprintXml.getReprintOrderType(sampleOrder('S')), 'RS');
+assert.strictEqual(ReprintXml.getReprintOrderType(sampleOrder('C')), 'RC');
+assert.strictEqual(ReprintXml.getReprintOrderType(sampleOrder('RS')), 'RS');
+assert.strictEqual(ReprintXml.getReprintOrderType(sampleOrder('RC')), 'RC');
+assert.strictEqual(ReprintXml.getReprintOrderType(sampleOrder('R')), 'R');
+assert.strictEqual(ReprintXml.getReprintOrderType(sampleOrder('')), 'R');
+
+assert.match(ReprintXml.generateReprintXml(sampleOrder('S')), /OrderType="RS"/);
+assert.match(ReprintXml.generateReprintXml(sampleOrder('C')), /OrderType="RC"/);
+assert.match(ReprintXml.generateReprintXml(sampleOrder('R')), /OrderType="R"/);
+
+console.log('reprint XML tests passed');

@@ -17,6 +17,9 @@ create table if not exists public.print_job_label_scans (
   barcode text not null,
   raw_barcode text,
   order_number text,
+  order_type text,
+  is_reprint boolean not null default false,
+  reprint_kind text,
   station text,
   operator text,
   source text not null default 'job_label_scan',
@@ -44,6 +47,15 @@ create index if not exists print_job_label_scans_match_status_idx
 
 create index if not exists print_job_label_scans_commit_batch_id_idx
   on public.print_job_label_scans (commit_batch_id);
+
+alter table public.print_job_label_scans
+  add column if not exists order_type text;
+
+alter table public.print_job_label_scans
+  add column if not exists is_reprint boolean not null default false;
+
+alter table public.print_job_label_scans
+  add column if not exists reprint_kind text;
 
 alter table public.processed_print_orders
   add column if not exists physically_printed_at timestamptz;

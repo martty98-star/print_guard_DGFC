@@ -8,6 +8,7 @@ const {
   requirePostPurchaseAccess,
   withClient,
 } = require('./_lib/db');
+const { parseBarcode } = require('./_lib/scan-barcode');
 
 function safeText(value, maxLen = 120) {
   return String(value == null ? '' : value)
@@ -38,17 +39,22 @@ function normalizeScan(row) {
   }
   const scanId = safeText(row.scanId || row.scan_id, 180);
   const scannedAt = toIsoDate(row.scannedAt || row.scanned_at);
-  const barcode = cleanBarcode(row.barcode || row.orderNumber || row.order_number);
+  const parsedBarcode = parseBarcode(row.barcode || row.orderNumber || row.order_number);
+  const barcode = cleanBarcode(parsedBarcode.barcode);
   if (!scanId) return { scan: null, error: 'scanId is missing' };
   if (!scannedAt) return { scan: null, error: 'scannedAt is missing or invalid' };
+  if (!parsedBarcode.ok) return { scan: null, error: parsedBarcode.error };
   if (!barcode) return { scan: null, error: 'barcode is missing' };
   return {
     scan: {
       scanId,
       scannedAt,
       barcode,
-      rawBarcode: String(row.rawBarcode || row.raw_barcode || barcode).slice(0, 200),
-      orderNumber: cleanBarcode(row.orderNumber || row.order_number || barcode),
+      rawBarcode: String(row.rawBarcode || row.raw_barcode || parsedBarcode.rawBarcode || barcode).slice(0, 200),
+      orderNumber: cleanBarcode(parsedBarcode.poNumber),
+      orderType: parsedBarcode.orderType,
+      isReprint: parsedBarcode.isReprint,
+      reprintKind: parsedBarcode.reprintKind,
       station: safeText(row.station, 100),
       operator: safeText(row.operator, 100),
       source: safeText(row.source, 80) || 'job_label_scan',
@@ -104,6 +110,9 @@ async function ensureScanCommitSchema(client) {
   await client.query('alter table public.processed_print_orders add column if not exists physically_printed_station text');
   await client.query('alter table public.processed_print_orders add column if not exists physically_printed_scan_id text');
   await client.query('alter table public.processed_print_orders add column if not exists physically_printed_batch_id text');
+  await client.query('alter table public.print_job_label_scans add column if not exists order_type text');
+  await client.query('alter table public.print_job_label_scans add column if not exists is_reprint boolean not null default false');
+  await client.query('alter table public.print_job_label_scans add column if not exists reprint_kind text');
 }
 
 async function fetchExistingScanIds(client, scanIds) {
@@ -126,6 +135,11 @@ function orderCandidatesForScan(scan) {
   ].filter(Boolean)));
 }
 
+function normalizeOrderType(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  return ['S', 'C', 'R', 'RS', 'RC'].includes(normalized) ? normalized : '';
+}
+
 async function findProcessedOrderMatch(client, scan) {
   const candidates = orderCandidatesForScan(scan);
   if (!candidates.length) {
@@ -133,7 +147,7 @@ async function findProcessedOrderMatch(client, scan) {
   }
   const result = await client.query(
     `
-      select id, order_name
+      select id, order_name, order_type
       from public.processed_print_orders
       where coalesce(ignored, false) = false
         and order_name = any($1::text[])
@@ -145,6 +159,18 @@ async function findProcessedOrderMatch(client, scan) {
   const unique = new Map();
   result.rows.forEach((row) => unique.set(String(row.id), row));
   const rows = Array.from(unique.values());
+  const scannedOrderType = normalizeOrderType(scan.orderType);
+  if (scannedOrderType) {
+    const typedRows = rows.filter((row) => normalizeOrderType(row.order_type) === scannedOrderType);
+    if (typedRows.length === 1) {
+      return {
+        status: 'matched',
+        processedOrderId: typedRows[0].id,
+        orderName: typedRows[0].order_name,
+        reason: `exact order_name and order_type ${scannedOrderType} match`,
+      };
+    }
+  }
   if (rows.length === 1) {
     return {
       status: 'matched',
@@ -174,6 +200,9 @@ async function insertScan(client, scan, batchId, committedAt, committedBy) {
         barcode,
         raw_barcode,
         order_number,
+        order_type,
+        is_reprint,
+        reprint_kind,
         station,
         operator,
         source,
@@ -182,7 +211,7 @@ async function insertScan(client, scan, batchId, committedAt, committedBy) {
         committed_by,
         match_status
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, nullif($11, ''), 'pending')
+      values ($1, $2, $3, $4, $5, $6, $7::boolean, $8, $9, $10, $11, $12, $13, nullif($14, ''), 'pending')
       on conflict (scan_id) do nothing
       returning scan_id
     `,
@@ -192,6 +221,9 @@ async function insertScan(client, scan, batchId, committedAt, committedBy) {
       scan.barcode,
       scan.rawBarcode,
       scan.orderNumber,
+      scan.orderType || null,
+      Boolean(scan.isReprint),
+      scan.reprintKind || null,
       scan.station || null,
       scan.operator || null,
       scan.source || 'job_label_scan',
