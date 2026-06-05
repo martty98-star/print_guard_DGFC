@@ -8,7 +8,10 @@ const {
   requirePostPurchaseAccess,
   withClient,
 } = require('./_lib/db');
+const { ensureProcessedPrintOrderTables } = require('./_lib/processed-print-orders');
 const { parseBarcode } = require('./_lib/scan-barcode');
+
+const ACTIVE_REPRINT_STATUSES = ['pending', 'active', 'requested', 'open'];
 
 function safeText(value, maxLen = 120) {
   return String(value == null ? '' : value)
@@ -64,6 +67,7 @@ function normalizeScan(row) {
 }
 
 async function ensureScanCommitSchema(client) {
+  await ensureProcessedPrintOrderTables(client);
   await client.query(`
     create table if not exists public.print_scan_commit_batches (
       batch_id text primary key,
@@ -113,6 +117,13 @@ async function ensureScanCommitSchema(client) {
   await client.query('alter table public.print_job_label_scans add column if not exists order_type text');
   await client.query('alter table public.print_job_label_scans add column if not exists is_reprint boolean not null default false');
   await client.query('alter table public.print_job_label_scans add column if not exists reprint_kind text');
+  await client.query('alter table public.processed_order_reprint_requests add column if not exists order_type text');
+  await client.query('alter table public.processed_order_reprint_requests add column if not exists reprint_kind text');
+  await client.query('alter table public.processed_order_reprint_requests add column if not exists scan_barcode text');
+  await client.query('alter table public.processed_order_reprint_requests add column if not exists scan_raw_barcode text');
+  await client.query('alter table public.processed_order_reprint_requests add column if not exists completed_scan_id text');
+  await client.query('alter table public.processed_order_reprint_requests add column if not exists completed_batch_id text');
+  await client.query('create index if not exists processed_reprint_scan_status_idx on public.processed_order_reprint_requests (status, order_name, requested_at desc, id desc)');
 }
 
 async function fetchExistingScanIds(client, scanIds) {
@@ -193,6 +204,50 @@ async function findProcessedOrderMatch(client, scan) {
   return {
     status: 'ambiguous',
     reason: `multiple processed_print_orders.order_name matches for ${candidates.join(', ')}`,
+  };
+}
+
+async function findPendingReprintRequestMatch(client, scan) {
+  const candidates = orderCandidatesForScan(scan);
+  if (!candidates.length) {
+    return { status: 'unmatched', reason: 'reprint scan has no orderNumber candidate' };
+  }
+  const result = await client.query(
+    `
+      select
+        r.id,
+        r.order_id,
+        r.order_name,
+        r.print_file_path,
+        r.status,
+        p.order_name as processed_order_name
+      from public.processed_order_reprint_requests r
+      join public.processed_print_orders p on p.id = r.order_id
+      where lower(coalesce(r.status, '')) = any($2::text[])
+        and coalesce(p.ignored, false) = false
+        and (
+          r.order_name = any($1::text[])
+          or p.order_name = any($1::text[])
+        )
+      order by r.requested_at desc nulls last, r.id desc
+      limit 1
+    `,
+    [candidates, ACTIVE_REPRINT_STATUSES]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return {
+      status: 'unmatched',
+      reason: `reprint scan has no pending reprint request for ${candidates.join(', ')}`,
+    };
+  }
+  return {
+    status: 'matched',
+    processedOrderId: row.order_id,
+    orderName: row.processed_order_name || row.order_name,
+    reprintRequestId: row.id,
+    printFilePath: row.print_file_path || '',
+    reason: `pending reprint request ${row.id} matched`,
   };
 }
 
@@ -284,6 +339,51 @@ async function markProcessedOrderPhysicallyPrinted(client, scan, match, batchId,
   );
 }
 
+async function completeReprintRequestFromScan(client, scan, match, batchId, committedBy) {
+  const result = await client.query(
+    `
+      update public.processed_order_reprint_requests
+      set status = 'done',
+          confirmed_at = coalesce(confirmed_at, $2::timestamptz),
+          confirmed_by = coalesce(confirmed_by, nullif($3::text, '')),
+          order_type = nullif($4::text, ''),
+          reprint_kind = nullif($5::text, ''),
+          scan_barcode = nullif($6::text, ''),
+          scan_raw_barcode = nullif($7::text, ''),
+          completed_scan_id = nullif($8::text, ''),
+          completed_batch_id = nullif($9::text, '')
+      where id = $1
+        and lower(coalesce(status, '')) = any($10::text[])
+      returning id, order_id, order_name, print_file_path, status, confirmed_at, confirmed_by
+    `,
+    [
+      match.reprintRequestId,
+      scan.scannedAt,
+      committedBy || scan.operator || '',
+      scan.orderType || '',
+      scan.reprintKind || '',
+      scan.barcode || '',
+      scan.rawBarcode || scan.barcode || '',
+      scan.scanId,
+      batchId,
+      ACTIVE_REPRINT_STATUSES,
+    ]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return null;
+  }
+  return {
+    id: Number(row.id),
+    orderId: Number(row.order_id),
+    orderName: row.order_name,
+    printFilePath: row.print_file_path,
+    status: row.status,
+    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    confirmedBy: row.confirmed_by,
+  };
+}
+
 async function commitBrowserScanBatch(client, input) {
   await ensureScanCommitSchema(client);
   const committedAt = new Date().toISOString();
@@ -300,11 +400,16 @@ async function commitBrowserScanBatch(client, input) {
     unmatchedCount: 0,
     ambiguousCount: 0,
     duplicateCount: 0,
+    printedScans: 0,
+    reprintScans: 0,
+    reprintCompletedScans: 0,
+    reprintUnmatchedCount: 0,
     skippedAlreadyCommitted: 0,
     errorCount: 0,
     committedScanIds: [],
     duplicateScanIds: [],
     errorScanIds: [],
+    warnings: [],
     errors: [],
   };
   const scansById = new Map();
@@ -347,15 +452,45 @@ async function commitBrowserScanBatch(client, input) {
         }
         summary.newScansCommitted += 1;
         summary.committedScanIds.push(scan.scanId);
-        const match = await findProcessedOrderMatch(client, scan);
-        await updateScanMatch(client, scan, match);
-        if (match.status === 'matched') {
-          await markProcessedOrderPhysicallyPrinted(client, scan, match, batchId, committedBy, station);
-          summary.matchedCount += 1;
-        } else if (match.status === 'ambiguous') {
-          summary.ambiguousCount += 1;
+        if (scan.isReprint) {
+          summary.reprintScans += 1;
+          const match = await findPendingReprintRequestMatch(client, scan);
+          if (match.status === 'matched') {
+            const completed = await completeReprintRequestFromScan(client, scan, match, batchId, committedBy);
+            if (completed) {
+              await updateScanMatch(client, scan, match);
+              summary.matchedCount += 1;
+              summary.reprintCompletedScans += 1;
+            } else {
+              const staleMatch = {
+                status: 'unmatched',
+                reason: `pending reprint request ${match.reprintRequestId} was already completed`,
+                processedOrderId: match.processedOrderId,
+                orderName: match.orderName,
+              };
+              await updateScanMatch(client, scan, staleMatch);
+              summary.unmatchedCount += 1;
+              summary.reprintUnmatchedCount += 1;
+              summary.warnings.push({ scanId: scan.scanId, barcode: scan.barcode, warning: staleMatch.reason });
+            }
+          } else {
+            await updateScanMatch(client, scan, match);
+            summary.unmatchedCount += 1;
+            summary.reprintUnmatchedCount += 1;
+            summary.warnings.push({ scanId: scan.scanId, barcode: scan.barcode, warning: match.reason });
+          }
         } else {
-          summary.unmatchedCount += 1;
+          const match = await findProcessedOrderMatch(client, scan);
+          await updateScanMatch(client, scan, match);
+          if (match.status === 'matched') {
+            await markProcessedOrderPhysicallyPrinted(client, scan, match, batchId, committedBy, station);
+            summary.matchedCount += 1;
+            summary.printedScans += 1;
+          } else if (match.status === 'ambiguous') {
+            summary.ambiguousCount += 1;
+          } else {
+            summary.unmatchedCount += 1;
+          }
         }
         await client.query(`release savepoint ${savepoint}`);
       } catch (error) {
@@ -424,4 +559,13 @@ exports.handler = async function handler(event) {
     const message = error && error.message ? error.message : 'commit-scan-batch failed';
     return json(statusCode, { ok: false, error: message });
   }
+};
+
+exports._private = {
+  commitBrowserScanBatch,
+  completeReprintRequestFromScan,
+  findPendingReprintRequestMatch,
+  findProcessedOrderMatch,
+  normalizeScan,
+  orderCandidatesForScan,
 };

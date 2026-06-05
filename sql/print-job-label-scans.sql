@@ -71,3 +71,24 @@ alter table public.processed_print_orders
 
 alter table public.processed_print_orders
   add column if not exists physically_printed_batch_id text;
+
+alter table public.processed_order_reprint_requests
+  add column if not exists order_type text;
+
+alter table public.processed_order_reprint_requests
+  add column if not exists reprint_kind text;
+
+alter table public.processed_order_reprint_requests
+  add column if not exists scan_barcode text;
+
+alter table public.processed_order_reprint_requests
+  add column if not exists scan_raw_barcode text;
+
+alter table public.processed_order_reprint_requests
+  add column if not exists completed_scan_id text;
+
+alter table public.processed_order_reprint_requests
+  add column if not exists completed_batch_id text;
+
+create index if not exists processed_reprint_scan_status_idx
+  on public.processed_order_reprint_requests (status, order_name, requested_at desc, id desc);
