@@ -119,8 +119,7 @@
     return 'R';
   }
 
-  function getReprintScanBarcode(order) {
-    const orderType = getReprintOrderType(order);
+  function getReprintOriginalPoNumber(order) {
     const baseCandidates = [
       order && order.scanBarcode,
       order && order.ScanBarcode,
@@ -139,9 +138,14 @@
     ];
     for (const candidate of baseCandidates) {
       const base = normalizeScanBarcodeToken(candidate);
-      if (base) return `${base}${orderType}`;
+      if (base) return base;
     }
-    return `${assertCleanReprintTokens(order)}${orderType}`;
+    return assertCleanReprintTokens(order);
+  }
+
+  function getReprintScanBarcode(order) {
+    const orderType = getReprintOrderType(order);
+    return `${getReprintOriginalPoNumber(order)}${orderType}`;
   }
 
   function xmlDocument(pageSize, copies, printFilePath) {
@@ -153,9 +157,10 @@
 
   function generateReprintXml(order, printFile) {
     const orderId = pickOriginalOrderId(order);
-    const poNumber = assertCleanReprintTokens(order);
+    const originalPoNumber = getReprintOriginalPoNumber(order);
     const orderType = getReprintOrderType(order);
-    const scanBarcode = getReprintScanBarcode(order);
+    const poNumber = `${originalPoNumber}${orderType}`;
+    const scanBarcode = poNumber;
     const files = normalizePrintFiles(order, printFile);
     const printFileXml = files.map((file) => {
       const pageSize = file.pageSize || file.page_size || '';
@@ -164,7 +169,7 @@
       return xmlDocument(pageSize, copies, printFilePath);
     }).join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
-<XmlPrintJob OrderId="${escXml(orderId)}" PoNumber="${escXml(poNumber)}" OrderDate="${escXml(new Date().toISOString())}" OrderType="${escXml(orderType)}" ScanBarcode="${escXml(scanBarcode)}">
+<XmlPrintJob OrderId="${escXml(orderId)}" PoNumber="${escXml(poNumber)}" OriginalPoNumber="${escXml(originalPoNumber)}" OrderDate="${escXml(new Date().toISOString())}" OrderType="${escXml(orderType)}" ScanBarcode="${escXml(scanBarcode)}">
 ${printFileXml}
 </XmlPrintJob>
 `;
@@ -189,6 +194,7 @@ ${printFileXml}
     downloadXml,
     fileNameFromPath,
     generateReprintXml,
+    getReprintOriginalPoNumber,
     getReprintScanBarcode,
     getReprintOrderType,
     pickOriginalOrderId,

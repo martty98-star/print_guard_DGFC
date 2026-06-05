@@ -8,13 +8,11 @@
         padding: 5px;
         box-sizing: border-box;
       }
-
       body {
         margin: 0;
         font-family: Arial, sans-serif;
         color: #111;
       }
-
       .container-top {
         display: flex;
         align-items: center;
@@ -25,7 +23,6 @@
         border-radius: 5px;
         background: #f7f7f7;
       }
-
       .BarCode {
         width: 200px;
         flex-shrink: 0;
@@ -34,18 +31,15 @@
         border-radius: 6px;
         padding: 4px;
       }
-
       .description-box {
         text-align: center;
       }
-
       .job-name {
         flex: 1;
         font-weight: 700;
         letter-spacing: 0.8px;
         line-height: 1.15;
       }
-
       .job-name .muted {
         display: block;
         font-weight: 400;
@@ -53,7 +47,6 @@
         color: #444;
         margin-top: 2px;
       }
-
       .combi-order {
         font-weight: 800;
         margin-right: 8px;
@@ -68,49 +61,42 @@
         justify-content: center;
         align-items: center;
       }
-
       .combi-order.is-single {
         background-color: #ffeb3b;
         border: 2px solid #000;
+        color: #000;
       }
-
       .combi-order.is-combi {
         background-color: #d32f2f;
         border: 2px solid #000;
+        color: #000;
       }
-
       .combi-order.is-reprint {
         background-color: #2196f3;
         border: 2px solid #000;
-      }
-
-      .combi-order.is-reprint-single {
-        border-left: 12px solid #ffeb3b;
-        padding-left: 6px;
-      }
-
-      .combi-order.is-reprint-combi {
-        border-left: 12px solid #d32f2f;
-        padding-left: 6px;
-      }
-
-      .combi-order.is-reprint-single,
-      .combi-order.is-reprint-combi {
-        background-color: #2196f3;
-        box-shadow: inset 12px 0 0 #ffeb3b;
         color: #fff;
       }
-
-      .combi-order.is-reprint-combi {
-        box-shadow: inset 12px 0 0 #d32f2f;
+ 
+      .combi-order.is-reprint-single {
+        background-color: #2196f3;
+        border: 2px solid #000;
+        border-left: 12px solid #ffeb3b;
+        color: #fff;
+        padding-left: 6px;
       }
-
+ 
+      .combi-order.is-reprint-combi {
+        background-color: #2196f3;
+        border: 2px solid #000;
+        border-left: 12px solid #d32f2f;
+        color: #fff;
+        padding-left: 6px;
+      }
       .thumbs {
         margin-top: 10px;
         padding: 8px 2px 2px;
         border-top: 1px solid #d8d8d8;
       }
-
       .thumbnail-container {
         position: relative;
         float: left;
@@ -124,7 +110,6 @@
         box-sizing: border-box;
         box-shadow: 0 1px 3px rgba(0,0,0,0.16);
       }
-
       .thumbnail-crop {
         position: absolute;
         inset: 8px;
@@ -133,7 +118,6 @@
         background: #fff;
         z-index: 1;
       }
-
       img.thumbnail {
         display: block;
         width: 112%;
@@ -143,7 +127,6 @@
         object-fit: contain;
         border-radius: 5px;
       }
-
       .thumbnail-container::before {
         content: "NO PREVIEW";
         position: absolute;
@@ -165,7 +148,6 @@
         border-radius: 5px;
         z-index: 0;
       }
-
       .thumbnail-text {
         text-align: center;
         color: #fff;
@@ -187,7 +169,6 @@
         white-space: nowrap;
         z-index: 2;
       }
-
       .clearfix::after {
         content: "";
         display: block;
@@ -196,59 +177,68 @@
 </style>
 </head>
 <body data-order-type="%Job.OrderType%" data-po-number="%Job.PoNumber%">
+ 
 <div class="container-top">
-<div id="poBarcode" height="50" barcode_type="code39" barcode_uselabel="true" barcode_labelsize="15" aspectratio="3" class="BarCode description-box">*%Job.PoNumber%*</div>
-<div class="description-box job-name">%Job.JobName%<span class="muted">%Job.DocCount% poster(s)</span></div>
-<div id="orderTypeBox" class="description-box combi-order">%Job.OrderType%</div>
-<div height="50" barcode_type="code39" barcode_uselabel="true" barcode_labelsize="15" aspectratio="3" class="BarCode description-box">*%Job.JobName%*</div>
+ 
+<div
+        id="poBarcode"
+        height="50"
+        barcode_type="code39"
+        barcode_uselabel="true"
+        barcode_labelsize="15"
+        aspectratio="3"
+        class="BarCode description-box"
+>*%Job.PoNumber%*</div>
+<div class="description-box job-name">
+        %Job.JobName%
+<span class="muted">%Job.DocCount% poster(s)</span>
 </div>
-<div class="thumbs clearfix">%ListPagesStart%<div class="thumbnail-container">
+<div id="orderTypeBox" class="description-box combi-order">%Job.OrderType%</div>
+<div
+        height="50"
+        barcode_type="code39"
+        barcode_uselabel="true"
+        barcode_labelsize="15"
+        aspectratio="3"
+        class="BarCode description-box"
+>*%Job.JobName%*</div>
+ 
+</div>
+<div class="thumbs clearfix">
+      %ListPagesStart%
+<div class="thumbnail-container">
 <div class="thumbnail-crop">
-<img class="thumbnail" src="C:\CanonSubmit\Previews\%Job.PoNumber%_%Page.DisplayName%.jpg" onerror="this.style.display='none'">
+<img
+            class="thumbnail"
+            src="C:\\CanonSubmit\\Previews\\%Job.PoNumber%_%Page.DisplayName%.jpg"
+            onerror="this.style.display='none'"
+>
 </div>
 <div class="thumbnail-text">%Page.PageSize%<br>x %Page.Copies%</div>
-</div>%ListPagesEnd%</div>
+</div>
+      %ListPagesEnd%
+</div>
 <script type="text/javascript">
 (function () {
-  var allowedTypes = { S: true, C: true, R: true, RS: true, RC: true };
   var body = document.body;
   var box = document.getElementById('orderTypeBox');
-
-  function getPreviewParam(name) {
-    var match = window.location.search.match(new RegExp('[?&]' + name + '=([^&]+)'));
-    return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+  var t = (body.getAttribute('data-order-type') || 'S').trim().toUpperCase();
+ 
+  if (t !== 'S' && t !== 'C' && t !== 'R' && t !== 'RS' && t !== 'RC') {
+    t = 'S';
   }
-
-  function isTemplateToken(value) {
-    return /^%[^%]+%$/.test(String(value || '').trim());
-  }
-
-  function normalizeOrderType(value) {
-    var raw = String(value || '').trim().toUpperCase();
-    if (!raw || isTemplateToken(raw)) return 'S';
-    return allowedTypes[raw] ? raw : 'S';
-  }
-
-  var orderType = normalizeOrderType(
-    getPreviewParam('type') ||
-    body.getAttribute('data-order-type') ||
-    (box && box.textContent)
-  );
   if (box) {
     box.className = 'description-box combi-order';
-
-    if (orderType === 'C') {
+    if (t === 'C') {
       box.classList.add('is-combi');
       box.textContent = 'C';
-    } else if (orderType === 'RS') {
-      box.classList.add('is-reprint');
+    } else if (t === 'RS') {
       box.classList.add('is-reprint-single');
       box.textContent = 'RS';
-    } else if (orderType === 'RC') {
-      box.classList.add('is-reprint');
+    } else if (t === 'RC') {
       box.classList.add('is-reprint-combi');
       box.textContent = 'RC';
-    } else if (orderType === 'R') {
+    } else if (t === 'R') {
       box.classList.add('is-reprint');
       box.textContent = 'R';
     } else {
@@ -256,8 +246,8 @@
       box.textContent = 'S';
     }
   }
-
-  if (orderType.charAt(0) === 'R') {
+ 
+  if (t === 'R' || t === 'RS' || t === 'RC') {
     var texts = document.querySelectorAll('.thumbnail-text');
     for (var i = 0; i < texts.length; i++) {
       texts[i].innerHTML = 'REPRINT';
@@ -265,5 +255,6 @@
   }
 })();
 </script>
+ 
 </body>
 </html>
