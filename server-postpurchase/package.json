@@ -1,7 +1,7 @@
 {
   "name": "printguard-postpurchase-server-sync",
   "private": true,
-  "version": "1.0.0",
+  "version": "8.1.0",
   "scripts": {
     "sync": "node sync-postpurchase-orders.js"
   },

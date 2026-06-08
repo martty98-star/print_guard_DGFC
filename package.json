@@ -1,7 +1,7 @@
 {
   "name": "print-guard-dgfc",
   "private": true,
-  "version": "8.0.0",
+  "version": "8.1.0",
   "scripts": {
     "db:audit": "node scripts/audit-db-schema.js",
     "db:indexes": "node scripts/audit-db-indexes.js",
