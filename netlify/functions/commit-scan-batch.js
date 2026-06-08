@@ -120,6 +120,12 @@ async function ensureScanCommitSchema(client) {
   await client.query('alter table public.processed_print_orders add column if not exists physically_printed_station text');
   await client.query('alter table public.processed_print_orders add column if not exists physically_printed_scan_id text');
   await client.query('alter table public.processed_print_orders add column if not exists physically_printed_batch_id text');
+  await client.query(`
+    create index if not exists processed_print_orders_active_order_name_queued_idx
+      on public.processed_print_orders (order_name, queued_date_time desc nulls last, id desc)
+      where order_name is not null
+        and coalesce(ignored, false) = false
+  `);
   await client.query('alter table public.print_job_label_scans add column if not exists order_type text');
   await client.query('alter table public.print_job_label_scans add column if not exists is_reprint boolean not null default false');
   await client.query('alter table public.print_job_label_scans add column if not exists reprint_kind text');
@@ -162,61 +168,243 @@ function normalizeOrderType(value) {
   return ['S', 'C', 'R', 'RS', 'RC'].includes(normalized) ? normalized : '';
 }
 
-async function findProcessedOrderMatch(client, scan) {
-  const candidates = orderCandidatesForScan(scan);
-  if (!candidates.length) {
-    return { status: 'unmatched', reason: 'scan has no orderNumber or barcode candidate' };
-  }
-  const result = await client.query(
-    `
-      select id, order_name, order_type
-      from public.processed_print_orders
-      where coalesce(ignored, false) = false
-        and order_name = any($1::text[])
-      order by queued_date_time desc nulls last, id desc
-      limit 5
-    `,
-    [candidates]
-  );
-  const unique = new Map();
-  result.rows.forEach((row) => unique.set(String(row.id), row));
-  const rows = Array.from(unique.values());
-  const scannedOrderType = normalizeOrderType(scan.orderType);
-  if (scannedOrderType) {
-    const typedRows = rows.filter((row) => normalizeOrderType(row.order_type) === scannedOrderType);
-    if (typedRows.length === 1) {
-      return {
-        status: 'matched',
-        processedOrderId: typedRows[0].id,
-        orderName: typedRows[0].order_name,
-        reason: `exact order_name and order_type ${scannedOrderType} match`,
-      };
+function isReprintOrderType(value) {
+  return normalizeOrderType(value).startsWith('R');
+}
+
+function candidateTimestamp(row) {
+  const value = row && row.queued_date_time;
+  const time = value instanceof Date ? value.getTime() : Date.parse(String(value || ''));
+  return Number.isFinite(time) ? time : 0;
+}
+
+function sortProcessedOrderCandidates(rows) {
+  return [...rows].sort((left, right) => {
+    const timeDiff = candidateTimestamp(right) - candidateTimestamp(left);
+    if (timeDiff) return timeDiff;
+    return Number(right.id || 0) - Number(left.id || 0);
+  });
+}
+
+function summarizeProcessedOrderCandidate(row) {
+  return {
+    id: row.id,
+    orderName: row.order_name,
+    orderType: row.order_type || null,
+    status: row.status || null,
+    queuedDateTime: row.queued_date_time instanceof Date
+      ? row.queued_date_time.toISOString()
+      : String(row.queued_date_time || ''),
+  };
+}
+
+function makeCandidateDebug(candidates, rows) {
+  return {
+    attempted_keys: candidates,
+    db_candidate_count: rows.length,
+    candidates: rows.map(summarizeProcessedOrderCandidate),
+  };
+}
+
+function matchDiagnostic(scan, match) {
+  return {
+    scanId: scan.scanId,
+    barcode: scan.barcode,
+    normalizedBarcode: scan.barcode,
+    orderNumber: scan.orderNumber,
+    orderType: scan.orderType || null,
+    isReprint: Boolean(scan.isReprint),
+    status: match.status,
+    reason_code: match.reasonCode || null,
+    reason: match.reason || '',
+    candidate_debug: match.candidateDebug || {
+      attempted_keys: orderCandidatesForScan(scan),
+      db_candidate_count: 0,
+      candidates: [],
+    },
+  };
+}
+
+function chooseSingleCandidateByPriority(candidates, rows, predicate) {
+  for (const candidate of candidates) {
+    const matchingRows = rows.filter((row) => row.order_name === candidate).filter(predicate);
+    if (matchingRows.length === 1) {
+      return { row: matchingRows[0], candidate, ambiguousRows: [] };
+    }
+    if (matchingRows.length > 1) {
+      return { row: null, candidate, ambiguousRows: matchingRows };
     }
   }
-  if (rows.length === 1) {
+  return { row: null, candidate: '', ambiguousRows: [] };
+}
+
+function buildProcessedOrderMatch(scan, candidates, rows) {
+  const candidateDebug = makeCandidateDebug(candidates, rows);
+  if (!candidates.length) {
     return {
-      status: 'matched',
-      processedOrderId: rows[0].id,
-      orderName: rows[0].order_name,
-      reason: 'exact order_name match',
+      status: 'unmatched',
+      reasonCode: 'no_scan_candidate',
+      reason: 'scan has no orderNumber or barcode candidate',
+      candidateDebug,
     };
   }
   if (!rows.length) {
     return {
       status: 'unmatched',
+      reasonCode: 'no_processed_order_candidate',
       reason: `no processed_print_orders.order_name match for ${candidates.join(', ')}`,
+      candidateDebug,
+    };
+  }
+
+  const scannedOrderType = normalizeOrderType(scan.orderType);
+  if (scannedOrderType) {
+    const typedChoice = chooseSingleCandidateByPriority(
+      candidates,
+      rows,
+      (row) => normalizeOrderType(row.order_type) === scannedOrderType
+    );
+    if (typedChoice.row) {
+      return {
+        status: 'matched',
+        processedOrderId: typedChoice.row.id,
+        orderName: typedChoice.row.order_name,
+        reasonCode: 'exact_order_type_match',
+        reason: `exact order_name and order_type ${scannedOrderType} match`,
+        candidateDebug,
+      };
+    }
+    if (typedChoice.ambiguousRows.length) {
+      return {
+        status: 'ambiguous',
+        reasonCode: 'multiple_order_type_candidates',
+        reason: `multiple processed_print_orders.order_name and order_type ${scannedOrderType} matches for ${typedChoice.candidate}`,
+        candidateDebug,
+      };
+    }
+    return {
+      status: 'unmatched',
+      reasonCode: 'no_order_type_candidate',
+      reason: `no processed_print_orders.order_type ${scannedOrderType} match for ${candidates.join(', ')}`,
+      candidateDebug,
+    };
+  }
+
+  if (!scan.isReprint) {
+    const normalChoice = chooseSingleCandidateByPriority(
+      candidates,
+      rows,
+      (row) => !isReprintOrderType(row.order_type)
+    );
+    if (normalChoice.row) {
+      return {
+        status: 'matched',
+        processedOrderId: normalChoice.row.id,
+        orderName: normalChoice.row.order_name,
+        reasonCode: 'normal_scan_non_reprint_match',
+        reason: 'normal scan matched the non-reprint processed order',
+        candidateDebug,
+      };
+    }
+    if (normalChoice.ambiguousRows.length) {
+      return {
+        status: 'ambiguous',
+        reasonCode: 'multiple_non_reprint_candidates',
+        reason: `multiple non-reprint processed_print_orders.order_name matches for ${normalChoice.candidate}`,
+        candidateDebug,
+      };
+    }
+    return {
+      status: 'unmatched',
+      reasonCode: 'only_reprint_candidates',
+      reason: `only reprint processed_print_orders.order_name matches for normal scan ${candidates.join(', ')}`,
+      candidateDebug,
+    };
+  }
+
+  if (rows.length === 1) {
+    return {
+      status: 'matched',
+      processedOrderId: rows[0].id,
+      orderName: rows[0].order_name,
+      reasonCode: 'exact_order_name_match',
+      reason: 'exact order_name match',
+      candidateDebug,
     };
   }
   return {
     status: 'ambiguous',
+    reasonCode: 'multiple_order_name_candidates',
     reason: `multiple processed_print_orders.order_name matches for ${candidates.join(', ')}`,
+    candidateDebug,
   };
+}
+
+async function fetchProcessedOrderCandidateRows(client, candidates) {
+  const keys = Array.from(new Set((candidates || []).map(cleanBarcode).filter(Boolean)));
+  if (!keys.length) return [];
+  const result = await client.query(
+    `
+      select id, order_name, order_type, status, queued_date_time
+      from public.processed_print_orders
+      where coalesce(ignored, false) = false
+        and order_name = any($1::text[])
+      order by queued_date_time desc nulls last, id desc
+    `,
+    [keys]
+  );
+  const unique = new Map();
+  result.rows.forEach((row) => unique.set(String(row.id), row));
+  return sortProcessedOrderCandidates(Array.from(unique.values()));
+}
+
+async function fetchProcessedOrderCandidateLookup(client, scans) {
+  const keys = new Set();
+  (scans || []).forEach((scan) => {
+    if (!scan || scan.isReprint) return;
+    orderCandidatesForScan(scan).forEach((candidate) => keys.add(candidate));
+  });
+  const rows = await fetchProcessedOrderCandidateRows(client, Array.from(keys));
+  const lookup = new Map();
+  rows.forEach((row) => {
+    const key = String(row.order_name || '');
+    if (!key) return;
+    if (!lookup.has(key)) lookup.set(key, []);
+    lookup.get(key).push(row);
+  });
+  return lookup;
+}
+
+function candidateRowsFromLookup(candidates, lookup) {
+  const unique = new Map();
+  for (const candidate of candidates) {
+    const rows = lookup && lookup.get(candidate) ? lookup.get(candidate) : [];
+    rows.forEach((row) => unique.set(String(row.id), row));
+  }
+  return sortProcessedOrderCandidates(Array.from(unique.values()));
+}
+
+async function findProcessedOrderMatch(client, scan, candidateLookup = null) {
+  const candidates = orderCandidatesForScan(scan);
+  const rows = candidateLookup
+    ? candidateRowsFromLookup(candidates, candidateLookup)
+    : await fetchProcessedOrderCandidateRows(client, candidates);
+  return buildProcessedOrderMatch(scan, candidates, rows);
 }
 
 async function findPendingReprintRequestMatch(client, scan) {
   const candidates = orderCandidatesForScan(scan);
   if (!candidates.length) {
-    return { status: 'unmatched', reason: 'reprint scan has no orderNumber candidate' };
+    return {
+      status: 'unmatched',
+      reasonCode: 'no_reprint_scan_candidate',
+      reason: 'reprint scan has no orderNumber candidate',
+      candidateDebug: {
+        attempted_keys: candidates,
+        db_candidate_count: 0,
+        candidates: [],
+      },
+    };
   }
   const result = await client.query(
     `
@@ -244,7 +432,13 @@ async function findPendingReprintRequestMatch(client, scan) {
   if (!row) {
     return {
       status: 'unmatched',
+      reasonCode: 'no_pending_reprint_request',
       reason: `reprint scan has no pending reprint request for ${candidates.join(', ')}`,
+      candidateDebug: {
+        attempted_keys: candidates,
+        db_candidate_count: 0,
+        candidates: [],
+      },
     };
   }
   return {
@@ -253,7 +447,19 @@ async function findPendingReprintRequestMatch(client, scan) {
     orderName: row.processed_order_name || row.order_name,
     reprintRequestId: row.id,
     printFilePath: row.print_file_path || '',
+    reasonCode: 'pending_reprint_request_match',
     reason: `pending reprint request ${row.id} matched`,
+    candidateDebug: {
+      attempted_keys: candidates,
+      db_candidate_count: 1,
+      candidates: [{
+        id: row.order_id,
+        orderName: row.processed_order_name || row.order_name,
+        orderType: null,
+        status: row.status || null,
+        reprintRequestId: row.id,
+      }],
+    },
   };
 }
 
@@ -415,6 +621,7 @@ async function commitBrowserScanBatch(client, input) {
     committedScanIds: [],
     duplicateScanIds: [],
     errorScanIds: [],
+    matchDiagnostics: [],
     warnings: [],
     errors: [],
   };
@@ -444,6 +651,7 @@ async function commitBrowserScanBatch(client, input) {
 
   await client.query('begin');
   try {
+    const processedOrderCandidateLookup = await fetchProcessedOrderCandidateLookup(client, pendingScans);
     for (let index = 0; index < pendingScans.length; index += 1) {
       const scan = pendingScans[index];
       const savepoint = `browser_scan_commit_${index}`;
@@ -470,23 +678,27 @@ async function commitBrowserScanBatch(client, input) {
             } else {
               const staleMatch = {
                 status: 'unmatched',
+                reasonCode: 'reprint_request_already_completed',
                 reason: `pending reprint request ${match.reprintRequestId} was already completed`,
                 processedOrderId: match.processedOrderId,
                 orderName: match.orderName,
+                candidateDebug: match.candidateDebug,
               };
               await updateScanMatch(client, scan, staleMatch);
               summary.unmatchedCount += 1;
               summary.reprintUnmatchedCount += 1;
+              summary.matchDiagnostics.push(matchDiagnostic(scan, staleMatch));
               summary.warnings.push({ scanId: scan.scanId, barcode: scan.barcode, warning: staleMatch.reason });
             }
           } else {
             await updateScanMatch(client, scan, match);
             summary.unmatchedCount += 1;
             summary.reprintUnmatchedCount += 1;
+            summary.matchDiagnostics.push(matchDiagnostic(scan, match));
             summary.warnings.push({ scanId: scan.scanId, barcode: scan.barcode, warning: match.reason });
           }
         } else {
-          const match = await findProcessedOrderMatch(client, scan);
+          const match = await findProcessedOrderMatch(client, scan, processedOrderCandidateLookup);
           await updateScanMatch(client, scan, match);
           if (match.status === 'matched') {
             await markProcessedOrderPhysicallyPrinted(client, scan, match, batchId, committedBy, station);
@@ -494,8 +706,10 @@ async function commitBrowserScanBatch(client, input) {
             summary.printedScans += 1;
           } else if (match.status === 'ambiguous') {
             summary.ambiguousCount += 1;
+            summary.matchDiagnostics.push(matchDiagnostic(scan, match));
           } else {
             summary.unmatchedCount += 1;
+            summary.matchDiagnostics.push(matchDiagnostic(scan, match));
           }
         }
         await client.query(`release savepoint ${savepoint}`);
@@ -571,6 +785,8 @@ exports.handler = async function handler(event) {
 exports._private = {
   commitBrowserScanBatch,
   completeReprintRequestFromScan,
+  fetchProcessedOrderCandidateLookup,
+  fetchProcessedOrderCandidateRows,
   findPendingReprintRequestMatch,
   findProcessedOrderMatch,
   normalizeScan,

@@ -11,7 +11,7 @@ function makeClient(seed = {}) {
   const state = {
     processedOrders: (seed.processedOrders || []).map((row) => ({ ...row })),
     reprintRequests: (seed.reprintRequests || []).map((row) => ({ ...row })),
-    scans: [],
+    scans: (seed.scans || []).map((row) => ({ ...row })),
     printedUpdates: [],
     reprintUpdates: [],
     scanMatchUpdates: [],
@@ -63,13 +63,21 @@ function makeClient(seed = {}) {
         return { rows: [], rowCount: scan ? 1 : 0 };
       }
 
-      if (text.includes('select id, order_name, order_type') && text.includes('from public.processed_print_orders')) {
+      if (text.includes('from public.processed_print_orders') && text.includes('order_name = any')) {
         const candidates = new Set(params[0] || []);
         const rows = state.processedOrders
           .filter((row) => !row.ignored && candidates.has(row.order_name))
-          .sort((a, b) => Number(b.id) - Number(a.id))
-          .slice(0, 5)
-          .map((row) => ({ id: row.id, order_name: row.order_name, order_type: row.order_type }));
+          .sort((a, b) => {
+            const timeDiff = Date.parse(b.queued_date_time || 0) - Date.parse(a.queued_date_time || 0);
+            return timeDiff || Number(b.id) - Number(a.id);
+          })
+          .map((row) => ({
+            id: row.id,
+            order_name: row.order_name,
+            order_type: row.order_type,
+            status: row.status || null,
+            queued_date_time: row.queued_date_time || null,
+          }));
         return { rows, rowCount: rows.length };
       }
 
@@ -178,6 +186,60 @@ async function run() {
 
   {
     const client = makeClient({
+      processedOrders: [
+        {
+          id: 17055,
+          order_name: 'PS4776845',
+          order_type: 'S',
+          status: 'Opened',
+          queued_date_time: '2026-06-08T04:35:22.364Z',
+        },
+        {
+          id: 17314,
+          order_name: 'PS4776845',
+          order_type: 'RS',
+          status: 'Opened',
+          queued_date_time: '2026-06-08T12:43:38.348Z',
+        },
+      ],
+    });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, { scans: [scanRow('ps-normal-1', 'PS4776845')] });
+    assert.strictEqual(summary.printedScans, 1);
+    assert.strictEqual(summary.matchedCount, 1);
+    assert.strictEqual(summary.ambiguousCount, 0);
+    assert.strictEqual(client.state.printedUpdates.length, 1);
+    assert.strictEqual(client.state.printedUpdates[0].processedOrderId, 17055);
+    assert.strictEqual(client.state.scans[0].match_status, 'matched');
+    assert.strictEqual(client.state.scans[0].matched_processed_order_id, 17055);
+  }
+
+  {
+    const client = makeClient({
+      processedOrders: [
+        {
+          id: 200,
+          order_name: '26967599',
+          order_type: 'C',
+          queued_date_time: '2026-06-08T04:35:22.364Z',
+        },
+        {
+          id: 201,
+          order_name: '26967599',
+          order_type: 'RC',
+          queued_date_time: '2026-06-08T12:43:38.348Z',
+        },
+      ],
+    });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, { scans: [scanRow('numeric-normal-1', '26967599')] });
+    assert.strictEqual(summary.printedScans, 1);
+    assert.strictEqual(summary.matchedCount, 1);
+    assert.strictEqual(summary.ambiguousCount, 0);
+    assert.strictEqual(client.state.printedUpdates[0].processedOrderId, 200);
+    assert.strictEqual(client.state.scans[0].matched_processed_order_id, 200);
+  }
+
+  {
+    const client = makeClient({
       processedOrders: [{ id: 1, order_name: '26967599', order_type: 'C' }],
       reprintRequests: [{ id: 10, order_id: 1, order_name: '26967599', status: 'pending', requested_at: '2026-06-05T09:00:00.000Z' }],
     });
@@ -218,6 +280,38 @@ async function run() {
     assert.strictEqual(client.state.printedUpdates.length, 0);
     assert.strictEqual(client.state.reprintUpdates.length, 0);
     assert.strictEqual(client.state.scans[0].match_status, 'unmatched');
+  }
+
+  {
+    const client = makeClient({ processedOrders: [] });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, { scans: [scanRow('missing-normal-1', 'PS9999999')] });
+    assert.strictEqual(summary.printedScans, 0);
+    assert.strictEqual(summary.matchedCount, 0);
+    assert.strictEqual(summary.unmatchedCount, 1);
+    assert.strictEqual(summary.matchDiagnostics.length, 1);
+    assert.strictEqual(summary.matchDiagnostics[0].reason_code, 'no_processed_order_candidate');
+    assert.deepStrictEqual(summary.matchDiagnostics[0].candidate_debug.attempted_keys, ['PS9999999', '9999999']);
+    assert.strictEqual(summary.matchDiagnostics[0].candidate_debug.db_candidate_count, 0);
+    assert.strictEqual(client.state.scans[0].match_status, 'unmatched');
+  }
+
+  {
+    const client = makeClient({
+      processedOrders: [{ id: 300, order_name: 'PS4777000', order_type: 'S' }],
+    });
+    const scan = scanRow('retry-normal-1', 'PS4777000');
+    const firstSummary = await ScanCommit.commitBrowserScanBatch(client, { batchId: 'browser-scan-batch-retry', scans: [scan] });
+    assert.strictEqual(firstSummary.matchedCount, 1);
+    assert.strictEqual(firstSummary.newScansCommitted, 1);
+
+    const retrySummary = await ScanCommit.commitBrowserScanBatch(client, { batchId: 'browser-scan-batch-retry', scans: [scan] });
+    assert.strictEqual(retrySummary.newScansCommitted, 0);
+    assert.strictEqual(retrySummary.matchedCount, 0);
+    assert.strictEqual(retrySummary.unmatchedCount, 0);
+    assert.strictEqual(retrySummary.ambiguousCount, 0);
+    assert.strictEqual(retrySummary.duplicateCount, 1);
+    assert.strictEqual(retrySummary.skippedAlreadyCommitted, 1);
+    assert.deepStrictEqual(retrySummary.matchDiagnostics, []);
   }
 }
 
