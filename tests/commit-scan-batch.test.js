@@ -163,10 +163,16 @@ async function run() {
     const client = makeClient({
       processedOrders: [{ id: 1, order_name: '26967599', order_type: 'S' }],
     });
-    const summary = await ScanCommit.commitBrowserScanBatch(client, { scans: [scanRow('normal-1', '26967599')] });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, {
+      batchId: 'browser-scan-batch-test-1',
+      scans: [scanRow('normal-1', '26967599')],
+    });
+    assert.strictEqual(summary.batchId, 'browser-scan-batch-test-1');
     assert.strictEqual(summary.printedScans, 1);
     assert.strictEqual(summary.reprintCompletedScans, 0);
     assert.strictEqual(client.state.printedUpdates.length, 1);
+    assert.strictEqual(client.state.printedUpdates[0].batchId, 'browser-scan-batch-test-1');
+    assert.strictEqual(client.state.batches[0].params[0], 'browser-scan-batch-test-1');
     assert.strictEqual(client.state.reprintUpdates.length, 0);
   }
 

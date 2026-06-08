@@ -36,6 +36,12 @@ function makeBatchId(date = new Date()) {
   return `browser-scan-batch-${stamp}-${crypto.randomUUID()}`;
 }
 
+function normalizeBatchId(value) {
+  const batchId = safeText(value, 180);
+  if (!batchId) return '';
+  return /^[A-Za-z0-9._:-]+$/.test(batchId) ? batchId : '';
+}
+
 function normalizeScan(row) {
   if (!row || typeof row !== 'object') {
     return { scan: null, error: 'scan row is not an object' };
@@ -389,7 +395,7 @@ async function commitBrowserScanBatch(client, input) {
   const committedAt = new Date().toISOString();
   const committedBy = safeText(input.committedBy || input.operator, 100);
   const station = safeText(input.station, 100);
-  const batchId = makeBatchId(new Date(committedAt));
+  const batchId = normalizeBatchId(input.batchId || input.batch_id) || makeBatchId(new Date(committedAt));
   const rawScans = Array.isArray(input.scans) ? input.scans : [];
   const summary = {
     ok: true,
@@ -520,6 +526,7 @@ async function commitBrowserScanBatch(client, input) {
           source
         )
         values ($1, $2, nullif($3, ''), nullif($4, ''), $5, $6, $7, $8, $9, 'browser_local_queue')
+        on conflict (batch_id) do nothing
       `,
       [
         batchId,

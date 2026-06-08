@@ -67,6 +67,18 @@
     return `browser-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
+  function makeBatchId() {
+    const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+    if (global.crypto && typeof global.crypto.randomUUID === 'function') {
+      return `browser-scan-batch-${stamp}-${global.crypto.randomUUID()}`;
+    }
+    return `browser-scan-batch-${stamp}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function getScanBatchId(scan) {
+    return String(scan && (scan.batchId || scan.batch_id) || '').trim();
+  }
+
   function setStatus(message, tone = '') {
     const node = el('scan-capture-status');
     if (!node) return;
@@ -148,6 +160,25 @@
     });
   }
 
+  async function queuePutMany(scans) {
+    const rowsToSave = Array.isArray(scans) ? scans.filter((scan) => scan && scan.scanId) : [];
+    if (!rowsToSave.length) return;
+    const db = await openQueueDB();
+    if (!db) {
+      const byId = new Map(readFallbackQueue().map((row) => [row.scanId, row]));
+      rowsToSave.forEach((scan) => byId.set(scan.scanId, scan));
+      writeFallbackQueue(Array.from(byId.values()));
+      return;
+    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SCANS, 'readwrite');
+      const store = tx.objectStore(STORE_SCANS);
+      rowsToSave.forEach((scan) => store.put(scan));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error('IndexedDB batch write failed'));
+    });
+  }
+
   async function queueDelete(scanId) {
     if (!scanId) return;
     const db = await openQueueDB();
@@ -183,6 +214,23 @@
 
   function pendingScans() {
     return state.queue.filter((scan) => String(scan.commitStatus || 'pending') === 'pending');
+  }
+
+  async function ensurePendingBatchId(scans) {
+    const pending = Array.isArray(scans) ? scans : [];
+    const batchId = pending.map(getScanBatchId).find(Boolean) || makeBatchId();
+    const updatedById = new Map();
+    const updatedScans = pending.map((scan) => {
+      if (getScanBatchId(scan) === batchId) return scan;
+      const updated = { ...scan, batchId };
+      updatedById.set(updated.scanId, updated);
+      return updated;
+    });
+    if (updatedById.size) {
+      await queuePutMany(Array.from(updatedById.values()));
+      state.queue = state.queue.map((scan) => updatedById.get(scan.scanId) || scan);
+    }
+    return { batchId, scans: updatedScans };
   }
 
   function renderKpis() {
@@ -237,6 +285,10 @@
       [t('scan.summary.skipped'), skipped],
       [t('scan.summary.errors'), result.errorCount],
     ];
+    const duplicateOnlyRetry = skipped > 0
+      && Number(result.newScansCommitted || 0) === 0
+      && Number(result.matchedCount || 0) === 0
+      && Number(result.errorCount || 0) === 0;
     wrap.innerHTML = `
       <div class="scan-result-grid">
         ${cells.map(([label, value]) => `
@@ -247,6 +299,7 @@
         `).join('')}
       </div>
       <div class="header-meta">Batch ${esc(result.batchId || '—')}</div>
+      ${duplicateOnlyRetry ? `<div class="hint">Retry/dedupe: ${esc(fmtInt(skipped))} scanů už server eviduje pro tento batch. Matched 0 u retry neznamená, že první commit neproběhl.</div>` : ''}
     `;
   }
 
@@ -313,20 +366,24 @@
   }
 
   async function commitScans() {
-    const scans = pendingScans();
-    if (!scans.length) {
-      setStatus(t('scan.queue.empty'), 'ok');
-      return;
-    }
-    const operator = getInputValue('scan-operator-input');
-    const station = getInputValue('scan-station-input') || DEFAULT_STATION;
+    if (state.loading) return;
+    state.loading = true;
     const button = el('scan-commit-btn');
     if (button) button.disabled = true;
     try {
+      const pending = pendingScans();
+      if (!pending.length) {
+        setStatus(t('scan.queue.empty'), 'ok');
+        return;
+      }
+      const { batchId, scans } = await ensurePendingBatchId(pending);
+      const operator = getInputValue('scan-operator-input');
+      const station = getInputValue('scan-station-input') || DEFAULT_STATION;
       setStatus(t('scan.status.committing'));
       state.commitResult = await Api.commitScanBatch({
         fetchImpl: global.fetch.bind(global),
         headers: scanCommitHeaders(),
+        batchId,
         scans,
         committedBy: operator,
         operator,
@@ -344,6 +401,7 @@
     } catch (error) {
       setStatus(`${t('scan.status.commit-failed')}: ${error.message || error}`, 'error');
     } finally {
+      state.loading = false;
       if (button) button.disabled = false;
     }
   }

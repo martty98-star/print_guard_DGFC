@@ -27,6 +27,7 @@
       headers: options.headers || { 'content-type': 'application/json' },
       cache: 'no-store',
       body: JSON.stringify({
+        batchId: options.batchId || '',
         scans: options.scans || [],
         committedBy: options.committedBy || '',
         operator: options.operator || '',
