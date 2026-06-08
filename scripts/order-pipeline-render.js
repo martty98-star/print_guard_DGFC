@@ -726,7 +726,7 @@
       const label = fileNameFromPath(path) || `PDF ${index + 1}`;
       const orderId = row.processedOrderId || row.id;
       const pdfUrl = typeof options.toPdfHref === 'function'
-        ? options.toPdfHref({ orderId, orderName: row.orderName || row.processedOrderName || '', fileIndex: index })
+        ? options.toPdfHref({ orderId, fileIndex: index })
         : '';
       const actionState = getReprintActionState(orderId, path, options);
       const pending = actionState.state === 'pending' || actionState.state === 'resolving';

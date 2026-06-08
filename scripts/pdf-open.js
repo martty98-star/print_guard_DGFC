@@ -6,7 +6,6 @@
   function getPdfProxyBase() {
     const configured = String(
       window.PRINTGUARD_PDF_PROXY_BASE ||
-      window.SCAN_CAPTURE_API_BASE ||
       DEFAULT_PDF_PROXY_BASE
     ).trim();
     return configured.replace(/\/+$/, '');
@@ -16,17 +15,10 @@
     const params = new URLSearchParams();
     const orderId = Number(options && options.orderId);
     const fileIndex = Number(options && options.fileIndex);
-    const orderName = String(options && options.orderName || '').trim();
-    if (Number.isInteger(orderId) && orderId > 0) {
-      params.set('orderId', String(orderId));
-    } else if (orderName) {
-      params.set('orderName', orderName);
-    } else {
-      return '';
-    }
+    if (!Number.isInteger(orderId) || orderId <= 0) return '';
     if (!Number.isInteger(fileIndex) || fileIndex < 0) return '';
+    params.set('orderId', String(orderId));
     params.set('fileIndex', String(fileIndex));
-    if (options && options.download) params.set('download', '1');
     return `${getPdfProxyBase()}/pdf-open?${params.toString()}`;
   }
 
@@ -49,21 +41,15 @@
   }
 
   function openPdfUrl(options) {
-    const pdfUrl = String(options.url || '').trim();
+    const pdfUrl = String(options && options.url || '').trim();
     if (!pdfUrl) return;
-    const showToast = options.showToast || function noop() {};
+    const showToast = options && options.showToast || function noop() {};
     try {
-      const popup = window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-      if (popup) return;
+      window.open(pdfUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.debug('PDF proxy open blocked', error);
+      showToast('PDF opening blocked by browser popup settings.', 'error');
     }
-    const anchor = document.createElement('a');
-    anchor.href = pdfUrl;
-    anchor.target = '_blank';
-    anchor.rel = 'noopener noreferrer';
-    anchor.click();
-    showToast('PDF opening blocked by browser popup settings.', 'error');
   }
 
   window.PrintGuardPdfOpen = {

@@ -614,7 +614,32 @@
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
 
+  function bindPdfOpenDelegation(wrap) {
+    if (!wrap || wrap.dataset.pdfOpenBound === '1') return;
+    wrap.dataset.pdfOpenBound = '1';
+    wrap.addEventListener('click', (event) => {
+      const target = event.target && typeof event.target.closest === 'function'
+        ? event.target
+        : event.target && event.target.parentElement;
+      const button = target && typeof target.closest === 'function'
+        ? target.closest('[data-open-pdf-url]')
+        : null;
+      if (!button || !wrap.contains(button)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      if (button.disabled) return;
+      PdfOpen.openPdfUrl({
+        url: button.dataset.openPdfUrl || '',
+        showToast: state.showToast,
+      });
+    }, true);
+  }
+
   function bindProcessedOrderActions(wrap) {
+    bindPdfOpenDelegation(wrap);
     wrap.querySelectorAll('[data-copy-path]').forEach((button) => {
       button.addEventListener('click', async () => {
         try {
@@ -641,14 +666,6 @@
       button.textContent = t('processed.status.loading');
       loadPostPurchaseOrders(true, { append: true }).finally(() => {
         button.disabled = false;
-      });
-    });
-    wrap.querySelectorAll('[data-open-pdf-url]').forEach((button) => {
-      button.addEventListener('click', () => {
-        PdfOpen.openPdfUrl({
-          url: button.dataset.openPdfUrl || '',
-          showToast: state.showToast,
-        });
       });
     });
     wrap.querySelectorAll('[data-reprint-order-id]').forEach((button) => {
