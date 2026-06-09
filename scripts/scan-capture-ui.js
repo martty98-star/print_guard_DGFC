@@ -277,6 +277,9 @@
       return;
     }
     const skipped = Number(result.duplicateCount || 0) + Number(result.skippedAlreadyCommitted || 0);
+    const committed = Number(result.newScansCommitted || 0);
+    const matched = Number(result.matchedCount || 0);
+    const orderUpdates = Number(result.orderUpdateCount || 0);
     const cells = [
       [t('scan.summary.read'), result.totalScansRead],
       [t('scan.summary.committed'), result.newScansCommitted],
@@ -285,10 +288,18 @@
       [t('scan.summary.skipped'), skipped],
       [t('scan.summary.errors'), result.errorCount],
     ];
-    const duplicateOnlyRetry = skipped > 0
-      && Number(result.newScansCommitted || 0) === 0
-      && Number(result.matchedCount || 0) === 0
-      && Number(result.errorCount || 0) === 0;
+    const zeroMatchCommit = committed > 0 && matched === 0;
+    const retrySkippedWithoutUpdate = skipped > 0
+      && committed === 0
+      && matched === 0
+      && orderUpdates === 0
+      && result.retryMode
+      && result.retryMode !== 'fresh';
+    const warningText = result.commitOk === false || zeroMatchCommit
+      ? 'Scany byly zapsány, ale žádná objednávka nebyla spárována.'
+      : retrySkippedWithoutUpdate
+        ? 'Retry našel již zapsané scany, ale objednávky nebyly aktualizované.'
+        : '';
     wrap.innerHTML = `
       <div class="scan-result-grid">
         ${cells.map(([label, value]) => `
@@ -298,8 +309,8 @@
           </div>
         `).join('')}
       </div>
-      <div class="header-meta">Batch ${esc(result.batchId || '—')}</div>
-      ${duplicateOnlyRetry ? `<div class="hint">Retry/dedupe: ${esc(fmtInt(skipped))} scanů už server eviduje pro tento batch. Matched 0 u retry neznamená, že první commit neproběhl.</div>` : ''}
+      <div class="header-meta">Batch ${esc(result.batchId || '—')} · ${esc(result.retryMode || 'fresh')} · ${esc(result.status || 'unknown')}</div>
+      ${warningText ? `<div class="hint is-error">${esc(warningText)}</div>` : ''}
     `;
   }
 
@@ -391,13 +402,23 @@
       });
       const removeIds = new Set([
         ...(state.commitResult.committedScanIds || []),
+        ...(state.commitResult.processedScanIds || []),
         ...(state.commitResult.duplicateScanIds || []),
       ]);
       (state.commitResult.errorScanIds || []).forEach((scanId) => removeIds.delete(scanId));
       if (removeIds.size) await queueDeleteMany(Array.from(removeIds));
       await refreshScanCapture();
       renderCommitResult();
-      setStatus(t('scan.status.commit-done'), 'ok');
+      const committed = Number(state.commitResult.newScansCommitted || 0);
+      const matched = Number(state.commitResult.matchedCount || 0);
+      const orderUpdates = Number(state.commitResult.orderUpdateCount || 0);
+      if (state.commitResult.commitOk === false || (committed > 0 && matched === 0)) {
+        setStatus('Scany byly zapsány, ale žádná objednávka nebyla spárována.', 'error');
+      } else if (matched === 0 && orderUpdates === 0 && state.commitResult.retryMode && state.commitResult.retryMode !== 'fresh') {
+        setStatus('Retry našel již zapsané scany, ale objednávky nebyly aktualizované.', 'error');
+      } else {
+        setStatus(t('scan.status.commit-done'), 'ok');
+      }
     } catch (error) {
       setStatus(`${t('scan.status.commit-failed')}: ${error.message || error}`, 'error');
     } finally {

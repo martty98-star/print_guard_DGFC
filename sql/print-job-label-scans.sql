@@ -8,7 +8,11 @@ create table if not exists public.print_scan_commit_batches (
   unmatched_count integer not null default 0,
   duplicate_count integer not null default 0,
   error_count integer not null default 0,
-  source text not null default 'operator_commit'
+  source text not null default 'operator_commit',
+  status text not null default 'committed',
+  retry_count integer not null default 0,
+  updated_at timestamptz not null default now(),
+  diagnostics jsonb not null default '{}'::jsonb
 );
 
 create table if not exists public.print_job_label_scans (
@@ -47,6 +51,21 @@ create index if not exists print_job_label_scans_match_status_idx
 
 create index if not exists print_job_label_scans_commit_batch_id_idx
   on public.print_job_label_scans (commit_batch_id);
+
+create index if not exists print_job_label_scans_batch_status_idx
+  on public.print_job_label_scans (commit_batch_id, match_status);
+
+alter table public.print_scan_commit_batches
+  add column if not exists status text not null default 'committed';
+
+alter table public.print_scan_commit_batches
+  add column if not exists retry_count integer not null default 0;
+
+alter table public.print_scan_commit_batches
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.print_scan_commit_batches
+  add column if not exists diagnostics jsonb not null default '{}'::jsonb;
 
 alter table public.print_job_label_scans
   add column if not exists order_type text;

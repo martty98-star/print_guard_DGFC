@@ -15,7 +15,7 @@ function makeClient(seed = {}) {
     printedUpdates: [],
     reprintUpdates: [],
     scanMatchUpdates: [],
-    batches: [],
+    batches: (seed.batches || []).map((row) => ({ ...row })),
   };
 
   return {
@@ -27,9 +27,88 @@ function makeClient(seed = {}) {
         return { rows: [], rowCount: 0 };
       }
 
+      if (text.includes('from public.print_scan_commit_batches') && text.includes('for update')) {
+        const batch = state.batches.find((row) => row.batch_id === params[0]);
+        return { rows: batch ? [{ ...batch }] : [], rowCount: batch ? 1 : 0 };
+      }
+
+      if (text.startsWith('insert into public.print_scan_commit_batches')) {
+        if (!state.batches.some((row) => row.batch_id === params[0])) {
+          state.batches.push({
+            batch_id: params[0],
+            committed_at: params[1],
+            committed_by: params[2] || null,
+            station: params[3] || null,
+            scan_count: 0,
+            matched_count: 0,
+            unmatched_count: 0,
+            duplicate_count: 0,
+            error_count: 0,
+            source: 'browser_local_queue',
+            status: text.includes("'processing'") ? 'processing' : 'committed',
+            retry_count: 0,
+            diagnostics: {},
+          });
+        }
+        return { rows: [], rowCount: 1 };
+      }
+
+      if (text.startsWith('update public.print_scan_commit_batches') && text.includes("status = 'processing'")) {
+        const batch = state.batches.find((row) => row.batch_id === params[0]);
+        if (batch) {
+          batch.status = 'processing';
+          batch.retry_count = Number(batch.retry_count || 0) + 1;
+          batch.committed_by = params[1] || batch.committed_by || null;
+          batch.station = params[2] || batch.station || null;
+        }
+        return { rows: [], rowCount: batch ? 1 : 0 };
+      }
+
+      if (text.startsWith('update public.print_scan_commit_batches') && text.includes('scan_count = $3')) {
+        const batch = state.batches.find((row) => row.batch_id === params[0]);
+        if (batch) {
+          batch.status = params[1];
+          batch.scan_count = params[2];
+          batch.matched_count = params[3];
+          batch.unmatched_count = params[4];
+          batch.duplicate_count = params[5];
+          batch.error_count = params[6];
+          batch.diagnostics = JSON.parse(params[7] || '{}');
+        }
+        return { rows: [], rowCount: batch ? 1 : 0 };
+      }
+
+      if (text.startsWith('update public.print_scan_commit_batches') && text.includes("status = 'failed'")) {
+        const batch = state.batches.find((row) => row.batch_id === params[0]);
+        if (batch) {
+          batch.status = 'failed';
+          batch.diagnostics = JSON.parse(params[1] || '{}');
+        }
+        return { rows: [], rowCount: batch ? 1 : 0 };
+      }
+
+      if (text.includes('count(*)::int as scan_count') && text.includes('from public.print_job_label_scans') && text.includes('where commit_batch_id = $1')) {
+        const rows = state.scans.filter((scan) => scan.commit_batch_id === params[0]);
+        const countStatus = (status) => rows.filter((scan) => scan.match_status === status).length;
+        const finalized = rows.filter((scan) => ['matched', 'unmatched', 'ambiguous', 'error'].includes(scan.match_status)).length;
+        return {
+          rows: [{
+            scan_count: rows.length,
+            matched_count: countStatus('matched'),
+            unmatched_count: countStatus('unmatched'),
+            ambiguous_count: countStatus('ambiguous'),
+            error_count: countStatus('error'),
+            finalized_count: finalized,
+            pending_count: countStatus('pending'),
+          }],
+          rowCount: 1,
+        };
+      }
+
       if (text.includes('from public.print_job_label_scans') && text.includes('where scan_id = any')) {
         const ids = new Set(params[0] || []);
-        return { rows: state.scans.filter((scan) => ids.has(scan.scan_id)).map((scan) => ({ scan_id: scan.scan_id })), rowCount: 0 };
+        const rows = state.scans.filter((scan) => ids.has(scan.scan_id)).map((scan) => ({ ...scan }));
+        return { rows, rowCount: rows.length };
       }
 
       if (text.startsWith('insert into public.print_job_label_scans')) {
@@ -42,6 +121,12 @@ function makeClient(seed = {}) {
           order_type: params[5],
           is_reprint: params[6],
           reprint_kind: params[7],
+          station: params[8],
+          operator: params[9],
+          source: params[10],
+          commit_batch_id: params[11],
+          committed_at: params[12],
+          committed_by: params[13],
           match_status: 'pending',
         };
         if (state.scans.some((row) => row.scan_id === scan.scan_id)) {
@@ -108,6 +193,10 @@ function makeClient(seed = {}) {
       }
 
       if (text.startsWith('update public.processed_print_orders')) {
+        const order = state.processedOrders.find((row) => Number(row.id) === Number(params[0]));
+        if (!order) return { rows: [], rowCount: 0 };
+        order.physically_printed_scan_id = params[4];
+        order.physically_printed_batch_id = params[5];
         state.printedUpdates.push({
           processedOrderId: params[0],
           scannedAt: params[1],
@@ -145,11 +234,6 @@ function makeClient(seed = {}) {
         };
       }
 
-      if (text.startsWith('insert into public.print_scan_commit_batches')) {
-        state.batches.push({ params });
-        return { rows: [], rowCount: 1 };
-      }
-
       return { rows: [], rowCount: 0 };
     },
   };
@@ -180,7 +264,9 @@ async function run() {
     assert.strictEqual(summary.reprintCompletedScans, 0);
     assert.strictEqual(client.state.printedUpdates.length, 1);
     assert.strictEqual(client.state.printedUpdates[0].batchId, 'browser-scan-batch-test-1');
-    assert.strictEqual(client.state.batches[0].params[0], 'browser-scan-batch-test-1');
+    assert.strictEqual(client.state.batches[0].batch_id, 'browser-scan-batch-test-1');
+    assert.strictEqual(client.state.batches[0].status, 'committed');
+    assert.strictEqual(client.state.batches[0].matched_count, 1);
     assert.strictEqual(client.state.reprintUpdates.length, 0);
   }
 
@@ -276,7 +362,7 @@ async function run() {
     assert.strictEqual(summary.printedScans, 0);
     assert.strictEqual(summary.reprintCompletedScans, 0);
     assert.strictEqual(summary.reprintUnmatchedCount, 1);
-    assert.strictEqual(summary.warnings.length, 1);
+    assert.strictEqual(summary.warnings.some((warning) => String(warning.warning || '').includes('pending reprint request')), true);
     assert.strictEqual(client.state.printedUpdates.length, 0);
     assert.strictEqual(client.state.reprintUpdates.length, 0);
     assert.strictEqual(client.state.scans[0].match_status, 'unmatched');
@@ -306,12 +392,105 @@ async function run() {
 
     const retrySummary = await ScanCommit.commitBrowserScanBatch(client, { batchId: 'browser-scan-batch-retry', scans: [scan] });
     assert.strictEqual(retrySummary.newScansCommitted, 0);
-    assert.strictEqual(retrySummary.matchedCount, 0);
+    assert.strictEqual(retrySummary.retryMode, 'already_committed_duplicate');
+    assert.strictEqual(retrySummary.status, 'already_committed_duplicate');
+    assert.strictEqual(retrySummary.matchedCount, 1);
     assert.strictEqual(retrySummary.unmatchedCount, 0);
     assert.strictEqual(retrySummary.ambiguousCount, 0);
     assert.strictEqual(retrySummary.duplicateCount, 1);
     assert.strictEqual(retrySummary.skippedAlreadyCommitted, 1);
     assert.deepStrictEqual(retrySummary.matchDiagnostics, []);
+  }
+
+  {
+    const client = makeClient({
+      processedOrders: [{ id: 301, order_name: 'PS4777001', order_type: 'S' }],
+      batches: [{
+        batch_id: 'browser-scan-batch-partial',
+        status: 'partial_failed',
+        scan_count: 1,
+        matched_count: 0,
+        unmatched_count: 0,
+        duplicate_count: 0,
+        error_count: 0,
+        retry_count: 0,
+      }],
+      scans: [{
+        scan_id: 'partial-scan-1',
+        scanned_at: '2026-06-05T10:00:00.000Z',
+        barcode: 'PS4777001',
+        raw_barcode: 'PS4777001',
+        order_number: 'PS4777001',
+        order_type: 'S',
+        is_reprint: false,
+        reprint_kind: null,
+        station: 'station-1',
+        operator: 'tester',
+        source: 'job_label_scan',
+        commit_batch_id: 'browser-scan-batch-partial',
+        committed_at: '2026-06-05T10:00:00.000Z',
+        committed_by: 'tester',
+        match_status: 'pending',
+      }],
+    });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, {
+      batchId: 'browser-scan-batch-partial',
+      scans: [scanRow('partial-scan-1', 'PS4777001')],
+    });
+    assert.strictEqual(summary.retryMode, 'partial_recovery');
+    assert.strictEqual(summary.insertedScanRows, 0);
+    assert.strictEqual(summary.existingSameBatchRows, 1);
+    assert.strictEqual(summary.rowsEligibleForMatching, 1);
+    assert.strictEqual(summary.matchedCount, 1);
+    assert.strictEqual(summary.orderUpdateCount, 1);
+    assert.strictEqual(client.state.scans.length, 1);
+    assert.strictEqual(client.state.scans[0].match_status, 'matched');
+    assert.strictEqual(client.state.processedOrders[0].physically_printed_batch_id, 'browser-scan-batch-partial');
+  }
+
+  {
+    const client = makeClient({
+      processedOrders: [
+        { id: 401, order_name: 'PS4777101', order_type: 'S' },
+        { id: 402, order_name: 'PS4777102', order_type: 'S' },
+      ],
+    });
+    const scans = [
+      scanRow('dupe-request-1', 'PS4777101'),
+      scanRow('dupe-request-1', 'PS4777101'),
+      scanRow('dupe-request-2', 'PS4777102'),
+    ];
+    const summary = await ScanCommit.commitBrowserScanBatch(client, { batchId: 'browser-scan-batch-dupe-request', scans });
+    assert.strictEqual(summary.duplicateCount, 1);
+    assert.strictEqual(summary.insertedScanRows, 2);
+    assert.strictEqual(summary.matchedCount, 2);
+    assert.strictEqual(client.state.printedUpdates.length, 2);
+  }
+
+  {
+    const client = makeClient({
+      processedOrders: [{ id: 501, order_name: 'PS4777201', order_type: 'S' }],
+    });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, {
+      batchId: 'browser-scan-batch-one-bad',
+      scans: [scanRow('good-mixed-1', 'PS4777201'), scanRow('bad-mixed-1', 'PS0000000')],
+    });
+    assert.strictEqual(summary.matchedCount, 1);
+    assert.strictEqual(summary.unmatchedCount, 1);
+    assert.strictEqual(summary.commitOk, true);
+    assert.strictEqual(client.state.printedUpdates.length, 1);
+  }
+
+  {
+    const client = makeClient({ processedOrders: [] });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, {
+      batchId: 'browser-scan-batch-zero-match',
+      scans: [scanRow('zero-match-1', 'PS0000001')],
+    });
+    assert.strictEqual(summary.newScansCommitted, 1);
+    assert.strictEqual(summary.matchedCount, 0);
+    assert.strictEqual(summary.commitOk, false);
+    assert.strictEqual(summary.warnings.some((warning) => warning.reasonCode === 'zero_match_commit'), true);
   }
 }
 
