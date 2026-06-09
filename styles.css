@@ -1435,6 +1435,12 @@ textarea { resize: vertical; min-height: 58px; }
 .scan-capture-card {
   margin-bottom: 14px;
 }
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
 .scan-config-row {
   display: grid;
   grid-template-columns: minmax(220px, 1.5fr) minmax(140px, .8fr) minmax(140px, .8fr) auto;

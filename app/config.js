@@ -2,7 +2,7 @@
 'use strict';
 
 (function attachPrintGuardAppConfig(global) {
-  const APP_VERSION = 'printguard-8.1.2';
+  const APP_VERSION = 'printguard-8.1.3';
 
   function ls(k, v) {
     if (v !== undefined) { localStorage.setItem(k, String(v)); return v; }

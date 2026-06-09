@@ -12,6 +12,10 @@ create table if not exists public.print_scan_commit_batches (
   status text not null default 'committed',
   retry_count integer not null default 0,
   updated_at timestamptz not null default now(),
+  started_at timestamptz,
+  finished_at timestamptz,
+  failed_phase text,
+  error_message text,
   diagnostics jsonb not null default '{}'::jsonb
 );
 
@@ -63,6 +67,18 @@ alter table public.print_scan_commit_batches
 
 alter table public.print_scan_commit_batches
   add column if not exists updated_at timestamptz not null default now();
+
+alter table public.print_scan_commit_batches
+  add column if not exists started_at timestamptz;
+
+alter table public.print_scan_commit_batches
+  add column if not exists finished_at timestamptz;
+
+alter table public.print_scan_commit_batches
+  add column if not exists failed_phase text;
+
+alter table public.print_scan_commit_batches
+  add column if not exists error_message text;
 
 alter table public.print_scan_commit_batches
   add column if not exists diagnostics jsonb not null default '{}'::jsonb;

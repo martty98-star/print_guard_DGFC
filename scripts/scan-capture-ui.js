@@ -8,6 +8,8 @@
   const DB_VERSION = 1;
   const STORE_SCANS = 'scans';
   const DEFAULT_STATION = 'SCAN-STATION-01';
+  const STATUS_POLL_INTERVAL_MS = 2000;
+  const STATUS_POLL_TIMEOUT_MS = 120000;
   const Api = global.PrintGuardScanCaptureApi;
   const Auth = global.PrintGuardAuth;
 
@@ -17,6 +19,7 @@
     lastBarcode: '',
     queue: [],
     commitResult: null,
+    activeBatchId: '',
     dbPromise: null,
     useLocalStorageFallback: false,
   };
@@ -85,6 +88,18 @@
     node.textContent = message;
     node.classList.toggle('is-error', tone === 'error');
     node.classList.toggle('is-ok', tone === 'ok');
+  }
+
+  function isBatchActiveStatus(status) {
+    return ['received', 'processing', 'matching'].includes(String(status || '').toLowerCase());
+  }
+
+  function isBatchSuccessStatus(status) {
+    return ['matched', 'already_completed', 'committed'].includes(String(status || '').toLowerCase());
+  }
+
+  function isRecoverableCommitError(error) {
+    return Boolean(error && (error.isTimeout || error.status >= 500 || !error.status));
   }
 
   function openQueueDB() {
@@ -288,6 +303,14 @@
       [t('scan.summary.skipped'), skipped],
       [t('scan.summary.errors'), result.errorCount],
     ];
+    const phaseRows = [
+      ['Status', result.status || '—'],
+      ['Fáze chyby', result.failedPhase || '—'],
+      ['Chyba', result.errorMessage || '—'],
+      ['Začátek', result.startedAt ? fmtDateTime(result.startedAt) : '—'],
+      ['Konec', result.finishedAt ? fmtDateTime(result.finishedAt) : '—'],
+      ['Trvání', result.durationMs == null ? '—' : `${fmtInt(result.durationMs)} ms`],
+    ];
     const zeroMatchCommit = committed > 0 && matched === 0;
     const retrySkippedWithoutUpdate = skipped > 0
       && committed === 0
@@ -310,6 +333,9 @@
         `).join('')}
       </div>
       <div class="header-meta">Batch ${esc(result.batchId || '—')} · ${esc(result.retryMode || 'fresh')} · ${esc(result.status || 'unknown')}</div>
+      <div class="header-meta">
+        ${phaseRows.map(([label, value]) => `${esc(label)}: ${esc(value)}`).join(' · ')}
+      </div>
       ${warningText ? `<div class="hint is-error">${esc(warningText)}</div>` : ''}
     `;
   }
@@ -376,6 +402,119 @@
     return { 'content-type': 'application/json' };
   }
 
+  async function fetchBatchStatus(batchId) {
+    try {
+      return await Api.getScanBatchStatus({
+        fetchImpl: global.fetch.bind(global),
+        headers: scanCommitHeaders(),
+        batchId,
+      });
+    } catch (error) {
+      if (error && error.status === 404) return null;
+      throw error;
+    }
+  }
+
+  function batchScanIds(batchId) {
+    return state.queue
+      .filter((scan) => getScanBatchId(scan) === batchId)
+      .map((scan) => scan.scanId)
+      .filter(Boolean);
+  }
+
+  async function clearBatchQueueAfterConfirmedStatus(batchId) {
+    const ids = batchScanIds(batchId);
+    if (ids.length) await queueDeleteMany(ids);
+    await refreshScanCapture();
+    renderCommitResult();
+  }
+
+  function mergeCommitResult(result) {
+    state.commitResult = {
+      ...(state.commitResult || {}),
+      ...(result || {}),
+    };
+    renderCommitResult();
+  }
+
+  async function applyBatchStatus(statusResult) {
+    if (!statusResult) return false;
+    mergeCommitResult(statusResult);
+    if (isBatchSuccessStatus(statusResult.status)) {
+      await clearBatchQueueAfterConfirmedStatus(statusResult.batchId);
+      setStatus('Hotovo. Batch byl serverem potvrzen.', 'ok');
+      return true;
+    }
+    if (isBatchActiveStatus(statusResult.status)) {
+      setStatus('Batch se stále zpracovává...', '');
+      return false;
+    }
+    if (statusResult.status === 'failed') {
+      const detail = statusResult.errorMessage || statusResult.failedPhase || 'neznámá chyba';
+      setStatus(`Chyba batch: ${detail}`, 'error');
+      return false;
+    }
+    if (statusResult.status === 'partial') {
+      const detail = statusResult.errorMessage || statusResult.failedPhase || 'část scanů nebyla spárována';
+      setStatus(`Batch skončil částečně: ${detail}`, 'error');
+      return false;
+    }
+    return false;
+  }
+
+  async function pollBatchStatus(batchId, options = {}) {
+    const timeoutMs = options.timeoutMs || STATUS_POLL_TIMEOUT_MS;
+    const deadline = Date.now() + timeoutMs;
+    let latest = null;
+    while (Date.now() <= deadline) {
+      latest = await fetchBatchStatus(batchId);
+      if (latest) {
+        const done = await applyBatchStatus(latest);
+        if (done || latest.status === 'failed' || latest.status === 'partial') return latest;
+      }
+      await new Promise((resolve) => global.setTimeout(resolve, STATUS_POLL_INTERVAL_MS));
+    }
+    setStatus('Server stále zpracovává batch. Fronta zůstává lokálně uložená.', 'error');
+    return latest;
+  }
+
+  async function checkCurrentBatchStatus() {
+    const pending = pendingScans();
+    if (!pending.length) {
+      setStatus(t('scan.queue.empty'), 'ok');
+      return;
+    }
+    const { batchId } = await ensurePendingBatchId(pending);
+    state.activeBatchId = batchId;
+    setStatus('Kontroluji stav batch...');
+    const statusResult = await fetchBatchStatus(batchId);
+    if (!statusResult) {
+      setStatus(`Batch ${batchId} zatím server neeviduje.`, 'error');
+      return;
+    }
+    await applyBatchStatus(statusResult);
+  }
+
+  async function copyDebugInfo() {
+    const debug = {
+      activeBatchId: state.activeBatchId,
+      commitResult: state.commitResult,
+      pendingCount: pendingScans().length,
+      queueCount: state.queue.length,
+      fallbackStorage: state.useLocalStorageFallback,
+      userAgent: global.navigator?.userAgent || '',
+      copiedAt: new Date().toISOString(),
+    };
+    const text = JSON.stringify(debug, null, 2);
+    try {
+      await global.navigator.clipboard.writeText(text);
+      setStatus('Debug info zkopírováno.', 'ok');
+    } catch (_) {
+      console.log('[scan-capture] debug info', debug);
+      setStatus('Debug info je vypsané v konzoli.', 'ok');
+    }
+  }
+
   async function commitScans() {
     if (state.loading) return;
     state.loading = true;
@@ -388,9 +527,27 @@
         return;
       }
       const { batchId, scans } = await ensurePendingBatchId(pending);
+      state.activeBatchId = batchId;
       const operator = getInputValue('scan-operator-input');
       const station = getInputValue('scan-station-input') || DEFAULT_STATION;
-      setStatus(t('scan.status.committing'));
+      setStatus('Odesláno. Kontroluji stav batch...');
+      const currentStatus = await fetchBatchStatus(batchId);
+      if (currentStatus && isBatchActiveStatus(currentStatus.status)) {
+        await applyBatchStatus(currentStatus);
+        await pollBatchStatus(batchId);
+        return;
+      }
+      if (currentStatus && isBatchSuccessStatus(currentStatus.status)) {
+        await applyBatchStatus(currentStatus);
+        return;
+      }
+      if (currentStatus && currentStatus.status === 'partial') {
+        setStatus('Předchozí batch je partial. Zkouším reprocess unfinished rows...');
+      } else if (currentStatus && currentStatus.status === 'failed') {
+        setStatus('Předchozí batch skončil chybou. Zkouším retry...');
+      } else {
+        setStatus(t('scan.status.committing'));
+      }
       state.commitResult = await Api.commitScanBatch({
         fetchImpl: global.fetch.bind(global),
         headers: scanCommitHeaders(),
@@ -400,6 +557,15 @@
         operator,
         station,
       });
+      if (isBatchActiveStatus(state.commitResult.status)) {
+        await applyBatchStatus(state.commitResult);
+        await pollBatchStatus(batchId);
+        return;
+      }
+      if (isBatchSuccessStatus(state.commitResult.status)) {
+        await applyBatchStatus(state.commitResult);
+        return;
+      }
       const removeIds = new Set([
         ...(state.commitResult.committedScanIds || []),
         ...(state.commitResult.processedScanIds || []),
@@ -420,6 +586,17 @@
         setStatus(t('scan.status.commit-done'), 'ok');
       }
     } catch (error) {
+      if (state.activeBatchId && isRecoverableCommitError(error)) {
+        console.warn('[scan-capture] commit request did not finish; polling status', error);
+        setStatus('Server neodpověděl včas. Kontroluji stav batch...');
+        try {
+          await pollBatchStatus(state.activeBatchId);
+          return;
+        } catch (statusError) {
+          setStatus(`Kontrola batch selhala: ${statusError.message || statusError}`, 'error');
+          return;
+        }
+      }
       setStatus(`${t('scan.status.commit-failed')}: ${error.message || error}`, 'error');
     } finally {
       state.loading = false;
@@ -459,6 +636,8 @@
     el('scan-refresh-btn')?.addEventListener('click', refreshScanCapture);
     el('scan-submit-btn')?.addEventListener('click', submitScan);
     el('scan-commit-btn')?.addEventListener('click', commitScans);
+    el('scan-check-status-btn')?.addEventListener('click', checkCurrentBatchStatus);
+    el('scan-copy-debug-btn')?.addEventListener('click', copyDebugInfo);
     el('scan-barcode-input')?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();

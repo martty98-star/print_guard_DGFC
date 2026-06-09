@@ -89,12 +89,20 @@ async function ensureScanCommitSchema(client) {
       status text not null default 'committed',
       retry_count integer not null default 0,
       updated_at timestamptz not null default now(),
+      started_at timestamptz,
+      finished_at timestamptz,
+      failed_phase text,
+      error_message text,
       diagnostics jsonb not null default '{}'::jsonb
     )
   `);
   await client.query(`alter table public.print_scan_commit_batches add column if not exists status text not null default 'committed'`);
   await client.query(`alter table public.print_scan_commit_batches add column if not exists retry_count integer not null default 0`);
   await client.query(`alter table public.print_scan_commit_batches add column if not exists updated_at timestamptz not null default now()`);
+  await client.query(`alter table public.print_scan_commit_batches add column if not exists started_at timestamptz`);
+  await client.query(`alter table public.print_scan_commit_batches add column if not exists finished_at timestamptz`);
+  await client.query(`alter table public.print_scan_commit_batches add column if not exists failed_phase text`);
+  await client.query(`alter table public.print_scan_commit_batches add column if not exists error_message text`);
   await client.query(`alter table public.print_scan_commit_batches add column if not exists diagnostics jsonb not null default '{}'::jsonb`);
   await client.query(`
     create table if not exists public.print_job_label_scans (
@@ -191,6 +199,129 @@ async function fetchExistingScansById(client, scanIds) {
   return new Map(result.rows.map((row) => [String(row.scan_id), row]));
 }
 
+function rowTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function parseDiagnostics(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    const parsed = JSON.parse(String(value));
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function clientBatchStatus(rawStatus) {
+  const status = String(rawStatus || '').trim().toLowerCase();
+  if (status === 'committed') return 'already_completed';
+  if (status === 'partial_failed') return 'partial';
+  return status || 'unknown';
+}
+
+function isCompletedBatchStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'committed' || normalized === 'matched';
+}
+
+function isActiveBatchStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'received' || normalized === 'processing' || normalized === 'matching';
+}
+
+function formatBatchStatus(row) {
+  if (!row) return null;
+  const startedAt = rowTimestamp(row.started_at || row.committed_at);
+  const finishedAt = rowTimestamp(row.finished_at);
+  const lastUpdatedAt = rowTimestamp(row.updated_at);
+  const startMs = startedAt ? Date.parse(startedAt) : NaN;
+  const endMs = finishedAt ? Date.parse(finishedAt) : lastUpdatedAt ? Date.parse(lastUpdatedAt) : NaN;
+  const durationMs = Number.isFinite(startMs) && Number.isFinite(endMs) && endMs >= startMs ? endMs - startMs : null;
+  const diagnostics = parseDiagnostics(row.diagnostics);
+  return {
+    ok: true,
+    batchId: String(row.batch_id || ''),
+    status: clientBatchStatus(row.status),
+    rawStatus: String(row.status || ''),
+    matchedCount: Number(row.matched_count || 0),
+    unmatchedCount: Number(row.unmatched_count || 0),
+    duplicateCount: Number(row.duplicate_count || 0),
+    errorCount: Number(row.error_count || 0),
+    failedPhase: row.failed_phase || diagnostics.failedPhase || null,
+    errorMessage: row.error_message || diagnostics.errorMessage || null,
+    startedAt,
+    finishedAt,
+    durationMs,
+    lastUpdatedAt,
+    diagnostics,
+  };
+}
+
+async function fetchBatchRow(client, batchId) {
+  const result = await client.query(
+    `
+      select
+        batch_id,
+        committed_at,
+        committed_by,
+        station,
+        scan_count,
+        matched_count,
+        unmatched_count,
+        duplicate_count,
+        error_count,
+        source,
+        status,
+        retry_count,
+        updated_at,
+        started_at,
+        finished_at,
+        failed_phase,
+        error_message,
+        diagnostics
+      from public.print_scan_commit_batches
+      where batch_id = $1
+    `,
+    [batchId]
+  );
+  return result.rows[0] || null;
+}
+
+async function getBatchStatus(client, batchId) {
+  await ensureScanCommitSchema(client);
+  const normalizedBatchId = normalizeBatchId(batchId);
+  if (!normalizedBatchId) {
+    const error = new Error('Invalid batchId');
+    error.statusCode = 400;
+    throw error;
+  }
+  return formatBatchStatus(await fetchBatchRow(client, normalizedBatchId));
+}
+
+async function updateBatchPhase(client, batchId, status, diagnostics = {}) {
+  const payload = {
+    ...diagnostics,
+    phase: status,
+    phaseUpdatedAt: new Date().toISOString(),
+  };
+  await client.query(
+    `
+      update public.print_scan_commit_batches
+      set status = $2,
+          diagnostics = coalesce(diagnostics, '{}'::jsonb) || $3::jsonb,
+          updated_at = now()
+      where batch_id = $1
+    `,
+    [batchId, status, JSON.stringify(payload)]
+  );
+  console.log('[scan-commit] phase', { batchId, status, ...diagnostics });
+}
+
 function scanFromDbRow(row) {
   return {
     scanId: String(row.scan_id || ''),
@@ -210,62 +341,81 @@ function scanFromDbRow(row) {
   };
 }
 
-async function lockBatch(client, batchId, committedAt, committedBy, station) {
-  const existing = await client.query(
+async function prepareBatchForCommit(client, batchId, committedAt, committedBy, station) {
+  const inserted = await client.query(
     `
-      select batch_id, status, scan_count, matched_count, unmatched_count, duplicate_count, error_count, retry_count
-      from public.print_scan_commit_batches
-      where batch_id = $1
-      for update
+      insert into public.print_scan_commit_batches (
+        batch_id,
+        committed_at,
+        committed_by,
+        station,
+        scan_count,
+        matched_count,
+        unmatched_count,
+        duplicate_count,
+        error_count,
+        source,
+        status,
+        retry_count,
+        started_at,
+        updated_at,
+        diagnostics
+      )
+      values ($1, $2, nullif($3, ''), nullif($4, ''), 0, 0, 0, 0, 0, 'browser_local_queue', 'received', 0, now(), now(), $5::jsonb)
+      on conflict (batch_id) do nothing
+      returning *
     `,
-    [batchId]
+    [batchId, committedAt, committedBy, station, JSON.stringify({ phase: 'received', phaseUpdatedAt: committedAt })]
   );
-  if (!existing.rowCount) {
-    await client.query(
-      `
-        insert into public.print_scan_commit_batches (
-          batch_id,
-          committed_at,
-          committed_by,
-          station,
-          scan_count,
-          matched_count,
-          unmatched_count,
-          duplicate_count,
-          error_count,
-          source,
-          status,
-          retry_count,
-          updated_at
-        )
-        values ($1, $2, nullif($3, ''), nullif($4, ''), 0, 0, 0, 0, 0, 'browser_local_queue', 'processing', 0, now())
-      `,
-      [batchId, committedAt, committedBy, station]
-    );
-    return { batch: null, retryMode: 'fresh' };
+  if (inserted.rowCount) {
+    await updateBatchPhase(client, batchId, 'processing', { retryMode: 'fresh' });
+    return { action: 'start', batch: inserted.rows[0], retryMode: 'fresh' };
   }
 
-  const batch = existing.rows[0];
-  if (String(batch.status || 'committed') === 'committed') {
-    return { batch, retryMode: 'already_committed_duplicate' };
+  const batch = await fetchBatchRow(client, batchId);
+  if (!batch) {
+    const error = new Error('Batch row could not be created');
+    error.statusCode = 500;
+    throw error;
+  }
+  if (isCompletedBatchStatus(batch.status)) {
+    return { action: 'already_completed', batch, retryMode: 'already_committed_duplicate' };
+  }
+  if (isActiveBatchStatus(batch.status)) {
+    return { action: 'processing', batch, retryMode: 'same_batch_processing' };
   }
 
-  await client.query(
+  const retryMode = Number(batch.scan_count || 0) > 0 || Number(batch.error_count || 0) > 0
+    ? 'partial_recovery'
+    : 'same_batch_retry';
+  const updated = await client.query(
     `
       update public.print_scan_commit_batches
       set status = 'processing',
           retry_count = retry_count + 1,
+          started_at = coalesce(started_at, now()),
+          finished_at = null,
+          failed_phase = null,
+          error_message = null,
+          diagnostics = coalesce(diagnostics, '{}'::jsonb) || $4::jsonb,
           updated_at = now(),
           committed_by = coalesce(nullif($2, ''), committed_by),
           station = coalesce(nullif($3, ''), station)
       where batch_id = $1
+        and status not in ('received', 'processing', 'matching', 'committed', 'matched')
+      returning *
     `,
-    [batchId, committedBy, station]
+    [batchId, committedBy, station, JSON.stringify({ phase: 'processing', retryMode, phaseUpdatedAt: new Date().toISOString() })]
   );
-  return {
-    batch,
-    retryMode: batch.scan_count > 0 || batch.error_count > 0 ? 'partial_recovery' : 'same_batch_retry',
-  };
+  if (!updated.rowCount) {
+    const current = await fetchBatchRow(client, batchId);
+    if (isCompletedBatchStatus(current?.status)) {
+      return { action: 'already_completed', batch: current, retryMode: 'already_committed_duplicate' };
+    }
+    return { action: 'processing', batch: current, retryMode: 'same_batch_processing' };
+  }
+  console.log('[scan-commit] phase', { batchId, status: 'processing', retryMode });
+  return { action: 'start', batch: updated.rows[0], retryMode };
 }
 
 async function aggregateBatchRows(client, batchId) {
@@ -299,6 +449,8 @@ async function finalizeBatch(client, batchId, summary, diagnostics) {
   const aggregate = await aggregateBatchRows(client, batchId);
   const unmatchedTotal = Number(aggregate.unmatched_count || 0) + Number(aggregate.ambiguous_count || 0);
   const errorTotal = Math.max(Number(aggregate.error_count || 0), Number(summary.errorCount || 0));
+  const matchedTotal = Number(aggregate.matched_count || 0);
+  const finalStatus = errorTotal > 0 || unmatchedTotal > 0 || matchedTotal === 0 ? 'partial' : 'matched';
   await client.query(
     `
       update public.print_scan_commit_batches
@@ -309,20 +461,26 @@ async function finalizeBatch(client, batchId, summary, diagnostics) {
           duplicate_count = $6,
           error_count = $7,
           diagnostics = $8::jsonb,
+          failed_phase = $9,
+          error_message = $10,
+          finished_at = now(),
           updated_at = now()
       where batch_id = $1
     `,
     [
       batchId,
-      errorTotal > 0 ? 'partial_failed' : 'committed',
+      finalStatus,
       Number(aggregate.scan_count || 0),
-      Number(aggregate.matched_count || 0),
+      matchedTotal,
       unmatchedTotal,
       summary.duplicateCount,
       errorTotal,
       JSON.stringify(diagnostics || {}),
+      errorTotal > 0 ? diagnostics?.failedPhase || 'matching' : null,
+      errorTotal > 0 ? diagnostics?.errorMessage || (summary.errors[0] && summary.errors[0].error) || null : null,
     ]
   );
+  console.log('[scan-commit] phase', { batchId, status: finalStatus, matchedTotal, unmatchedTotal, errorTotal });
   return aggregate;
 }
 
@@ -774,11 +932,13 @@ async function completeReprintRequestFromScan(client, scan, match, batchId, comm
 
 async function commitBrowserScanBatch(client, input) {
   await ensureScanCommitSchema(client);
+  const startedMs = Date.now();
   const committedAt = new Date().toISOString();
   const committedBy = safeText(input.committedBy || input.operator, 100);
   const station = safeText(input.station, 100);
   const batchId = normalizeBatchId(input.batchId || input.batch_id) || makeBatchId(new Date(committedAt));
   const rawScans = Array.isArray(input.scans) ? input.scans : [];
+  const performance = {};
   const summary = {
     ok: true,
     batchId,
@@ -811,7 +971,11 @@ async function commitBrowserScanBatch(client, input) {
     finalizedRows: 0,
     rowsEligibleForMatching: 0,
     orderUpdateCount: 0,
+    failedPhase: null,
+    errorMessage: null,
+    performance,
   };
+  const normalizeStartMs = Date.now();
   const scansById = new Map();
   rawScans.forEach((row, index) => {
     const normalized = normalizeScan(row);
@@ -828,45 +992,57 @@ async function commitBrowserScanBatch(client, input) {
     scansById.set(normalized.scan.scanId, normalized.scan);
   });
   const scans = Array.from(scansById.values());
+  performance.normalizeMs = Date.now() - normalizeStartMs;
 
+  const prepareStartMs = Date.now();
+  const preparedBatch = await prepareBatchForCommit(client, batchId, committedAt, committedBy, station);
+  performance.prepareBatchMs = Date.now() - prepareStartMs;
+  summary.retryMode = preparedBatch.retryMode;
+  summary.batchStatusBefore = preparedBatch.batch ? String(preparedBatch.batch.status || '') : null;
+
+  if (preparedBatch.action === 'already_completed') {
+    const status = formatBatchStatus(preparedBatch.batch);
+    return {
+      ...summary,
+      ...status,
+      ok: true,
+      commitOk: true,
+      status: 'already_completed',
+      retryMode: 'already_committed_duplicate',
+      batchStatusAfter: status.rawStatus || 'matched',
+      newScansCommitted: 0,
+      matchedCount: status.matchedCount,
+      unmatchedCount: status.unmatchedCount,
+      duplicateCount: status.duplicateCount,
+      errorCount: status.errorCount,
+      message: 'Batch was already completed.',
+    };
+  }
+
+  if (preparedBatch.action === 'processing') {
+    const status = formatBatchStatus(preparedBatch.batch);
+    return {
+      ...summary,
+      ...status,
+      ok: true,
+      commitOk: null,
+      status: status.status === 'received' ? 'processing' : status.status,
+      retryMode: preparedBatch.retryMode,
+      batchStatusAfter: status.rawStatus || status.status,
+      message: 'Batch is still processing.',
+    };
+  }
+
+  await updateBatchPhase(client, batchId, 'matching', { retryMode: summary.retryMode });
   await client.query('begin');
+  let failedPhase = 'begin';
   try {
-    const batchLock = await lockBatch(client, batchId, committedAt, committedBy, station);
-    summary.retryMode = batchLock.retryMode;
-    summary.batchStatusBefore = batchLock.batch ? String(batchLock.batch.status || 'committed') : null;
-
+    failedPhase = 'existing_scan_lookup';
     const requestScanIds = scans.map((scan) => scan.scanId);
     const existingById = await fetchExistingScansById(client, requestScanIds);
 
-    if (summary.retryMode === 'already_committed_duplicate') {
-      for (const scan of scans) {
-        const existing = existingById.get(scan.scanId);
-        if (!existing) continue;
-        summary.duplicateCount += 1;
-        summary.skippedAlreadyCommitted += 1;
-        summary.duplicateScanIds.push(scan.scanId);
-        if (String(existing.commit_batch_id || '') === batchId) {
-          summary.existingSameBatchRows += 1;
-        }
-      }
-      summary.newScansCommitted = 0;
-      summary.matchedCount = Number(batchLock.batch?.matched_count || 0);
-      summary.unmatchedCount = Number(batchLock.batch?.unmatched_count || 0);
-      summary.errorCount += Number(batchLock.batch?.error_count || 0);
-      summary.finalizedRows = summary.matchedCount + summary.unmatchedCount + Number(summary.errorCount || 0);
-      summary.batchStatusAfter = 'committed';
-      summary.status = 'already_committed_duplicate';
-      summary.commitOk = summary.matchedCount > 0 || summary.skippedAlreadyCommitted > 0;
-      if (summary.matchedCount === 0 && summary.skippedAlreadyCommitted > 0) {
-        summary.warnings.push({
-          reasonCode: 'retry_skipped_without_order_update',
-          warning: 'Retry found already committed scan rows but no order update count was recorded.',
-        });
-      }
-      await client.query('commit');
-      return summary;
-    }
-
+    failedPhase = 'insert_scan_rows';
+    const insertStartMs = Date.now();
     const scansToInsert = [];
     for (const scan of scans) {
       const existing = existingById.get(scan.scanId);
@@ -901,7 +1077,9 @@ async function commitBrowserScanBatch(client, input) {
         summary.duplicateScanIds.push(scan.scanId);
       }
     }
+    performance.insertScanRowsMs = Date.now() - insertStartMs;
 
+    failedPhase = 'same_batch_scan_lookup';
     const sameBatchRowsById = await fetchExistingScansById(client, requestScanIds);
     const sameBatchScans = [];
     for (const scan of scans) {
@@ -915,7 +1093,13 @@ async function commitBrowserScanBatch(client, input) {
     summary.finalizedRows = sameBatchScans.length - eligibleScans.length;
     summary.rowsEligibleForMatching = eligibleScans.length;
 
+    failedPhase = 'candidate_lookup';
+    const candidateLookupStartMs = Date.now();
     const processedOrderCandidateLookup = await fetchProcessedOrderCandidateLookup(client, eligibleScans);
+    performance.candidateLookupMs = Date.now() - candidateLookupStartMs;
+
+    failedPhase = 'matching';
+    const matchingStartMs = Date.now();
     for (let index = 0; index < eligibleScans.length; index += 1) {
       const scan = eligibleScans[index];
       const savepoint = `browser_scan_commit_${index}`;
@@ -1011,6 +1195,9 @@ async function commitBrowserScanBatch(client, input) {
         });
       }
     }
+    performance.matchingMs = Date.now() - matchingStartMs;
+    failedPhase = 'finalize';
+    const finalizeStartMs = Date.now();
     const aggregate = await finalizeBatch(client, batchId, summary, {
       retryMode: summary.retryMode,
       batchStatusBefore: summary.batchStatusBefore,
@@ -1019,10 +1206,19 @@ async function commitBrowserScanBatch(client, input) {
       finalizedRows: summary.finalizedRows,
       rowsEligibleForMatching: summary.rowsEligibleForMatching,
       orderUpdateCount: summary.orderUpdateCount,
+      performance,
       warnings: summary.warnings,
       errors: summary.errors,
+      failedPhase: summary.errors.length ? 'matching' : null,
+      errorMessage: summary.errors[0] ? summary.errors[0].error : null,
     });
-    summary.batchStatusAfter = summary.errorCount > 0 || Number(aggregate.error_count || 0) > 0 ? 'partial_failed' : 'committed';
+    performance.finalizeMs = Date.now() - finalizeStartMs;
+    performance.totalDurationMs = Date.now() - startedMs;
+    summary.batchStatusAfter = summary.errorCount > 0 || Number(aggregate.error_count || 0) > 0
+      || Number(aggregate.unmatched_count || 0) > 0 || Number(aggregate.ambiguous_count || 0) > 0
+      || Number(aggregate.matched_count || 0) === 0
+      ? 'partial'
+      : 'matched';
     summary.status = summary.batchStatusAfter;
     summary.matchedCount = Number(aggregate.matched_count || 0);
     summary.unmatchedCount = Number(aggregate.unmatched_count || 0);
@@ -1037,6 +1233,14 @@ async function commitBrowserScanBatch(client, input) {
       });
     }
     await client.query('commit');
+    console.log('[scan-commit] complete', {
+      batchId,
+      status: summary.status,
+      matchedCount: summary.matchedCount,
+      unmatchedCount: summary.unmatchedCount,
+      errorCount: summary.errorCount,
+      performance,
+    });
     return summary;
   } catch (error) {
     await client.query('rollback').catch(() => {});
@@ -1045,10 +1249,26 @@ async function commitBrowserScanBatch(client, input) {
         update public.print_scan_commit_batches
         set status = 'failed',
             diagnostics = $2::jsonb,
+            failed_phase = $3,
+            error_message = $4,
+            finished_at = now(),
             updated_at = now()
         where batch_id = $1
       `,
-      [batchId, JSON.stringify({ error: error.message || String(error), retryMode: summary.retryMode })]
+      [
+        batchId,
+        JSON.stringify({
+          error: error.message || String(error),
+          retryMode: summary.retryMode,
+          failedPhase,
+          performance: {
+            ...performance,
+            totalDurationMs: Date.now() - startedMs,
+          },
+        }),
+        failedPhase,
+        error.message || String(error),
+      ]
     ).catch(() => {});
     throw error;
   }
@@ -1058,12 +1278,26 @@ exports.handler = async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return json(204, {});
   }
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
     return json(405, { ok: false, error: 'Method not allowed' });
   }
   try {
-    checkRateLimit(event, { name: 'commit-scan-batch', maxRequests: 20, windowMs: 60 * 1000 });
     requirePostPurchaseAccess(event);
+    if (event.httpMethod === 'GET') {
+      checkRateLimit(event, { name: 'scan-batch-status', maxRequests: 80, windowMs: 60 * 1000 });
+      const batchId = event.queryStringParameters && event.queryStringParameters.batchId;
+      const body = await withClient(async (client) => {
+        const status = await getBatchStatus(client, batchId);
+        if (!status) {
+          const error = new Error('Batch not found');
+          error.statusCode = 404;
+          throw error;
+        }
+        return status;
+      });
+      return json(200, body);
+    }
+    checkRateLimit(event, { name: 'commit-scan-batch', maxRequests: 20, windowMs: 60 * 1000 });
     const input = parseRequestBody(event);
     const body = await withClient((client) => commitBrowserScanBatch(client, input));
     return json(200, body);
@@ -1079,6 +1313,8 @@ exports._private = {
   completeReprintRequestFromScan,
   fetchProcessedOrderCandidateLookup,
   fetchProcessedOrderCandidateRows,
+  formatBatchStatus,
+  getBatchStatus,
   findPendingReprintRequestMatch,
   findProcessedOrderMatch,
   normalizeScan,
