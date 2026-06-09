@@ -213,11 +213,30 @@
       return navigator.onLine;
     }
 
+    async function readCloudResponse(res, fallbackMessage) {
+      const bodyText = await res.text().catch(() => '');
+      let payload = {};
+      if (bodyText) {
+        try {
+          payload = JSON.parse(bodyText);
+        } catch (_) {
+          payload = {};
+        }
+      }
+      if (!res.ok || !payload.ok) {
+        const detail = payload.error || bodyText.slice(0, 500) || res.statusText || fallbackMessage;
+        const error = new Error(`${fallbackMessage}: HTTP ${res.status} ${detail}`);
+        error.status = res.status;
+        error.payload = payload;
+        error.responseText = bodyText;
+        throw error;
+      }
+      return payload;
+    }
+
     async function cloudPull() {
       const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud pull failed');
-      return j;
+      return readCloudResponse(res, 'Cloud pull failed');
     }
 
     async function cloudPush() {
@@ -259,8 +278,7 @@
           }],
         }),
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud push failed');
+      const j = await readCloudResponse(res, 'Cloud push failed');
       const cleared = clearCompletedStockActions(j.stockActions?.results);
       if (stockActions.length || cleared) {
         console.log('[stock-sync] stock action push result', {
@@ -285,9 +303,7 @@
         }),
         cache: 'no-store',
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud delete failed');
-      return j;
+      return readCloudResponse(res, 'Cloud delete failed');
     }
 
     async function runSync(options = {}) {
@@ -395,7 +411,13 @@
         if (getSyncDirtyVersion() === dirtyVersionBeforeSync) clearSyncDirtyReasons();
         return true;
       } catch (e) {
-        console.error('[SYNC] Error:', e);
+        console.error('[SYNC] Error:', e, {
+          status: e?.status || null,
+          payload: e?.payload || null,
+          responseText: e?.responseText || null,
+          stockQueueLength: readStockActionQueue().length,
+          dirtyReasons: getSyncDirtyReasons(),
+        });
         if (!silent) showToast('Sync chyba: ' + (e?.message || e), 'error');
         return false;
       } finally {

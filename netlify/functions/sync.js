@@ -11,6 +11,8 @@ import {
 const { Client } = pg;
 
 const rateLimitBuckets = new Map();
+let syncSchemaReady = false;
+let syncSchemaReadyPromise = null;
 
 function getAdminApiKey() {
   const value = process.env.ADMIN_API_KEY || "";
@@ -197,104 +199,44 @@ async function ensureStockSyncSchema(client) {
       on public.pg_movements(article_number, timestamp)
       where deleted_at is null
   `);
-  await client.query(`
-    create or replace function public.pg_stock_set_updated_at()
-    returns trigger
-    language plpgsql
-    as $$
-    begin
-      if tg_op = 'UPDATE'
-         and new.updated_at is not distinct from old.updated_at
-         and (
-           new.data is distinct from old.data
-           or new.deleted_at is distinct from old.deleted_at
-         ) then
-        new.updated_at = now();
-      end if;
-      return new;
-    end;
-    $$;
-  `);
-  await client.query(`drop trigger if exists pg_items_set_updated_at on public.pg_items`);
-  await client.query(`
-    create trigger pg_items_set_updated_at
-    before update on public.pg_items
-    for each row execute function public.pg_stock_set_updated_at()
-  `);
-  await client.query(`drop trigger if exists pg_movements_set_updated_at on public.pg_movements`);
-  await client.query(`
-    create trigger pg_movements_set_updated_at
-    before update on public.pg_movements
-    for each row execute function public.pg_stock_set_updated_at()
-  `);
-  await client.query(`
-    create or replace function public.pg_stock_tombstone_deleted_row()
-    returns trigger
-    language plpgsql
-    as $$
-    declare
-      tombstone_entity text;
-      tombstone_key text;
-    begin
-      if tg_table_name = 'pg_items' then
-        tombstone_entity = 'item';
-        tombstone_key = old.article_number;
-      elsif tg_table_name = 'pg_movements' then
-        tombstone_entity = 'movement';
-        tombstone_key = old.id;
-      else
-        return old;
-      end if;
-
-      insert into public.pg_stock_tombstones(entity, key, deleted_at, source, client_id, operator, payload)
-      values (tombstone_entity, tombstone_key, now(), 'db_delete_trigger', old.sync_client_id, old.sync_operator, old.data)
-      on conflict (entity, key) do update
-      set deleted_at = greatest(public.pg_stock_tombstones.deleted_at, excluded.deleted_at),
-          source = excluded.source,
-          client_id = excluded.client_id,
-          operator = excluded.operator,
-          payload = excluded.payload;
-      return old;
-    end;
-    $$;
-  `);
-  await client.query(`drop trigger if exists pg_items_tombstone_deleted_row on public.pg_items`);
-  await client.query(`
-    create trigger pg_items_tombstone_deleted_row
-    after delete on public.pg_items
-    for each row execute function public.pg_stock_tombstone_deleted_row()
-  `);
-  await client.query(`drop trigger if exists pg_movements_tombstone_deleted_row on public.pg_movements`);
-  await client.query(`
-    create trigger pg_movements_tombstone_deleted_row
-    after delete on public.pg_movements
-    for each row execute function public.pg_stock_tombstone_deleted_row()
-  `);
 }
 
 async function ensureSyncTables(client) {
-  await ensureStockSyncSchema(client);
-  await client.query(`
-    create table if not exists public.pg_colorado_roll_states (
-      machine_id text primary key,
-      data jsonb not null,
-      updated_at timestamptz not null default now()
-    )
-  `);
-  await client.query(`
-    create table if not exists public.pg_colorado_roll_events (
-      id text primary key,
-      machine_id text not null,
-      event_type text not null,
-      timestamp timestamptz not null,
-      data jsonb not null,
-      updated_at timestamptz not null default now()
-    )
-  `);
-  await client.query(`
-    create index if not exists pg_colorado_roll_events_machine_time_idx
-      on public.pg_colorado_roll_events(machine_id, timestamp desc)
-  `);
+  if (syncSchemaReady) return;
+  if (syncSchemaReadyPromise) {
+    await syncSchemaReadyPromise;
+    return;
+  }
+  syncSchemaReadyPromise = (async () => {
+    await ensureStockSyncSchema(client);
+    await client.query(`
+      create table if not exists public.pg_colorado_roll_states (
+        machine_id text primary key,
+        data jsonb not null,
+        updated_at timestamptz not null default now()
+      )
+    `);
+    await client.query(`
+      create table if not exists public.pg_colorado_roll_events (
+        id text primary key,
+        machine_id text not null,
+        event_type text not null,
+        timestamp timestamptz not null,
+        data jsonb not null,
+        updated_at timestamptz not null default now()
+      )
+    `);
+    await client.query(`
+      create index if not exists pg_colorado_roll_events_machine_time_idx
+        on public.pg_colorado_roll_events(machine_id, timestamp desc)
+    `);
+    syncSchemaReady = true;
+  })();
+  try {
+    await syncSchemaReadyPromise;
+  } finally {
+    syncSchemaReadyPromise = null;
+  }
 }
 
 async function auditStockWrite(client, entry) {
@@ -1063,6 +1005,11 @@ export async function handler(event) {
     return resp(405, { ok: false, error: "Method not allowed" });
   } catch (e) {
     try { await client.query("rollback"); } catch {}
+    console.error("[sync] request failed", {
+      method: event.httpMethod,
+      error: String(e?.message || e),
+      stack: e?.stack || null,
+    });
     if (e && (e.statusCode === 401 || e.statusCode === 429)) {
       return resp(e.statusCode, { ok: false, error: e.message });
     }
