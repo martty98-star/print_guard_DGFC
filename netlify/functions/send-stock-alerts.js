@@ -92,6 +92,11 @@ async function ensureNotificationStateTable(client) {
   );
 }
 
+async function ensureStockSoftDeleteColumns(client) {
+  await client.query("alter table public.pg_items add column if not exists deleted_at timestamptz null");
+  await client.query("alter table public.pg_movements add column if not exists deleted_at timestamptz null");
+}
+
 async function sendAlertToSubscriptions(client, subscriptions, payload) {
   let attemptedNotifications = 0;
   let deliveriesSent = 0;
@@ -216,11 +221,12 @@ exports.handler = async function handler(event) {
   try {
     await client.connect();
     await ensureNotificationStateTable(client);
+    await ensureStockSoftDeleteColumns(client);
 
-    const items = (await client.query("select data from public.pg_items")).rows
+    const items = (await client.query("select data from public.pg_items where deleted_at is null")).rows
       .map((row) => row.data)
       .filter(Boolean);
-    const movements = (await client.query("select data from public.pg_movements order by timestamp asc")).rows
+    const movements = (await client.query("select data from public.pg_movements where deleted_at is null order by timestamp asc")).rows
       .map((row) => row.data)
       .filter(Boolean);
 

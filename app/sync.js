@@ -5,6 +5,7 @@
   const SYNC_ONLINE_RETRY_DELAY_MS = 15 * 1000;
   const SYNC_DIRTY_REASONS_KEY = 'pg_sync_dirty_reasons';
   const SYNC_DIRTY_VERSION_KEY = 'pg_sync_dirty_version';
+  const STOCK_ACTION_QUEUE_KEY = 'pg_stock_action_queue_v1';
   const COLORADO_ROLL_STORAGE_KEY = 'pg_colorado_roll_state_v1';
   const COLORADO_ROLL_EVENTS_STORAGE_KEY = 'pg_colorado_roll_events_v1';
 
@@ -49,8 +50,115 @@
       localStorage.removeItem(SYNC_DIRTY_VERSION_KEY);
     }
 
+    function removeSyncDirtyReason(reason) {
+      const next = getSyncDirtyReasons().filter(item => item !== reason);
+      if (next.length) {
+        ls(SYNC_DIRTY_REASONS_KEY, JSON.stringify(next));
+        ls(SYNC_DIRTY_VERSION_KEY, String(Date.now()));
+      } else {
+        clearSyncDirtyReasons();
+      }
+    }
+
     function getSyncDirtyVersion() {
       return ls(SYNC_DIRTY_VERSION_KEY) || '';
+    }
+
+    function getStockSyncClientContext(source) {
+      return {
+        clientId: cfg.deviceId || '',
+        operator: cfg.userName || '',
+        source: source || 'browser_sync_queue',
+      };
+    }
+
+    function readStockActionQueue() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STOCK_ACTION_QUEUE_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed.filter(action => action && action.actionId) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function writeStockActionQueue(actions) {
+      localStorage.setItem(STOCK_ACTION_QUEUE_KEY, JSON.stringify(Array.isArray(actions) ? actions : []));
+    }
+
+    function clearCompletedStockActions(results) {
+      const completedIds = new Set((Array.isArray(results) ? results : [])
+        .map(result => result && result.actionId)
+        .filter(Boolean));
+      if (!completedIds.size) return 0;
+      const before = readStockActionQueue();
+      const after = before.filter(action => !completedIds.has(action.actionId));
+      writeStockActionQueue(after);
+      return before.length - after.length;
+    }
+
+    function makeStockActionId(entity, action, key, updatedAt) {
+      if (global.crypto && typeof global.crypto.randomUUID === 'function') {
+        return global.crypto.randomUUID();
+      }
+      return `${entity}:${action}:${key}:${updatedAt}:${Math.random().toString(36).slice(2)}`;
+    }
+
+    function normalizeArticleNumber(value) {
+      return String(value || '').trim().toUpperCase().replace(/\s+/g, '-');
+    }
+
+    function enqueueStockAction(input) {
+      const entity = String(input?.entity || '').trim();
+      const action = String(input?.action || '').trim();
+      const payload = input?.payload && typeof input.payload === 'object' ? { ...input.payload } : {};
+      const updatedAt = input?.updatedAt || payload.updatedAt || payload.timestamp || new Date().toISOString();
+      const key = entity === 'item'
+        ? normalizeArticleNumber(input?.key || payload.articleNumber)
+        : String(input?.key || payload.id || '').trim();
+      if (!['item', 'movement'].includes(entity) || !['upsert', 'delete'].includes(action) || !key) {
+        console.warn('[stock-sync] dropped invalid stock action', input);
+        return null;
+      }
+      if (entity === 'item') payload.articleNumber = key;
+      if (entity === 'movement' && payload.articleNumber) payload.articleNumber = normalizeArticleNumber(payload.articleNumber);
+      payload.updatedAt = payload.updatedAt || updatedAt;
+      if (action === 'delete') payload.deletedAt = payload.deletedAt || updatedAt;
+
+      const context = getStockSyncClientContext(input?.source || 'browser_stock_action');
+      const stockAction = {
+        action,
+        actionId: input?.actionId || makeStockActionId(entity, action, key, updatedAt),
+        clientId: context.clientId,
+        entity,
+        key,
+        operator: context.operator,
+        payload,
+        queuedAt: new Date().toISOString(),
+        source: input?.source || context.source,
+        updatedAt,
+      };
+      const queue = readStockActionQueue();
+      queue.push(stockAction);
+      writeStockActionQueue(queue);
+      setSyncDirtyReason('stock');
+      console.log('[stock-sync] queued stock action', {
+        entity,
+        action,
+        key,
+        source: stockAction.source,
+        clientId: stockAction.clientId || null,
+        operator: stockAction.operator || null,
+        updatedAt,
+        queueLength: queue.length,
+      });
+      return stockAction;
+    }
+
+    async function resetLocalStockCache() {
+      localStorage.removeItem(STOCK_ACTION_QUEUE_KEY);
+      await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES)]);
+      removeSyncDirtyReason('stock');
+      await loadAll();
     }
 
     function getCoRecordUpdatedAtMs(record) {
@@ -119,13 +227,24 @@
         const updatedMs = getCoRecordUpdatedAtMs(record);
         return !lastSyncMs || updatedMs > lastSyncMs;
       });
+      const stockActions = readStockActionQueue();
+      const stockContext = getStockSyncClientContext('browser_sync_queue');
       const res = await fetch('/.netlify/functions/sync', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'x-printguard-client-id': stockContext.clientId,
+          'x-printguard-operator': stockContext.operator,
+          'x-printguard-sync-source': stockContext.source,
+        },
         cache: 'no-store',
         body: JSON.stringify({
-          items: S.items,
-          movements: S.movements,
+          clientId: stockContext.clientId,
+          operator: stockContext.operator,
+          source: stockContext.source,
+          stockActions,
+          items: [],
+          movements: [],
           coRecords,
           coloradoRollStates: getColoradoRollStatesForSync(),
           coloradoRollEvents: getColoradoRollEventsForSync(),
@@ -142,6 +261,16 @@
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j.ok) throw new Error(j.error || 'Cloud push failed');
+      const cleared = clearCompletedStockActions(j.stockActions?.results);
+      if (stockActions.length || cleared) {
+        console.log('[stock-sync] stock action push result', {
+          queued: stockActions.length,
+          cleared,
+          accepted: j.stockActions?.accepted || 0,
+          rejected: j.stockActions?.rejected || 0,
+          rejectedLegacyStockPush: j.rejectedLegacyStockPush || null,
+        });
+      }
       return j;
     }
 
@@ -149,7 +278,11 @@
       const params = new URLSearchParams({ kind: String(kind || ''), key: String(key || '') });
       const res = await fetch(`/.netlify/functions/sync?${params.toString()}`, {
         method: 'DELETE',
-        headers: adminHeaders(),
+        headers: adminHeaders({
+          'x-printguard-client-id': cfg.deviceId || '',
+          'x-printguard-operator': cfg.userName || '',
+          'x-printguard-sync-source': `browser_delete:${kind}`,
+        }),
         cache: 'no-store',
       });
       const j = await res.json().catch(() => ({}));
@@ -286,7 +419,19 @@
       S.syncIntervalId = null;
     }
 
-    return { cloudDelete, cloudPull, cloudPush, getLastCloudSyncMs, getSyncDirtyReasons, runSync, setSyncDirtyReason, setupBackgroundSync };
+    return {
+      cloudDelete,
+      cloudPull,
+      cloudPush,
+      enqueueStockAction,
+      getLastCloudSyncMs,
+      getSyncDirtyReasons,
+      readStockActionQueue,
+      resetLocalStockCache,
+      runSync,
+      setSyncDirtyReason,
+      setupBackgroundSync,
+    };
   }
 
   global.PrintGuardSync = { createSync };

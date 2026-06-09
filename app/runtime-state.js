@@ -75,6 +75,7 @@
       ST_ITEMS,
       ST_MOVES,
       adminJsonHeaders,
+      cfg,
       elSet,
       fetchImpl,
       idbAll,
@@ -98,7 +99,9 @@
     function stockApiAdapter() {
       return {
         adminJsonHeaders,
+        clientId: cfg?.deviceId || '',
         fetchImpl,
+        operator: cfg?.userName || '',
       };
     }
 

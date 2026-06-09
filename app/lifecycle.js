@@ -38,6 +38,7 @@
       renderPrintLogRows,
       renderStockLog,
       renderStockOverview,
+      runSync,
       setDb,
       setupAdminAuthHandlers,
       setupAppUpdateChecks,
@@ -104,9 +105,14 @@
       applyRoleUI();
       setupBackgroundSync();
       showPendingUpdateToast();
+      if (navigator.onLine && typeof runSync === 'function') {
+        global.setTimeout(() => {
+          runSync({ silent: true, trigger: 'startup' }).catch(() => {});
+        }, 0);
+      }
 
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js?v=8.1.0')
+        navigator.serviceWorker.register('sw.js?v=8.1.1')
           .then((registration) => {
             registration.update().catch(() => {});
           })

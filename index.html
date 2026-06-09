@@ -19,12 +19,12 @@
       } catch (_) {}
     })();
   </script>
-  <link rel="manifest" href="manifest.json?v=8.1.0">
+  <link rel="manifest" href="manifest.json?v=8.1.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=8.1.0">
-  <link rel="icon" href="/icons/icon-192.png?v=8.1.0">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=8.1.0">
+  <link rel="stylesheet" href="styles.css?v=8.1.1">
+  <link rel="icon" href="/icons/icon-192.png?v=8.1.1">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=8.1.1">
   <title>PrintGuard</title>
 </head>
 <body>
@@ -965,6 +965,7 @@
           <button class="btn-secondary" id="send-test-push-btn">Poslat test notifikace</button>
           <button class="btn-secondary" id="send-stock-alerts-btn">Vyhodnotit stock notifikace</button>
         </div>
+        <button class="btn-secondary" id="reset-stock-cache-btn">Reset lokální cache skladu</button>
         <button class="btn-secondary danger" id="clear-all-btn" data-i18n="settings.device.clear">Smazat všechna lokální data</button>
       </section>
 
@@ -1091,75 +1092,75 @@
     </div>
   </div>
 
-  <script src="i18n.js?v=8.1.0"></script>
+  <script src="i18n.js?v=8.1.1"></script>
   <script src="reports/date.js"></script>
   <script src="reports/csv.js"></script>
-  <script src="reports/colorado.js?v=8.1.0"></script>
+  <script src="reports/colorado.js?v=8.1.1"></script>
   <script src="reports/stock.js"></script>
   <script src="reports/notification-model.js"></script>
   <script src="reports/notification-rules.js"></script>
   <script src="reports/notification-dispatch.js"></script>
   <script src="reports/printLog.js"></script>
-  <script src="reports/checklist-domain.js?v=8.1.0"></script>
+  <script src="reports/checklist-domain.js?v=8.1.1"></script>
   <script src="scripts/core-utils.js"></script>
-  <script src="scripts/dom-utils.js?v=8.1.0"></script>
+  <script src="scripts/dom-utils.js?v=8.1.1"></script>
   <script src="scripts/push-utils.js"></script>
-  <script src="scripts/settings-ui.js?v=8.1.0"></script>
+  <script src="scripts/settings-ui.js?v=8.1.1"></script>
   <script src="scripts/export-utils.js"></script>
-  <script src="scripts/stock-domain.js?v=8.1.0"></script>
-  <script src="scripts/stock-ui.js?v=8.1.0"></script>
-  <script src="scripts/stock-store.js?v=8.1.0"></script>
-  <script src="scripts/stock-controller.js?v=8.1.0"></script>
-  <script src="scripts/stock-feature.js?v=8.1.0"></script>
-  <script src="scripts/stock-actions.js?v=8.1.0"></script>
-  <script src="scripts/stock-log.js?v=8.1.0"></script>
+  <script src="scripts/stock-domain.js?v=8.1.1"></script>
+  <script src="scripts/stock-ui.js?v=8.1.1"></script>
+  <script src="scripts/stock-store.js?v=8.1.1"></script>
+  <script src="scripts/stock-controller.js?v=8.1.1"></script>
+  <script src="scripts/stock-feature.js?v=8.1.1"></script>
+  <script src="scripts/stock-actions.js?v=8.1.1"></script>
+  <script src="scripts/stock-log.js?v=8.1.1"></script>
   <script src="scripts/print-log-ui.js"></script>
-  <script src="scripts/checklist-api.js?v=8.1.0"></script>
-  <script src="scripts/checklist-state.js?v=8.1.0"></script>
-  <script src="scripts/checklist-render.js?v=8.1.0"></script>
-  <script src="scripts/checklist-events.js?v=8.1.0"></script>
-  <script src="scripts/checklist-ui.js?v=8.1.0"></script>
-  <script src="scripts/order-pipeline-filters.js?v=8.1.0"></script>
-  <script src="scripts/order-pipeline-api.js?v=8.1.0"></script>
-  <script src="scripts/pdf-open.js?v=8.1.0"></script>
-  <script src="scripts/order-pipeline-render.js?v=8.1.0"></script>
-  <script src="scripts/reprint-modal.js?v=8.1.0"></script>
-  <script src="scripts/reprint-xml.js?v=8.1.0"></script>
-  <script src="scripts/postpurchase-ui.js?v=8.1.0"></script>
-  <script src="scripts/colorado-controller.js?v=8.1.0"></script>
+  <script src="scripts/checklist-api.js?v=8.1.1"></script>
+  <script src="scripts/checklist-state.js?v=8.1.1"></script>
+  <script src="scripts/checklist-render.js?v=8.1.1"></script>
+  <script src="scripts/checklist-events.js?v=8.1.1"></script>
+  <script src="scripts/checklist-ui.js?v=8.1.1"></script>
+  <script src="scripts/order-pipeline-filters.js?v=8.1.1"></script>
+  <script src="scripts/order-pipeline-api.js?v=8.1.1"></script>
+  <script src="scripts/pdf-open.js?v=8.1.1"></script>
+  <script src="scripts/order-pipeline-render.js?v=8.1.1"></script>
+  <script src="scripts/reprint-modal.js?v=8.1.1"></script>
+  <script src="scripts/reprint-xml.js?v=8.1.1"></script>
+  <script src="scripts/postpurchase-ui.js?v=8.1.1"></script>
+  <script src="scripts/colorado-controller.js?v=8.1.1"></script>
   <script>
     window.VAPID_PUBLIC_KEY = "BDXGiazWhyggtJ2CohtsEvlOq0xnOhG9P6Dz9_CuRdjVNJNawKYqvQb0TrhGxNNc-UqHoCe0jFLnzJQLnt_H2cc";
   </script>
-  <script src="app/config.js?v=8.1.0"></script>
-  <script src="app/auth.js?v=8.1.0"></script>
-  <script src="scripts/daily-report-api.js?v=8.1.0"></script>
-  <script src="scripts/daily-report-ui.js?v=8.1.0"></script>
-  <script src="scripts/management-reporting-api.js?v=8.1.0"></script>
-  <script src="scripts/management-reporting-ui.js?v=8.1.0"></script>
-  <script src="scripts/scan-capture-api.js?v=8.1.0"></script>
-  <script src="scripts/scan-capture-ui.js?v=8.1.0"></script>
-  <script src="app/db.js?v=8.1.0"></script>
-  <script src="app/settings-store.js?v=8.1.0"></script>
-  <script src="app/push-bridge.js?v=8.1.0"></script>
-  <script src="app/utils.js?v=8.1.0"></script>
-  <script src="app/update-checks.js?v=8.1.0"></script>
-  <script src="app/admin-auth.js?v=8.1.0"></script>
-  <script src="app/navigation.js?v=8.1.0"></script>
-  <script src="app/access.js?v=8.1.0"></script>
-  <script src="app/settings-runtime.js?v=8.1.0"></script>
-  <script src="app/runtime-ui.js?v=8.1.0"></script>
-  <script src="app/runtime-state.js?v=8.1.0"></script>
-  <script src="app/colorado-runtime.js?v=8.1.0"></script>
-  <script src="app/postpurchase-runtime.js?v=8.1.0"></script>
-  <script src="app/stock-runtime.js?v=8.1.0"></script>
-  <script src="app/shell.js?v=8.1.0"></script>
-  <script src="app/print-log.js?v=8.1.0"></script>
-  <script src="app/print-log-runtime.js?v=8.1.0"></script>
-  <script src="app/reporting.js?v=8.1.0"></script>
-  <script src="app/date-filters.js?v=8.1.0"></script>
-  <script src="app/push.js?v=8.1.0"></script>
-  <script src="app/sync.js?v=8.1.0"></script>
-  <script src="app/lifecycle.js?v=8.1.0"></script>
-  <script src="app.js?v=8.1.0"></script>
+  <script src="app/config.js?v=8.1.1"></script>
+  <script src="app/auth.js?v=8.1.1"></script>
+  <script src="scripts/daily-report-api.js?v=8.1.1"></script>
+  <script src="scripts/daily-report-ui.js?v=8.1.1"></script>
+  <script src="scripts/management-reporting-api.js?v=8.1.1"></script>
+  <script src="scripts/management-reporting-ui.js?v=8.1.1"></script>
+  <script src="scripts/scan-capture-api.js?v=8.1.1"></script>
+  <script src="scripts/scan-capture-ui.js?v=8.1.1"></script>
+  <script src="app/db.js?v=8.1.1"></script>
+  <script src="app/settings-store.js?v=8.1.1"></script>
+  <script src="app/push-bridge.js?v=8.1.1"></script>
+  <script src="app/utils.js?v=8.1.1"></script>
+  <script src="app/update-checks.js?v=8.1.1"></script>
+  <script src="app/admin-auth.js?v=8.1.1"></script>
+  <script src="app/navigation.js?v=8.1.1"></script>
+  <script src="app/access.js?v=8.1.1"></script>
+  <script src="app/settings-runtime.js?v=8.1.1"></script>
+  <script src="app/runtime-ui.js?v=8.1.1"></script>
+  <script src="app/runtime-state.js?v=8.1.1"></script>
+  <script src="app/colorado-runtime.js?v=8.1.1"></script>
+  <script src="app/postpurchase-runtime.js?v=8.1.1"></script>
+  <script src="app/stock-runtime.js?v=8.1.1"></script>
+  <script src="app/shell.js?v=8.1.1"></script>
+  <script src="app/print-log.js?v=8.1.1"></script>
+  <script src="app/print-log-runtime.js?v=8.1.1"></script>
+  <script src="app/reporting.js?v=8.1.1"></script>
+  <script src="app/date-filters.js?v=8.1.1"></script>
+  <script src="app/push.js?v=8.1.1"></script>
+  <script src="app/sync.js?v=8.1.1"></script>
+  <script src="app/lifecycle.js?v=8.1.1"></script>
+  <script src="app.js?v=8.1.1"></script>
 </body>
 </html>

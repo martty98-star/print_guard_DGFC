@@ -33,6 +33,7 @@
       handleImportJSON,
       i18n,
       idbClear,
+      resetLocalStockCache,
       renderAlerts,
       renderCoDashboard,
       renderCoHistory,
@@ -101,9 +102,30 @@
     el('import-json-btn').addEventListener('click', () => el('import-json-input').click());
     el('import-json-input').addEventListener('change', handleImportJSON);
 
+    el('reset-stock-cache-btn')?.addEventListener('click', () => {
+      showConfirm('Resetovat lokální cache skladu na tomto zařízení?', async () => {
+        if (typeof resetLocalStockCache === 'function') {
+          await resetLocalStockCache();
+        } else {
+          await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES)]);
+          S.items = [];
+          S.movements = [];
+        }
+        renderStockOverview();
+        renderAlerts();
+        renderItemsMgmt();
+        showToast('Lokální cache skladu byla resetována. Spusťte Sync pro načtení DB stavu.');
+      });
+    });
+
     el('clear-all-btn').addEventListener('click', () => {
       showConfirm(i18n('settings.clear.confirm'), async () => {
         await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
+        try {
+          localStorage.removeItem('pg_stock_action_queue_v1');
+          localStorage.removeItem('pg_sync_dirty_reasons');
+          localStorage.removeItem('pg_sync_dirty_version');
+        } catch (_) {}
         S.items = [];
         S.movements = [];
         S.coRecords = [];

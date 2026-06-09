@@ -13,6 +13,7 @@
       cloudDelete,
       el,
       esc,
+      enqueueStockAction,
       fmtDT,
       fmtDays,
       fmtN,
@@ -165,13 +166,25 @@
         timestamp: new Date().toISOString(),
         deviceId: cfg.deviceId,
       };
+      move.updatedAt = move.timestamp;
 
       el('mov-save-btn').disabled = true;
       try {
         const notifyItem = S.movItem;
         await StockStore.putMovement(stockDbAdapter(), move);
         S.movements.push(move);
-        setSyncDirtyReason('stock');
+        if (typeof enqueueStockAction === 'function') {
+          enqueueStockAction({
+            entity: 'movement',
+            action: 'upsert',
+            key: move.id,
+            payload: move,
+            source: 'ui:movement:create',
+            updatedAt: move.updatedAt,
+          });
+        } else {
+          setSyncDirtyReason('stock');
+        }
         S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         const typeLabel = movementLabel(S.movType);
         showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
@@ -264,6 +277,7 @@
         showToast('Artikl s tímto číslem již existuje', 'error'); return;
       }
 
+      const updatedAt = new Date().toISOString();
       const item = {
         articleNumber: article,
         name,
@@ -276,12 +290,24 @@
         minQty: parseFloat(el('im-minqty').value) || 0,
         orderUrl: el('im-url').value.trim() || undefined,
         isActive: true,
+        updatedAt,
       };
 
       await StockStore.putItem(stockDbAdapter(), item);
       const idx = S.items.findIndex(it => it.articleNumber === article);
       if (idx >= 0) S.items[idx] = item; else S.items.push(item);
-      setSyncDirtyReason('stock');
+      if (typeof enqueueStockAction === 'function') {
+        enqueueStockAction({
+          entity: 'item',
+          action: 'upsert',
+          key: article,
+          payload: item,
+          source: S.editingItem ? 'ui:item:update' : 'ui:item:create',
+          updatedAt,
+        });
+      } else {
+        setSyncDirtyReason('stock');
+      }
 
       el('item-modal').classList.add('hidden');
       renderItemsMgmt();

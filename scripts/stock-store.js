@@ -47,7 +47,11 @@
       method: 'DELETE',
       headers: opts.adminJsonHeaders(),
       cache: 'no-store',
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({
+        id,
+        clientId: opts.clientId || '',
+        operator: opts.operator || '',
+      }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json.ok) throw new Error(json.error || 'Cloud delete failed');

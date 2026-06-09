@@ -1,6 +1,13 @@
 // netlify/functions/sync.js
 import pg from "pg";
 import crypto from "crypto";
+import {
+  compareStockDelete,
+  compareStockUpsert,
+  normalizeArticleNumber,
+  normalizeStockAction,
+  toIsoOrNull,
+} from "./_lib/stock-sync-safety.mjs";
 const { Client } = pg;
 
 const rateLimitBuckets = new Map();
@@ -100,7 +107,173 @@ function chunkArray(values, size) {
   return chunks;
 }
 
+function getSyncContext(event, payload = {}) {
+  return {
+    clientId: String(payload.clientId || getHeader(event, "x-printguard-client-id") || ""),
+    operator: String(payload.operator || getHeader(event, "x-printguard-operator") || ""),
+    requestId: crypto.randomUUID(),
+    source: String(payload.source || getHeader(event, "x-printguard-sync-source") || "sync_api"),
+  };
+}
+
+function mapStockData(row) {
+  const data = row && row.data && typeof row.data === "object" ? { ...row.data } : {};
+  const updatedAt = toIsoOrNull(data.updatedAt || data.updated_at || row?.updated_at);
+  return updatedAt ? { ...data, updatedAt } : data;
+}
+
+async function ensureStockSyncSchema(client) {
+  await client.query(`
+    create table if not exists public.pg_items (
+      article_number text primary key,
+      data jsonb not null default '{}'::jsonb,
+      updated_at timestamptz not null default now(),
+      deleted_at timestamptz null,
+      sync_source text null,
+      sync_client_id text null,
+      sync_operator text null
+    )
+  `);
+  await client.query(`
+    create table if not exists public.pg_movements (
+      id text primary key,
+      article_number text not null,
+      timestamp timestamptz not null,
+      data jsonb not null default '{}'::jsonb,
+      updated_at timestamptz not null default now(),
+      deleted_at timestamptz null,
+      sync_source text null,
+      sync_client_id text null,
+      sync_operator text null
+    )
+  `);
+  await client.query(`alter table public.pg_items add column if not exists deleted_at timestamptz null`);
+  await client.query(`alter table public.pg_items add column if not exists sync_source text null`);
+  await client.query(`alter table public.pg_items add column if not exists sync_client_id text null`);
+  await client.query(`alter table public.pg_items add column if not exists sync_operator text null`);
+  await client.query(`alter table public.pg_movements add column if not exists deleted_at timestamptz null`);
+  await client.query(`alter table public.pg_movements add column if not exists sync_source text null`);
+  await client.query(`alter table public.pg_movements add column if not exists sync_client_id text null`);
+  await client.query(`alter table public.pg_movements add column if not exists sync_operator text null`);
+  await client.query(`
+    create table if not exists public.pg_stock_tombstones (
+      entity text not null,
+      key text not null,
+      deleted_at timestamptz not null default now(),
+      source text null,
+      client_id text null,
+      operator text null,
+      payload jsonb null,
+      created_at timestamptz not null default now(),
+      primary key (entity, key)
+    )
+  `);
+  await client.query(`
+    create table if not exists public.pg_stock_write_audit (
+      id bigserial primary key,
+      entity text not null,
+      stock_item_id text null,
+      movement_id text null,
+      action text not null,
+      source text null,
+      client_id text null,
+      operator text null,
+      request_id text null,
+      incoming_updated_at timestamptz null,
+      accepted boolean not null default false,
+      reason text null,
+      before_payload jsonb null,
+      after_payload jsonb null,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await client.query(`
+    create index if not exists pg_items_active_idx
+      on public.pg_items(article_number)
+      where deleted_at is null
+  `);
+  await client.query(`
+    create index if not exists pg_movements_active_article_idx
+      on public.pg_movements(article_number, timestamp)
+      where deleted_at is null
+  `);
+  await client.query(`
+    create or replace function public.pg_stock_set_updated_at()
+    returns trigger
+    language plpgsql
+    as $$
+    begin
+      if tg_op = 'UPDATE'
+         and new.updated_at is not distinct from old.updated_at
+         and (
+           new.data is distinct from old.data
+           or new.deleted_at is distinct from old.deleted_at
+         ) then
+        new.updated_at = now();
+      end if;
+      return new;
+    end;
+    $$;
+  `);
+  await client.query(`drop trigger if exists pg_items_set_updated_at on public.pg_items`);
+  await client.query(`
+    create trigger pg_items_set_updated_at
+    before update on public.pg_items
+    for each row execute function public.pg_stock_set_updated_at()
+  `);
+  await client.query(`drop trigger if exists pg_movements_set_updated_at on public.pg_movements`);
+  await client.query(`
+    create trigger pg_movements_set_updated_at
+    before update on public.pg_movements
+    for each row execute function public.pg_stock_set_updated_at()
+  `);
+  await client.query(`
+    create or replace function public.pg_stock_tombstone_deleted_row()
+    returns trigger
+    language plpgsql
+    as $$
+    declare
+      tombstone_entity text;
+      tombstone_key text;
+    begin
+      if tg_table_name = 'pg_items' then
+        tombstone_entity = 'item';
+        tombstone_key = old.article_number;
+      elsif tg_table_name = 'pg_movements' then
+        tombstone_entity = 'movement';
+        tombstone_key = old.id;
+      else
+        return old;
+      end if;
+
+      insert into public.pg_stock_tombstones(entity, key, deleted_at, source, client_id, operator, payload)
+      values (tombstone_entity, tombstone_key, now(), 'db_delete_trigger', old.sync_client_id, old.sync_operator, old.data)
+      on conflict (entity, key) do update
+      set deleted_at = greatest(public.pg_stock_tombstones.deleted_at, excluded.deleted_at),
+          source = excluded.source,
+          client_id = excluded.client_id,
+          operator = excluded.operator,
+          payload = excluded.payload;
+      return old;
+    end;
+    $$;
+  `);
+  await client.query(`drop trigger if exists pg_items_tombstone_deleted_row on public.pg_items`);
+  await client.query(`
+    create trigger pg_items_tombstone_deleted_row
+    after delete on public.pg_items
+    for each row execute function public.pg_stock_tombstone_deleted_row()
+  `);
+  await client.query(`drop trigger if exists pg_movements_tombstone_deleted_row on public.pg_movements`);
+  await client.query(`
+    create trigger pg_movements_tombstone_deleted_row
+    after delete on public.pg_movements
+    for each row execute function public.pg_stock_tombstone_deleted_row()
+  `);
+}
+
 async function ensureSyncTables(client) {
+  await ensureStockSyncSchema(client);
   await client.query(`
     create table if not exists public.pg_colorado_roll_states (
       machine_id text primary key,
@@ -124,51 +297,487 @@ async function ensureSyncTables(client) {
   `);
 }
 
-async function batchUpsertItems(client, items) {
-  const valid = items.filter((item) => item?.articleNumber);
-  for (const chunk of chunkArray(valid, 500)) {
-    const params = [];
-    const valuesSql = chunk.map((item, index) => {
-      const base = index * 2;
-      params.push(item.articleNumber, JSON.stringify(item));
-      return `($${base + 1}, $${base + 2}::jsonb, now())`;
-    }).join(",");
+async function auditStockWrite(client, entry) {
+  await client.query(
+    `
+      insert into public.pg_stock_write_audit (
+        entity,
+        stock_item_id,
+        movement_id,
+        action,
+        source,
+        client_id,
+        operator,
+        request_id,
+        incoming_updated_at,
+        accepted,
+        reason,
+        before_payload,
+        after_payload
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10, $11, $12::jsonb, $13::jsonb)
+    `,
+    [
+      entry.entity,
+      entry.entity === "item" ? entry.key : null,
+      entry.entity === "movement" ? entry.key : null,
+      entry.action,
+      entry.source || null,
+      entry.clientId || null,
+      entry.operator || null,
+      entry.requestId || null,
+      entry.incomingUpdatedAt || null,
+      Boolean(entry.accepted),
+      entry.reason || null,
+      entry.beforePayload ? JSON.stringify(entry.beforePayload) : null,
+      entry.afterPayload ? JSON.stringify(entry.afterPayload) : null,
+    ]
+  );
+}
 
-    await client.query(
-      `insert into public.pg_items(article_number, data, updated_at)
-       values ${valuesSql}
-       on conflict (article_number) do update
-       set data = excluded.data, updated_at = now()`,
-      params
+async function getStockRow(client, entity, key) {
+  if (entity === "item") {
+    const result = await client.query(
+      `select data, updated_at, deleted_at from public.pg_items where article_number = $1`,
+      [key]
     );
+    return result.rows[0] || null;
+  }
+  const result = await client.query(
+    `select data, updated_at, deleted_at, article_number from public.pg_movements where id = $1`,
+    [key]
+  );
+  return result.rows[0] || null;
+}
+
+async function getStockTombstone(client, entity, key) {
+  const result = await client.query(
+    `select deleted_at, payload from public.pg_stock_tombstones where entity = $1 and key = $2`,
+    [entity, key]
+  );
+  return result.rows[0] || null;
+}
+
+async function rejectLegacyStockPayload(client, entity, rows, context) {
+  const valid = (Array.isArray(rows) ? rows : []).filter((row) =>
+    entity === "item" ? row?.articleNumber : row?.id
+  );
+  for (const row of valid) {
+    const key = entity === "item" ? normalizeArticleNumber(row.articleNumber) : String(row.id || "").trim();
+    await auditStockWrite(client, {
+      entity,
+      key,
+      action: "legacy_full_snapshot_rejected",
+      source: "legacy_full_snapshot",
+      clientId: context.clientId,
+      operator: context.operator,
+      requestId: context.requestId,
+      incomingUpdatedAt: toIsoOrNull(row.updatedAt || row.updated_at || row.timestamp),
+      accepted: false,
+      reason: "full_local_stock_snapshot_is_not_authoritative",
+      beforePayload: null,
+      afterPayload: row,
+    });
+  }
+  if (valid.length) {
+    console.warn("[stock-sync] rejected legacy full stock snapshot", {
+      entity,
+      count: valid.length,
+      clientId: context.clientId || null,
+      operator: context.operator || null,
+      requestId: context.requestId,
+    });
   }
   return valid.length;
 }
 
-async function batchUpsertMovements(client, movements) {
-  const valid = movements.filter((movement) => movement?.id);
-  for (const chunk of chunkArray(valid, 300)) {
-    const params = [];
-    const valuesSql = chunk.map((movement, index) => {
-      const base = index * 4;
-      params.push(
-        movement.id,
-        movement.articleNumber || "",
-        movement.timestamp || new Date().toISOString(),
-        JSON.stringify(movement)
-      );
-      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::jsonb, now())`;
-    }).join(",");
+async function writeStockTombstone(client, action, existingPayload = null) {
+  await client.query(
+    `
+      insert into public.pg_stock_tombstones(entity, key, deleted_at, source, client_id, operator, payload)
+      values ($1, $2, $3::timestamptz, $4, $5, $6, $7::jsonb)
+      on conflict (entity, key) do update
+      set deleted_at = greatest(public.pg_stock_tombstones.deleted_at, excluded.deleted_at),
+          source = excluded.source,
+          client_id = excluded.client_id,
+          operator = excluded.operator,
+          payload = coalesce(excluded.payload, public.pg_stock_tombstones.payload)
+    `,
+    [
+      action.entity,
+      action.key,
+      action.updatedAt,
+      action.source || null,
+      action.clientId || null,
+      action.operator || null,
+      JSON.stringify(existingPayload || action.payload || {}),
+    ]
+  );
+}
 
+async function applyItemUpsert(client, action, context) {
+  const existing = await getStockRow(client, "item", action.key);
+  const tombstone = await getStockTombstone(client, "item", action.key);
+  const decision = compareStockUpsert({
+    incomingUpdatedAt: action.updatedAt,
+    existingUpdatedAt: existing?.updated_at,
+    existingDeletedAt: existing?.deleted_at,
+    tombstoneDeletedAt: tombstone?.deleted_at,
+  });
+  if (!decision.accepted) {
+    await auditStockWrite(client, {
+      entity: "item",
+      key: action.key,
+      action: "upsert",
+      source: action.source,
+      clientId: action.clientId,
+      operator: action.operator,
+      requestId: context.requestId,
+      incomingUpdatedAt: action.updatedAt,
+      accepted: false,
+      reason: decision.reason,
+      beforePayload: existing?.data || tombstone?.payload || null,
+      afterPayload: action.payload,
+    });
+    return { ...decision, actionId: action.actionId, entity: "item", key: action.key };
+  }
+
+  const payload = {
+    ...action.payload,
+    articleNumber: action.key,
+    updatedAt: action.updatedAt,
+  };
+  await client.query(
+    `
+      insert into public.pg_items(article_number, data, updated_at, deleted_at, sync_source, sync_client_id, sync_operator)
+      values ($1, $2::jsonb, $3::timestamptz, null, $4, $5, $6)
+      on conflict (article_number) do update
+      set data = excluded.data,
+          updated_at = excluded.updated_at,
+          deleted_at = null,
+          sync_source = excluded.sync_source,
+          sync_client_id = excluded.sync_client_id,
+          sync_operator = excluded.sync_operator
+      where excluded.updated_at > public.pg_items.updated_at
+        and public.pg_items.deleted_at is null
+    `,
+    [
+      action.key,
+      JSON.stringify(payload),
+      action.updatedAt,
+      action.source || null,
+      action.clientId || null,
+      action.operator || null,
+    ]
+  );
+  await client.query(
+    `delete from public.pg_stock_tombstones where entity = 'item' and key = $1 and deleted_at < $2::timestamptz`,
+    [action.key, action.updatedAt]
+  );
+  await auditStockWrite(client, {
+    entity: "item",
+    key: action.key,
+    action: "upsert",
+    source: action.source,
+    clientId: action.clientId,
+    operator: action.operator,
+    requestId: context.requestId,
+    incomingUpdatedAt: action.updatedAt,
+    accepted: true,
+    reason: decision.reason,
+    beforePayload: existing?.data || tombstone?.payload || null,
+    afterPayload: payload,
+  });
+  return { accepted: true, reason: decision.reason, actionId: action.actionId, entity: "item", key: action.key };
+}
+
+async function applyMovementUpsert(client, action, context) {
+  const articleNumber = normalizeArticleNumber(action.payload.articleNumber);
+  if (!articleNumber) {
+    const result = { accepted: false, reason: "missing_movement_article_number" };
+    await auditStockWrite(client, {
+      entity: "movement",
+      key: action.key,
+      action: "upsert",
+      source: action.source,
+      clientId: action.clientId,
+      operator: action.operator,
+      requestId: context.requestId,
+      incomingUpdatedAt: action.updatedAt,
+      accepted: false,
+      reason: result.reason,
+      beforePayload: null,
+      afterPayload: action.payload,
+    });
+    return { ...result, actionId: action.actionId, entity: "movement", key: action.key };
+  }
+
+  const parent = await getStockRow(client, "item", articleNumber);
+  const parentTombstone = await getStockTombstone(client, "item", articleNumber);
+  if (!parent || parent.deleted_at || parentTombstone?.deleted_at) {
+    const result = { accepted: false, reason: "missing_or_deleted_parent_item" };
+    await auditStockWrite(client, {
+      entity: "movement",
+      key: action.key,
+      action: "upsert",
+      source: action.source,
+      clientId: action.clientId,
+      operator: action.operator,
+      requestId: context.requestId,
+      incomingUpdatedAt: action.updatedAt,
+      accepted: false,
+      reason: result.reason,
+      beforePayload: null,
+      afterPayload: action.payload,
+    });
+    return { ...result, actionId: action.actionId, entity: "movement", key: action.key };
+  }
+
+  const existing = await getStockRow(client, "movement", action.key);
+  const tombstone = await getStockTombstone(client, "movement", action.key);
+  const decision = compareStockUpsert({
+    incomingUpdatedAt: action.updatedAt,
+    existingUpdatedAt: existing?.updated_at,
+    existingDeletedAt: existing?.deleted_at,
+    tombstoneDeletedAt: tombstone?.deleted_at,
+  });
+  if (!decision.accepted) {
+    await auditStockWrite(client, {
+      entity: "movement",
+      key: action.key,
+      action: "upsert",
+      source: action.source,
+      clientId: action.clientId,
+      operator: action.operator,
+      requestId: context.requestId,
+      incomingUpdatedAt: action.updatedAt,
+      accepted: false,
+      reason: decision.reason,
+      beforePayload: existing?.data || tombstone?.payload || null,
+      afterPayload: action.payload,
+    });
+    return { ...decision, actionId: action.actionId, entity: "movement", key: action.key };
+  }
+
+  const payload = {
+    ...action.payload,
+    id: action.key,
+    articleNumber,
+    updatedAt: action.updatedAt,
+  };
+  const timestamp = toIsoOrNull(payload.timestamp) || action.updatedAt;
+  await client.query(
+    `
+      insert into public.pg_movements(id, article_number, timestamp, data, updated_at, deleted_at, sync_source, sync_client_id, sync_operator)
+      values ($1, $2, $3::timestamptz, $4::jsonb, $5::timestamptz, null, $6, $7, $8)
+      on conflict (id) do update
+      set article_number = excluded.article_number,
+          timestamp = excluded.timestamp,
+          data = excluded.data,
+          updated_at = excluded.updated_at,
+          deleted_at = null,
+          sync_source = excluded.sync_source,
+          sync_client_id = excluded.sync_client_id,
+          sync_operator = excluded.sync_operator
+      where excluded.updated_at > public.pg_movements.updated_at
+        and public.pg_movements.deleted_at is null
+    `,
+    [
+      action.key,
+      articleNumber,
+      timestamp,
+      JSON.stringify(payload),
+      action.updatedAt,
+      action.source || null,
+      action.clientId || null,
+      action.operator || null,
+    ]
+  );
+  await client.query(
+    `delete from public.pg_stock_tombstones where entity = 'movement' and key = $1 and deleted_at < $2::timestamptz`,
+    [action.key, action.updatedAt]
+  );
+  await auditStockWrite(client, {
+    entity: "movement",
+    key: action.key,
+    action: "upsert",
+    source: action.source,
+    clientId: action.clientId,
+    operator: action.operator,
+    requestId: context.requestId,
+    incomingUpdatedAt: action.updatedAt,
+    accepted: true,
+    reason: decision.reason,
+    beforePayload: existing?.data || tombstone?.payload || null,
+    afterPayload: payload,
+  });
+  return { accepted: true, reason: decision.reason, actionId: action.actionId, entity: "movement", key: action.key };
+}
+
+async function applyStockDelete(client, action, context) {
+  const existing = await getStockRow(client, action.entity, action.key);
+  const tombstone = await getStockTombstone(client, action.entity, action.key);
+  const decision = compareStockDelete({
+    incomingUpdatedAt: action.updatedAt,
+    existingUpdatedAt: existing?.updated_at,
+    existingDeletedAt: existing?.deleted_at,
+    tombstoneDeletedAt: tombstone?.deleted_at,
+  });
+  if (!decision.accepted) {
+    await auditStockWrite(client, {
+      entity: action.entity,
+      key: action.key,
+      action: "delete",
+      source: action.source,
+      clientId: action.clientId,
+      operator: action.operator,
+      requestId: context.requestId,
+      incomingUpdatedAt: action.updatedAt,
+      accepted: false,
+      reason: decision.reason,
+      beforePayload: existing?.data || tombstone?.payload || null,
+      afterPayload: action.payload,
+    });
+    return { ...decision, actionId: action.actionId, entity: action.entity, key: action.key };
+  }
+
+  await writeStockTombstone(client, action, existing?.data || tombstone?.payload || null);
+  if (action.entity === "item") {
+    const relatedMovements = await client.query(
+      `select id, data from public.pg_movements where article_number = $1 and deleted_at is null`,
+      [action.key]
+    );
+    for (const movement of relatedMovements.rows) {
+      await client.query(
+        `
+          insert into public.pg_stock_tombstones(entity, key, deleted_at, source, client_id, operator, payload)
+          values ('movement', $1, $2::timestamptz, $3, $4, $5, $6::jsonb)
+          on conflict (entity, key) do update
+          set deleted_at = greatest(public.pg_stock_tombstones.deleted_at, excluded.deleted_at),
+              source = excluded.source,
+              client_id = excluded.client_id,
+              operator = excluded.operator,
+              payload = excluded.payload
+        `,
+        [
+          movement.id,
+          action.updatedAt,
+          action.source || null,
+          action.clientId || null,
+          action.operator || null,
+          JSON.stringify(movement.data || {}),
+        ]
+      );
+    }
     await client.query(
-      `insert into public.pg_movements(id, article_number, timestamp, data, updated_at)
-       values ${valuesSql}
-       on conflict (id) do update
-       set data = excluded.data, updated_at = now()`,
-      params
+      `
+        update public.pg_movements
+        set deleted_at = $2::timestamptz,
+            updated_at = greatest(updated_at, $2::timestamptz),
+            sync_source = $3,
+            sync_client_id = $4,
+            sync_operator = $5
+        where article_number = $1
+          and deleted_at is null
+      `,
+      [action.key, action.updatedAt, action.source || null, action.clientId || null, action.operator || null]
+    );
+    await client.query(
+      `
+        update public.pg_items
+        set deleted_at = $2::timestamptz,
+            updated_at = greatest(updated_at, $2::timestamptz),
+            sync_source = $3,
+            sync_client_id = $4,
+            sync_operator = $5
+        where article_number = $1
+          and deleted_at is null
+      `,
+      [action.key, action.updatedAt, action.source || null, action.clientId || null, action.operator || null]
+    );
+  } else {
+    await client.query(
+      `
+        update public.pg_movements
+        set deleted_at = $2::timestamptz,
+            updated_at = greatest(updated_at, $2::timestamptz),
+            sync_source = $3,
+            sync_client_id = $4,
+            sync_operator = $5
+        where id = $1
+          and deleted_at is null
+      `,
+      [action.key, action.updatedAt, action.source || null, action.clientId || null, action.operator || null]
     );
   }
-  return valid.length;
+
+  await auditStockWrite(client, {
+    entity: action.entity,
+    key: action.key,
+    action: "delete",
+    source: action.source,
+    clientId: action.clientId,
+    operator: action.operator,
+    requestId: context.requestId,
+    incomingUpdatedAt: action.updatedAt,
+    accepted: true,
+    reason: decision.reason,
+    beforePayload: existing?.data || tombstone?.payload || null,
+    afterPayload: action.payload,
+  });
+  return { accepted: true, reason: decision.reason, actionId: action.actionId, entity: action.entity, key: action.key };
+}
+
+async function applyStockAction(client, action, context) {
+  if (action.action === "delete") return applyStockDelete(client, action, context);
+  if (action.entity === "item") return applyItemUpsert(client, action, context);
+  return applyMovementUpsert(client, action, context);
+}
+
+async function applyStockActions(client, actions, context) {
+  const normalized = [];
+  const rejected = [];
+
+  (Array.isArray(actions) ? actions : []).forEach((rawAction, index) => {
+    const result = normalizeStockAction(rawAction, context);
+    if (!result.ok) {
+      rejected.push({
+        accepted: false,
+        actionId: rawAction?.actionId || rawAction?.idempotencyKey || `invalid:${index}`,
+        reason: result.error,
+      });
+      return;
+    }
+    normalized.push({ ...result.action, queueIndex: index });
+  });
+
+  normalized.sort((left, right) => {
+    const timeDiff = Date.parse(left.updatedAt) - Date.parse(right.updatedAt);
+    return timeDiff || left.queueIndex - right.queueIndex;
+  });
+
+  const results = [...rejected];
+  for (const action of normalized) {
+    results.push(await applyStockAction(client, action, context));
+  }
+
+  const acceptedCount = results.filter((result) => result.accepted).length;
+  const rejectedCount = results.length - acceptedCount;
+  if (results.length) {
+    console.log("[stock-sync] stock action batch processed", {
+      accepted: acceptedCount,
+      rejected: rejectedCount,
+      clientId: context.clientId || null,
+      operator: context.operator || null,
+      requestId: context.requestId,
+    });
+  }
+
+  return {
+    accepted: acceptedCount,
+    rejected: rejectedCount,
+    results,
+  };
 }
 
 async function batchUpsertCoRecords(client, coRecords) {
@@ -307,8 +916,12 @@ export async function handler(event) {
 
     // ---------- GET = pull ----------
     if (event.httpMethod === "GET") {
-      const items = (await client.query("select data from public.pg_items")).rows.map(r => r.data);
-      const movements = (await client.query("select data from public.pg_movements order by timestamp asc")).rows.map(r => r.data);
+      const items = (await client.query(
+        "select data, updated_at from public.pg_items where deleted_at is null order by article_number asc"
+      )).rows.map(mapStockData);
+      const movements = (await client.query(
+        "select data, updated_at from public.pg_movements where deleted_at is null order by timestamp asc, id asc"
+      )).rows.map(mapStockData);
       const coRecords = (await client.query("select data, updated_at from public.pg_co_records order by timestamp asc")).rows.map((r) => ({
         ...(r.data || {}),
         updatedAt: r.data?.updatedAt || r.updated_at || null,
@@ -328,16 +941,21 @@ export async function handler(event) {
     // ---------- POST = push ----------
     if (event.httpMethod === "POST") {
       const payload = JSON.parse(event.body || "{}");
+      const context = getSyncContext(event, payload);
       const items = Array.isArray(payload.items) ? payload.items : [];
       const movements = Array.isArray(payload.movements) ? payload.movements : [];
+      const stockActions = Array.isArray(payload.stockActions) ? payload.stockActions : [];
       const coRecords = Array.isArray(payload.coRecords) ? payload.coRecords : [];
       const coloradoRollStates = Array.isArray(payload.coloradoRollStates) ? payload.coloradoRollStates : [];
       const coloradoRollEvents = Array.isArray(payload.coloradoRollEvents) ? payload.coloradoRollEvents : [];
 
       await client.query("begin");
 
-      const upsertedItems = await batchUpsertItems(client, items);
-      const upsertedMovements = await batchUpsertMovements(client, movements);
+      const rejectedLegacyItems = await rejectLegacyStockPayload(client, "item", items, context);
+      const rejectedLegacyMovements = await rejectLegacyStockPayload(client, "movement", movements, context);
+      const stockActionSummary = await applyStockActions(client, stockActions, context);
+      const acceptedItemActions = stockActionSummary.results.filter((result) => result.accepted && result.entity === "item").length;
+      const acceptedMovementActions = stockActionSummary.results.filter((result) => result.accepted && result.entity === "movement").length;
       const upsertedCoRecords = await batchUpsertCoRecords(client, coRecords);
       const upsertedColoradoRollStates = await batchUpsertColoradoRollStates(client, coloradoRollStates);
       const upsertedColoradoRollEvents = await batchUpsertColoradoRollEvents(client, coloradoRollEvents);
@@ -346,11 +964,16 @@ export async function handler(event) {
       return resp(200, {
         ok: true,
         upserted: {
-          items: upsertedItems,
-          movements: upsertedMovements,
+          items: acceptedItemActions,
+          movements: acceptedMovementActions,
           coRecords: upsertedCoRecords,
           coloradoRollStates: upsertedColoradoRollStates,
           coloradoRollEvents: upsertedColoradoRollEvents,
+        },
+        stockActions: stockActionSummary,
+        rejectedLegacyStockPush: {
+          items: rejectedLegacyItems,
+          movements: rejectedLegacyMovements,
         },
       });
     }
@@ -368,7 +991,22 @@ export async function handler(event) {
       await client.query("begin");
 
       if (kind === "movement") {
-        await client.query(`delete from public.pg_movements where id = $1`, [key]);
+        const updatedAt = new Date().toISOString();
+        const context = getSyncContext(event, { source: "delete_endpoint" });
+        const deleteResult = await applyStockAction(client, {
+          action: "delete",
+          actionId: `delete:movement:${key}:${updatedAt}`,
+          clientId: context.clientId,
+          entity: "movement",
+          key,
+          operator: context.operator,
+          payload: { id: key, deletedAt: updatedAt, updatedAt },
+          source: "delete_endpoint:movement",
+          updatedAt,
+        }, context);
+        if (!deleteResult.accepted) {
+          console.warn("[stock-sync] movement delete ignored", deleteResult);
+        }
       } else if (kind === "coRecord") {
         const existing = await client.query(`select data, updated_at from public.pg_co_records where id = $1`, [key]);
         if (!existing.rowCount) {
@@ -397,8 +1035,22 @@ export async function handler(event) {
           ]
         );
       } else if (kind === "item") {
-        await client.query(`delete from public.pg_movements where article_number = $1`, [key]);
-        await client.query(`delete from public.pg_items where article_number = $1`, [key]);
+        const updatedAt = new Date().toISOString();
+        const context = getSyncContext(event, { source: "delete_endpoint" });
+        const deleteResult = await applyStockAction(client, {
+          action: "delete",
+          actionId: `delete:item:${key}:${updatedAt}`,
+          clientId: context.clientId,
+          entity: "item",
+          key: normalizeArticleNumber(key),
+          operator: context.operator,
+          payload: { articleNumber: normalizeArticleNumber(key), deletedAt: updatedAt, updatedAt },
+          source: "delete_endpoint:item",
+          updatedAt,
+        }, context);
+        if (!deleteResult.accepted) {
+          console.warn("[stock-sync] item delete ignored", deleteResult);
+        }
       } else {
         await client.query("rollback");
         return resp(400, { ok: false, error: `Unsupported delete kind: ${kind}` });

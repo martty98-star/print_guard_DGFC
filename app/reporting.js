@@ -9,6 +9,7 @@
       fmtN, genId, getPrintLogDirectInk, getPrintLogEstimateInterval, getPrintLogInkDisplay,
       i18n, idbClear, idbPut, loadAll, mapPrinterName, normalizePrintLogRow, printResultLabel,
       setSyncDirtyReason, showConfirm, showToast, StockStore, stockDbAdapter,
+      enqueueStockAction,
     } = deps;
 
     function getCurrentMonthExportRange() {
@@ -196,9 +197,21 @@
       const text = await file.text();
       let data;
       try { data = JSON.parse(text); } catch { showToast('Neplatný JSON soubor', 'error'); return; }
-      let items = Array.isArray(data.items) ? data.items.filter(it => it?.articleNumber) : [];
-      let movements = Array.isArray(data.movements) ? data.movements.filter(m => m?.id && m?.articleNumber) : [];
       const importedAt = new Date().toISOString();
+      let items = Array.isArray(data.items)
+        ? data.items
+          .filter(it => it?.articleNumber)
+          .map(it => ({ ...it, articleNumber: String(it.articleNumber).trim().toUpperCase().replace(/\s+/g, '-'), updatedAt: importedAt }))
+        : [];
+      let movements = Array.isArray(data.movements)
+        ? data.movements
+          .filter(m => m?.id && m?.articleNumber)
+          .map(m => ({
+            ...m,
+            articleNumber: String(m.articleNumber).trim().toUpperCase().replace(/\s+/g, '-'),
+            updatedAt: importedAt,
+          }))
+        : [];
       let coRecords = Array.isArray(data.coRecords)
         ? data.coRecords
           .filter(r => r?.id && r?.machineId)
@@ -215,12 +228,13 @@
           if (!articleNumber) return;
           movements.push({
             id: genId('imp'),
-            articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g,'–'),
+            articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-'),
             movType: 'stocktake',
             qty: parseFloat(snap.qty ?? snap.quantity ?? snap.onHand ?? 0),
             timestamp: snap.timestamp || snap.date || new Date().toISOString(),
             note: 'Import StockGuard',
             deviceId: cfg.deviceId,
+            updatedAt: importedAt,
           });
         });
       }
@@ -230,6 +244,28 @@
         await Promise.all(clears);
         for (const it of items) await StockStore.putItem(stockDbAdapter(), it);
         for (const m of movements) await StockStore.putMovement(stockDbAdapter(), m);
+        if (typeof enqueueStockAction === 'function') {
+          for (const it of items) {
+            enqueueStockAction({
+              entity: 'item',
+              action: 'upsert',
+              key: it.articleNumber,
+              payload: it,
+              source: 'import-json:item',
+              updatedAt: importedAt,
+            });
+          }
+          for (const m of movements) {
+            enqueueStockAction({
+              entity: 'movement',
+              action: 'upsert',
+              key: m.id,
+              payload: m,
+              source: 'import-json:movement',
+              updatedAt: importedAt,
+            });
+          }
+        }
         for (const r of coRecords) await idbPut(ST_CORECS, r);
         for (const s of settings) await idbPut(ST_SETTINGS, s);
         await loadAll();
