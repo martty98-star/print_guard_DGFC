@@ -1,18 +1,30 @@
 // netlify/functions/sync.js
-import pg from "pg";
-import crypto from "crypto";
-import {
-  compareStockDelete,
-  compareStockUpsert,
-  normalizeArticleNumber,
-  normalizeStockAction,
-  toIsoOrNull,
-} from "./_lib/stock-sync-safety.mjs";
+const pg = require("pg");
+const crypto = require("crypto");
 const { Client } = pg;
 
 const rateLimitBuckets = new Map();
 let syncSchemaReady = false;
 let syncSchemaReadyPromise = null;
+let stockSyncSafetyPromise = null;
+let compareStockDelete;
+let compareStockUpsert;
+let normalizeArticleNumber;
+let normalizeStockAction;
+let toIsoOrNull;
+
+async function ensureStockSyncSafety() {
+  if (normalizeStockAction) return;
+  if (!stockSyncSafetyPromise) {
+    stockSyncSafetyPromise = import("./_lib/stock-sync-safety.mjs");
+  }
+  const safety = await stockSyncSafetyPromise;
+  compareStockDelete = safety.compareStockDelete;
+  compareStockUpsert = safety.compareStockUpsert;
+  normalizeArticleNumber = safety.normalizeArticleNumber;
+  normalizeStockAction = safety.normalizeStockAction;
+  toIsoOrNull = safety.toIsoOrNull;
+}
 
 function getAdminApiKey() {
   const value = process.env.ADMIN_API_KEY || "";
@@ -831,9 +843,10 @@ async function batchUpsertColoradoRollEvents(client, rollEvents) {
   return valid.length;
 }
 
-export async function handler(event) {
+exports.handler = async function handler(event) {
   const conn = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
   if (!conn) return resp(500, { ok: false, error: "Missing NEON_DATABASE_URL" });
+  await ensureStockSyncSafety();
 
   if (event.httpMethod === "DELETE") {
     try {
