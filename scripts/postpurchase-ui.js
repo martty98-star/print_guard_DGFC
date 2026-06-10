@@ -38,6 +38,7 @@
     reprintActionStateByKey: new Map(),
     reprintStateTimers: new Map(),
     reprintRefreshTimer: null,
+    rowRemovalTimers: new Map(),
     expandedOrderIds: new Set(),
     orderDetailCacheById: new Map(),
     activeOrderId: null,
@@ -57,6 +58,8 @@
       state.reprintActionStateByKey = new Map();
     if (!(state.reprintStateTimers instanceof Map))
       state.reprintStateTimers = new Map();
+    if (!(state.rowRemovalTimers instanceof Map))
+      state.rowRemovalTimers = new Map();
     if (!(state.expandedOrderIds instanceof Set))
       state.expandedOrderIds = new Set();
     if (!(state.orderDetailCacheById instanceof Map))
@@ -231,6 +234,21 @@
     });
   }
 
+  function debugOrdersUi(action, details = {}) {
+    try {
+      if (window.localStorage?.pg_debug_orders !== '1') return;
+    } catch {
+      return;
+    }
+    console.log('[orders-ui]', {
+      action,
+      visibleRows: (state.S.postPurchaseOrders || []).length,
+      offset: state.S.postPurchaseOffset,
+      scrollY: window.scrollY || 0,
+      ...details,
+    });
+  }
+
   function clearReprintActionState(key) {
     if (!key) return;
     const existingTimer = state.reprintStateTimers.get(key);
@@ -275,11 +293,20 @@
     }
   }
 
-  function schedulePostPurchaseRefresh(delayMs = 1200) {
+  function schedulePostPurchaseRefresh(delayMs = 1200, options = {}) {
     if (state.reprintRefreshTimer) clearTimeout(state.reprintRefreshTimer);
+    debugOrdersUi('background-refresh-scheduled', {
+      delayMs,
+      preserveLoadedDepth: options.preserveLoadedDepth !== false,
+    });
     state.reprintRefreshTimer = setTimeout(() => {
       state.reprintRefreshTimer = null;
-      loadPostPurchaseOrders(true, { preserveScroll: true });
+      debugOrdersUi('background-refresh-start');
+      loadPostPurchaseOrders(true, {
+        preserveLoadedDepth: true,
+        preserveScroll: true,
+        ...options,
+      });
     }, delayMs);
   }
 
@@ -462,6 +489,17 @@
     return filters;
   }
 
+  function buildRefreshFilters(append, options = {}) {
+    const filters = buildOrderPipelineFilters(append);
+    if (!append && options.preserveLoadedDepth) {
+      const loadedCount = (state.S.postPurchaseOrders || []).length;
+      const baseLimit = Number(state.S.postPurchaseLimit || 50);
+      filters.limit = String(Math.max(loadedCount, baseLimit, 1));
+      filters.offset = '0';
+    }
+    return filters;
+  }
+
   function getProcessedOrderId(row) {
     return row && (row.processedOrderId || row.id);
   }
@@ -479,6 +517,47 @@
       if (printFile) return { row, printFile };
     }
     return { row: null, printFile: null };
+  }
+
+  function removeOrderLocally(orderId, options = {}) {
+    const id = getOrderStateId(orderId);
+    if (!id) return;
+    const rows = state.S.postPurchaseOrders || [];
+    const beforeRows = rows.length;
+    const nextRows = rows.filter((row) => getOrderStateId(row) !== id);
+    if (nextRows.length === beforeRows) return;
+    const scrollPosition = {
+      x: window.scrollX || 0,
+      y: window.scrollY || 0,
+    };
+    state.S.postPurchaseOrders = nextRows;
+    state.S.postPurchaseOffset = Math.max(
+      0,
+      Number(state.S.postPurchaseOffset || beforeRows) - 1,
+    );
+    state.expandedOrderIds.delete(id);
+    state.orderDetailCacheById.delete(id);
+    if (state.activeOrderId === id) state.activeOrderId = null;
+    debugOrdersUi('local-row-remove', {
+      orderId: id,
+      beforeRows,
+      afterRows: nextRows.length,
+      beforeScrollY: scrollPosition.y,
+    });
+    renderPostPurchaseOrders();
+    if (options.preserveScroll !== false) restoreScrollPosition(scrollPosition);
+  }
+
+  function scheduleLocalOrderRemoval(orderId, delayMs = 700) {
+    const id = getOrderStateId(orderId);
+    if (!id) return;
+    const existingTimer = state.rowRemovalTimers.get(id);
+    if (existingTimer) clearTimeout(existingTimer);
+    const timer = setTimeout(() => {
+      state.rowRemovalTimers.delete(id);
+      removeOrderLocally(id, { preserveScroll: true });
+    }, delayMs);
+    state.rowRemovalTimers.set(id, timer);
   }
 
   function storeReprintHistory(requests) {
@@ -577,6 +656,15 @@
 
   async function resolveReprintRequest(payload) {
     const key = Render.getReprintKey(payload.orderId, payload.printFilePath);
+    const orderId = getOrderStateId(payload.orderId);
+    const currentState = state.reprintActionStateByKey.get(key);
+    if (currentState && currentState.state === 'resolving') return null;
+    debugOrdersUi('manual-reprint-resolve-start', {
+      orderId,
+      beforeVisibleRows: (state.S.postPurchaseOrders || []).length,
+      beforeOffset: state.S.postPurchaseOffset,
+      beforeScrollY: window.scrollY || 0,
+    });
     setReprintActionState(key, {
       state: 'resolving',
       message: t('processed.action.reprint-resolving-text'),
@@ -600,10 +688,15 @@
           state: 'resolved',
           message: t('processed.action.reprint-resolved-text'),
         },
-        { clearAfterMs: 2500 },
+        { clearAfterMs: 25000 },
       );
       renderPostPurchaseOrders();
-      schedulePostPurchaseRefresh(1200);
+      scheduleLocalOrderRemoval(orderId, 700);
+      schedulePostPurchaseRefresh(25000);
+      debugOrdersUi('manual-reprint-resolve-success', {
+        orderId,
+        foregroundRefresh: false,
+      });
       return result;
     } catch (error) {
       console.error('Resolve reprint request failed', error);
@@ -621,6 +714,10 @@
           : t('processed.toast.reprint-resolve-failed'),
         'error',
       );
+      debugOrdersUi('manual-reprint-resolve-error', {
+        orderId,
+        message: error && error.message,
+      });
       throw error;
     }
   }
@@ -710,7 +807,8 @@
     }
     if (!state.requirePostPurchasePinForScreen()) return;
 
-    if (!append) state.S.postPurchaseOffset = 0;
+    const resetOffset = !append && !options.preserveLoadedDepth;
+    if (resetOffset) state.S.postPurchaseOffset = 0;
     const controller =
       !append && typeof AbortController !== 'undefined'
         ? new AbortController()
@@ -727,7 +825,7 @@
       const payload = await Api.loadOrderPipeline({
         fetchImpl: state.fetchImpl,
         headers: state.postPurchaseHeaders(),
-        filters: buildOrderPipelineFilters(append),
+        filters: buildRefreshFilters(append, options),
         signal: controller ? controller.signal : undefined,
       });
       const rows = Array.isArray(payload.rows) ? payload.rows : [];

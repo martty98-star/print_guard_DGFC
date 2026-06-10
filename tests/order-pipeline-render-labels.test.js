@@ -141,4 +141,45 @@ assert.doesNotMatch(
   /data-print-file-label="processed.full-order"/,
 );
 
+const resolvedHtml = Render.renderOrders(
+  [
+    {
+      id: 26853,
+      processedOrderId: 26853,
+      processedOrderName: '4770996',
+      orderName: '4770996',
+      orderType: 'S',
+      pipelineStatus: 'processed',
+      hasDetail: true,
+      printFiles: [
+        {
+          printFilePath: 'C:\\Print\\4770996.pdf',
+          pageSize: '100x100',
+        },
+      ],
+    },
+  ],
+  {
+    esc,
+    stats: null,
+    reprintHistoryByKey: new Map(),
+    reprintActionStateByKey: new Map([
+      [
+        Render.getReprintKey(26853, ''),
+        {
+          state: 'resolved',
+          message: 'Hotovo',
+        },
+      ],
+    ]),
+    reprintPendingKeys: new Set(),
+  },
+);
+
+assert.match(resolvedHtml, /Hotovo/);
+assert.doesNotMatch(
+  resolvedHtml,
+  /data-print-file-label="processed.full-order"/,
+);
+
 console.log('order-pipeline render label tests passed');
