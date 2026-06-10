@@ -128,16 +128,28 @@
         return;
       }
       showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
+        const Queue = window.PrintGuardOperatorQueueMode;
+        if (Queue && Queue.isQueueRowLocked('stock-log', id)) return;
+        if (Queue) Queue.markQueueRowPending('stock-log', id);
         try {
           await StockStore.deleteMovementRemote(id, stockApiAdapter());
           await StockStore.deleteMovementLocal(stockDbAdapter(), id);
           S.movements = S.movements.filter((m) => m.id !== id);
-          renderStockOverview();
-          renderAlerts();
-          renderStockLog();
+          if (Queue) Queue.markQueueRowDone('stock-log', id);
+          const render = () => {
+            renderStockOverview();
+            renderAlerts();
+            renderStockLog();
+          };
+          if (Queue) Queue.preserveScrollDuringRender(render, 'stock-log');
+          else render();
           if (S.detailArticle) openStockDetail(S.detailArticle);
           showToast('Pohyb smazán');
         } catch (err) {
+          if (Queue)
+            Queue.markQueueRowFailed('stock-log', id, {
+              message: adminErrorMessage(err),
+            });
           showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
         }
       });
@@ -145,15 +157,27 @@
 
     async function deleteMovement(id) {
       showConfirm('Smazat tento pohyb skladu?', async () => {
+        const Queue = window.PrintGuardOperatorQueueMode;
+        if (Queue && Queue.isQueueRowLocked('stock-detail', id)) return;
+        if (Queue) Queue.markQueueRowPending('stock-detail', id);
         try {
           await StockStore.deleteMovementRemote(id, stockApiAdapter());
           await StockStore.deleteMovementLocal(stockDbAdapter(), id);
           S.movements = S.movements.filter((m) => m.id !== id);
-          renderStockOverview();
-          renderAlerts();
+          if (Queue) Queue.markQueueRowDone('stock-detail', id);
+          const render = () => {
+            renderStockOverview();
+            renderAlerts();
+          };
+          if (Queue) Queue.preserveScrollDuringRender(render, 'stock-detail');
+          else render();
           if (S.detailArticle) openStockDetail(S.detailArticle);
           showToast('Pohyb smazán');
         } catch (err) {
+          if (Queue)
+            Queue.markQueueRowFailed('stock-detail', id, {
+              message: adminErrorMessage(err),
+            });
           showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
         }
       });

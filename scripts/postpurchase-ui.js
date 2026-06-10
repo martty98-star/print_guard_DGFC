@@ -7,6 +7,8 @@
   const ReprintModal = window.PrintGuardReprintModal;
   const ReprintXml = window.PrintGuardReprintXml;
   const PdfOpen = window.PrintGuardPdfOpen;
+  const Queue = window.PrintGuardOperatorQueueMode;
+  const SCREEN_KEY = 'postpurchase-orders';
 
   function t(key) {
     return window.I18N && typeof window.I18N.t === 'function'
@@ -14,7 +16,15 @@
       : key;
   }
 
-  if (!Api || !Filters || !Render || !ReprintModal || !ReprintXml || !PdfOpen) {
+  if (
+    !Api ||
+    !Filters ||
+    !Render ||
+    !ReprintModal ||
+    !ReprintXml ||
+    !PdfOpen ||
+    !Queue
+  ) {
     throw new Error('Missing Processed Print Orders modules');
   }
 
@@ -219,19 +229,48 @@
     });
   }
 
+  function captureQueueState() {
+    return Queue.captureQueueUiState(SCREEN_KEY, {
+      filters: Filters.getFiltersFromState(state.S),
+      search: state.S.postPurchaseSearch,
+      sort: '',
+      visibleLimit: Math.max(
+        Number(state.S.postPurchaseOffset || 0),
+        (state.S.postPurchaseOrders || []).length,
+        Number(state.S.postPurchaseLimit || 50),
+      ),
+      loadedPages: [
+        {
+          offset: 0,
+          limit: Math.max(
+            Number(state.S.postPurchaseOffset || 0),
+            (state.S.postPurchaseOrders || []).length,
+          ),
+        },
+      ],
+      expandedRowIds: state.expandedOrderIds,
+      activeRowId: state.activeOrderId,
+      queueSnapshotOrder: (state.S.postPurchaseOrders || []).map(
+        getOrderStateId,
+      ),
+    });
+  }
+
   function captureScrollPosition(options = {}) {
     if (!options.preserveScroll) return null;
-    return {
-      x: window.scrollX || 0,
-      y: window.scrollY || 0,
-    };
+    return captureQueueState();
   }
 
   function restoreScrollPosition(position) {
     if (!position) return;
-    window.requestAnimationFrame(() => {
-      window.scrollTo(position.x, position.y);
-    });
+    Queue.restoreQueueUiState(SCREEN_KEY, position);
+  }
+
+  function renderQueuePreserved() {
+    return Queue.preserveScrollDuringRender(
+      () => renderPostPurchaseOrders(),
+      SCREEN_KEY,
+    );
   }
 
   function debugOrdersUi(action, details = {}) {
@@ -294,20 +333,21 @@
   }
 
   function schedulePostPurchaseRefresh(delayMs = 1200, options = {}) {
-    if (state.reprintRefreshTimer) clearTimeout(state.reprintRefreshTimer);
     debugOrdersUi('background-refresh-scheduled', {
       delayMs,
       preserveLoadedDepth: options.preserveLoadedDepth !== false,
     });
-    state.reprintRefreshTimer = setTimeout(() => {
-      state.reprintRefreshTimer = null;
-      debugOrdersUi('background-refresh-start');
-      loadPostPurchaseOrders(true, {
-        preserveLoadedDepth: true,
-        preserveScroll: true,
-        ...options,
-      });
-    }, delayMs);
+    Queue.scheduleNonDisruptiveRefresh(
+      SCREEN_KEY,
+      (refreshOptions) => {
+        debugOrdersUi('background-refresh-start');
+        loadPostPurchaseOrders(true, {
+          ...refreshOptions,
+          ...options,
+        });
+      },
+      { delayMs },
+    );
   }
 
   function getOperatorName() {
@@ -330,6 +370,71 @@
 
   function getVisibleOrders() {
     return state.S.postPurchaseOrders || [];
+  }
+
+  function isAlreadyDoneError(error) {
+    const text = [
+      error && error.message,
+      error && error.payload && error.payload.error,
+      error && error.payload && error.payload.code,
+      error && error.payload && error.payload.status,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return (
+      error &&
+      (error.status === 404 || error.status === 409 || error.status === 410) &&
+      /already|done|resolved|completed|hotovo|nenalezen|not found/.test(text)
+    );
+  }
+
+  function removeReprintHistoryRequest(requestId) {
+    const id = String(requestId || '');
+    if (!id) return null;
+    let touchedOrderId = null;
+    const nextHistory = new Map();
+    state.reprintHistoryByKey.forEach((entries, key) => {
+      const nextEntries = (Array.isArray(entries) ? entries : []).filter(
+        (entry) => {
+          const keep = String(entry && entry.id) !== id;
+          if (!keep) touchedOrderId = entry.orderId;
+          return keep;
+        },
+      );
+      if (nextEntries.length) nextHistory.set(key, nextEntries);
+      else state.reprintPendingKeys.delete(key);
+    });
+    state.reprintHistoryByKey = nextHistory;
+    return touchedOrderId;
+  }
+
+  function findReprintHistoryRequest(requestId) {
+    const id = String(requestId || '');
+    if (!id) return null;
+    for (const entries of state.reprintHistoryByKey.values()) {
+      const found = (Array.isArray(entries) ? entries : []).find(
+        (entry) => String(entry && entry.id) === id,
+      );
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function shouldRemoveAfterReprintCleared() {
+    return (
+      state.S.postPurchaseStatus === 'reprint_pending' ||
+      state.S.postPurchaseReprint === 'pending'
+    );
+  }
+
+  function applySuccessfulOrderAction(orderId, message, options = {}) {
+    const id = getOrderStateId(orderId);
+    if (!id) return;
+    Queue.markQueueRowDone(SCREEN_KEY, id, { message });
+    renderQueuePreserved();
+    if (options.remove !== false) scheduleLocalOrderRemoval(id, 700);
+    schedulePostPurchaseRefresh(25000);
   }
 
   function setPostPurchaseQuickFilter(status) {
@@ -524,12 +629,12 @@
     if (!id) return;
     const rows = state.S.postPurchaseOrders || [];
     const beforeRows = rows.length;
-    const nextRows = rows.filter((row) => getOrderStateId(row) !== id);
+    const nextRows = Queue.removeQueueRowLocally(SCREEN_KEY, id, {
+      rows,
+      getRowId: getOrderStateId,
+    });
     if (nextRows.length === beforeRows) return;
-    const scrollPosition = {
-      x: window.scrollX || 0,
-      y: window.scrollY || 0,
-    };
+    const scrollPosition = captureQueueState();
     state.S.postPurchaseOrders = nextRows;
     state.S.postPurchaseOffset = Math.max(
       0,
@@ -544,20 +649,21 @@
       afterRows: nextRows.length,
       beforeScrollY: scrollPosition.y,
     });
-    renderPostPurchaseOrders();
+    renderQueuePreserved();
     if (options.preserveScroll !== false) restoreScrollPosition(scrollPosition);
   }
 
   function scheduleLocalOrderRemoval(orderId, delayMs = 700) {
     const id = getOrderStateId(orderId);
     if (!id) return;
-    const existingTimer = state.rowRemovalTimers.get(id);
-    if (existingTimer) clearTimeout(existingTimer);
-    const timer = setTimeout(() => {
-      state.rowRemovalTimers.delete(id);
-      removeOrderLocally(id, { preserveScroll: true });
-    }, delayMs);
-    state.rowRemovalTimers.set(id, timer);
+    Queue.scheduleRowRemoval(
+      SCREEN_KEY,
+      id,
+      () => {
+        removeOrderLocally(id, { preserveScroll: true });
+      },
+      delayMs,
+    );
   }
 
   function storeReprintHistory(requests) {
@@ -593,6 +699,17 @@
   }
 
   async function createReprintRequest(payload) {
+    const rowId = getOrderStateId(payload.orderId);
+    const key = Render.getReprintKey(payload.orderId, payload.printFilePath);
+    if (Queue.isQueueRowLocked(SCREEN_KEY, rowId)) return null;
+    Queue.markQueueRowPending(SCREEN_KEY, rowId, {
+      message: t('processed.action.reprint-pending-text'),
+    });
+    setReprintActionState(key, {
+      state: 'pending',
+      message: t('processed.action.reprint-pending-text'),
+    });
+    renderQueuePreserved();
     try {
       const selected = findOrderAndPrintFile(
         payload.orderId,
@@ -607,16 +724,11 @@
           workstationId: state.cfg && state.cfg.deviceId,
         },
       });
-      state.reprintPendingKeys.add(
-        Render.getReprintKey(payload.orderId, payload.printFilePath),
-      );
-      setReprintActionState(
-        Render.getReprintKey(payload.orderId, payload.printFilePath),
-        {
-          state: 'pending',
-          message: t('processed.action.reprint-pending-text'),
-        },
-      );
+      state.reprintPendingKeys.add(key);
+      setReprintActionState(key, {
+        state: 'pending',
+        message: t('processed.action.reprint-pending-text'),
+      });
       const downloadOrderName =
         payload.orderName ||
         (selected.row &&
@@ -633,22 +745,28 @@
         ReprintXml.downloadXml(xml, downloadOrderName);
       }
       state.showToast(t('processed.toast.reprint-created'), 'success');
-      renderPostPurchaseOrders();
+      Queue.markQueueRowDone(SCREEN_KEY, rowId, {
+        message: t('processed.action.reprint-pending-text'),
+      });
+      renderQueuePreserved();
       schedulePostPurchaseRefresh(25000);
       return result;
     } catch (error) {
       console.error('Reprint request failed', error);
-      setReprintActionState(
-        Render.getReprintKey(payload.orderId, payload.printFilePath),
-        {
-          state: 'error',
-          message:
-            error && error.message
-              ? error.message
-              : t('processed.toast.reprint-create-failed'),
-        },
-      );
-      renderPostPurchaseOrders();
+      Queue.markQueueRowFailed(SCREEN_KEY, rowId, {
+        message:
+          error && error.message
+            ? error.message
+            : t('processed.toast.reprint-create-failed'),
+      });
+      setReprintActionState(key, {
+        state: 'error',
+        message:
+          error && error.message
+            ? error.message
+            : t('processed.toast.reprint-create-failed'),
+      });
+      renderQueuePreserved();
       state.showToast(t('processed.toast.reprint-create-failed'), 'error');
       throw error;
     }
@@ -658,7 +776,15 @@
     const key = Render.getReprintKey(payload.orderId, payload.printFilePath);
     const orderId = getOrderStateId(payload.orderId);
     const currentState = state.reprintActionStateByKey.get(key);
-    if (currentState && currentState.state === 'resolving') return null;
+    if (
+      (currentState && currentState.state === 'resolving') ||
+      Queue.isQueueRowLocked(SCREEN_KEY, orderId)
+    ) {
+      return null;
+    }
+    Queue.markQueueRowPending(SCREEN_KEY, orderId, {
+      message: t('processed.action.reprint-resolving-text'),
+    });
     debugOrdersUi('manual-reprint-resolve-start', {
       orderId,
       beforeVisibleRows: (state.S.postPurchaseOrders || []).length,
@@ -669,7 +795,7 @@
       state: 'resolving',
       message: t('processed.action.reprint-resolving-text'),
     });
-    renderPostPurchaseOrders();
+    renderQueuePreserved();
     try {
       const result = await Api.resolveReprintRequest({
         fetchImpl: state.fetchImpl,
@@ -690,7 +816,10 @@
         },
         { clearAfterMs: 25000 },
       );
-      renderPostPurchaseOrders();
+      Queue.markQueueRowDone(SCREEN_KEY, orderId, {
+        message: t('processed.action.reprint-resolved-text'),
+      });
+      renderQueuePreserved();
       scheduleLocalOrderRemoval(orderId, 700);
       schedulePostPurchaseRefresh(25000);
       debugOrdersUi('manual-reprint-resolve-success', {
@@ -699,7 +828,36 @@
       });
       return result;
     } catch (error) {
+      if (isAlreadyDoneError(error)) {
+        markReprintHistoryDone({
+          orderId,
+          printFilePath: payload.printFilePath,
+          status: 'done',
+          confirmedAt: new Date().toISOString(),
+        });
+        adjustStatsAfterReprintResolve();
+        state.showToast('Už hotovo', 'success');
+        setReprintActionState(
+          key,
+          {
+            state: 'resolved',
+            message: 'Už hotovo',
+          },
+          { clearAfterMs: 25000 },
+        );
+        Queue.markQueueRowDone(SCREEN_KEY, orderId, { message: 'Už hotovo' });
+        renderQueuePreserved();
+        scheduleLocalOrderRemoval(orderId, 700);
+        schedulePostPurchaseRefresh(25000);
+        return { ok: true, alreadyDone: true };
+      }
       console.error('Resolve reprint request failed', error);
+      Queue.markQueueRowFailed(SCREEN_KEY, orderId, {
+        message:
+          error && error.message
+            ? error.message
+            : t('processed.toast.reprint-resolve-failed'),
+      });
       setReprintActionState(key, {
         state: 'error',
         message:
@@ -707,7 +865,7 @@
             ? error.message
             : t('processed.toast.reprint-resolve-failed'),
       });
-      renderPostPurchaseOrders();
+      renderQueuePreserved();
       state.showToast(
         error && error.message
           ? error.message
@@ -730,6 +888,13 @@
         : t('processed.confirm.cancel-reprint'),
     );
     if (!confirmed) return;
+    const historyEntry = findReprintHistoryRequest(payload.id);
+    const rowId = historyEntry && getOrderStateId(historyEntry.orderId);
+    if (rowId && Queue.isQueueRowLocked(SCREEN_KEY, rowId)) return;
+    if (rowId)
+      Queue.markQueueRowPending(SCREEN_KEY, rowId, {
+        message: t('processed.action.reprint-resolving-text'),
+      });
     try {
       await Api.deleteReprintRequest({
         fetchImpl: state.fetchImpl,
@@ -748,10 +913,32 @@
           : t('processed.toast.reprint-cancelled'),
         'success',
       );
-      state.S.postPurchaseLoaded = false;
-      await loadPostPurchaseOrders(true);
+      removeReprintHistoryRequest(payload.id);
+      if (rowId) {
+        Queue.markQueueRowDone(SCREEN_KEY, rowId, {
+          message: admin
+            ? t('processed.toast.reprint-deleted')
+            : t('processed.toast.reprint-cancelled'),
+        });
+        if (shouldRemoveAfterReprintCleared()) {
+          scheduleLocalOrderRemoval(rowId, 700);
+        } else {
+          renderQueuePreserved();
+        }
+      } else {
+        renderQueuePreserved();
+      }
+      schedulePostPurchaseRefresh(25000);
     } catch (error) {
       console.error('Delete reprint request failed', error);
+      if (rowId)
+        Queue.markQueueRowFailed(SCREEN_KEY, rowId, {
+          message:
+            error && error.message
+              ? error.message
+              : t('processed.toast.reprint-delete-failed'),
+        });
+      renderQueuePreserved();
       state.showToast(
         error && error.message
           ? error.message
@@ -829,12 +1016,22 @@
         signal: controller ? controller.signal : undefined,
       });
       const rows = Array.isArray(payload.rows) ? payload.rows : [];
+      const mergedRows = mergeCachedDetails(rows);
       state.S.postPurchaseOrders = append
         ? (state.S.postPurchaseOrders || []).concat(rows)
-        : mergeCachedDetails(rows);
+        : options.nonDisruptive
+          ? Queue.mergeRowsBySnapshot(
+              SCREEN_KEY,
+              state.S.postPurchaseOrders || [],
+              mergedRows,
+              getOrderStateId,
+            )
+          : mergedRows;
       state.S.postPurchaseOffset =
-        Number(payload.page?.nextOffset ?? payload.nextOffset) ||
-        state.S.postPurchaseOrders.length;
+        options.preserveLoadedDepth || options.nonDisruptive
+          ? state.S.postPurchaseOrders.length
+          : Number(payload.page?.nextOffset ?? payload.nextOffset) ||
+            state.S.postPurchaseOrders.length;
       state.S.postPurchaseHasMore = Boolean(
         payload.page?.hasMore ?? payload.hasMore,
       );
@@ -843,7 +1040,13 @@
       state.S.postPurchaseLoaded = true;
       updateMonthFilter(payload.months || []);
       updateFilterControls();
-      renderPostPurchaseOrders();
+      renderQueuePreserved();
+      if (Queue.ensureQueue(SCREEN_KEY).dataChangedHeavily) {
+        state.elSet(
+          'postpurchase-status',
+          'Data aktualizována · obnovit seznam',
+        );
+      }
       restoreScrollPosition(scrollPosition);
     } catch (error) {
       if (error && error.name === 'AbortError') return;
@@ -869,12 +1072,18 @@
 
   async function updateOrderAdminStatus(payload) {
     const action = payload && payload.action;
+    const orderId = getOrderStateId(payload && payload.processedOrderId);
     const confirmed = window.confirm(
       action === 'delete_order'
         ? t('processed.confirm.delete-order')
         : t('processed.confirm.cancel-order'),
     );
     if (!confirmed) return;
+    if (Queue.isQueueRowLocked(SCREEN_KEY, orderId)) return;
+    Queue.markQueueRowPending(SCREEN_KEY, orderId, {
+      message: t('processed.action.reprint-resolving-text'),
+    });
+    renderQueuePreserved();
     try {
       await Api.updateOrderAdminStatus({
         fetchImpl: state.fetchImpl,
@@ -887,10 +1096,26 @@
           : t('processed.toast.order-cancelled'),
         'success',
       );
-      state.S.postPurchaseLoaded = false;
-      await loadPostPurchaseOrders(true);
+      applySuccessfulOrderAction(
+        orderId,
+        action === 'delete_order'
+          ? t('processed.toast.order-deleted')
+          : t('processed.toast.order-cancelled'),
+      );
     } catch (error) {
       console.error('Admin order action failed', error);
+      if (isAlreadyDoneError(error)) {
+        state.showToast('Už hotovo', 'success');
+        applySuccessfulOrderAction(orderId, 'Už hotovo');
+        return;
+      }
+      Queue.markQueueRowFailed(SCREEN_KEY, orderId, {
+        message:
+          error && error.message
+            ? error.message
+            : t('processed.toast.order-action-failed'),
+      });
+      renderQueuePreserved();
       state.showToast(
         error && error.message
           ? error.message

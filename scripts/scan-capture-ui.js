@@ -12,6 +12,7 @@
   const STATUS_POLL_TIMEOUT_MS = 120000;
   const Api = global.PrintGuardScanCaptureApi;
   const Auth = global.PrintGuardAuth;
+  const Queue = global.PrintGuardOperatorQueueMode;
 
   const state = {
     bound: false,
@@ -407,9 +408,13 @@
   }
 
   function renderAll() {
-    renderKpis();
-    renderRecent();
-    renderCommitResult();
+    const render = () => {
+      renderKpis();
+      renderRecent();
+      renderCommitResult();
+    };
+    if (Queue) Queue.preserveScrollDuringRender(render, 'scan-capture');
+    else render();
   }
 
   async function refreshScanCapture() {
@@ -730,11 +735,23 @@
   async function deleteScan(target) {
     const scanId = target?.dataset?.scanId || '';
     if (!scanId) return;
+    if (Queue && Queue.isQueueRowLocked('scan-capture', scanId)) return;
+    if (Queue)
+      Queue.markQueueRowPending('scan-capture', scanId, {
+        message: 'Zpracovávám...',
+      });
+    if (target) target.disabled = true;
     try {
       await queueDelete(scanId);
+      if (Queue) Queue.markQueueRowDone('scan-capture', scanId);
       await refreshScanCapture();
       setStatus(t('scan.status.deleted'), 'ok');
     } catch (error) {
+      if (Queue)
+        Queue.markQueueRowFailed('scan-capture', scanId, {
+          message: error.message || String(error),
+        });
+      if (target) target.disabled = false;
       setStatus(
         `${t('scan.status.delete-failed')}: ${error.message || error}`,
         'error',
