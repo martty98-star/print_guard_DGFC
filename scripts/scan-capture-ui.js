@@ -500,6 +500,28 @@
     renderCommitResult();
   }
 
+  async function clearFinalizedQueueEntries(result) {
+    const removeIds = new Set([
+      ...(result?.finalizedScanIds || []),
+      ...(result?.committedScanIds || []),
+      ...(result?.processedScanIds || []),
+      ...(result?.duplicateScanIds || []),
+      ...(result?.diagnostics?.finalizedScanIds || []),
+      ...(result?.diagnostics?.processedScanIds || []),
+    ]);
+    [
+      ...(result?.errorScanIds || []),
+      ...(result?.pendingScanIds || []),
+      ...(result?.diagnostics?.errorScanIds || []),
+      ...(result?.diagnostics?.pendingScanIds || []),
+    ].forEach((scanId) => removeIds.delete(scanId));
+    if (!removeIds.size) return false;
+    await queueDeleteMany(Array.from(removeIds));
+    await refreshScanCapture();
+    renderCommitResult();
+    return true;
+  }
+
   function mergeCommitResult(result) {
     state.commitResult = {
       ...(state.commitResult || {}),
@@ -529,6 +551,7 @@
       return false;
     }
     if (statusResult.status === 'partial') {
+      await clearFinalizedQueueEntries(statusResult);
       const detail =
         statusResult.errorMessage ||
         statusResult.failedPhase ||
@@ -651,17 +674,7 @@
         await applyBatchStatus(state.commitResult);
         return;
       }
-      const removeIds = new Set([
-        ...(state.commitResult.committedScanIds || []),
-        ...(state.commitResult.processedScanIds || []),
-        ...(state.commitResult.duplicateScanIds || []),
-      ]);
-      (state.commitResult.errorScanIds || []).forEach((scanId) =>
-        removeIds.delete(scanId),
-      );
-      if (removeIds.size) await queueDeleteMany(Array.from(removeIds));
-      await refreshScanCapture();
-      renderCommitResult();
+      await clearFinalizedQueueEntries(state.commitResult);
       const committed = Number(state.commitResult.newScansCommitted || 0);
       const matched = Number(state.commitResult.matchedCount || 0);
       const orderUpdates = Number(state.commitResult.orderUpdateCount || 0);

@@ -186,6 +186,22 @@ function makeClient(seed = {}) {
 
       if (
         text.includes('from public.print_job_label_scans') &&
+        text.includes('where commit_batch_id = $1') &&
+        text.includes('scan_id') &&
+        text.includes('match_status') &&
+        !text.includes('count(*)::int as scan_count')
+      ) {
+        const rows = state.scans
+          .filter((scan) => scan.commit_batch_id === params[0])
+          .map((scan) => ({
+            scan_id: scan.scan_id,
+            match_status: scan.match_status,
+          }));
+        return { rows, rowCount: rows.length };
+      }
+
+      if (
+        text.includes('from public.print_job_label_scans') &&
         text.includes('where scan_id = any')
       ) {
         const ids = new Set(params[0] || []);
@@ -689,6 +705,14 @@ async function run() {
       client.state.processedOrders[0].physically_printed_batch_id,
       'browser-scan-batch-partial',
     );
+    const status = await ScanCommit.getBatchStatus(
+      client,
+      'browser-scan-batch-partial',
+    );
+    assert.deepStrictEqual(status.processedScanIds, ['partial-scan-1']);
+    assert.deepStrictEqual(status.finalizedScanIds, ['partial-scan-1']);
+    assert.deepStrictEqual(status.errorScanIds, []);
+    assert.deepStrictEqual(status.pendingScanIds, []);
   }
 
   {

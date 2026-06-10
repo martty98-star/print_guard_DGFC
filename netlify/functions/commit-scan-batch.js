@@ -350,6 +350,41 @@ function formatBatchStatus(row) {
   };
 }
 
+async function fetchBatchScanStatusSummary(client, batchId) {
+  const result = await client.query(
+    `
+      select scan_id, match_status
+      from public.print_job_label_scans
+      where commit_batch_id = $1
+    `,
+    [batchId],
+  );
+  const summary = {
+    finalizedScanIds: [],
+    processedScanIds: [],
+    errorScanIds: [],
+    pendingScanIds: [],
+  };
+  for (const row of result.rows || []) {
+    const scanId = String(row.scan_id || '');
+    if (!scanId) continue;
+    const status = String(row.match_status || '')
+      .trim()
+      .toLowerCase();
+    if (status === 'pending') {
+      summary.pendingScanIds.push(scanId);
+      continue;
+    }
+    if (status === 'error') {
+      summary.errorScanIds.push(scanId);
+      continue;
+    }
+    summary.finalizedScanIds.push(scanId);
+    summary.processedScanIds.push(scanId);
+  }
+  return summary;
+}
+
 async function fetchBatchRow(client, batchId) {
   const result = await client.query(
     `
@@ -388,7 +423,25 @@ async function getBatchStatus(client, batchId) {
     error.statusCode = 400;
     throw error;
   }
-  return formatBatchStatus(await fetchBatchRow(client, normalizedBatchId));
+  const status = formatBatchStatus(
+    await fetchBatchRow(client, normalizedBatchId),
+  );
+  if (!status) return null;
+  const scanStatus = await fetchBatchScanStatusSummary(
+    client,
+    normalizedBatchId,
+  );
+  return {
+    ...status,
+    ...scanStatus,
+    diagnostics: {
+      ...(status.diagnostics || {}),
+      finalizedScanIds: scanStatus.finalizedScanIds,
+      processedScanIds: scanStatus.processedScanIds,
+      errorScanIds: scanStatus.errorScanIds,
+      pendingScanIds: scanStatus.pendingScanIds,
+    },
+  };
 }
 
 async function updateBatchPhase(client, batchId, status, diagnostics = {}) {
