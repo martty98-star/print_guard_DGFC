@@ -43,7 +43,13 @@
 
   function computeStock(item) {
     const deps = requireContext();
-    return StockDomain.computeStockSummary(item, deps.S.movements, deps.cfg, deps.Reports.stock, new Date());
+    return StockDomain.computeStockSummary(
+      item,
+      deps.S.movements,
+      deps.cfg,
+      deps.Reports.stock,
+      new Date(),
+    );
   }
 
   function getMovements(articleNumber) {

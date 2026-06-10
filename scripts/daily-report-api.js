@@ -2,7 +2,9 @@
 
 (() => {
   function t(key) {
-    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+    return window.I18N && typeof window.I18N.t === 'function'
+      ? window.I18N.t(key)
+      : key;
   }
 
   async function readJsonResponse(res, fallbackMessage) {
@@ -16,7 +18,9 @@
       }
     }
     if (!res.ok || payload.ok === false) {
-      const error = new Error(payload.error || fallbackMessage || `Request failed (${res.status})`);
+      const error = new Error(
+        payload.error || fallbackMessage || `Request failed (${res.status})`,
+      );
       error.status = res.status;
       error.payload = payload;
       throw error;
@@ -28,7 +32,10 @@
     const params = new URLSearchParams();
     if (date) params.set('date', date);
     const suffix = params.toString();
-    return '/.netlify/functions/daily-production-report' + (suffix ? `?${suffix}` : '');
+    return (
+      '/.netlify/functions/daily-production-report' +
+      (suffix ? `?${suffix}` : '')
+    );
   }
 
   async function loadDailyReport(options) {

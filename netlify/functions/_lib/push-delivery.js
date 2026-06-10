@@ -43,7 +43,10 @@ function subscriptionMatchesCategory(subscription, category) {
     return true;
   }
 
-  return types.includes('all') || types.includes(String(category || '').toLowerCase());
+  return (
+    types.includes('all') ||
+    types.includes(String(category || '').toLowerCase())
+  );
 }
 
 function ensureVapidConfigured() {
@@ -51,15 +54,18 @@ function ensureVapidConfigured() {
     return;
   }
 
-  const publicKey = typeof process.env.VAPID_PUBLIC_KEY === 'string'
-    ? process.env.VAPID_PUBLIC_KEY.trim()
-    : '';
-  const privateKey = typeof process.env.VAPID_PRIVATE_KEY === 'string'
-    ? process.env.VAPID_PRIVATE_KEY.trim()
-    : '';
-  const subject = typeof process.env.VAPID_SUBJECT === 'string'
-    ? process.env.VAPID_SUBJECT.trim()
-    : '';
+  const publicKey =
+    typeof process.env.VAPID_PUBLIC_KEY === 'string'
+      ? process.env.VAPID_PUBLIC_KEY.trim()
+      : '';
+  const privateKey =
+    typeof process.env.VAPID_PRIVATE_KEY === 'string'
+      ? process.env.VAPID_PRIVATE_KEY.trim()
+      : '';
+  const subject =
+    typeof process.env.VAPID_SUBJECT === 'string'
+      ? process.env.VAPID_SUBJECT.trim()
+      : '';
 
   if (!publicKey || !privateKey || !subject) {
     throw new Error('Missing push configuration');
@@ -73,7 +79,11 @@ function ensureVapidConfigured() {
   vapidConfigured = true;
 }
 
-async function sendPushToMatchingSubscriptions(client, category, notificationPayload) {
+async function sendPushToMatchingSubscriptions(
+  client,
+  category,
+  notificationPayload,
+) {
   ensureVapidConfigured();
 
   const result = await client.query(
@@ -81,11 +91,11 @@ async function sendPushToMatchingSubscriptions(client, category, notificationPay
       select id, endpoint, p256dh, auth, alert_types
       from push_subscriptions
       where is_active = true
-    `
+    `,
   );
 
   const matchedSubscriptions = result.rows.filter((subscription) =>
-    subscriptionMatchesCategory(subscription, category)
+    subscriptionMatchesCategory(subscription, category),
   );
 
   let sent = 0;
@@ -101,7 +111,7 @@ async function sendPushToMatchingSubscriptions(client, category, notificationPay
             auth: subscription.auth,
           },
         },
-        JSON.stringify(notificationPayload)
+        JSON.stringify(notificationPayload),
       );
 
       sent += 1;
@@ -112,22 +122,24 @@ async function sendPushToMatchingSubscriptions(client, category, notificationPay
           set last_push_at = now()
           where endpoint = $1
         `,
-        [subscription.endpoint]
+        [subscription.endpoint],
       );
     } catch (error) {
       failed += 1;
 
       const statusCode = getStatusCode(error);
       if (statusCode === 404 || statusCode === 410) {
-        await client.query(
-          `
+        await client
+          .query(
+            `
             update push_subscriptions
             set is_active = false,
                 updated_at = now()
             where endpoint = $1
           `,
-          [subscription.endpoint]
-        ).catch(() => {});
+            [subscription.endpoint],
+          )
+          .catch(() => {});
       }
 
       console.error('Checklist push delivery failed', {

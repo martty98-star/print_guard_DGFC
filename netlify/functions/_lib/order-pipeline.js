@@ -34,7 +34,10 @@ function stripTechnicalSuffixes(value) {
   return String(value || '')
     .replace(/\.xml$/i, '')
     .replace(/([\s_-]*reprint.*)$/i, '')
-    .replace(/([\s_-]+(?:retry|copy|duplicate|processed|submittool|xml|api|v)\d*)+$/i, '')
+    .replace(
+      /([\s_-]+(?:retry|copy|duplicate|processed|submittool|xml|api|v)\d*)+$/i,
+      '',
+    )
     .trim();
 }
 
@@ -54,12 +57,13 @@ function normalizeOrderIdentityCandidate(value) {
 }
 
 function getCanonicalOrderIdentity(row) {
-  if (!row || typeof row !== 'object') return normalizeOrderIdentityCandidate(row);
-  const internalIds = new Set([
-    row.id,
-    row.processed_order_id,
-    row.processedOrderId,
-  ].map(cleanString).filter(Boolean));
+  if (!row || typeof row !== 'object')
+    return normalizeOrderIdentityCandidate(row);
+  const internalIds = new Set(
+    [row.id, row.processed_order_id, row.processedOrderId]
+      .map(cleanString)
+      .filter(Boolean),
+  );
   const candidates = [
     row.order_number,
     row.external_order_id,
@@ -83,7 +87,9 @@ function getCanonicalOrderIdentity(row) {
 }
 
 function isOrderLikeSearch(value) {
-  const normalized = normalizeSearchTerm(stripXmlExtension(stripReprintSuffix(value)));
+  const normalized = normalizeSearchTerm(
+    stripXmlExtension(stripReprintSuffix(value)),
+  );
   return Boolean(normalized && /^(ps|pod)?\d{4,}$/.test(normalized));
 }
 
@@ -110,7 +116,9 @@ function orderSearchCandidates(value) {
 }
 
 function normalizeOrderType(value) {
-  const normalized = String(value || '').trim().toUpperCase();
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase();
   if (normalized === 'S') return 'S';
   if (normalized === 'C') return 'C';
   if (normalized === 'R') return 'R';
@@ -136,14 +144,17 @@ function pipelineIncomingDateExpr() {
 }
 
 function isDefaultOrderPipelineScope(options = {}) {
-  const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
-  return !cleanString(options.q || options.search)
-    && !cleanString(options.month)
-    && !cleanString(options.from)
-    && !cleanString(options.to)
-    && (cleanString(options.status) || 'all') === 'all'
-    && (cleanString(options.reprint) || 'all') === 'all'
-    && preset === 'this_month';
+  const preset =
+    cleanString(options.datePreset || options.date_preset) || 'this_month';
+  return (
+    !cleanString(options.q || options.search) &&
+    !cleanString(options.month) &&
+    !cleanString(options.from) &&
+    !cleanString(options.to) &&
+    (cleanString(options.status) || 'all') === 'all' &&
+    (cleanString(options.reprint) || 'all') === 'all' &&
+    preset === 'this_month'
+  );
 }
 
 function pipelineSortExpr(options = {}) {
@@ -586,10 +597,16 @@ async function ensureOrderPipelineView(client) {
 
 function mapPipelineRow(row) {
   const files = Array.isArray(row.print_files) ? row.print_files : [];
-  const reprintRecords = Array.isArray(row.reprint_records) ? row.reprint_records : [];
+  const reprintRecords = Array.isArray(row.reprint_records)
+    ? row.reprint_records
+    : [];
   const displayOrderName = getCanonicalOrderIdentity(row) || '';
   return {
-    orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    orderName:
+      row.order_number ||
+      row.processed_order_name ||
+      row.external_order_id ||
+      '',
     orderNumber: row.order_number || '',
     displayOrderName,
     externalOrderId: row.external_order_id || '',
@@ -597,7 +614,8 @@ function mapPipelineRow(row) {
     receivedAt: toIso(row.received_at),
     apiSeenAt: toIso(row.api_seen_at),
     id: row.processed_order_id == null ? null : Number(row.processed_order_id),
-    processedOrderId: row.processed_order_id == null ? null : Number(row.processed_order_id),
+    processedOrderId:
+      row.processed_order_id == null ? null : Number(row.processed_order_id),
     processedOrderName: row.processed_order_name || '',
     xmlFileName: row.xml_file_name || '',
     processedAt: toIso(row.processed_at || row.queued_date_time),
@@ -612,7 +630,8 @@ function mapPipelineRow(row) {
     physicallyPrintedStation: row.physically_printed_station || '',
     physicallyPrintedScanId: row.physically_printed_scan_id || '',
     physicallyPrintedBatchId: row.physically_printed_batch_id || '',
-    reprintRecordCount: Number(row.reprint_record_count) || reprintRecords.length,
+    reprintRecordCount:
+      Number(row.reprint_record_count) || reprintRecords.length,
     reprintRecords,
     latestReprintRecordAt: toIso(row.latest_reprint_record_at),
     reprintRequestCount: Number(row.reprint_request_count) || 0,
@@ -631,7 +650,11 @@ function mapPipelineRow(row) {
 function mapPipelineListRow(row) {
   const displayOrderName = getCanonicalOrderIdentity(row) || '';
   return {
-    orderName: row.order_number || row.processed_order_name || row.external_order_id || '',
+    orderName:
+      row.order_number ||
+      row.processed_order_name ||
+      row.external_order_id ||
+      '',
     orderNumber: row.order_number || '',
     displayOrderName,
     externalOrderId: row.external_order_id || '',
@@ -639,7 +662,8 @@ function mapPipelineListRow(row) {
     receivedAt: toIso(row.received_at),
     apiSeenAt: toIso(row.api_seen_at),
     id: row.processed_order_id == null ? null : Number(row.processed_order_id),
-    processedOrderId: row.processed_order_id == null ? null : Number(row.processed_order_id),
+    processedOrderId:
+      row.processed_order_id == null ? null : Number(row.processed_order_id),
     processedOrderName: row.processed_order_name || '',
     xmlFileName: row.xml_file_name || '',
     processedAt: toIso(row.processed_at || row.queued_date_time),
@@ -694,10 +718,13 @@ function isIsoDate(value) {
 }
 
 function addDateRangeFilter(where, params, options) {
-  const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
+  const preset =
+    cleanString(options.datePreset || options.date_preset) || 'this_month';
   const from = cleanString(options.from);
   const to = cleanString(options.to);
-  const dateExpr = isDefaultOrderPipelineScope(options) ? pipelineIncomingDateExpr() : pipelineDateExpr();
+  const dateExpr = isDefaultOrderPipelineScope(options)
+    ? pipelineIncomingDateExpr()
+    : pipelineDateExpr();
 
   if (preset === 'custom') {
     if (isIsoDate(from)) {
@@ -780,12 +807,13 @@ function shouldUseAllTimeReprintScope(options = {}) {
   const reprint = cleanString(options.reprint);
   if (status !== 'reprint_pending' && reprint !== 'pending') return false;
 
-  const preset = cleanString(options.datePreset || options.date_preset) || 'this_month';
+  const preset =
+    cleanString(options.datePreset || options.date_preset) || 'this_month';
   const hasExplicitDate = Boolean(
-    cleanString(options.month)
-    || cleanString(options.from)
-    || cleanString(options.to)
-    || (preset && preset !== 'this_month')
+    cleanString(options.month) ||
+      cleanString(options.from) ||
+      cleanString(options.to) ||
+      (preset && preset !== 'this_month'),
   );
   return !hasExplicitDate;
 }
@@ -797,10 +825,15 @@ function buildOrderPipelineFilters(options = {}) {
   const params = [];
   const where = [];
   const meta = {
-    datePreset: cleanString(options.datePreset || options.date_preset) || 'this_month',
+    datePreset:
+      cleanString(options.datePreset || options.date_preset) || 'this_month',
     hasMonth: Boolean(month),
     hasSearch: Boolean(search),
-    searchMode: search ? (isOrderLikeSearch(search) ? 'order_like_exact' : 'text_ilike') : 'none',
+    searchMode: search
+      ? isOrderLikeSearch(search)
+        ? 'order_like_exact'
+        : 'text_ilike'
+      : 'none',
     status: cleanString(options.status) || 'all',
     reprint: cleanString(options.reprint) || 'all',
     allTimeReprintScope: shouldUseAllTimeReprintScope(options),
@@ -809,7 +842,8 @@ function buildOrderPipelineFilters(options = {}) {
   if (!meta.allTimeReprintScope) addDateRangeFilter(where, params, options);
   addStatusFilter(where, options.status);
   addReprintFilter(where, options.reprint);
-  if (isDefaultOrderPipelineScope(options)) where.push(defaultPipelineWhereSql());
+  if (isDefaultOrderPipelineScope(options))
+    where.push(defaultPipelineWhereSql());
 
   if (month) {
     params.push(month);
@@ -873,7 +907,9 @@ function mapPipelineStats(row) {
 
 async function queryPipelineStats(client, filters) {
   await ensureOrderPipelineView(client);
-  const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
+  const whereSql = filters.where.length
+    ? `where ${filters.where.join(' and ')}`
+    : '';
   const result = await client.query(
     `
       select
@@ -899,14 +935,16 @@ async function queryPipelineStats(client, filters) {
       from v_print_order_pipeline
       ${whereSql}
     `,
-    filters.params
+    filters.params,
   );
   return mapPipelineStats(result.rows[0]);
 }
 
 async function queryFastPipelineStats(client, filters) {
   await ensureOrderPipelineBaseTables(client);
-  const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
+  const whereSql = filters.where.length
+    ? `where ${filters.where.join(' and ')}`
+    : '';
   const result = await client.query(
     `
       ${buildFastPipelineBaseCte()}
@@ -927,7 +965,7 @@ async function queryFastPipelineStats(client, filters) {
       from pipeline_base
       ${whereSql}
     `,
-    filters.params
+    filters.params,
   );
   return mapPipelineStats(result.rows[0]);
 }
@@ -935,7 +973,9 @@ async function queryFastPipelineStats(client, filters) {
 async function queryOperationalGlobalStats(client) {
   await ensureOrderPipelineBaseTables(client);
   const filters = buildOrderPipelineFilters({ datePreset: 'this_month' });
-  const whereSql = filters.where.length ? `where ${filters.where.join(' and ')}` : '';
+  const whereSql = filters.where.length
+    ? `where ${filters.where.join(' and ')}`
+    : '';
   const result = await client.query(
     `
       ${buildFastPipelineBaseCte()},
@@ -968,7 +1008,7 @@ async function queryOperationalGlobalStats(client) {
       from current_scope
       cross join reprint_backlog
     `,
-    filters.params
+    filters.params,
   );
   return mapPipelineStats(result.rows[0]);
 }
@@ -1085,13 +1125,14 @@ async function listOrderPipelineFullView(client, options = {}) {
       limit $${limitParam}
       offset $${offsetParam}
     `,
-    params
+    params,
   );
   if (options.timings) options.timings.rowsMs = Date.now() - started;
   if (options.timings) {
     options.timings.rowsPath = 'full_view';
     options.timings.rowsFilterMeta = filters.meta;
-    options.timings.fullViewReason = options.fullViewReason || 'explicit_deep_scan';
+    options.timings.fullViewReason =
+      options.fullViewReason || 'explicit_deep_scan';
   }
   console.warn('order-pipeline full-view slow path', {
     reason: options.fullViewReason || 'explicit_deep_scan',
@@ -1214,7 +1255,7 @@ async function listOrderPipelineFast(client, options = {}) {
       from page_rows
       order by ${pipelineSortExpr(options)}
     `,
-    params
+    params,
   );
   if (options.timings) {
     options.timings.rowsMs = Date.now() - started;
@@ -1339,7 +1380,7 @@ async function getOrderPipelineDetail(client, options = {}) {
         ) rr on true
       ) detail_row
     `,
-    params
+    params,
   );
   return result.rows[0] ? mapPipelineRow(result.rows[0]) : null;
 }

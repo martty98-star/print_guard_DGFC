@@ -10,7 +10,9 @@
   }
 
   function t(key) {
-    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+    return window.I18N && typeof window.I18N.t === 'function'
+      ? window.I18N.t(key)
+      : key;
   }
 
   function esc(value) {
@@ -29,12 +31,17 @@
       month: '2-digit',
       day: '2-digit',
     }).formatToParts(new Date());
-    const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const map = Object.fromEntries(
+      parts.map((part) => [part.type, part.value]),
+    );
     return `${map.year}-${map.month}-${map.day}`;
   }
 
   function toast(message, type) {
-    if (window.PrintGuardDomUtils && typeof window.PrintGuardDomUtils.showToast === 'function') {
+    if (
+      window.PrintGuardDomUtils &&
+      typeof window.PrintGuardDomUtils.showToast === 'function'
+    ) {
       window.PrintGuardDomUtils.showToast(message, type);
       return;
     }
@@ -95,36 +102,52 @@
     </div>`;
     document.body.appendChild(host);
 
-    host.querySelectorAll('[data-daily-report-close="true"]').forEach((button) => {
-      button.addEventListener('click', closeModal);
-    });
+    host
+      .querySelectorAll('[data-daily-report-close="true"]')
+      .forEach((button) => {
+        button.addEventListener('click', closeModal);
+      });
     host.addEventListener('click', (event) => {
       if (event.target === host) closeModal();
     });
-    host.querySelector('#daily-report-copy-text')?.addEventListener('click', () => {
-      copyText(report.email.text, t('daily-report.toast.copied'));
-    });
-    host.querySelector('#daily-report-copy-html')?.addEventListener('click', () => {
-      copyText(report.email.html, t('daily-report.toast.html-copied'));
-    });
-    host.querySelector('#daily-report-reload')?.addEventListener('click', () => {
-      loadAndShowReport(host.querySelector('#daily-report-date-input')?.value || report.date);
-    });
+    host
+      .querySelector('#daily-report-copy-text')
+      ?.addEventListener('click', () => {
+        copyText(report.email.text, t('daily-report.toast.copied'));
+      });
+    host
+      .querySelector('#daily-report-copy-html')
+      ?.addEventListener('click', () => {
+        copyText(report.email.html, t('daily-report.toast.html-copied'));
+      });
+    host
+      .querySelector('#daily-report-reload')
+      ?.addEventListener('click', () => {
+        loadAndShowReport(
+          host.querySelector('#daily-report-date-input')?.value || report.date,
+        );
+      });
   }
 
   function errorMessage(error) {
-    const message = error && error.message ? error.message : String(error || '');
-    if (typeof Auth.postPurchaseErrorMessage === 'function') return Auth.postPurchaseErrorMessage(error);
+    const message =
+      error && error.message ? error.message : String(error || '');
+    if (typeof Auth.postPurchaseErrorMessage === 'function')
+      return Auth.postPurchaseErrorMessage(error);
     return message || t('daily-report.error.load');
   }
 
   async function loadAndShowReport(date) {
-    const buttons = Array.from(document.querySelectorAll('[data-daily-report-trigger="true"]'));
+    const buttons = Array.from(
+      document.querySelectorAll('[data-daily-report-trigger="true"]'),
+    );
     const setButtons = (disabled, label) => {
       buttons.forEach((button) => {
         button.disabled = disabled;
-        button.dataset.originalText = button.dataset.originalText || button.textContent || '';
-        button.textContent = label || button.dataset.originalText || t('daily-report.button');
+        button.dataset.originalText =
+          button.dataset.originalText || button.textContent || '';
+        button.textContent =
+          label || button.dataset.originalText || t('daily-report.button');
       });
     };
     setButtons(true, t('daily-report.loading'));
@@ -146,11 +169,17 @@
   function initDailyReportUI() {
     const dateInput = document.getElementById('daily-report-date');
     if (dateInput && !dateInput.value) dateInput.value = todayInputValue();
-    document.querySelectorAll('[data-daily-report-trigger="true"]').forEach((button) => {
-      button.addEventListener('click', () => {
-        loadAndShowReport(button.id === 'daily-report-btn' ? (dateInput?.value || todayInputValue()) : todayInputValue());
+    document
+      .querySelectorAll('[data-daily-report-trigger="true"]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          loadAndShowReport(
+            button.id === 'daily-report-btn'
+              ? dateInput?.value || todayInputValue()
+              : todayInputValue(),
+          );
+        });
       });
-    });
   }
 
   window.PrintGuardDailyReportUI = {

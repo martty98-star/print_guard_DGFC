@@ -12,7 +12,8 @@
       }
     }
     if (!response.ok || payload.ok === false) {
-      const message = payload.error || fallbackMessage || `HTTP ${response.status}`;
+      const message =
+        payload.error || fallbackMessage || `HTTP ${response.status}`;
       const error = new Error(message);
       error.status = response.status;
       error.payload = payload;
@@ -47,30 +48,37 @@
   }
 
   async function commitScanBatch(options = {}) {
-    const response = await fetchWithTimeout('/.netlify/functions/commit-scan-batch', {
-      method: 'POST',
-      headers: options.headers || { 'content-type': 'application/json' },
-      cache: 'no-store',
-      fetchImpl: options.fetchImpl || fetch,
-      body: JSON.stringify({
-        batchId: options.batchId || '',
-        scans: options.scans || [],
-        committedBy: options.committedBy || '',
-        operator: options.operator || '',
-        station: options.station || '',
-      }),
-    }, options.timeoutMs == null ? 25000 : options.timeoutMs);
+    const response = await fetchWithTimeout(
+      '/.netlify/functions/commit-scan-batch',
+      {
+        method: 'POST',
+        headers: options.headers || { 'content-type': 'application/json' },
+        cache: 'no-store',
+        fetchImpl: options.fetchImpl || fetch,
+        body: JSON.stringify({
+          batchId: options.batchId || '',
+          scans: options.scans || [],
+          committedBy: options.committedBy || '',
+          operator: options.operator || '',
+          station: options.station || '',
+        }),
+      },
+      options.timeoutMs == null ? 25000 : options.timeoutMs,
+    );
     return readJsonResponse(response, 'Scan batch commit failed');
   }
 
   async function getScanBatchStatus(options = {}) {
     const batchId = String(options.batchId || '').trim();
     const params = new URLSearchParams({ batchId });
-    const response = await (options.fetchImpl || fetch)(`/.netlify/functions/commit-scan-batch?${params.toString()}`, {
-      method: 'GET',
-      headers: options.headers || {},
-      cache: 'no-store',
-    });
+    const response = await (options.fetchImpl || fetch)(
+      `/.netlify/functions/commit-scan-batch?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: options.headers || {},
+        cache: 'no-store',
+      },
+    );
     return readJsonResponse(response, 'Scan batch status failed');
   }
 

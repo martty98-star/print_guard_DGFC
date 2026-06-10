@@ -10,15 +10,7 @@
   if (!DomUtils) throw new Error('Missing PrintGuardDomUtils');
   if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
 
-  const {
-    ds,
-    esc,
-    fmtDays,
-    fmtDT,
-    fmtN,
-    toISOfromDT,
-    toLocalDT,
-  } = CoreUtils;
+  const { ds, esc, fmtDays, fmtDT, fmtN, toISOfromDT, toLocalDT } = CoreUtils;
   const { el, elSet } = DomUtils;
   const { csvEsc, csvRow, dlBlob, fmtFileDT } = ExportUtils;
 

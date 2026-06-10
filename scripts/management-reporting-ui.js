@@ -34,7 +34,9 @@
       month: '2-digit',
       day: '2-digit',
     }).formatToParts(new Date());
-    const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const map = Object.fromEntries(
+      parts.map((part) => [part.type, part.value]),
+    );
     return `${map.year}-${map.month}-${map.day}`;
   }
 
@@ -45,7 +47,10 @@
   }
 
   function toast(message, type) {
-    if (window.PrintGuardDomUtils && typeof window.PrintGuardDomUtils.showToast === 'function') {
+    if (
+      window.PrintGuardDomUtils &&
+      typeof window.PrintGuardDomUtils.showToast === 'function'
+    ) {
       window.PrintGuardDomUtils.showToast(message, type);
       return;
     }
@@ -53,7 +58,9 @@
   }
 
   function headers() {
-    return Auth && typeof Auth.postPurchaseHeaders === 'function' ? Auth.postPurchaseHeaders() : {};
+    return Auth && typeof Auth.postPurchaseHeaders === 'function'
+      ? Auth.postPurchaseHeaders()
+      : {};
   }
 
   function fetchImpl() {
@@ -92,15 +99,30 @@
       <div class="hint">130 m roll · ${fmt(breakdown.mediaWidthM, 3, ' m')} width · print-log diagnostic ${fmt(printLogMediaM2, 3, ' m²')}</div>
       ${renderRows(rows, [
         { label: 'Printer', value: (row) => row.printer },
-        { label: 'Start timestamp', value: (row) => row.start?.timestamp || '—' },
+        {
+          label: 'Start timestamp',
+          value: (row) => row.start?.timestamp || '—',
+        },
         { label: 'Start ink L', value: (row) => fmt(row.start?.inkTotalL, 4) },
-        { label: 'Start media m²', value: (row) => fmt(row.start?.mediaAreaM2, 3) },
+        {
+          label: 'Start media m²',
+          value: (row) => fmt(row.start?.mediaAreaM2, 3),
+        },
         { label: 'End timestamp', value: (row) => row.end?.timestamp || '—' },
         { label: 'End ink L', value: (row) => fmt(row.end?.inkTotalL, 4) },
         { label: 'End media m²', value: (row) => fmt(row.end?.mediaAreaM2, 3) },
-        { label: 'Delta length m', value: (row) => fmt(row.deltaMediaLengthM, 3) },
-        { label: 'Delta media m²', value: (row) => fmt(row.deltaMediaAreaM2, 3) },
-        { label: '130m rolls', value: (row) => fmt(row.equivalentRolls130m, 3) },
+        {
+          label: 'Delta length m',
+          value: (row) => fmt(row.deltaMediaLengthM, 3),
+        },
+        {
+          label: 'Delta media m²',
+          value: (row) => fmt(row.deltaMediaAreaM2, 3),
+        },
+        {
+          label: '130m rolls',
+          value: (row) => fmt(row.equivalentRolls130m, 3),
+        },
       ])}
       <div class="reporting-debug-total">
         Total counter media: <strong>${fmt(breakdown.total?.deltaMediaAreaM2, 3, ' m²')}</strong> ·
@@ -111,47 +133,86 @@
 
   function renderTrend(rows) {
     if (!rows || !rows.length) return '';
-    const max = Math.max(...rows.map((row) => num(row.totalConsumedMediaM2)), 1);
+    const max = Math.max(
+      ...rows.map((row) => num(row.totalConsumedMediaM2)),
+      1,
+    );
     return `<div class="reporting-trend">
-      ${rows.map((row) => {
-        const height = Math.max(8, Math.round((num(row.totalConsumedMediaM2) / max) * 96));
-        return `<div class="reporting-trend-item" title="${esc(row.month)}">
+      ${rows
+        .map((row) => {
+          const height = Math.max(
+            8,
+            Math.round((num(row.totalConsumedMediaM2) / max) * 96),
+          );
+          return `<div class="reporting-trend-item" title="${esc(row.month)}">
           <div class="reporting-trend-bar" style="height:${height}px"></div>
           <span>${esc(row.month.slice(5))}</span>
         </div>`;
-      }).join('')}
+        })
+        .join('')}
     </div>`;
   }
 
   function renderMonthly(report) {
     const metrics = report.metrics || {};
-    document.getElementById('reporting-monthly-period').textContent = `Měsíc ${report.month}`;
+    document.getElementById('reporting-monthly-period').textContent =
+      `Měsíc ${report.month}`;
     document.getElementById('reporting-monthly-kpis').innerHTML = [
-      metric('Media stock m2 EOM', fmt(metrics.media_stock_m2_end_of_month, 3, ' m²'), report.stock?.source || ''),
+      metric(
+        'Media stock m2 EOM',
+        fmt(metrics.media_stock_m2_end_of_month, 3, ' m²'),
+        report.stock?.source || '',
+      ),
       metric('Ink stock L EOM', fmt(metrics.ink_stock_l_end_of_month, 3, ' L')),
-      metric('Avg media / sales order', fmt(metrics.avg_media_m2_per_sales_order, 4, ' m²')),
-      metric('Avg ink / sales order', fmt(metrics.avg_ink_l_per_sales_order, 5, ' L')),
-      metric('Reprint files / standard file', fmt(metrics.reprinted_files_per_standard_file, 4)),
-      metric('Avg files / sales order', fmt(metrics.avg_files_per_sales_order, 3)),
+      metric(
+        'Avg media / sales order',
+        fmt(metrics.avg_media_m2_per_sales_order, 4, ' m²'),
+      ),
+      metric(
+        'Avg ink / sales order',
+        fmt(metrics.avg_ink_l_per_sales_order, 5, ' L'),
+      ),
+      metric(
+        'Reprint files / standard file',
+        fmt(metrics.reprinted_files_per_standard_file, 4),
+      ),
+      metric(
+        'Avg files / sales order',
+        fmt(metrics.avg_files_per_sales_order, 3),
+      ),
       metric('Avg files / XML', fmt(metrics.avg_files_per_xml, 3)),
-      metric('Total files', fmt(metrics.total_files, 0), `${metrics.standard_file_count || 0} standard / ${metrics.reprinted_file_count || 0} reprint`),
+      metric(
+        'Total files',
+        fmt(metrics.total_files, 0),
+        `${metrics.standard_file_count || 0} standard / ${metrics.reprinted_file_count || 0} reprint`,
+      ),
     ].join('');
-    renderWarnings(document.getElementById('reporting-monthly-warnings'), report.warnings);
-    document.getElementById('reporting-monthly-trend').innerHTML = renderTrend(report.trend);
-    document.getElementById('reporting-monthly-printer-table').innerHTML = renderRows(report.consumptionByPrinter, [
-      { label: 'Printer', value: (row) => row.printer },
-      { label: 'Jobs', value: (row) => fmt(row.doneJobs) },
-      { label: 'Media m²', value: (row) => fmt(row.consumedMediaM2, 3) },
-      { label: 'Ink L', value: (row) => fmt(row.consumedInkL, 4) },
-      { label: 'Nett h', value: (row) => fmt(row.nettPrintingTimeHours, 3) },
-    ]);
-    document.getElementById('reporting-monthly-stock-table').innerHTML = renderRows((report.stock && report.stock.rows) || [], [
-      { label: 'Item', value: (row) => row.itemName || row.articleNumber },
-      { label: 'Type', value: (row) => row.stockType || row.category || '' },
-      { label: 'On hand', value: (row) => `${fmt(row.onHand, 3)} ${row.unit || ''}` },
-      { label: 'Media m²', value: (row) => fmt(row.mediaStockM2, 3) },
-      { label: 'Ink L', value: (row) => fmt(row.inkStockL, 3) },
-    ]);
+    renderWarnings(
+      document.getElementById('reporting-monthly-warnings'),
+      report.warnings,
+    );
+    document.getElementById('reporting-monthly-trend').innerHTML = renderTrend(
+      report.trend,
+    );
+    document.getElementById('reporting-monthly-printer-table').innerHTML =
+      renderRows(report.consumptionByPrinter, [
+        { label: 'Printer', value: (row) => row.printer },
+        { label: 'Jobs', value: (row) => fmt(row.doneJobs) },
+        { label: 'Media m²', value: (row) => fmt(row.consumedMediaM2, 3) },
+        { label: 'Ink L', value: (row) => fmt(row.consumedInkL, 4) },
+        { label: 'Nett h', value: (row) => fmt(row.nettPrintingTimeHours, 3) },
+      ]);
+    document.getElementById('reporting-monthly-stock-table').innerHTML =
+      renderRows((report.stock && report.stock.rows) || [], [
+        { label: 'Item', value: (row) => row.itemName || row.articleNumber },
+        { label: 'Type', value: (row) => row.stockType || row.category || '' },
+        {
+          label: 'On hand',
+          value: (row) => `${fmt(row.onHand, 3)} ${row.unit || ''}`,
+        },
+        { label: 'Media m²', value: (row) => fmt(row.mediaStockM2, 3) },
+        { label: 'Ink L', value: (row) => fmt(row.inkStockL, 3) },
+      ]);
   }
 
   function renderEod(report) {
@@ -160,26 +221,60 @@
     document.getElementById('reporting-eod-kpis').innerHTML = [
       metric('API received orders', fmt(report.api_received_sales_orders)),
       metric('Processed XML', fmt(report.processed_xml_count)),
-      metric('Processed orders / API incoming / missing', `${fmt(report.processed_sales_order_count)} / ${fmt(report.expected_count)} / ${fmt(report.missing_count)}`),
-      metric('Nett printing hours', fmt(report.nett_printing_time_hours, 3, ' h')),
-      metric('Consumed media (counter)', fmt(report.consumed_media_m2, 3, ' m²'), `print-log ${fmt(report.print_log_consumed_media_m2, 3, ' m²')}`),
-      metric('Consumed ink (counter)', fmt(report.consumed_ink_l, 4, ' L'), `print-log ${fmt(report.print_log_consumed_ink_l, 4, ' L')}`),
-      metric('Avg files / sales order', fmt(report.avg_files_per_sales_order, 3)),
-      metric('Standard / reprint files', `${fmt(report.standard_file_count)} / ${fmt(report.reprint_file_count)}`),
+      metric(
+        'Processed orders / API incoming / missing',
+        `${fmt(report.processed_sales_order_count)} / ${fmt(report.expected_count)} / ${fmt(report.missing_count)}`,
+      ),
+      metric(
+        'Nett printing hours',
+        fmt(report.nett_printing_time_hours, 3, ' h'),
+      ),
+      metric(
+        'Consumed media (counter)',
+        fmt(report.consumed_media_m2, 3, ' m²'),
+        `print-log ${fmt(report.print_log_consumed_media_m2, 3, ' m²')}`,
+      ),
+      metric(
+        'Consumed ink (counter)',
+        fmt(report.consumed_ink_l, 4, ' L'),
+        `print-log ${fmt(report.print_log_consumed_ink_l, 4, ' L')}`,
+      ),
+      metric(
+        'Avg files / sales order',
+        fmt(report.avg_files_per_sales_order, 3),
+      ),
+      metric(
+        'Standard / reprint files',
+        `${fmt(report.standard_file_count)} / ${fmt(report.reprint_file_count)}`,
+      ),
     ].join('');
-    renderWarnings(document.getElementById('reporting-eod-warnings'), report.warnings);
-    document.getElementById('reporting-eod-printer-table').innerHTML = renderRows(report.production?.nettPrintingTimeByPrinter || [], [
-      { label: 'Printer', value: (row) => row.printer },
-      { label: 'Jobs', value: (row) => fmt(row.doneJobs) },
-      { label: 'Nett h', value: (row) => fmt(row.nettPrintingTimeHours, 3) },
-      { label: 'Gross h', value: (row) => fmt(row.grossElapsedTimeHours, 3) },
-      { label: 'Print-log media m²', value: (row) => fmt(row.printLogConsumedMediaM2, 3) },
-      { label: 'Print-log ink L', value: (row) => fmt(row.printLogConsumedInkL, 4) },
-    ]);
-    document.getElementById('reporting-eod-status-table').innerHTML = `${renderColoradoCounterDebug(report.coloradoCounterBreakdown, report.print_log_consumed_media_m2)}${renderRows(report.statusBreakdown || [], [
-      { label: 'Status', value: (row) => row.status },
-      { label: 'Count', value: (row) => fmt(row.count) },
-    ])}`;
+    renderWarnings(
+      document.getElementById('reporting-eod-warnings'),
+      report.warnings,
+    );
+    document.getElementById('reporting-eod-printer-table').innerHTML =
+      renderRows(report.production?.nettPrintingTimeByPrinter || [], [
+        { label: 'Printer', value: (row) => row.printer },
+        { label: 'Jobs', value: (row) => fmt(row.doneJobs) },
+        { label: 'Nett h', value: (row) => fmt(row.nettPrintingTimeHours, 3) },
+        { label: 'Gross h', value: (row) => fmt(row.grossElapsedTimeHours, 3) },
+        {
+          label: 'Print-log media m²',
+          value: (row) => fmt(row.printLogConsumedMediaM2, 3),
+        },
+        {
+          label: 'Print-log ink L',
+          value: (row) => fmt(row.printLogConsumedInkL, 4),
+        },
+      ]);
+    document.getElementById('reporting-eod-status-table').innerHTML =
+      `${renderColoradoCounterDebug(report.coloradoCounterBreakdown, report.print_log_consumed_media_m2)}${renderRows(
+        report.statusBreakdown || [],
+        [
+          { label: 'Status', value: (row) => row.status },
+          { label: 'Count', value: (row) => fmt(row.count) },
+        ],
+      )}`;
   }
 
   async function loadMonthly() {
@@ -224,23 +319,30 @@
     if (!Api) return;
     const monthInput = document.getElementById('reporting-month-input');
     const eodInput = document.getElementById('reporting-eod-date');
-    if (monthInput && !monthInput.value) monthInput.value = previousMonthValue();
+    if (monthInput && !monthInput.value)
+      monthInput.value = previousMonthValue();
     if (eodInput && !eodInput.value) eodInput.value = todayInputValue();
-    document.getElementById('reporting-unlock')?.addEventListener('click', () => {
-      const input = document.getElementById('reporting-pin');
-      const pin = (input?.value || '').trim();
-      if (!pin) {
-        toast('Zadej PIN operátora.', 'error');
-        return;
-      }
-      if (AppConfig && AppConfig.cfg) AppConfig.cfg.postPurchasePin = pin;
-      if (input) input.value = '';
-      toast('Reporting odemčen.', 'success');
-      loadedOnce = false;
-      loadManagementReporting();
-    });
-    document.getElementById('reporting-month-load')?.addEventListener('click', loadMonthly);
-    document.getElementById('reporting-eod-load')?.addEventListener('click', loadEod);
+    document
+      .getElementById('reporting-unlock')
+      ?.addEventListener('click', () => {
+        const input = document.getElementById('reporting-pin');
+        const pin = (input?.value || '').trim();
+        if (!pin) {
+          toast('Zadej PIN operátora.', 'error');
+          return;
+        }
+        if (AppConfig && AppConfig.cfg) AppConfig.cfg.postPurchasePin = pin;
+        if (input) input.value = '';
+        toast('Reporting odemčen.', 'success');
+        loadedOnce = false;
+        loadManagementReporting();
+      });
+    document
+      .getElementById('reporting-month-load')
+      ?.addEventListener('click', loadMonthly);
+    document
+      .getElementById('reporting-eod-load')
+      ?.addEventListener('click', loadEod);
   }
 
   let loadedOnce = false;

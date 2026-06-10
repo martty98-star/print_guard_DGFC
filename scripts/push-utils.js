@@ -3,7 +3,9 @@
 
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
     const rawData = atob(base64);
     const outputArray = new Uint8Array(rawData.length);
 
@@ -29,17 +31,25 @@
   function getPushEndpointSuffix(endpoint) {
     return typeof endpoint === 'string' && endpoint.length > 24
       ? endpoint.slice(-24)
-      : (typeof endpoint === 'string' ? endpoint : '');
+      : typeof endpoint === 'string'
+        ? endpoint
+        : '';
   }
 
   function buildPushSubscriptionPayload(subscription) {
-    const subJson = subscription && typeof subscription.toJSON === 'function'
-      ? subscription.toJSON()
-      : null;
+    const subJson =
+      subscription && typeof subscription.toJSON === 'function'
+        ? subscription.toJSON()
+        : null;
 
-    const endpoint = typeof subJson?.endpoint === 'string' ? subJson.endpoint.trim() : '';
-    const p256dh = typeof subJson?.keys?.p256dh === 'string' ? subJson.keys.p256dh.trim() : '';
-    const auth = typeof subJson?.keys?.auth === 'string' ? subJson.keys.auth.trim() : '';
+    const endpoint =
+      typeof subJson?.endpoint === 'string' ? subJson.endpoint.trim() : '';
+    const p256dh =
+      typeof subJson?.keys?.p256dh === 'string'
+        ? subJson.keys.p256dh.trim()
+        : '';
+    const auth =
+      typeof subJson?.keys?.auth === 'string' ? subJson.keys.auth.trim() : '';
 
     if (!endpoint || !p256dh || !auth) {
       return null;
@@ -70,7 +80,9 @@
     });
 
     let result = null;
-    try { result = await res.json(); } catch (_) {}
+    try {
+      result = await res.json();
+    } catch (_) {}
 
     if (!res.ok || !result?.ok) {
       throw new Error(result?.error || 'Uložení odběru selhalo.');

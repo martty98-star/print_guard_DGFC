@@ -42,7 +42,9 @@
       parts.push(file && file.copies);
     }
 
-    for (const record of Array.isArray(row.reprintRecords) ? row.reprintRecords : []) {
+    for (const record of Array.isArray(row.reprintRecords)
+      ? row.reprintRecords
+      : []) {
       parts.push(record && record.orderName);
       parts.push(record && record.xmlFileName);
       parts.push(record && record.status);
@@ -50,7 +52,9 @@
       parts.push(record && record.note);
       parts.push(record && record.sourceXmlPath);
       parts.push(record && record.printFilePath);
-      for (const file of Array.isArray(record.printFiles) ? record.printFiles : []) {
+      for (const file of Array.isArray(record.printFiles)
+        ? record.printFiles
+        : []) {
         parts.push(file && file.printFilePath);
         parts.push(file && file.pageSize);
         parts.push(file && file.copies);
@@ -83,7 +87,8 @@
     params.set('limit', filters.limit || '50');
     params.set('offset', filters.offset || '0');
     params.set('datePreset', filters.datePreset || 'this_month');
-    if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+    if (filters.status && filters.status !== 'all')
+      params.set('status', filters.status);
     params.set('reprint', filters.reprint || 'all');
     if (filters.q) params.set('q', filters.q);
     if (filters.includeStats) params.set('includeStats', filters.includeStats);

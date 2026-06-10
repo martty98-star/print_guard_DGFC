@@ -35,20 +35,31 @@ function readBody(req) {
 }
 
 function isAllowedPdfPath(value) {
-  const raw = String(value || '').trim().replace(/\//g, '\\');
+  const raw = String(value || '')
+    .trim()
+    .replace(/\//g, '\\');
 
   if (!raw || !/\.pdf$/i.test(raw)) return false;
 
-  return /^\\\\[^\\]+\\Data\\onyx\\prints\\/i.test(raw) ||
-    /^\\\\10\.25\.0\.20\\Data\\onyx\\prints\\/i.test(raw);
+  return (
+    /^\\\\[^\\]+\\Data\\onyx\\prints\\/i.test(raw) ||
+    /^\\\\10\.25\.0\.20\\Data\\onyx\\prints\\/i.test(raw)
+  );
 }
 
 function openPdf(pdfPath) {
   return new Promise((resolve, reject) => {
     const child = spawn(
       'powershell.exe',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', 'Start-Process -LiteralPath $args[0]', pdfPath],
-      { windowsHide: true }
+      [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        'Start-Process -LiteralPath $args[0]',
+        pdfPath,
+      ],
+      { windowsHide: true },
     );
     child.on('error', reject);
     child.on('exit', (code) => {
@@ -70,7 +81,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    const payload = JSON.parse(await readBody(req) || '{}');
+    const payload = JSON.parse((await readBody(req)) || '{}');
     const pdfPath = String(payload.path || '').trim();
     if (!isAllowedPdfPath(pdfPath)) {
       sendJson(res, 400, { ok: false, error: 'PDF path is not allowed' });

@@ -12,7 +12,9 @@ function getConnectionString() {
 function getRecordId() {
   const id = String(process.argv[2] || '').trim();
   if (!id) {
-    throw new Error('Usage: node scripts/cleanup-colorado-record.js <record-id>');
+    throw new Error(
+      'Usage: node scripts/cleanup-colorado-record.js <record-id>',
+    );
   }
   return id;
 }
@@ -58,12 +60,14 @@ async function main() {
         current.timestamp || now,
         JSON.stringify(tombstone),
         now,
-      ]
+      ],
     );
 
     console.log(`[cleanup] tombstoned record: ${recordId}`);
   } catch (error) {
-    console.error(`[cleanup] failed: ${error && error.message ? error.message : error}`);
+    console.error(
+      `[cleanup] failed: ${error && error.message ? error.message : error}`,
+    );
     process.exitCode = 1;
   } finally {
     try {

@@ -11,19 +11,26 @@ const { sendPushToMatchingSubscriptions } = require('./push-delivery');
 
 async function evaluateChecklistReminders(client, options) {
   const now = options && options.now ? new Date(options.now) : new Date();
-  const lookbackMinutes = Math.max(1, Number(options && options.lookbackMinutes) || 15);
-  const reminderUrl = typeof options?.url === 'string' && options.url.trim()
-    ? options.url.trim()
-    : '/?mode=stock&screen=checklist';
+  const lookbackMinutes = Math.max(
+    1,
+    Number(options && options.lookbackMinutes) || 15,
+  );
+  const reminderUrl =
+    typeof options?.url === 'string' && options.url.trim()
+      ? options.url.trim()
+      : '/?mode=stock&screen=checklist';
   const dryRun = options && options.dryRun === true;
 
   await ensureChecklistTables(client);
 
   const items = await listChecklistItems(client);
-  const dueOccurrences = checklistDomain.evaluateDueChecklistOccurrences(items, {
-    now,
-    lookbackMinutes,
-  });
+  const dueOccurrences = checklistDomain.evaluateDueChecklistOccurrences(
+    items,
+    {
+      now,
+      lookbackMinutes,
+    },
+  );
 
   const summary = {
     now: now.toISOString(),
@@ -43,7 +50,10 @@ async function evaluateChecklistReminders(client, options) {
   for (const occurrence of dueOccurrences) {
     summary.attemptedOccurrences += 1;
 
-    const event = checklistDomain.buildChecklistReminderEvent(occurrence, reminderUrl);
+    const event = checklistDomain.buildChecklistReminderEvent(
+      occurrence,
+      reminderUrl,
+    );
     const reserved = dryRun
       ? true
       : await reserveChecklistOccurrence(client, occurrence, event);
@@ -71,12 +81,17 @@ async function evaluateChecklistReminders(client, options) {
     }
 
     try {
-      const delivery = await sendPushToMatchingSubscriptions(client, 'checklist', event);
-      const status = delivery.matchedSubscriptions === 0
-        ? 'no_subscriptions'
-        : delivery.sent > 0
-          ? 'sent'
-          : 'failed';
+      const delivery = await sendPushToMatchingSubscriptions(
+        client,
+        'checklist',
+        event,
+      );
+      const status =
+        delivery.matchedSubscriptions === 0
+          ? 'no_subscriptions'
+          : delivery.sent > 0
+            ? 'sent'
+            : 'failed';
 
       if (status === 'no_subscriptions') {
         summary.noSubscriptions += 1;

@@ -29,7 +29,8 @@
 
       const wrap = el('stock-log-wrap');
       if (!filtered.length) {
-        wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné pohyby neodpovídají filtru.</p></div>';
+        wrap.innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné pohyby neodpovídají filtru.</p></div>';
         return;
       }
 
@@ -38,16 +39,28 @@
         issue: `↓ ${movementLabel('issue')}`,
         stocktake: `= ${movementLabel('stocktake')}`,
       };
-      const typeClass = { receipt: 'receipt-c', issue: 'issue-c', stocktake: 'stocktake-c' };
+      const typeClass = {
+        receipt: 'receipt-c',
+        issue: 'issue-c',
+        stocktake: 'stocktake-c',
+      };
 
-      const rows = [...filtered].reverse().map(m => {
-        const sign = m.movType === 'issue'
-          ? `−${fmtN(m.qty, 0)}`
-          : m.movType === 'receipt'
-            ? `+${fmtN(m.qty, 0)}`
-            : `=${fmtN(m.qty, 0)}`;
-        const deltaClass = m.movType === 'receipt' ? 'receipt-c' : m.movType === 'issue' ? 'issue-c' : 'stocktake-c';
-        return `<tr>
+      const rows = [...filtered]
+        .reverse()
+        .map((m) => {
+          const sign =
+            m.movType === 'issue'
+              ? `−${fmtN(m.qty, 0)}`
+              : m.movType === 'receipt'
+                ? `+${fmtN(m.qty, 0)}`
+                : `=${fmtN(m.qty, 0)}`;
+          const deltaClass =
+            m.movType === 'receipt'
+              ? 'receipt-c'
+              : m.movType === 'issue'
+                ? 'issue-c'
+                : 'stocktake-c';
+          return `<tr>
       <td>${fmtDT(m.timestamp)}</td>
       <td class="log-item-name" data-article="${esc(m.articleNumber)}" style="cursor:pointer">${esc(m.itemName)}<br><span style="font-size:.6rem;color:var(--text-faint);letter-spacing:.05em">${esc(m.articleNumber)}</span></td>
       <td class="${typeClass[m.movType] || ''}">${typeLabel[m.movType] || m.movType}</td>
@@ -56,7 +69,8 @@
       <td class="note-td">${esc(m.note || '—')}</td>
       <td><button class="btn-del admin-only" data-id="${esc(m.id)}" title="Smazat (jen admin)">✕</button></td>
     </tr>`;
-      }).join('');
+        })
+        .join('');
 
       wrap.innerHTML = `<table class="data-table">
     <thead><tr>
@@ -65,26 +79,58 @@
     <tbody>${rows}</tbody>
   </table>`;
 
-      wrap.querySelectorAll('.log-item-name[data-article]').forEach(td =>
-        td.addEventListener('click', () => openStockDetail(td.dataset.article))
-      );
-      wrap.querySelectorAll('.btn-del[data-id]').forEach(btn =>
-        btn.addEventListener('click', () => deleteMovementAdmin(btn.dataset.id))
-      );
+      wrap
+        .querySelectorAll('.log-item-name[data-article]')
+        .forEach((td) =>
+          td.addEventListener('click', () =>
+            openStockDetail(td.dataset.article),
+          ),
+        );
+      wrap
+        .querySelectorAll('.btn-del[data-id]')
+        .forEach((btn) =>
+          btn.addEventListener('click', () =>
+            deleteMovementAdmin(btn.dataset.id),
+          ),
+        );
     }
 
     function exportCSVStockLog() {
-      const rows = StockStore.replayStockMovements(S.items, S.movements, Reports);
+      const rows = StockStore.replayStockMovements(
+        S.items,
+        S.movements,
+        Reports,
+      );
       const csv = Reports.csv.rowsToCsv(rows, [
-        { key: 'timestamp', header: 'timestamp', value: row => fmtExportDateTime(row.timestamp) },
-        { key: 'article_number', header: 'article_number', value: row => row.articleNumber },
-        { key: 'name', header: 'name', value: row => row.itemName || '' },
-        { key: 'category', header: 'category', value: row => row.category || '' },
-        { key: 'unit', header: 'unit', value: row => row.unit || 'ks' },
-        { key: 'movement_type', header: 'movement_type', value: row => row.movType },
-        { key: 'qty', header: 'qty', value: row => row.qty },
-        { key: 'stock_after', header: 'stock_after', value: row => row.stockAfter },
-        { key: 'note', header: 'note', value: row => row.note || '' },
+        {
+          key: 'timestamp',
+          header: 'timestamp',
+          value: (row) => fmtExportDateTime(row.timestamp),
+        },
+        {
+          key: 'article_number',
+          header: 'article_number',
+          value: (row) => row.articleNumber,
+        },
+        { key: 'name', header: 'name', value: (row) => row.itemName || '' },
+        {
+          key: 'category',
+          header: 'category',
+          value: (row) => row.category || '',
+        },
+        { key: 'unit', header: 'unit', value: (row) => row.unit || 'ks' },
+        {
+          key: 'movement_type',
+          header: 'movement_type',
+          value: (row) => row.movType,
+        },
+        { key: 'qty', header: 'qty', value: (row) => row.qty },
+        {
+          key: 'stock_after',
+          header: 'stock_after',
+          value: (row) => row.stockAfter,
+        },
+        { key: 'note', header: 'note', value: (row) => row.note || '' },
       ]);
       dlBlob(csv, 'text/csv;charset=utf-8', `pohyby_skladu_${fmtFileDT()}.csv`);
     }

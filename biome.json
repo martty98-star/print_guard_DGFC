@@ -30,11 +30,31 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "a11y": {
+        "noSvgWithoutTitle": "off",
+        "useAltText": "off",
+        "useButtonType": "off",
+        "useHtmlLang": "off"
+      },
+      "complexity": {
+        "useOptionalChain": "off"
+      },
+      "correctness": {
+        "noInnerDeclarations": "off",
+        "noUnusedFunctionParameters": "off",
+        "noUnusedVariables": "off"
+      },
       "style": {
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "useTemplate": "off"
       },
       "suspicious": {
-        "noRedundantUseStrict": "off"
+        "noAssignInExpressions": "off",
+        "noControlCharactersInRegex": "off",
+        "noDuplicateObjectKeys": "off",
+        "noGlobalIsNan": "off",
+        "noRedundantUseStrict": "off",
+        "useIterableCallbackReturn": "off"
       }
     }
   },

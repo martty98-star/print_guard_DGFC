@@ -11,23 +11,29 @@
 
     function applyRoleUI() {
       const admin = isAdmin();
-      const itemsBtn = document.querySelector('#stock-nav .nav-item[data-screen="stock-items"]');
+      const itemsBtn = document.querySelector(
+        '#stock-nav .nav-item[data-screen="stock-items"]',
+      );
       if (itemsBtn) itemsBtn.style.display = admin ? '' : 'none';
       const addBtn = el('add-item-btn');
       if (addBtn) addBtn.style.display = admin ? '' : 'none';
-      document.querySelectorAll('.admin-only').forEach(node => {
+      document.querySelectorAll('.admin-only').forEach((node) => {
         node.style.display = admin ? '' : 'none';
       });
       if (!admin) {
         const itemsScreen = el('screen-stock-items');
-        if (itemsScreen?.classList.contains('active')) navigate('stock-overview');
+        if (itemsScreen?.classList.contains('active'))
+          navigate('stock-overview');
       }
     }
 
     function setupAdminAuthHandlers() {
       el('admin-unlock-btn')?.addEventListener('click', () => {
         const pin = (el('admin-pin')?.value || '').trim();
-        if (!pin) { showToast('Zadejte PIN', 'error'); return; }
+        if (!pin) {
+          showToast('Zadejte PIN', 'error');
+          return;
+        }
         cfg.adminPin = pin;
         cfg.role = 'admin';
         if (el('admin-pin')) el('admin-pin').value = '';

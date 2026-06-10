@@ -16,7 +16,8 @@
   }
 
   function normalizePrintFiles(order, printFile) {
-    if (printFile && (printFile.printFilePath || printFile.print_file_path)) return [printFile];
+    if (printFile && (printFile.printFilePath || printFile.print_file_path))
+      return [printFile];
     return Array.isArray(order && order.printFiles) ? order.printFiles : [];
   }
 
@@ -71,21 +72,21 @@
   }
 
   function normalizePoNumber(order) {
-    const raw = normalizePoNumberToken(
-      order && (
-        order.PoNumber ||
-        order.poNumber ||
-        order.po_number ||
-        order.originalPoNumber ||
-        order.original_po_number ||
-        order.customerOrderId ||
-        order.customer_order_id ||
-        order.externalOrderId ||
-        order.external_order_id ||
-        order.orderName ||
-        order.order_number
-      )
-    ) || pickOriginalOrderId(order);
+    const raw =
+      normalizePoNumberToken(
+        order &&
+          (order.PoNumber ||
+            order.poNumber ||
+            order.po_number ||
+            order.originalPoNumber ||
+            order.original_po_number ||
+            order.customerOrderId ||
+            order.customer_order_id ||
+            order.externalOrderId ||
+            order.external_order_id ||
+            order.orderName ||
+            order.order_number),
+      ) || pickOriginalOrderId(order);
     return raw;
   }
 
@@ -98,7 +99,9 @@
   }
 
   function normalizeOrderType(value) {
-    const normalized = String(value || '').trim().toUpperCase();
+    const normalized = String(value || '')
+      .trim()
+      .toUpperCase();
     if (normalized === 'S') return 'S';
     if (normalized === 'C') return 'C';
     if (normalized === 'R') return 'R';
@@ -108,11 +111,9 @@
   }
 
   function getReprintOrderType(order) {
-    const parentType = normalizeOrderType(order && (
-      order.orderType ||
-      order.order_type ||
-      order.OrderType
-    ));
+    const parentType = normalizeOrderType(
+      order && (order.orderType || order.order_type || order.OrderType),
+    );
     if (parentType === 'S') return 'RS';
     if (parentType === 'C') return 'RC';
     if (parentType === 'RS' || parentType === 'RC') return parentType;
@@ -162,12 +163,15 @@
     const poNumber = `${originalPoNumber}${orderType}`;
     const scanBarcode = poNumber;
     const files = normalizePrintFiles(order, printFile);
-    const printFileXml = files.map((file) => {
-      const pageSize = file.pageSize || file.page_size || '';
-      const printFilePath = file.printFilePath || file.print_file_path || '';
-      const copies = file.copies == null || file.copies === '' ? 1 : file.copies;
-      return xmlDocument(pageSize, copies, printFilePath);
-    }).join('\n');
+    const printFileXml = files
+      .map((file) => {
+        const pageSize = file.pageSize || file.page_size || '';
+        const printFilePath = file.printFilePath || file.print_file_path || '';
+        const copies =
+          file.copies == null || file.copies === '' ? 1 : file.copies;
+        return xmlDocument(pageSize, copies, printFilePath);
+      })
+      .join('\n');
     return `<?xml version="1.0" encoding="UTF-8"?>
 <XmlPrintJob OrderId="${escXml(orderId)}" PoNumber="${escXml(poNumber)}" OriginalPoNumber="${escXml(originalPoNumber)}" OrderDate="${escXml(new Date().toISOString())}" OrderType="${escXml(orderType)}" ScanBarcode="${escXml(scanBarcode)}">
 ${printFileXml}

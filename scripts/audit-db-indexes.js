@@ -25,12 +25,21 @@ function getConnectionString() {
     };
   }
   if (process.env.NEON_DATABASE_URL) {
-    return { source: 'NEON_DATABASE_URL', value: String(process.env.NEON_DATABASE_URL).trim() };
+    return {
+      source: 'NEON_DATABASE_URL',
+      value: String(process.env.NEON_DATABASE_URL).trim(),
+    };
   }
   if (process.env.DATABASE_URL) {
-    return { source: 'DATABASE_URL', value: String(process.env.DATABASE_URL).trim() };
+    return {
+      source: 'DATABASE_URL',
+      value: String(process.env.DATABASE_URL).trim(),
+    };
   }
-  return { source: 'NETLIFY_DATABASE_URL', value: String(process.env.NETLIFY_DATABASE_URL || '').trim() };
+  return {
+    source: 'NETLIFY_DATABASE_URL',
+    value: String(process.env.NETLIFY_DATABASE_URL || '').trim(),
+  };
 }
 
 function safeConnectionTarget(value) {
@@ -46,7 +55,9 @@ async function main() {
   const selected = getConnectionString();
   const connectionString = selected.value;
   if (!connectionString) {
-    throw new Error('Missing database URL. Set NETLIFY_DATABASE_URL, DATABASE_URL, or NEON_DATABASE_URL before running this script.');
+    throw new Error(
+      'Missing database URL. Set NETLIFY_DATABASE_URL, DATABASE_URL, or NEON_DATABASE_URL before running this script.',
+    );
   }
 
   const client = new Client({
@@ -76,7 +87,7 @@ async function main() {
             and tablename = any($1::text[])
           order by tablename, indexname
         `,
-        [TABLES]
+        [TABLES],
       ),
       client.query(
         `
@@ -86,11 +97,13 @@ async function main() {
           and table_name = any($1::text[])
         order by table_name, ordinal_position
       `,
-        [VIEWS]
+        [VIEWS],
       ),
     ]);
 
-    console.log(`Extensions: ${extensions.rows.map((row) => row.extname).join(', ') || '(none)'}`);
+    console.log(
+      `Extensions: ${extensions.rows.map((row) => row.extname).join(', ') || '(none)'}`,
+    );
     console.log('');
 
     for (const table of TABLES) {

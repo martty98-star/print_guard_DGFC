@@ -1,12 +1,16 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   function sortByTimestampAsc(rows) {
-    return [...rows].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    return [...rows].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+    );
   }
 
   function normalizeMovType(value) {
-    return String(value || '').trim().toLowerCase();
+    return String(value || '')
+      .trim()
+      .toLowerCase();
   }
 
   function dateRangeFilter(timestamp, from, to) {
@@ -19,7 +23,9 @@
   }
 
   function getMovementsForItem(movements, articleNumber) {
-    return sortByTimestampAsc((movements || []).filter(move => move.articleNumber === articleNumber));
+    return sortByTimestampAsc(
+      (movements || []).filter((move) => move.articleNumber === articleNumber),
+    );
   }
 
   function buildStockSummary(item, movements, config, nowInput) {
@@ -38,8 +44,9 @@
     }
 
     let onHand = baseline;
-    const relevantMoves = baselineIndex >= 0 ? itemMoves.slice(baselineIndex + 1) : itemMoves;
-    relevantMoves.forEach(move => {
+    const relevantMoves =
+      baselineIndex >= 0 ? itemMoves.slice(baselineIndex + 1) : itemMoves;
+    relevantMoves.forEach((move) => {
       const qty = Number(move.qty) || 0;
       const type = normalizeMovType(move.movType);
       if (type === 'receipt') onHand += qty;
@@ -49,14 +56,19 @@
     onHand = Math.max(0, onHand);
 
     const cutoff = new Date(now.getTime() - weeksN * 7 * 86400 * 1000);
-    const recentIssues = (movements || []).filter(move =>
-      move.articleNumber === item.articleNumber &&
-      normalizeMovType(move.movType) === 'issue' &&
-      new Date(move.timestamp) >= cutoff
+    const recentIssues = (movements || []).filter(
+      (move) =>
+        move.articleNumber === item.articleNumber &&
+        normalizeMovType(move.movType) === 'issue' &&
+        new Date(move.timestamp) >= cutoff,
     );
-    const totalIssued = recentIssues.reduce((sum, move) => sum + (Number(move.qty) || 0), 0);
+    const totalIssued = recentIssues.reduce(
+      (sum, move) => sum + (Number(move.qty) || 0),
+      0,
+    );
     const avgWeekly = totalIssued / weeksN;
-    const daysLeft = avgWeekly > 0 ? (onHand / avgWeekly) * 7 : (onHand > 0 ? 999 : 0);
+    const daysLeft =
+      avgWeekly > 0 ? (onHand / avgWeekly) * 7 : onHand > 0 ? 999 : 0;
 
     const leadTime = Number(item.leadTimeDays) || 0;
     const safety = Number(item.safetyDays) || 7;
@@ -64,11 +76,21 @@
 
     let status;
     if (minQty > 0) {
-      status = onHand <= 0 ? 'crit' : onHand <= minQty ? 'crit' : onHand <= minQty * 2 ? 'warn' : 'ok';
+      status =
+        onHand <= 0
+          ? 'crit'
+          : onHand <= minQty
+            ? 'crit'
+            : onHand <= minQty * 2
+              ? 'warn'
+              : 'ok';
     } else {
-      status = onHand <= 0 || daysLeft <= 7 ? 'crit'
-        : daysLeft <= (leadTime + safety) ? 'warn'
-        : 'ok';
+      status =
+        onHand <= 0 || daysLeft <= 7
+          ? 'crit'
+          : daysLeft <= leadTime + safety
+            ? 'warn'
+            : 'ok';
     }
 
     return {
@@ -83,12 +105,12 @@
 
   function buildStockMovementLedger(items, movements) {
     const itemMap = {};
-    (items || []).forEach(item => {
+    (items || []).forEach((item) => {
       itemMap[item.articleNumber] = item;
     });
 
     const runningMap = {};
-    return sortByTimestampAsc(movements || []).map(move => {
+    return sortByTimestampAsc(movements || []).map((move) => {
       const current = runningMap[move.articleNumber] ?? 0;
       const qty = Number(move.qty) || 0;
       const type = normalizeMovType(move.movType);
@@ -111,8 +133,8 @@
 
   function buildStockLevels(items, movements, config, exportedAt) {
     return (items || [])
-      .filter(item => item.isActive !== false)
-      .map(item => {
+      .filter((item) => item.isActive !== false)
+      .map((item) => {
         const summary = buildStockSummary(item, movements, config);
         return {
           exportedAt,
@@ -133,13 +155,25 @@
 
   function buildStockLogRows(items, movements, filters) {
     const filter = filters || {};
-    const search = String(filter.search || '').trim().toLowerCase();
-    return buildStockMovementLedger(items, movements).filter(row => {
-      const typeMatch = !filter.movType || filter.movType === 'all' || normalizeMovType(row.movType) === normalizeMovType(filter.movType);
-      const searchMatch = !search ||
-        String(row.articleNumber || '').toLowerCase().includes(search) ||
-        String(row.itemName || '').toLowerCase().includes(search) ||
-        String(row.note || '').toLowerCase().includes(search);
+    const search = String(filter.search || '')
+      .trim()
+      .toLowerCase();
+    return buildStockMovementLedger(items, movements).filter((row) => {
+      const typeMatch =
+        !filter.movType ||
+        filter.movType === 'all' ||
+        normalizeMovType(row.movType) === normalizeMovType(filter.movType);
+      const searchMatch =
+        !search ||
+        String(row.articleNumber || '')
+          .toLowerCase()
+          .includes(search) ||
+        String(row.itemName || '')
+          .toLowerCase()
+          .includes(search) ||
+        String(row.note || '')
+          .toLowerCase()
+          .includes(search);
       const dateMatch = dateRangeFilter(row.timestamp, filter.from, filter.to);
       return typeMatch && searchMatch && dateMatch;
     });

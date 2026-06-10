@@ -1,6 +1,11 @@
 'use strict';
 
-const { json, parseRequestBody, requireAdminPin, withClient } = require('./_lib/db');
+const {
+  json,
+  parseRequestBody,
+  requireAdminPin,
+  withClient,
+} = require('./_lib/db');
 
 async function ensureStockDeleteSchema(client) {
   await client.query(`
@@ -16,10 +21,18 @@ async function ensureStockDeleteSchema(client) {
       sync_operator text null
     )
   `);
-  await client.query(`alter table public.pg_movements add column if not exists deleted_at timestamptz null`);
-  await client.query(`alter table public.pg_movements add column if not exists sync_source text null`);
-  await client.query(`alter table public.pg_movements add column if not exists sync_client_id text null`);
-  await client.query(`alter table public.pg_movements add column if not exists sync_operator text null`);
+  await client.query(
+    `alter table public.pg_movements add column if not exists deleted_at timestamptz null`,
+  );
+  await client.query(
+    `alter table public.pg_movements add column if not exists sync_source text null`,
+  );
+  await client.query(
+    `alter table public.pg_movements add column if not exists sync_client_id text null`,
+  );
+  await client.query(
+    `alter table public.pg_movements add column if not exists sync_operator text null`,
+  );
   await client.query(`
     create table if not exists public.pg_stock_tombstones (
       entity text not null,
@@ -61,15 +74,25 @@ exports.handler = async function handler(event) {
 
   try {
     if (event.httpMethod !== 'DELETE') {
-      return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'DELETE,OPTIONS' });
+      return json(
+        405,
+        { ok: false, error: 'Method not allowed' },
+        { allow: 'DELETE,OPTIONS' },
+      );
     }
 
     requireAdminPin(event);
 
     const requestBody = parseRequestBody(event);
-    const id = String(requestBody.id || event.queryStringParameters?.id || '').trim();
-    const clientId = String(requestBody.clientId || event.headers?.['x-printguard-client-id'] || '').trim();
-    const operator = String(requestBody.operator || event.headers?.['x-printguard-operator'] || '').trim();
+    const id = String(
+      requestBody.id || event.queryStringParameters?.id || '',
+    ).trim();
+    const clientId = String(
+      requestBody.clientId || event.headers?.['x-printguard-client-id'] || '',
+    ).trim();
+    const operator = String(
+      requestBody.operator || event.headers?.['x-printguard-operator'] || '',
+    ).trim();
 
     if (!id) {
       return json(400, { ok: false, error: 'Missing movement id' });
@@ -80,7 +103,7 @@ exports.handler = async function handler(event) {
       const deletedAt = new Date().toISOString();
       const existing = await client.query(
         'select data, updated_at, deleted_at from public.pg_movements where id = $1',
-        [id]
+        [id],
       );
       const beforePayload = existing.rows[0]?.data || null;
       await client.query(
@@ -94,7 +117,13 @@ exports.handler = async function handler(event) {
               operator = excluded.operator,
               payload = coalesce(excluded.payload, public.pg_stock_tombstones.payload)
         `,
-        [id, deletedAt, clientId || null, operator || null, JSON.stringify(beforePayload || { id })]
+        [
+          id,
+          deletedAt,
+          clientId || null,
+          operator || null,
+          JSON.stringify(beforePayload || { id }),
+        ],
       );
       const result = await client.query(
         `
@@ -107,7 +136,7 @@ exports.handler = async function handler(event) {
           where id = $1
             and deleted_at is null
         `,
-        [id, deletedAt, clientId || null, operator || null]
+        [id, deletedAt, clientId || null, operator || null],
       );
       await client.query(
         `
@@ -127,7 +156,7 @@ exports.handler = async function handler(event) {
           deletedAt,
           JSON.stringify(beforePayload),
           JSON.stringify({ id, deletedAt, updatedAt: deletedAt }),
-        ]
+        ],
       );
 
       return {
@@ -139,12 +168,16 @@ exports.handler = async function handler(event) {
     return json(200, body);
   } catch (error) {
     if (error && (error.statusCode === 401 || error.statusCode === 429)) {
-      return json(error.statusCode, { ok: false, error: error.message || 'Unauthorized' });
+      return json(error.statusCode, {
+        ok: false,
+        error: error.message || 'Unauthorized',
+      });
     }
     console.error('delete-stock-movement failed', error);
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : 'delete-stock-movement failed',
+      error:
+        error && error.message ? error.message : 'delete-stock-movement failed',
     });
   }
 };

@@ -107,8 +107,15 @@ function incomingPeriodForReportDate(reportDate) {
 
 function normalizeStockType(value) {
   const normalized = cleanString(value).toLowerCase();
-  if (normalized.includes('ink') || normalized.includes('inkoust')) return 'ink';
-  if (normalized.includes('media') || normalized.includes('paper') || normalized.includes('papír') || normalized.includes('papir')) return 'media';
+  if (normalized.includes('ink') || normalized.includes('inkoust'))
+    return 'ink';
+  if (
+    normalized.includes('media') ||
+    normalized.includes('paper') ||
+    normalized.includes('papír') ||
+    normalized.includes('papir')
+  )
+    return 'media';
   return normalized;
 }
 
@@ -166,17 +173,25 @@ function replayStockAt(items, movements, cutoffDateExclusive) {
   return (items || [])
     .filter((item) => item && item.isActive !== false)
     .map((item) => {
-      const articleNumber = cleanString(item.articleNumber || item.article_number);
-      const sorted = (movesByArticle.get(articleNumber) || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const articleNumber = cleanString(
+        item.articleNumber || item.article_number,
+      );
+      const sorted = (movesByArticle.get(articleNumber) || []).sort(
+        (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+      );
       let onHand = 0;
       for (const move of sorted) {
         const qty = num(move.qty || move.quantity);
-        const type = cleanString(move.movType || move.movement_type).toLowerCase();
+        const type = cleanString(
+          move.movType || move.movement_type,
+        ).toLowerCase();
         if (type === 'stocktake') onHand = qty;
         else if (type === 'receipt') onHand += qty;
         else if (type === 'issue') onHand = Math.max(0, onHand - qty);
       }
-      const stockType = normalizeStockType(item.category || item.stockType || item.type);
+      const stockType = normalizeStockType(
+        item.category || item.stockType || item.type,
+      );
       const inkLiters = stockType === 'ink' ? onHand * litersPerUnit(item) : 0;
       const mediaM2 = stockType === 'media' ? onHand * mediaM2PerUnit(item) : 0;
       return {
@@ -190,7 +205,12 @@ function replayStockAt(items, movements, cutoffDateExclusive) {
         mediaType: item.mediaType || item.media_type || '',
         inkStockL: round(inkLiters, 3),
         mediaStockM2: round(mediaM2, 3),
-        conversionNote: stockType === 'ink' ? `${round(litersPerUnit(item), 3)} L/unit` : (stockType === 'media' && mediaM2PerUnit(item) > 0 ? `${round(mediaM2PerUnit(item), 3)} m2/unit` : ''),
+        conversionNote:
+          stockType === 'ink'
+            ? `${round(litersPerUnit(item), 3)} L/unit`
+            : stockType === 'media' && mediaM2PerUnit(item) > 0
+              ? `${round(mediaM2PerUnit(item), 3)} m2/unit`
+              : '',
       };
     });
 }
@@ -325,7 +345,9 @@ async function ensureReportingSchema(client) {
   schemaReady = true;
 }
 
-function accountingDateFilter(column = 'coalesce(ready_at::date, source_date)') {
+function accountingDateFilter(
+  column = 'coalesce(ready_at::date, source_date)',
+) {
   return `${column} >= $1::date and ${column} < $2::date`;
 }
 
@@ -339,12 +361,15 @@ function inkSql() {
 
 async function loadStockSnapshot(client, month) {
   const snapshotMonth = monthStart(month);
-  const existing = await client.query(`
+  const existing = await client.query(
+    `
     select *
     from public.v_reporting_monthly_stock_snapshot
     where month = $1
     order by stock_type, item_name
-  `, [month]);
+  `,
+    [month],
+  );
   if (existing.rows.length) {
     return {
       source: 'snapshot_table',
@@ -367,7 +392,7 @@ async function loadStockSnapshot(client, month) {
   const itemsResult = await client.query(`select data from public.pg_items`);
   const movesResult = await client.query(
     `select data from public.pg_movements where timestamp < $1::date order by timestamp asc`,
-    [nextMonthStart(month)]
+    [nextMonthStart(month)],
   );
   const items = itemsResult.rows.map((row) => row.data || {});
   const movements = movesResult.rows.map((row) => row.data || {});
@@ -383,7 +408,8 @@ async function loadStockSnapshot(client, month) {
 
 async function queryMonthlyTrend(client, month) {
   const firstMonth = addMonths(month, -5);
-  const result = await client.query(`
+  const result = await client.query(
+    `
     with months as (
       select generate_series($1::date, $2::date, interval '1 month')::date as month_start
     ),
@@ -429,7 +455,9 @@ async function queryMonthlyTrend(client, month) {
     left join files on files.month_start = m.month_start
     left join consumption on consumption.month_start = m.month_start
     order by m.month_start
-  `, [monthStart(firstMonth), monthStart(month), TIMEZONE]);
+  `,
+    [monthStart(firstMonth), monthStart(month), TIMEZONE],
+  );
   return result.rows.map(mapMonthlyTrendRow);
 }
 
@@ -446,10 +474,18 @@ function mapMonthlyTrendRow(row) {
     reprintedFileCount: int(row.reprinted_file_count),
     totalConsumedMediaM2: round(row.total_consumed_media_m2, 3),
     totalConsumedInkL: round(row.total_consumed_ink_l, 3),
-    avgMediaM2PerSalesOrder: salesOrders ? round(row.total_consumed_media_m2 / salesOrders, 4) : null,
-    avgInkLPerSalesOrder: salesOrders ? round(row.total_consumed_ink_l / salesOrders, 5) : null,
-    reprintedFilesPerStandardFile: standardFiles ? round(row.reprinted_file_count / standardFiles, 4) : null,
-    avgFilesPerSalesOrder: salesOrders ? round(totalFiles / salesOrders, 3) : null,
+    avgMediaM2PerSalesOrder: salesOrders
+      ? round(row.total_consumed_media_m2 / salesOrders, 4)
+      : null,
+    avgInkLPerSalesOrder: salesOrders
+      ? round(row.total_consumed_ink_l / salesOrders, 5)
+      : null,
+    reprintedFilesPerStandardFile: standardFiles
+      ? round(row.reprinted_file_count / standardFiles, 4)
+      : null,
+    avgFilesPerSalesOrder: salesOrders
+      ? round(totalFiles / salesOrders, 3)
+      : null,
     avgFilesPerXml: xmlCount ? round(totalFiles / xmlCount, 3) : null,
   };
 }
@@ -461,14 +497,18 @@ async function loadMonthlyReport(client, options = {}) {
   const end = nextMonthStart(month);
   const dateParams = [start, end];
 
-  const ordersResult = await client.query(`
+  const ordersResult = await client.query(
+    `
       select count(distinct coalesce(nullif(order_number, ''), nullif(external_order_id, ''), nullif(customer_order_id, '')))::int as total_sales_orders
       from public.print_orders_received
       where coalesce(ignored, false) = false
         and (coalesce(received_at, api_seen_at) at time zone $3)::date >= $1::date
         and (coalesce(received_at, api_seen_at) at time zone $3)::date < $2::date
-    `, [...dateParams, TIMEZONE]);
-  const consumptionResult = await client.query(`
+    `,
+    [...dateParams, TIMEZONE],
+  );
+  const consumptionResult = await client.query(
+    `
       select
         count(*)::int as done_jobs,
         coalesce(sum(printed_area::numeric / 1000000.0), 0)::float8 as total_consumed_media_m2,
@@ -479,8 +519,11 @@ async function loadMonthlyReport(client, options = {}) {
       from public.print_accounting_rows
       where ${accountingDoneWhere()}
         and ${accountingDateFilter()}
-    `, dateParams);
-  const printerResult = await client.query(`
+    `,
+    dateParams,
+  );
+  const printerResult = await client.query(
+    `
       select
         printer_name,
         count(*)::int as done_jobs,
@@ -493,8 +536,11 @@ async function loadMonthlyReport(client, options = {}) {
         and ${accountingDateFilter()}
       group by printer_name
       order by printer_name
-    `, dateParams);
-  const mediaResult = await client.query(`
+    `,
+    dateParams,
+  );
+  const mediaResult = await client.query(
+    `
       select
         coalesce(nullif(media_type, ''), 'Unknown media') as media_type,
         count(*)::int as done_jobs,
@@ -505,8 +551,11 @@ async function loadMonthlyReport(client, options = {}) {
         and ${accountingDateFilter()}
       group by coalesce(nullif(media_type, ''), 'Unknown media')
       order by consumed_media_m2 desc
-    `, dateParams);
-  const filesResult = await client.query(`
+    `,
+    dateParams,
+  );
+  const filesResult = await client.query(
+    `
       select
         count(*)::int as total_xml_count,
         count(*) filter (where left(upper(coalesce(order_type, 'S')), 1) = 'R')::int as reprint_xml_count,
@@ -517,7 +566,9 @@ async function loadMonthlyReport(client, options = {}) {
       where coalesce(ignored, false) = false
         and (coalesce(queued_date_time, imported_at) at time zone $3)::date >= $1::date
         and (coalesce(queued_date_time, imported_at) at time zone $3)::date < $2::date
-    `, [...dateParams, TIMEZONE]);
+    `,
+    [...dateParams, TIMEZONE],
+  );
   const stock = await loadStockSnapshot(client, month);
   const trend = await queryMonthlyTrend(client, month);
 
@@ -530,17 +581,30 @@ async function loadMonthlyReport(client, options = {}) {
   const standardFiles = int(files.standard_file_count);
   const reprintFiles = int(files.reprinted_file_count);
   const stockRows = stock.rows || [];
-  const mediaStockM2 = stockRows.reduce((sum, row) => sum + num(row.mediaStockM2), 0);
+  const mediaStockM2 = stockRows.reduce(
+    (sum, row) => sum + num(row.mediaStockM2),
+    0,
+  );
   const inkStockL = stockRows.reduce((sum, row) => sum + num(row.inkStockL), 0);
   const warnings = [];
-  if (!stockRows.some((row) => normalizeStockType(row.stockType || row.category) === 'media')) {
-    warnings.push('Media stock m2 is unavailable until media stock items include category=Media and m2-per-unit metadata.');
+  if (
+    !stockRows.some(
+      (row) => normalizeStockType(row.stockType || row.category) === 'media',
+    )
+  ) {
+    warnings.push(
+      'Media stock m2 is unavailable until media stock items include category=Media and m2-per-unit metadata.',
+    );
   }
   if (stock.source !== 'snapshot_table') {
-    warnings.push('End-of-month stock is computed from the stock movement ledger because no stored month-end snapshot exists for this month.');
+    warnings.push(
+      'End-of-month stock is computed from the stock movement ledger because no stored month-end snapshot exists for this month.',
+    );
   }
   if (int(consumption.nett_time_row_count) < int(consumption.done_jobs)) {
-    warnings.push('Nett printing time only includes accounting rows with active_time_sec; gross duration is not presented as nett time.');
+    warnings.push(
+      'Nett printing time only includes accounting rows with active_time_sec; gross duration is not presented as nett time.',
+    );
   }
 
   return {
@@ -552,17 +616,31 @@ async function loadMonthlyReport(client, options = {}) {
       month,
       media_stock_m2_end_of_month: round(mediaStockM2, 3),
       ink_stock_l_end_of_month: round(inkStockL, 3),
-      total_consumed_media_m2_including_reprints: round(consumption.total_consumed_media_m2, 3),
-      total_consumed_ink_l_including_reprints: round(consumption.total_consumed_ink_l, 3),
+      total_consumed_media_m2_including_reprints: round(
+        consumption.total_consumed_media_m2,
+        3,
+      ),
+      total_consumed_ink_l_including_reprints: round(
+        consumption.total_consumed_ink_l,
+        3,
+      ),
       total_sales_orders: totalSalesOrders,
-      avg_media_m2_per_sales_order: totalSalesOrders ? round(consumption.total_consumed_media_m2 / totalSalesOrders, 4) : null,
-      avg_ink_l_per_sales_order: totalSalesOrders ? round(consumption.total_consumed_ink_l / totalSalesOrders, 5) : null,
+      avg_media_m2_per_sales_order: totalSalesOrders
+        ? round(consumption.total_consumed_media_m2 / totalSalesOrders, 4)
+        : null,
+      avg_ink_l_per_sales_order: totalSalesOrders
+        ? round(consumption.total_consumed_ink_l / totalSalesOrders, 5)
+        : null,
       standard_file_count: standardFiles,
       reprinted_file_count: reprintFiles,
-      reprinted_files_per_standard_file: standardFiles ? round(reprintFiles / standardFiles, 4) : null,
+      reprinted_files_per_standard_file: standardFiles
+        ? round(reprintFiles / standardFiles, 4)
+        : null,
       total_xml_count: totalXml,
       total_files: totalFiles,
-      avg_files_per_sales_order: totalSalesOrders ? round(totalFiles / totalSalesOrders, 3) : null,
+      avg_files_per_sales_order: totalSalesOrders
+        ? round(totalFiles / totalSalesOrders, 3)
+        : null,
       avg_files_per_xml: totalXml ? round(totalFiles / totalXml, 3) : null,
     },
     stock: {
@@ -591,7 +669,8 @@ async function loadMonthlyReport(client, options = {}) {
 
 async function loadIncomingPeriodSummary(client, period) {
   const params = [period.start, period.end, TIMEZONE];
-  const result = await client.query(`
+  const result = await client.query(
+    `
     with incoming as (
       select *
       from public.print_orders_received i
@@ -629,7 +708,9 @@ async function loadIncomingPeriodSummary(client, period) {
       (select count(distinct sales_order_key)::int from matched_orders) as processed_sales_order_count,
       (select count(distinct sales_order_key)::int from incoming_keys) as expected_count,
       (select count(distinct sales_order_key)::int from incoming_keys where sales_order_key not in (select sales_order_key from matched_orders)) as missing_count
-  `, params);
+  `,
+    params,
+  );
   const row = result.rows[0] || {};
   return {
     apiReceivedSalesOrders: int(row.api_received_sales_orders),
@@ -646,7 +727,8 @@ async function loadIncomingPeriodSummary(client, period) {
 async function loadEodProductionSummary(client, reportDate) {
   const nextDay = addDays(reportDate, 1);
   const params = [reportDate, nextDay, TIMEZONE];
-  const filesResult = await client.query(`
+  const filesResult = await client.query(
+    `
       select
         count(*)::int as total_xml_count,
         coalesce(sum(jsonb_array_length(coalesce(print_files, '[]'::jsonb))), 0)::int as total_files,
@@ -656,8 +738,11 @@ async function loadEodProductionSummary(client, reportDate) {
       where coalesce(ignored, false) = false
         and (coalesce(queued_date_time, imported_at) at time zone $3)::date >= $1::date
         and (coalesce(queued_date_time, imported_at) at time zone $3)::date < $2::date
-    `, params);
-  const accountingResult = await client.query(`
+    `,
+    params,
+  );
+  const accountingResult = await client.query(
+    `
       select
         count(*)::int as done_jobs,
         count(*) filter (where active_time_sec is not null)::int as nett_time_row_count,
@@ -669,8 +754,11 @@ async function loadEodProductionSummary(client, reportDate) {
       from public.print_accounting_rows
       where ${accountingDoneWhere()}
         and ${accountingDateFilter()}
-    `, [reportDate, nextDay]);
-  const printerResult = await client.query(`
+    `,
+    [reportDate, nextDay],
+  );
+  const printerResult = await client.query(
+    `
       select
         printer_name,
         count(*)::int as done_jobs,
@@ -683,8 +771,11 @@ async function loadEodProductionSummary(client, reportDate) {
         and ${accountingDateFilter()}
       group by printer_name
       order by printer_name
-    `, [reportDate, nextDay]);
-  const mediaResult = await client.query(`
+    `,
+    [reportDate, nextDay],
+  );
+  const mediaResult = await client.query(
+    `
       select
         coalesce(nullif(media_type, ''), 'Unknown media') as media_type,
         count(*)::int as done_jobs,
@@ -696,8 +787,11 @@ async function loadEodProductionSummary(client, reportDate) {
         and ${accountingDateFilter()}
       group by coalesce(nullif(media_type, ''), 'Unknown media')
       order by consumed_media_m2 desc
-    `, [reportDate, nextDay]);
-  const counterResult = await client.query(`
+    `,
+    [reportDate, nextDay],
+  );
+  const counterResult = await client.query(
+    `
       select
         machine_id,
         (array_agg(jsonb_build_object('id', id, 'machine_id', machine_id, 'timestamp', timestamp, 'data', data) order by timestamp asc, updated_at asc))[1] as start_record,
@@ -707,7 +801,9 @@ async function loadEodProductionSummary(client, reportDate) {
       where timestamp >= $1::date
         and timestamp < $2::date
       group by machine_id
-    `, [reportDate, nextDay]);
+    `,
+    [reportDate, nextDay],
+  );
 
   const files = filesResult.rows[0] || {};
   const accounting = accountingResult.rows[0] || {};
@@ -726,7 +822,10 @@ async function loadEodProductionSummary(client, reportDate) {
     ? coloradoCounterBreakdown.total.deltaMediaAreaM2
     : null;
   const counterInkL = coloradoCounterBreakdown.complete
-    ? coloradoCounterBreakdown.printers.reduce((sum, row) => sum + num(row.deltaInkL), 0)
+    ? coloradoCounterBreakdown.printers.reduce(
+        (sum, row) => sum + num(row.deltaInkL),
+        0,
+      )
     : null;
   return {
     files: {
@@ -738,11 +837,19 @@ async function loadEodProductionSummary(client, reportDate) {
     accounting: {
       doneJobs: int(accounting.done_jobs),
       nettTimeRowCount: int(accounting.nett_time_row_count),
-      totalNettPrintingTimeMinutes: round(accounting.nett_printing_time_sec / 60, 2),
-      totalNettPrintingTimeHours: round(accounting.nett_printing_time_sec / 3600, 3),
+      totalNettPrintingTimeMinutes: round(
+        accounting.nett_printing_time_sec / 60,
+        2,
+      ),
+      totalNettPrintingTimeHours: round(
+        accounting.nett_printing_time_sec / 3600,
+        3,
+      ),
       grossElapsedTimeHours: round(accounting.gross_elapsed_time_sec / 3600, 3),
       consumedMediaM2: counterMediaM2,
-      consumedMediaSource: coloradoCounterBreakdown.complete ? 'colorado_lifetime_counters' : 'unavailable_missing_counter_records',
+      consumedMediaSource: coloradoCounterBreakdown.complete
+        ? 'colorado_lifetime_counters'
+        : 'unavailable_missing_counter_records',
       printLogConsumedMediaM2: round(accounting.consumed_media_m2, 3),
       consumedMediaLengthM: round(accounting.consumed_media_length_m, 3),
       consumedInkL: counterInkL == null ? null : round(counterInkL, 4),
@@ -778,13 +885,17 @@ async function loadEodReport(client, options = {}) {
     'API intake uses the previous closed business period, not same-day incoming orders.',
   ];
   if (production.accounting.nettTimeRowCount < production.accounting.doneJobs) {
-    warnings.push('Nett printing time uses active_time_sec only; rows without active time are excluded from nett time and shown only in gross elapsed time.');
+    warnings.push(
+      'Nett printing time uses active_time_sec only; rows without active time are excluded from nett time and shown only in gross elapsed time.',
+    );
   }
   for (const warning of production.coloradoCounterBreakdown.warnings || []) {
     warnings.push(warning);
   }
   if (!production.coloradoCounterBreakdown.complete) {
-    warnings.push('Consumed media from Colorado lifetime counters is unavailable for this report date; print-log area is shown only as diagnostic data.');
+    warnings.push(
+      'Consumed media from Colorado lifetime counters is unavailable for this report date; print-log area is shown only as diagnostic data.',
+    );
   }
   const avgFilesPerSalesOrder = incoming.apiReceivedSalesOrders
     ? round(incoming.apiReceivedFileCount / incoming.apiReceivedSalesOrders, 3)

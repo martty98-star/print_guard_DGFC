@@ -22,7 +22,7 @@
     } = deps;
 
     function bindModeToggle() {
-      document.querySelectorAll('.mode-btn').forEach(button => {
+      document.querySelectorAll('.mode-btn').forEach((button) => {
         button.addEventListener('click', () => setMode(button.dataset.mode));
       });
     }
@@ -33,7 +33,10 @@
         document.body.classList.toggle('nav-open', Boolean(open));
         if (toggle) {
           toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-          toggle.setAttribute('aria-label', open ? 'Zavřít spodní navigaci' : 'Otevřít spodní navigaci');
+          toggle.setAttribute(
+            'aria-label',
+            open ? 'Zavřít spodní navigaci' : 'Otevřít spodní navigaci',
+          );
         }
       };
 
@@ -41,14 +44,16 @@
         setNavOpen(!document.body.classList.contains('nav-open'));
       });
 
-      document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(button => {
-        button.addEventListener('click', () => {
-          navigate(button.dataset.screen);
-          setNavOpen(false);
+      document
+        .querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item')
+        .forEach((button) => {
+          button.addEventListener('click', () => {
+            navigate(button.dataset.screen);
+            setNavOpen(false);
+          });
         });
-      });
 
-      global.addEventListener('keydown', event => {
+      global.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') setNavOpen(false);
       });
     }
@@ -60,8 +65,10 @@
     }
 
     function bindBackButtons() {
-      document.querySelectorAll('.back-btn').forEach(button => {
-        button.addEventListener('click', () => navigate(button.dataset.screen || 'stock-overview'));
+      document.querySelectorAll('.back-btn').forEach((button) => {
+        button.addEventListener('click', () =>
+          navigate(button.dataset.screen || 'stock-overview'),
+        );
       });
     }
 
@@ -74,23 +81,29 @@
     }
 
     function bindColoradoRollShell() {
-      el('roll-modal-save')?.addEventListener('click', () => saveColoradoRollModal());
-      document.querySelectorAll('[data-roll-cancel]').forEach(button => {
+      el('roll-modal-save')?.addEventListener('click', () =>
+        saveColoradoRollModal(),
+      );
+      document.querySelectorAll('[data-roll-cancel]').forEach((button) => {
         button.addEventListener('click', closeColoradoRollModal);
       });
-      el('roll-modal')?.addEventListener('click', event => {
+      el('roll-modal')?.addEventListener('click', (event) => {
         if (event.target === el('roll-modal')) closeColoradoRollModal();
       });
 
-      el('roll-mobile-toggle')?.addEventListener('click', () => openColoradoRollSheet());
-      document.querySelectorAll('[data-roll-sheet-cancel]').forEach(button => {
-        button.addEventListener('click', closeColoradoRollSheet);
-      });
-      el('roll-sheet')?.addEventListener('click', event => {
+      el('roll-mobile-toggle')?.addEventListener('click', () =>
+        openColoradoRollSheet(),
+      );
+      document
+        .querySelectorAll('[data-roll-sheet-cancel]')
+        .forEach((button) => {
+          button.addEventListener('click', closeColoradoRollSheet);
+        });
+      el('roll-sheet')?.addEventListener('click', (event) => {
         if (event.target === el('roll-sheet')) closeColoradoRollSheet();
       });
 
-      global.addEventListener('storage', event => {
+      global.addEventListener('storage', (event) => {
         if (event.key !== 'pg_colorado_roll_state_v1') return;
         state.coloradoRolls = loadColoradoRollStates();
         state.coloradoRollEvents = loadColoradoRollEvents();
@@ -101,8 +114,11 @@
     function bindLanguageSelect() {
       const langSelect = el('lang-select');
       if (!langSelect) return;
-      langSelect.value = (global.I18N && global.I18N.currentLang) || (global.I18N && global.I18N.defaultLang) || 'cs';
-      langSelect.addEventListener('change', event => {
+      langSelect.value =
+        (global.I18N && global.I18N.currentLang) ||
+        (global.I18N && global.I18N.defaultLang) ||
+        'cs';
+      langSelect.addEventListener('change', (event) => {
         if (global.I18N && typeof global.I18N.setLang === 'function') {
           global.I18N.setLang(event.target.value);
         }
@@ -110,8 +126,10 @@
     }
 
     function bindDatePresets() {
-      document.querySelectorAll('.dr-preset').forEach(button => {
-        button.addEventListener('click', () => applyPreset(button.dataset.range, button.dataset.target));
+      document.querySelectorAll('.dr-preset').forEach((button) => {
+        button.addEventListener('click', () =>
+          applyPreset(button.dataset.range, button.dataset.target),
+        );
       });
     }
 

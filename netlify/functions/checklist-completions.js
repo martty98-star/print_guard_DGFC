@@ -7,13 +7,19 @@ const {
 } = require('./_lib/checklist-store');
 
 function getActor(event, body) {
-  const headerValue = event && event.headers
-    ? event.headers['x-printguard-actor'] || event.headers['X-PrintGuard-Actor']
-    : null;
+  const headerValue =
+    event && event.headers
+      ? event.headers['x-printguard-actor'] ||
+        event.headers['X-PrintGuard-Actor']
+      : null;
   const bodyValue = body && typeof body.actor === 'string' ? body.actor : null;
-  const completedByValue = body && typeof body.completed_by === 'string' ? body.completed_by : null;
-  const actor = bodyValue || completedByValue || headerValue || 'printguard-user';
-  return typeof actor === 'string' && actor.trim() ? actor.trim() : 'printguard-user';
+  const completedByValue =
+    body && typeof body.completed_by === 'string' ? body.completed_by : null;
+  const actor =
+    bodyValue || completedByValue || headerValue || 'printguard-user';
+  return typeof actor === 'string' && actor.trim()
+    ? actor.trim()
+    : 'printguard-user';
 }
 
 exports.handler = async function handler(event) {
@@ -33,19 +39,38 @@ exports.handler = async function handler(event) {
     }
 
     if (event.httpMethod !== 'POST') {
-      return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,OPTIONS' });
+      return json(
+        405,
+        { ok: false, error: 'Method not allowed' },
+        { allow: 'GET,POST,OPTIONS' },
+      );
     }
 
     const requestBody = parseRequestBody(event);
-    const checklistId = String(requestBody.checklist_id || requestBody.checklistId || '').trim();
-    const occurrenceKey = String(requestBody.occurrence_key || requestBody.occurrenceKey || '').trim();
-    const deviceId = String(requestBody.device_id || requestBody.deviceId || '').trim();
-    const completedAt = String(requestBody.completed_at || requestBody.completedAt || new Date().toISOString()).trim();
+    const checklistId = String(
+      requestBody.checklist_id || requestBody.checklistId || '',
+    ).trim();
+    const occurrenceKey = String(
+      requestBody.occurrence_key || requestBody.occurrenceKey || '',
+    ).trim();
+    const deviceId = String(
+      requestBody.device_id || requestBody.deviceId || '',
+    ).trim();
+    const completedAt = String(
+      requestBody.completed_at ||
+        requestBody.completedAt ||
+        new Date().toISOString(),
+    ).trim();
     const completedBy = getActor(event, requestBody);
-    const checklistTitle = String(requestBody.checklist_title || requestBody.checklistTitle || '').trim();
+    const checklistTitle = String(
+      requestBody.checklist_title || requestBody.checklistTitle || '',
+    ).trim();
 
     if (!checklistId || !occurrenceKey || !deviceId) {
-      return json(400, { ok: false, error: 'Missing checklist completion fields' });
+      return json(400, {
+        ok: false,
+        error: 'Missing checklist completion fields',
+      });
     }
 
     const body = await withClient(async (client) => {
@@ -81,7 +106,8 @@ exports.handler = async function handler(event) {
     console.error('checklist-completions failed', error);
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : 'checklist-completions failed',
+      error:
+        error && error.message ? error.message : 'checklist-completions failed',
     });
   }
 };

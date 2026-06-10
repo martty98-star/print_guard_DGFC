@@ -1,14 +1,15 @@
-import pg from "pg";
+import pg from 'pg';
+
 const { Client } = pg;
 const columnCache = new Map();
-const PRINT_LOG_TIMEZONE = "Europe/Prague";
+const PRINT_LOG_TIMEZONE = 'Europe/Prague';
 
 function resp(statusCode, body) {
   return {
     statusCode,
     headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
     },
     body: JSON.stringify(body),
   };
@@ -19,7 +20,7 @@ async function withClient(run) {
     process.env.NEON_DATABASE_URL ||
     process.env.DATABASE_URL ||
     process.env.NETLIFY_DATABASE_URL;
-  if (!conn) throw new Error("Missing database connection string");
+  if (!conn) throw new Error('Missing database connection string');
   const client = new Client({
     connectionString: conn,
     ssl: { rejectUnauthorized: false },
@@ -28,7 +29,9 @@ async function withClient(run) {
   try {
     return await run(client);
   } finally {
-    try { await client.end(); } catch {}
+    try {
+      await client.end();
+    } catch {}
   }
 }
 
@@ -37,7 +40,7 @@ async function getColumns(client, tableName) {
     return columnCache.get(tableName);
   }
   const q = await client.query(`select * from public.${tableName} limit 0`);
-  const columns = new Set(q.fields.map(f => f.name));
+  const columns = new Set(q.fields.map((f) => f.name));
   columnCache.set(tableName, columns);
   return columns;
 }
@@ -56,8 +59,8 @@ function pick(cols, candidates, label) {
   }
   throw new Error(
     `Missing ${label} column in v_print_log_rows. ` +
-    `Tried: [${candidates.join(", ")}]. ` +
-    `Available: [${[...cols].join(", ")}]`
+      `Tried: [${candidates.join(', ')}]. ` +
+      `Available: [${[...cols].join(', ')}]`,
   );
 }
 
@@ -86,7 +89,7 @@ function microLitersExpr(rawUnitsColumn) {
 function sumExpr(parts) {
   const present = parts.filter(Boolean);
   if (!present.length) return null;
-  return present.map(part => `coalesce(${part}, 0)`).join(' + ');
+  return present.map((part) => `coalesce(${part}, 0)`).join(' + ');
 }
 
 function buildInkExpressions(map) {
@@ -97,8 +100,14 @@ function buildInkExpressions(map) {
   const inkWhiteExpr = litersExpr(map.inkWhiteL, map.inkWhite);
   const inkTotalExpr =
     litersExpr(map.inkTotalL, map.inkTotalMl) ||
-    sumExpr([inkCyanExpr, inkMagentaExpr, inkYellowExpr, inkBlackExpr, inkWhiteExpr]) ||
-    "null";
+    sumExpr([
+      inkCyanExpr,
+      inkMagentaExpr,
+      inkYellowExpr,
+      inkBlackExpr,
+      inkWhiteExpr,
+    ]) ||
+    'null';
 
   return {
     inkCyanExpr,
@@ -118,10 +127,10 @@ function buildInkPresenceExpr(inkExprs) {
     inkExprs?.inkYellowExpr,
     inkExprs?.inkBlackExpr,
     inkExprs?.inkWhiteExpr,
-  ].filter(expr => expr && expr !== "null");
+  ].filter((expr) => expr && expr !== 'null');
 
-  if (!candidates.length) return "0";
-  return `case when ${candidates.map(expr => `${expr} is not null`).join(" or ")} then 1 else 0 end`;
+  if (!candidates.length) return '0';
+  return `case when ${candidates.map((expr) => `${expr} is not null`).join(' or ')} then 1 else 0 end`;
 }
 
 function buildInkChannelPresenceExpr(inkExprs) {
@@ -131,23 +140,39 @@ function buildInkChannelPresenceExpr(inkExprs) {
     inkExprs?.inkYellowExpr,
     inkExprs?.inkBlackExpr,
     inkExprs?.inkWhiteExpr,
-  ].filter(expr => expr && expr !== "null");
+  ].filter((expr) => expr && expr !== 'null');
 
-  if (!candidates.length) return "0";
-  return `case when ${candidates.map(expr => `${expr} is not null`).join(" or ")} then 1 else 0 end`;
+  if (!candidates.length) return '0';
+  return `case when ${candidates.map((expr) => `${expr} is not null`).join(' or ')} then 1 else 0 end`;
 }
 
 function buildAccountingInkExpressions(map) {
   // print_accounting_rows stores raw CSV channel counters as printer micro-liter units.
-  const inkCyanExpr = map.inkCyanL ? `${map.inkCyanL}` : microLitersExpr(map.inkCyan);
-  const inkMagentaExpr = map.inkMagentaL ? `${map.inkMagentaL}` : microLitersExpr(map.inkMagenta);
-  const inkYellowExpr = map.inkYellowL ? `${map.inkYellowL}` : microLitersExpr(map.inkYellow);
-  const inkBlackExpr = map.inkBlackL ? `${map.inkBlackL}` : microLitersExpr(map.inkBlack);
-  const inkWhiteExpr = map.inkWhiteL ? `${map.inkWhiteL}` : microLitersExpr(map.inkWhite);
+  const inkCyanExpr = map.inkCyanL
+    ? `${map.inkCyanL}`
+    : microLitersExpr(map.inkCyan);
+  const inkMagentaExpr = map.inkMagentaL
+    ? `${map.inkMagentaL}`
+    : microLitersExpr(map.inkMagenta);
+  const inkYellowExpr = map.inkYellowL
+    ? `${map.inkYellowL}`
+    : microLitersExpr(map.inkYellow);
+  const inkBlackExpr = map.inkBlackL
+    ? `${map.inkBlackL}`
+    : microLitersExpr(map.inkBlack);
+  const inkWhiteExpr = map.inkWhiteL
+    ? `${map.inkWhiteL}`
+    : microLitersExpr(map.inkWhite);
   const inkTotalExpr =
     litersExpr(map.inkTotalL, map.inkTotalMl) ||
-    sumExpr([inkCyanExpr, inkMagentaExpr, inkYellowExpr, inkBlackExpr, inkWhiteExpr]) ||
-    "null";
+    sumExpr([
+      inkCyanExpr,
+      inkMagentaExpr,
+      inkYellowExpr,
+      inkBlackExpr,
+      inkWhiteExpr,
+    ]) ||
+    'null';
 
   return {
     inkCyanExpr,
@@ -161,7 +186,7 @@ function buildAccountingInkExpressions(map) {
 
 function coalesceExpr(primaryExpr, fallbackExpr) {
   if (!primaryExpr) return fallbackExpr;
-  if (!fallbackExpr || fallbackExpr === "null") return primaryExpr;
+  if (!fallbackExpr || fallbackExpr === 'null') return primaryExpr;
   return `coalesce(${primaryExpr}, ${fallbackExpr})`;
 }
 
@@ -169,29 +194,51 @@ function buildAccountingInkJoin(query, viewMap, accountingCols, values) {
   if (!accountingCols) return null;
 
   const accountingMap = {
-    readyAt:       pick(accountingCols, ["ready_at", "readyat", "ready_at_utc", "readyAt"], "accounting.readyAt"),
-    printerName:   pick(accountingCols, ["printer_name", "printername", "printer", "printerName"], "accounting.printerName"),
-    result:        pick(accountingCols, ["result", "status", "print_result"], "accounting.result"),
-    jobId:         pickOptional(accountingCols, ["job_id", "jobid", "jobId"]),
-    rowType:       pickOptional(accountingCols, ["row_type", "rowtype", "rowType"]),
-    inkTotalL:     pickOptional(accountingCols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
-    inkTotalMl:    pickOptional(accountingCols, ["ink_total_ml", "ink_total", "inkTotalMl", "total_ink_ml"]),
-    inkCyanL:      pickOptional(accountingCols, ["ink_cyan_l", "inkCyanL"]),
-    inkCyan:       pickOptional(accountingCols, ["ink_cyan", "inkcyan"]),
-    inkMagentaL:   pickOptional(accountingCols, ["ink_magenta_l", "inkMagentaL"]),
-    inkMagenta:    pickOptional(accountingCols, ["ink_magenta", "inkmagenta"]),
-    inkYellowL:    pickOptional(accountingCols, ["ink_yellow_l", "inkYellowL"]),
-    inkYellow:     pickOptional(accountingCols, ["ink_yellow", "inkyellow"]),
-    inkBlackL:     pickOptional(accountingCols, ["ink_black_l", "inkBlackL"]),
-    inkBlack:      pickOptional(accountingCols, ["ink_black", "inkblack"]),
-    inkWhiteL:     pickOptional(accountingCols, ["ink_white_l", "inkWhiteL"]),
-    inkWhite:      pickOptional(accountingCols, ["ink_white", "inkwhite"]),
+    readyAt: pick(
+      accountingCols,
+      ['ready_at', 'readyat', 'ready_at_utc', 'readyAt'],
+      'accounting.readyAt',
+    ),
+    printerName: pick(
+      accountingCols,
+      ['printer_name', 'printername', 'printer', 'printerName'],
+      'accounting.printerName',
+    ),
+    result: pick(
+      accountingCols,
+      ['result', 'status', 'print_result'],
+      'accounting.result',
+    ),
+    jobId: pickOptional(accountingCols, ['job_id', 'jobid', 'jobId']),
+    rowType: pickOptional(accountingCols, ['row_type', 'rowtype', 'rowType']),
+    inkTotalL: pickOptional(accountingCols, [
+      'ink_total_l',
+      'ink_total_liters',
+      'inkTotalL',
+      'total_ink_l',
+    ]),
+    inkTotalMl: pickOptional(accountingCols, [
+      'ink_total_ml',
+      'ink_total',
+      'inkTotalMl',
+      'total_ink_ml',
+    ]),
+    inkCyanL: pickOptional(accountingCols, ['ink_cyan_l', 'inkCyanL']),
+    inkCyan: pickOptional(accountingCols, ['ink_cyan', 'inkcyan']),
+    inkMagentaL: pickOptional(accountingCols, ['ink_magenta_l', 'inkMagentaL']),
+    inkMagenta: pickOptional(accountingCols, ['ink_magenta', 'inkmagenta']),
+    inkYellowL: pickOptional(accountingCols, ['ink_yellow_l', 'inkYellowL']),
+    inkYellow: pickOptional(accountingCols, ['ink_yellow', 'inkyellow']),
+    inkBlackL: pickOptional(accountingCols, ['ink_black_l', 'inkBlackL']),
+    inkBlack: pickOptional(accountingCols, ['ink_black', 'inkblack']),
+    inkWhiteL: pickOptional(accountingCols, ['ink_white_l', 'inkWhiteL']),
+    inkWhite: pickOptional(accountingCols, ['ink_white', 'inkwhite']),
   };
   accountingMap.readyAtLocalExpr = `${accountingMap.readyAt}`;
   accountingMap.readyAtZonedExpr = zonedTimestampExpr(accountingMap.readyAt);
 
   const inkExprs = buildAccountingInkExpressions(accountingMap);
-  if (inkExprs.inkTotalExpr === "null") return null;
+  if (inkExprs.inkTotalExpr === 'null') return null;
 
   const accountingWhere = buildFilters(query, accountingMap, values);
   const selectParts = [
@@ -224,22 +271,22 @@ function buildAccountingInkJoin(query, viewMap, accountingCols, values) {
 
   selectParts.push(
     `coalesce(sum(${inkExprs.inkTotalExpr}), 0)::float8 as ink_total_l`,
-    `coalesce(sum(${inkExprs.inkCyanExpr || "0::float8"}), 0)::float8 as ink_cyan_l`,
-    `coalesce(sum(${inkExprs.inkMagentaExpr || "0::float8"}), 0)::float8 as ink_magenta_l`,
-    `coalesce(sum(${inkExprs.inkYellowExpr || "0::float8"}), 0)::float8 as ink_yellow_l`,
-    `coalesce(sum(${inkExprs.inkBlackExpr || "0::float8"}), 0)::float8 as ink_black_l`,
-    `coalesce(sum(${inkExprs.inkWhiteExpr || "0::float8"}), 0)::float8 as ink_white_l`
+    `coalesce(sum(${inkExprs.inkCyanExpr || '0::float8'}), 0)::float8 as ink_cyan_l`,
+    `coalesce(sum(${inkExprs.inkMagentaExpr || '0::float8'}), 0)::float8 as ink_magenta_l`,
+    `coalesce(sum(${inkExprs.inkYellowExpr || '0::float8'}), 0)::float8 as ink_yellow_l`,
+    `coalesce(sum(${inkExprs.inkBlackExpr || '0::float8'}), 0)::float8 as ink_black_l`,
+    `coalesce(sum(${inkExprs.inkWhiteExpr || '0::float8'}), 0)::float8 as ink_white_l`,
   );
 
   return {
     sql: `
       left join (
         select
-          ${selectParts.join(",\n          ")}
+          ${selectParts.join(',\n          ')}
         from public.print_accounting_rows
         ${accountingWhere}
-        group by ${groupByParts.join(", ")}
-      ) a on ${joinParts.join(" and ")}
+        group by ${groupByParts.join(', ')}
+      ) a on ${joinParts.join(' and ')}
     `,
     inkTotalExpr: `a.ink_total_l`,
     inkCyanExpr: `a.ink_cyan_l`,
@@ -265,26 +312,30 @@ function buildFilters(query, map, values) {
     where.push(`${readyLocalExpr} <= $${values.length}::timestamp`);
   }
 
-  if (query.printer && query.printer !== "all") {
+  if (query.printer && query.printer !== 'all') {
     values.push(query.printer);
     where.push(`${map.printerName} = $${values.length}`);
   }
 
-  if (query.result && query.result !== "all") {
+  if (query.result && query.result !== 'all') {
     values.push(query.result);
     where.push(`${map.result} = $${values.length}`);
   }
 
-  return where.length ? `where ${where.join(" and ")}` : "";
+  return where.length ? `where ${where.join(' and ')}` : '';
 }
 
-function buildSourceFilters(query, values, { readyExpr, printerExpr, resultExpr, rowTypeExpr, onlyPrintRows }) {
+function buildSourceFilters(
+  query,
+  values,
+  { readyExpr, printerExpr, resultExpr, rowTypeExpr, onlyPrintRows },
+) {
   const where = [];
   const readyLocalExpr = readyExpr.local || readyExpr;
   const readyZonedExpr = readyExpr.zoned || readyExpr;
 
   if (onlyPrintRows && rowTypeExpr) {
-    values.push("print");
+    values.push('print');
     where.push(`${rowTypeExpr} = $${values.length}`);
   }
 
@@ -298,44 +349,48 @@ function buildSourceFilters(query, values, { readyExpr, printerExpr, resultExpr,
     where.push(`${readyLocalExpr} <= $${values.length}::timestamp`);
   }
 
-  if (query.printer && query.printer !== "all") {
+  if (query.printer && query.printer !== 'all') {
     values.push(query.printer);
     where.push(`${printerExpr} = $${values.length}`);
   }
 
-  if (query.result && query.result !== "all") {
+  if (query.result && query.result !== 'all') {
     values.push(query.result);
     where.push(`${resultExpr} = $${values.length}`);
   }
 
-  return where.length ? `where ${where.join(" and ")}` : "";
+  return where.length ? `where ${where.join(' and ')}` : '';
 }
 
 function squareMetersExpr(squareMetersColumn, rawMm2Column) {
   if (squareMetersColumn) return `${squareMetersColumn}`;
   if (rawMm2Column) return `(${rawMm2Column} / 1000000.0)`;
-  return "null";
+  return 'null';
 }
 
 function metersExpr(metersColumn, rawMmColumn) {
   if (metersColumn) return `${metersColumn}`;
   // Colorado accounting raw media_length_used is stored in 1e-4 meters.
   if (rawMmColumn) return `(${rawMmColumn} / 10000.0)`;
-  return "null";
+  return 'null';
 }
 
 function buildDurationValueExpr(durationExpr, activeTimeExpr) {
   const candidates = [];
 
-  if (activeTimeExpr && activeTimeExpr !== "null") {
-    candidates.push(`case when ${activeTimeExpr} >= 0 and ${activeTimeExpr} <= 86400 then ${activeTimeExpr} end`);
+  if (activeTimeExpr && activeTimeExpr !== 'null') {
+    candidates.push(
+      `case when ${activeTimeExpr} >= 0 and ${activeTimeExpr} <= 86400 then ${activeTimeExpr} end`,
+    );
   }
-  if (durationExpr && durationExpr !== "null") {
-    candidates.push(`case when ${durationExpr} >= 0 and ${durationExpr} <= 86400 then ${durationExpr} end`);
+  if (durationExpr && durationExpr !== 'null') {
+    candidates.push(
+      `case when ${durationExpr} >= 0 and ${durationExpr} <= 86400 then ${durationExpr} end`,
+    );
   }
 
-  if (!candidates.length) return "null";
-  return `coalesce(${candidates.join(", ")})`;
+  if (!candidates.length) return 'null';
+  return `coalesce(${candidates.join(', ')})`;
 }
 
 function buildLogicalJobExpr(map, readyExpr) {
@@ -344,12 +399,12 @@ function buildLogicalJobExpr(map, readyExpr) {
   if (map.documentId) candidates.push(`${map.documentId}::text`);
   if (map.jobName) candidates.push(`${map.jobName}::text`);
   candidates.push(`coalesce(${readyExpr}::text, '')`);
-  return `coalesce(${candidates.join(", ")})`;
+  return `coalesce(${candidates.join(', ')})`;
 }
 
 function buildSourcePriorityExpr(sourceFileExpr, preferredRank) {
   if (preferredRank) return `${preferredRank}`;
-  if (!sourceFileExpr) return "0";
+  if (!sourceFileExpr) return '0';
   return `
     case
       when lower(coalesce(${sourceFileExpr}::text, '')) like '%.csv' then 2
@@ -360,43 +415,113 @@ function buildSourcePriorityExpr(sourceFileExpr, preferredRank) {
 }
 
 export async function handler(event) {
-  if (event.httpMethod !== "GET") {
-    return resp(405, { ok: false, error: "Method not allowed" });
+  if (event.httpMethod !== 'GET') {
+    return resp(405, { ok: false, error: 'Method not allowed' });
   }
 
   try {
-    const body = await withClient(async client => {
-      const cols = await getColumns(client, "v_print_log_rows");
-      const accountingCols = await getColumnsSafe(client, "print_accounting_rows");
+    const body = await withClient(async (client) => {
+      const cols = await getColumns(client, 'v_print_log_rows');
+      const accountingCols = await getColumnsSafe(
+        client,
+        'print_accounting_rows',
+      );
 
       const map = {
-        readyAt:       pick(cols, ["ready_at", "readyat", "ready_at_utc", "readyAt"], "readyAt"),
-        printerName:   pick(cols, ["printer_name", "printername", "printer", "printerName"], "printerName"),
-        jobName:       pick(cols, ["job_name", "jobname", "job", "jobName", "title"], "jobName"),
-        result:        pick(cols, ["result", "status", "print_result"], "result"),
-        jobId:         pickOptional(cols, ["job_id", "jobid", "jobId"]),
-        documentId:    pickOptional(cols, ["document_id", "documentid", "documentId"]),
-        rowType:       pickOptional(cols, ["row_type", "rowtype", "rowType"]),
-        mediaType:     pick(cols, ["media_type", "mediatype", "media", "mediaType", "medium"], "mediaType"),
-        printedAreaM2: pickOptional(cols, ["printed_area_m2", "printedaream2", "printed_area_metric", "printedAreaM2", "area_m2"]),
-        printedAreaRaw: pickOptional(cols, ["printed_area", "printedarea"]),
-        mediaLengthM:  pickOptional(cols, ["media_length_m", "medialengthm", "media_length_metric", "mediaLengthM", "length_m"]),
-        mediaLengthRaw: pickOptional(cols, ["media_length_used", "medialengthused"]),
-        durationSec:   pick(cols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"], "durationSec"),
-        activeTimeSec: pickOptional(cols, ["active_time_sec", "activetime_sec", "activeTimeSec", "active_seconds"]),
-        sourceFile:    pickOptional(cols, ["source_file", "sourcefile", "source", "sourceFile", "file_name", "filename"]),
-        inkTotalL:     pickOptional(cols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
-        inkTotalMl:    pickOptional(cols, ["ink_total_ml", "ink_total", "inkTotalMl", "total_ink_ml"]),
-        inkCyanL:      pickOptional(cols, ["ink_cyan_l", "inkCyanL"]),
-        inkCyan:       pickOptional(cols, ["ink_cyan", "inkcyan"]),
-        inkMagentaL:   pickOptional(cols, ["ink_magenta_l", "inkMagentaL"]),
-        inkMagenta:    pickOptional(cols, ["ink_magenta", "inkmagenta"]),
-        inkYellowL:    pickOptional(cols, ["ink_yellow_l", "inkYellowL"]),
-        inkYellow:     pickOptional(cols, ["ink_yellow", "inkyellow"]),
-        inkBlackL:     pickOptional(cols, ["ink_black_l", "inkBlackL"]),
-        inkBlack:      pickOptional(cols, ["ink_black", "inkblack"]),
-        inkWhiteL:     pickOptional(cols, ["ink_white_l", "inkWhiteL"]),
-        inkWhite:      pickOptional(cols, ["ink_white", "inkwhite"]),
+        readyAt: pick(
+          cols,
+          ['ready_at', 'readyat', 'ready_at_utc', 'readyAt'],
+          'readyAt',
+        ),
+        printerName: pick(
+          cols,
+          ['printer_name', 'printername', 'printer', 'printerName'],
+          'printerName',
+        ),
+        jobName: pick(
+          cols,
+          ['job_name', 'jobname', 'job', 'jobName', 'title'],
+          'jobName',
+        ),
+        result: pick(cols, ['result', 'status', 'print_result'], 'result'),
+        jobId: pickOptional(cols, ['job_id', 'jobid', 'jobId']),
+        documentId: pickOptional(cols, [
+          'document_id',
+          'documentid',
+          'documentId',
+        ]),
+        rowType: pickOptional(cols, ['row_type', 'rowtype', 'rowType']),
+        mediaType: pick(
+          cols,
+          ['media_type', 'mediatype', 'media', 'mediaType', 'medium'],
+          'mediaType',
+        ),
+        printedAreaM2: pickOptional(cols, [
+          'printed_area_m2',
+          'printedaream2',
+          'printed_area_metric',
+          'printedAreaM2',
+          'area_m2',
+        ]),
+        printedAreaRaw: pickOptional(cols, ['printed_area', 'printedarea']),
+        mediaLengthM: pickOptional(cols, [
+          'media_length_m',
+          'medialengthm',
+          'media_length_metric',
+          'mediaLengthM',
+          'length_m',
+        ]),
+        mediaLengthRaw: pickOptional(cols, [
+          'media_length_used',
+          'medialengthused',
+        ]),
+        durationSec: pick(
+          cols,
+          [
+            'duration_sec',
+            'durationsec',
+            'duration',
+            'durationSec',
+            'duration_seconds',
+          ],
+          'durationSec',
+        ),
+        activeTimeSec: pickOptional(cols, [
+          'active_time_sec',
+          'activetime_sec',
+          'activeTimeSec',
+          'active_seconds',
+        ]),
+        sourceFile: pickOptional(cols, [
+          'source_file',
+          'sourcefile',
+          'source',
+          'sourceFile',
+          'file_name',
+          'filename',
+        ]),
+        inkTotalL: pickOptional(cols, [
+          'ink_total_l',
+          'ink_total_liters',
+          'inkTotalL',
+          'total_ink_l',
+        ]),
+        inkTotalMl: pickOptional(cols, [
+          'ink_total_ml',
+          'ink_total',
+          'inkTotalMl',
+          'total_ink_ml',
+        ]),
+        inkCyanL: pickOptional(cols, ['ink_cyan_l', 'inkCyanL']),
+        inkCyan: pickOptional(cols, ['ink_cyan', 'inkcyan']),
+        inkMagentaL: pickOptional(cols, ['ink_magenta_l', 'inkMagentaL']),
+        inkMagenta: pickOptional(cols, ['ink_magenta', 'inkmagenta']),
+        inkYellowL: pickOptional(cols, ['ink_yellow_l', 'inkYellowL']),
+        inkYellow: pickOptional(cols, ['ink_yellow', 'inkyellow']),
+        inkBlackL: pickOptional(cols, ['ink_black_l', 'inkBlackL']),
+        inkBlack: pickOptional(cols, ['ink_black', 'inkblack']),
+        inkWhiteL: pickOptional(cols, ['ink_white_l', 'inkWhiteL']),
+        inkWhite: pickOptional(cols, ['ink_white', 'inkwhite']),
       };
       map.readyAtLocalExpr = `${map.readyAt}`;
       map.readyAtZonedExpr = zonedTimestampExpr(map.readyAt);
@@ -408,37 +533,134 @@ export async function handler(event) {
       if (accountingCols) {
         try {
           accountingMap = {
-            readyAt:         pick(accountingCols, ["ready_at", "readyat", "ready_at_utc", "readyAt"], "accounting.readyAt"),
-            printerName:     pick(accountingCols, ["printer_name", "printername", "printer", "printerName"], "accounting.printerName"),
-            jobName:         pickOptional(accountingCols, ["job_name", "jobname", "job", "jobName", "title"]),
-            result:          pick(accountingCols, ["result", "status", "print_result"], "accounting.result"),
-            jobId:           pickOptional(accountingCols, ["job_id", "jobid", "jobId"]),
-            documentId:      pickOptional(accountingCols, ["document_id", "documentid", "documentId"]),
-            rowType:         pickOptional(accountingCols, ["row_type", "rowtype", "rowType"]),
-            mediaType:       pickOptional(accountingCols, ["media_type", "mediatype", "media", "mediaType", "medium"]),
-            printedAreaM2:   pickOptional(accountingCols, ["printed_area_m2", "printedaream2", "printed_area_metric", "printedAreaM2"]),
-            printedAreaRaw:  pickOptional(accountingCols, ["printed_area", "printedarea"]),
-            mediaLengthM:    pickOptional(accountingCols, ["media_length_m", "medialengthm", "media_length_metric", "mediaLengthM"]),
-            mediaLengthRaw:  pickOptional(accountingCols, ["media_length_used", "medialengthused"]),
-            durationSec:     pickOptional(accountingCols, ["duration_sec", "durationsec", "duration", "durationSec", "duration_seconds"]),
-            activeTimeSec:   pickOptional(accountingCols, ["active_time_sec", "activetime_sec", "activeTimeSec", "active_seconds"]),
-            sourceFile:      pickOptional(accountingCols, ["source_file", "sourcefile", "sourceFile"]),
-            importedAt:      pickOptional(accountingCols, ["imported_at", "importedat", "importedAt"]),
-            inkTotalL:       pickOptional(accountingCols, ["ink_total_l", "ink_total_liters", "inkTotalL", "total_ink_l"]),
-            inkTotalMl:      pickOptional(accountingCols, ["ink_total_ml", "ink_total", "inkTotalMl", "total_ink_ml"]),
-            inkCyanL:        pickOptional(accountingCols, ["ink_cyan_l", "inkCyanL"]),
-            inkCyan:         pickOptional(accountingCols, ["ink_cyan", "inkcyan"]),
-            inkMagentaL:     pickOptional(accountingCols, ["ink_magenta_l", "inkMagentaL"]),
-            inkMagenta:      pickOptional(accountingCols, ["ink_magenta", "inkmagenta"]),
-            inkYellowL:      pickOptional(accountingCols, ["ink_yellow_l", "inkYellowL"]),
-            inkYellow:       pickOptional(accountingCols, ["ink_yellow", "inkyellow"]),
-            inkBlackL:       pickOptional(accountingCols, ["ink_black_l", "inkBlackL"]),
-            inkBlack:        pickOptional(accountingCols, ["ink_black", "inkblack"]),
-            inkWhiteL:       pickOptional(accountingCols, ["ink_white_l", "inkWhiteL"]),
-            inkWhite:        pickOptional(accountingCols, ["ink_white", "inkwhite"]),
+            readyAt: pick(
+              accountingCols,
+              ['ready_at', 'readyat', 'ready_at_utc', 'readyAt'],
+              'accounting.readyAt',
+            ),
+            printerName: pick(
+              accountingCols,
+              ['printer_name', 'printername', 'printer', 'printerName'],
+              'accounting.printerName',
+            ),
+            jobName: pickOptional(accountingCols, [
+              'job_name',
+              'jobname',
+              'job',
+              'jobName',
+              'title',
+            ]),
+            result: pick(
+              accountingCols,
+              ['result', 'status', 'print_result'],
+              'accounting.result',
+            ),
+            jobId: pickOptional(accountingCols, ['job_id', 'jobid', 'jobId']),
+            documentId: pickOptional(accountingCols, [
+              'document_id',
+              'documentid',
+              'documentId',
+            ]),
+            rowType: pickOptional(accountingCols, [
+              'row_type',
+              'rowtype',
+              'rowType',
+            ]),
+            mediaType: pickOptional(accountingCols, [
+              'media_type',
+              'mediatype',
+              'media',
+              'mediaType',
+              'medium',
+            ]),
+            printedAreaM2: pickOptional(accountingCols, [
+              'printed_area_m2',
+              'printedaream2',
+              'printed_area_metric',
+              'printedAreaM2',
+            ]),
+            printedAreaRaw: pickOptional(accountingCols, [
+              'printed_area',
+              'printedarea',
+            ]),
+            mediaLengthM: pickOptional(accountingCols, [
+              'media_length_m',
+              'medialengthm',
+              'media_length_metric',
+              'mediaLengthM',
+            ]),
+            mediaLengthRaw: pickOptional(accountingCols, [
+              'media_length_used',
+              'medialengthused',
+            ]),
+            durationSec: pickOptional(accountingCols, [
+              'duration_sec',
+              'durationsec',
+              'duration',
+              'durationSec',
+              'duration_seconds',
+            ]),
+            activeTimeSec: pickOptional(accountingCols, [
+              'active_time_sec',
+              'activetime_sec',
+              'activeTimeSec',
+              'active_seconds',
+            ]),
+            sourceFile: pickOptional(accountingCols, [
+              'source_file',
+              'sourcefile',
+              'sourceFile',
+            ]),
+            importedAt: pickOptional(accountingCols, [
+              'imported_at',
+              'importedat',
+              'importedAt',
+            ]),
+            inkTotalL: pickOptional(accountingCols, [
+              'ink_total_l',
+              'ink_total_liters',
+              'inkTotalL',
+              'total_ink_l',
+            ]),
+            inkTotalMl: pickOptional(accountingCols, [
+              'ink_total_ml',
+              'ink_total',
+              'inkTotalMl',
+              'total_ink_ml',
+            ]),
+            inkCyanL: pickOptional(accountingCols, ['ink_cyan_l', 'inkCyanL']),
+            inkCyan: pickOptional(accountingCols, ['ink_cyan', 'inkcyan']),
+            inkMagentaL: pickOptional(accountingCols, [
+              'ink_magenta_l',
+              'inkMagentaL',
+            ]),
+            inkMagenta: pickOptional(accountingCols, [
+              'ink_magenta',
+              'inkmagenta',
+            ]),
+            inkYellowL: pickOptional(accountingCols, [
+              'ink_yellow_l',
+              'inkYellowL',
+            ]),
+            inkYellow: pickOptional(accountingCols, [
+              'ink_yellow',
+              'inkyellow',
+            ]),
+            inkBlackL: pickOptional(accountingCols, [
+              'ink_black_l',
+              'inkBlackL',
+            ]),
+            inkBlack: pickOptional(accountingCols, ['ink_black', 'inkblack']),
+            inkWhiteL: pickOptional(accountingCols, [
+              'ink_white_l',
+              'inkWhiteL',
+            ]),
+            inkWhite: pickOptional(accountingCols, ['ink_white', 'inkwhite']),
           };
           accountingMap.readyAtLocalExpr = `${accountingMap.readyAt}`;
-          accountingMap.readyAtZonedExpr = zonedTimestampExpr(accountingMap.readyAt);
+          accountingMap.readyAtZonedExpr = zonedTimestampExpr(
+            accountingMap.readyAt,
+          );
         } catch {
           accountingMap = null;
         }
@@ -453,53 +675,66 @@ export async function handler(event) {
       });
       const accountingWhere = accountingMap
         ? buildSourceFilters(query, values, {
-            readyExpr: { local: accountingMap.readyAtLocalExpr, zoned: accountingMap.readyAtZonedExpr },
+            readyExpr: {
+              local: accountingMap.readyAtLocalExpr,
+              zoned: accountingMap.readyAtZonedExpr,
+            },
             printerExpr: accountingMap.printerName,
             resultExpr: accountingMap.result,
             rowTypeExpr: accountingMap.rowType,
             onlyPrintRows: true,
           })
-        : "where false";
+        : 'where false';
 
       const viewInk = buildInkExpressions(map);
       const viewHasInkExpr = buildInkPresenceExpr(viewInk);
       const viewHasInkChannelsExpr = buildInkChannelPresenceExpr(viewInk);
-      const viewSourceFileExpr = map.sourceFile ? `${map.sourceFile}` : "null::text";
+      const viewSourceFileExpr = map.sourceFile
+        ? `${map.sourceFile}`
+        : 'null::text';
       const viewLogicalJobExpr = buildLogicalJobExpr(map, map.readyAtLocalExpr);
-      const viewAreaExpr = squareMetersExpr(map.printedAreaM2, map.printedAreaRaw);
+      const viewAreaExpr = squareMetersExpr(
+        map.printedAreaM2,
+        map.printedAreaRaw,
+      );
       const viewLengthExpr = metersExpr(map.mediaLengthM, map.mediaLengthRaw);
       const accountingInk = accountingMap
         ? buildAccountingInkExpressions(accountingMap)
         : null;
       const accountingHasInkExpr = buildInkPresenceExpr(accountingInk);
-      const accountingHasInkChannelsExpr = buildInkChannelPresenceExpr(accountingInk);
-      const accountingSourceFileExpr = accountingMap?.sourceFile ? `${accountingMap.sourceFile}` : "null::text";
+      const accountingHasInkChannelsExpr =
+        buildInkChannelPresenceExpr(accountingInk);
+      const accountingSourceFileExpr = accountingMap?.sourceFile
+        ? `${accountingMap.sourceFile}`
+        : 'null::text';
       const accountingLogicalJobExpr = accountingMap
         ? buildLogicalJobExpr(accountingMap, accountingMap.readyAtLocalExpr)
-        : "null::text";
+        : 'null::text';
       const accountingAreaExpr = accountingMap
-        ? squareMetersExpr(accountingMap.printedAreaM2, accountingMap.printedAreaRaw)
-        : "null";
+        ? squareMetersExpr(
+            accountingMap.printedAreaM2,
+            accountingMap.printedAreaRaw,
+          )
+        : 'null';
       const accountingLengthExpr = accountingMap
         ? metersExpr(accountingMap.mediaLengthM, accountingMap.mediaLengthRaw)
-        : "null";
+        : 'null';
       const viewDurationExpr = buildDurationValueExpr(
-        map.durationSec ? `${map.durationSec}` : "null",
-        map.activeTimeSec ? `${map.activeTimeSec}` : "null"
+        map.durationSec ? `${map.durationSec}` : 'null',
+        map.activeTimeSec ? `${map.activeTimeSec}` : 'null',
       );
       const accountingDurationExpr = buildDurationValueExpr(
-        accountingMap?.durationSec ? `${accountingMap.durationSec}` : "null",
-        accountingMap?.activeTimeSec ? `${accountingMap.activeTimeSec}` : "null"
+        accountingMap?.durationSec ? `${accountingMap.durationSec}` : 'null',
+        accountingMap?.activeTimeSec
+          ? `${accountingMap.activeTimeSec}`
+          : 'null',
       );
 
       const limit = Math.min(
-        Math.max(parseInt(query.limit || "50", 10) || 50, 1),
-        200
+        Math.max(parseInt(query.limit || '50', 10) || 50, 1),
+        200,
       );
-      const offset = Math.max(
-        parseInt(query.offset || "0", 10) || 0,
-        0
-      );
+      const offset = Math.max(parseInt(query.offset || '0', 10) || 0, 0);
       values.push(limit + 1);
       const limitParam = values.length;
       values.push(offset);
@@ -517,12 +752,12 @@ export async function handler(event) {
             ${viewLengthExpr}::float8 as media_length_m,
             ${viewDurationExpr}::float8 as duration_sec,
             ${viewSourceFileExpr} as source_file,
-            ${viewInk.inkTotalExpr === "null" ? "null" : `${viewInk.inkTotalExpr}`}::float8 as ink_total_l,
-            ${(viewInk.inkCyanExpr || "null")}::float8 as ink_cyan_l,
-            ${(viewInk.inkMagentaExpr || "null")}::float8 as ink_magenta_l,
-            ${(viewInk.inkYellowExpr || "null")}::float8 as ink_yellow_l,
-            ${(viewInk.inkBlackExpr || "null")}::float8 as ink_black_l,
-            ${(viewInk.inkWhiteExpr || "null")}::float8 as ink_white_l,
+            ${viewInk.inkTotalExpr === 'null' ? 'null' : `${viewInk.inkTotalExpr}`}::float8 as ink_total_l,
+            ${viewInk.inkCyanExpr || 'null'}::float8 as ink_cyan_l,
+            ${viewInk.inkMagentaExpr || 'null'}::float8 as ink_magenta_l,
+            ${viewInk.inkYellowExpr || 'null'}::float8 as ink_yellow_l,
+            ${viewInk.inkBlackExpr || 'null'}::float8 as ink_black_l,
+            ${viewInk.inkWhiteExpr || 'null'}::float8 as ink_white_l,
             ${viewHasInkExpr} as has_ink_data,
             ${viewHasInkChannelsExpr} as has_ink_channels,
             ${viewLogicalJobExpr} as logical_job_key,
@@ -530,31 +765,35 @@ export async function handler(event) {
             null::timestamptz as imported_at
           from public.v_print_log_rows
           ${viewWhere}
-          ${accountingMap ? `
+          ${
+            accountingMap
+              ? `
           union all
           select
             ${accountingMap.readyAtZonedExpr} as ready_at,
             ${accountingMap.printerName} as printer_name,
-            ${accountingMap.jobName ? `${accountingMap.jobName}` : "null::text"} as job_name,
+            ${accountingMap.jobName ? `${accountingMap.jobName}` : 'null::text'} as job_name,
             ${accountingMap.result} as result,
-            ${accountingMap.mediaType ? `${accountingMap.mediaType}` : "null::text"} as media_type,
+            ${accountingMap.mediaType ? `${accountingMap.mediaType}` : 'null::text'} as media_type,
             ${accountingAreaExpr}::float8 as printed_area_m2,
             ${accountingLengthExpr}::float8 as media_length_m,
             ${accountingDurationExpr}::float8 as duration_sec,
             ${accountingSourceFileExpr} as source_file,
-            ${accountingInk?.inkTotalExpr === "null" ? "null" : `${accountingInk?.inkTotalExpr || "null"}`}::float8 as ink_total_l,
-            ${(accountingInk?.inkCyanExpr || "null")}::float8 as ink_cyan_l,
-            ${(accountingInk?.inkMagentaExpr || "null")}::float8 as ink_magenta_l,
-            ${(accountingInk?.inkYellowExpr || "null")}::float8 as ink_yellow_l,
-            ${(accountingInk?.inkBlackExpr || "null")}::float8 as ink_black_l,
-            ${(accountingInk?.inkWhiteExpr || "null")}::float8 as ink_white_l,
+            ${accountingInk?.inkTotalExpr === 'null' ? 'null' : `${accountingInk?.inkTotalExpr || 'null'}`}::float8 as ink_total_l,
+            ${accountingInk?.inkCyanExpr || 'null'}::float8 as ink_cyan_l,
+            ${accountingInk?.inkMagentaExpr || 'null'}::float8 as ink_magenta_l,
+            ${accountingInk?.inkYellowExpr || 'null'}::float8 as ink_yellow_l,
+            ${accountingInk?.inkBlackExpr || 'null'}::float8 as ink_black_l,
+            ${accountingInk?.inkWhiteExpr || 'null'}::float8 as ink_white_l,
             ${accountingHasInkExpr} as has_ink_data,
             ${accountingHasInkChannelsExpr} as has_ink_channels,
             ${accountingLogicalJobExpr} as logical_job_key,
             ${buildSourcePriorityExpr(accountingSourceFileExpr)} as source_rank,
-            ${accountingMap.importedAt ? zonedTimestampExpr(accountingMap.importedAt) : "null::timestamptz"} as imported_at
+            ${accountingMap.importedAt ? zonedTimestampExpr(accountingMap.importedAt) : 'null::timestamptz'} as imported_at
           from public.print_accounting_rows
-          ${accountingWhere}` : ""}
+          ${accountingWhere}`
+              : ''
+          }
         ),
         ranked as (
           select
@@ -594,14 +833,16 @@ export async function handler(event) {
 
       return {
         ok: true,
-        rows: visibleRows.map(row => ({
+        rows: visibleRows.map((row) => ({
           readyAt: row.readyAt,
           printerName: row.printerName,
           jobName: row.jobName,
           result: row.result,
           mediaType: row.mediaType,
-          printedAreaM2: row.printedAreaM2 == null ? null : Number(row.printedAreaM2),
-          mediaLengthM: row.mediaLengthM == null ? null : Number(row.mediaLengthM),
+          printedAreaM2:
+            row.printedAreaM2 == null ? null : Number(row.printedAreaM2),
+          mediaLengthM:
+            row.mediaLengthM == null ? null : Number(row.mediaLengthM),
           durationSec: row.durationSec == null ? null : Number(row.durationSec),
           inkTotalL: row.inkTotalL == null ? null : Number(row.inkTotalL),
           inkCyanL: row.inkCyanL == null ? null : Number(row.inkCyanL),

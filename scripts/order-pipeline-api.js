@@ -5,7 +5,9 @@
   if (!Filters) throw new Error('Missing PrintGuardOrderPipelineFilters');
 
   function t(key) {
-    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+    return window.I18N && typeof window.I18N.t === 'function'
+      ? window.I18N.t(key)
+      : key;
   }
 
   async function readJsonResponse(res, fallbackMessage) {
@@ -19,8 +21,13 @@
       }
     }
     if (!res.ok || payload.ok === false) {
-      const message = payload.error || fallbackMessage || `${t('processed.error.request-failed')} (${res.status})`;
-      const error = new Error(res.status >= 500 ? t('processed.error.database') : message);
+      const message =
+        payload.error ||
+        fallbackMessage ||
+        `${t('processed.error.request-failed')} (${res.status})`;
+      const error = new Error(
+        res.status >= 500 ? t('processed.error.database') : message,
+      );
       error.status = res.status;
       error.payload = payload;
       throw error;
@@ -29,7 +36,10 @@
   }
 
   function buildOrderPipelineUrl(filters) {
-    return '/.netlify/functions/order-pipeline?' + Filters.toQueryParams(filters).toString();
+    return (
+      '/.netlify/functions/order-pipeline?' +
+      Filters.toQueryParams(filters).toString()
+    );
   }
 
   async function loadOrderPipeline(options) {
@@ -46,89 +56,111 @@
     const params = new URLSearchParams({ detail: '1' });
     if (options.id) params.set('id', options.id);
     if (options.orderNumber) params.set('orderNumber', options.orderNumber);
-    const res = await options.fetchImpl('/.netlify/functions/order-pipeline?' + params.toString(), {
-      headers: options.headers || {},
-      cache: 'no-store',
-    });
+    const res = await options.fetchImpl(
+      '/.netlify/functions/order-pipeline?' + params.toString(),
+      {
+        headers: options.headers || {},
+        cache: 'no-store',
+      },
+    );
     return readJsonResponse(res, t('processed.error.pipeline-load'));
   }
 
   async function createReprintRequest(options) {
     const payload = options.payload || {};
-    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
-      method: 'POST',
-      headers: options.headers || {},
-      cache: 'no-store',
-      body: JSON.stringify({
-        action: 'reprint',
-        orderId: payload.orderId,
-        printFilePath: payload.printFilePath,
-        reason: payload.reason,
-        note: payload.note,
-        requestedBy: payload.requestedBy,
-        workstationId: payload.workstationId,
-      }),
-    });
+    const res = await options.fetchImpl(
+      '/.netlify/functions/processed-print-orders',
+      {
+        method: 'POST',
+        headers: options.headers || {},
+        cache: 'no-store',
+        body: JSON.stringify({
+          action: 'reprint',
+          orderId: payload.orderId,
+          printFilePath: payload.printFilePath,
+          reason: payload.reason,
+          note: payload.note,
+          requestedBy: payload.requestedBy,
+          workstationId: payload.workstationId,
+        }),
+      },
+    );
     return readJsonResponse(res, t('processed.toast.reprint-create-failed'));
   }
 
   async function loadReprintHistory(options) {
-    const orderIds = Array.from(new Set((options.orderIds || []).filter(Boolean)));
+    const orderIds = Array.from(
+      new Set((options.orderIds || []).filter(Boolean)),
+    );
     if (!orderIds.length) return { ok: true, requests: [] };
-    const params = new URLSearchParams({ reprintHistoryOrderIds: orderIds.join(',') });
-    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders?' + params.toString(), {
-      headers: options.headers || {},
-      cache: 'no-store',
+    const params = new URLSearchParams({
+      reprintHistoryOrderIds: orderIds.join(','),
     });
+    const res = await options.fetchImpl(
+      '/.netlify/functions/processed-print-orders?' + params.toString(),
+      {
+        headers: options.headers || {},
+        cache: 'no-store',
+      },
+    );
     return readJsonResponse(res, t('processed.error.reprint-history'));
   }
 
   async function resolveReprintRequest(options) {
     const payload = options.payload || {};
-    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
-      method: 'POST',
-      headers: options.headers || {},
-      cache: 'no-store',
-      body: JSON.stringify({
-        action: 'mark_reprinted',
-        orderId: payload.orderId,
-        printFilePath: payload.printFilePath,
-        confirmedBy: payload.confirmedBy,
-      }),
-    });
+    const res = await options.fetchImpl(
+      '/.netlify/functions/processed-print-orders',
+      {
+        method: 'POST',
+        headers: options.headers || {},
+        cache: 'no-store',
+        body: JSON.stringify({
+          action: 'mark_reprinted',
+          orderId: payload.orderId,
+          printFilePath: payload.printFilePath,
+          confirmedBy: payload.confirmedBy,
+        }),
+      },
+    );
     return readJsonResponse(res, t('processed.toast.reprint-resolve-failed'));
   }
 
   async function deleteReprintRequest(options) {
     const payload = options.payload || {};
-    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
-      method: 'POST',
-      headers: options.headers || {},
-      cache: 'no-store',
-      body: JSON.stringify({
-        action: payload.action || 'delete_reprint',
-        id: payload.id,
-      }),
-    });
+    const res = await options.fetchImpl(
+      '/.netlify/functions/processed-print-orders',
+      {
+        method: 'POST',
+        headers: options.headers || {},
+        cache: 'no-store',
+        body: JSON.stringify({
+          action: payload.action || 'delete_reprint',
+          id: payload.id,
+        }),
+      },
+    );
     return readJsonResponse(res, t('processed.toast.reprint-delete-failed'));
   }
 
   async function updateOrderAdminStatus(options) {
     const payload = options.payload || {};
-    const res = await options.fetchImpl('/.netlify/functions/processed-print-orders', {
-      method: 'POST',
-      headers: options.headers || {},
-      cache: 'no-store',
-      body: JSON.stringify({
-        action: payload.action,
-        processedOrderId: payload.processedOrderId,
-        orderId: payload.orderId,
-        orderName: payload.orderName,
-        orderNumber: payload.orderNumber,
-        externalOrderId: payload.externalOrderId,
-        note: payload.note,
-      }),
-    });
+    const res = await options.fetchImpl(
+      '/.netlify/functions/processed-print-orders',
+      {
+        method: 'POST',
+        headers: options.headers || {},
+        cache: 'no-store',
+        body: JSON.stringify({
+          action: payload.action,
+          processedOrderId: payload.processedOrderId,
+          orderId: payload.orderId,
+          orderName: payload.orderName,
+          orderNumber: payload.orderNumber,
+          externalOrderId: payload.externalOrderId,
+          note: payload.note,
+        }),
+      },
+    );
     return readJsonResponse(res, t('processed.toast.order-action-failed'));
   }
 

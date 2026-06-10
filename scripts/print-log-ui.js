@@ -17,7 +17,9 @@
   }
 
   function printResultLabel(result, i18n) {
-    const norm = String(result || '').trim().toLowerCase();
+    const norm = String(result || '')
+      .trim()
+      .toLowerCase();
     if (norm === 'done') return i18n('print.result.done');
     if (norm === 'abrt' || norm === 'aborted') return i18n('print.result.abrt');
     if (norm === 'deleted') return i18n('print.result.deleted');
@@ -25,7 +27,8 @@
   }
 
   function getPrintLogTodayQueueBasisLabel(basis) {
-    if (basis === 'reception_at_fallback_ready_at') return 'reception_at, fallback ready_at';
+    if (basis === 'reception_at_fallback_ready_at')
+      return 'reception_at, fallback ready_at';
     if (basis === 'ready_at') return 'ready_at';
     return 'arrival';
   }
@@ -50,16 +53,20 @@
     const lifecycle = getPrintLogLifecycleMetrics();
     const displayInk = getPrintLogSummaryInk(summary);
     const summaryChannels = getPrintLogInkChannels(summary);
-    const summaryBreakdown = summary?.inkDataAvailable && hasPrintLogInkBreakdown(summaryChannels)
-      ? formatPrintLogInkBreakdown(summaryChannels)
-      : '';
+    const summaryBreakdown =
+      summary?.inkDataAvailable && hasPrintLogInkBreakdown(summaryChannels)
+        ? formatPrintLogInkBreakdown(summaryChannels)
+        : '';
 
     elSet('pl-done-jobs', fmtInt(summary.doneJobs));
     elSet('pl-aborted-jobs', fmtInt(summary.abortedJobs));
     elSet('pl-deleted-jobs', fmtInt(summary.deletedJobs));
     elSet('pl-printed-area', fmtMeasure(summary.printedAreaM2, 'm²', 2));
     elSet('pl-media-length', fmtMeasure(summary.mediaLengthM, 'm', 2));
-    elSet('pl-est-ink', displayInk.inkL === null ? '—' : fmtMeasure(displayInk.inkL, 'L', 3));
+    elSet(
+      'pl-est-ink',
+      displayInk.inkL === null ? '—' : fmtMeasure(displayInk.inkL, 'L', 3),
+    );
     elSet('pl-duration', fmtDuration(summary.totalDurationSec));
     elSet('pl-sla-total', fmtInt(lifecycle.totalGroups));
     elSet('pl-sla-first-pass', fmtInt(lifecycle.firstPassCount));
@@ -94,24 +101,33 @@
     const grid = el('pl-compare-grid');
     if (!grid) return;
 
-    grid.innerHTML = printers.map(name => {
-      const rec = compare[name] || {};
-      const displayName = mapPrinterName(name);
-      const machineId = getPrintLogMachineId(name);
-      const ratio = machineId ? getPrintLogPeriodInkRatio(machineId) : null;
-      const directInk = canUseDirectInk ? getNullableNumber(rec.inkTotalL) : null;
-      const breakdown = formatPrintLogInkBreakdown(getPrintLogInkChannels(rec));
-      const displayInk = directInk !== null
-        ? directInk
-        : (ratio !== null && Number(rec.printedAreaM2) > 0 ? rec.printedAreaM2 * ratio : null);
+    grid.innerHTML = printers
+      .map((name) => {
+        const rec = compare[name] || {};
+        const displayName = mapPrinterName(name);
+        const machineId = getPrintLogMachineId(name);
+        const ratio = machineId ? getPrintLogPeriodInkRatio(machineId) : null;
+        const directInk = canUseDirectInk
+          ? getNullableNumber(rec.inkTotalL)
+          : null;
+        const breakdown = formatPrintLogInkBreakdown(
+          getPrintLogInkChannels(rec),
+        );
+        const displayInk =
+          directInk !== null
+            ? directInk
+            : ratio !== null && Number(rec.printedAreaM2) > 0
+              ? rec.printedAreaM2 * ratio
+              : null;
 
-      return `<div class="metric-block">
+        return `<div class="metric-block">
       <span class="metric-big">${fmtInt(rec.doneJobs || 0)}</span>
       <span class="metric-unit">${esc(displayName)}</span>
       <span class="metric-desc">${i18n('print.result.done')} · ${fmtMeasure(rec.printedAreaM2 || 0, 'm²', 2)} · ${fmtMeasure(rec.mediaLengthM || 0, 'm', 2)}${displayInk === null ? '' : ` · ${fmtMeasure(displayInk, 'L', 3)}`}</span>
       ${directInk !== null && breakdown ? `<span class="metric-desc">${esc(breakdown)}</span>` : ''}
     </div>`;
-    }).join('');
+      })
+      .join('');
   }
 
   function renderPrintLogTodayQueue(deps) {
@@ -133,9 +149,10 @@
     const today = ds();
     if (badge) badge.textContent = `příjem ${today}`;
     const queue = S.printLogTodayQueue;
-    const selectedPrinters = S.printLogPrinter === 'all'
-      ? ['Colorado-91', 'Colorado-92']
-      : [S.printLogPrinter];
+    const selectedPrinters =
+      S.printLogPrinter === 'all'
+        ? ['Colorado-91', 'Colorado-92']
+        : [S.printLogPrinter];
 
     if (!queue) {
       grid.innerHTML = `<div class="metric-block"><span class="metric-big">—</span><span class="metric-unit">Dnešní fronta</span><span class="metric-desc">Data se nepodařilo načíst</span></div>`;
@@ -144,7 +161,7 @@
     }
 
     const days = Array.isArray(queue.days) ? queue.days : [];
-    const byPrinter = new Map(days.map(row => [row.printerName, row]));
+    const byPrinter = new Map(days.map((row) => [row.printerName, row]));
     const totals = queue.totals || {};
     const totalJobs = Number(totals.totalJobs || 0);
     const uniqueJobs = Number(totals.uniqueJobs || 0);
@@ -154,10 +171,10 @@
       <span class="metric-big">${fmtInt(totalJobs)}</span>
       <span class="metric-unit">Celkem dnes</span>
       <span class="metric-desc">Unikátní úlohy ${fmtInt(uniqueJobs)} · Hotovo ${fmtInt(totals.doneJobs || 0)} · Abrt ${fmtInt(totals.abortedJobs || 0)} · Deleted ${fmtInt(totals.deletedJobs || 0)}</span>
-    </div>`
+    </div>`,
     ];
 
-    selectedPrinters.forEach(printerName => {
+    selectedPrinters.forEach((printerName) => {
       const row = byPrinter.get(printerName);
       cards.push(`<div class="metric-block">
       <span class="metric-big">${fmtInt(row?.totalJobs || 0)}</span>

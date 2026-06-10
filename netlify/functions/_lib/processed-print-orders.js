@@ -16,7 +16,9 @@ function normalizeSearchTerm(value) {
 }
 
 function upperOrEmpty(value) {
-  return String(value || '').trim().toUpperCase();
+  return String(value || '')
+    .trim()
+    .toUpperCase();
 }
 
 function normalizeOrderType(value) {
@@ -36,23 +38,30 @@ function isReprintOrderType(value) {
 function toIsoOrNull(value) {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
-  const normalized = cleaned.replace(/(\.\d{3})\d+([zZ]|[+-]\d{2}:?\d{2})$/, '$1$2');
+  const normalized = cleaned.replace(
+    /(\.\d{3})\d+([zZ]|[+-]\d{2}:?\d{2})$/,
+    '$1$2',
+  );
   const date = new Date(normalized);
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
 function normalizeBoolean(value) {
-  const cleaned = String(value == null ? '' : value).trim().toLowerCase();
+  const cleaned = String(value == null ? '' : value)
+    .trim()
+    .toLowerCase();
   if (!cleaned) return null;
   return cleaned === 'true' || cleaned === '1' || cleaned === 'yes';
 }
 
 function normalizePrintFiles(files) {
-  return (Array.isArray(files) ? files : []).map((file) => ({
-    printFilePath: cleanString(file.printFilePath),
-    copies: Number.isFinite(Number(file.copies)) ? Number(file.copies) : null,
-    pageSize: cleanString(file.pageSize),
-  })).filter((file) => file.printFilePath || file.pageSize);
+  return (Array.isArray(files) ? files : [])
+    .map((file) => ({
+      printFilePath: cleanString(file.printFilePath),
+      copies: Number.isFinite(Number(file.copies)) ? Number(file.copies) : null,
+      pageSize: cleanString(file.pageSize),
+    }))
+    .filter((file) => file.printFilePath || file.pageSize);
 }
 
 function normalizePrintFilesForDedupe(files) {
@@ -113,18 +122,40 @@ async function ensureProcessedPrintOrderTables(client) {
       updated_at timestamptz not null default now()
     )
   `);
-  await client.query(`alter table processed_print_orders add column if not exists order_dedupe_key text null`);
-  await client.query(`alter table processed_print_orders add column if not exists ignored boolean not null default false`);
-  await client.query(`alter table processed_print_orders add column if not exists ignore_reason text null`);
-  await client.query(`alter table processed_print_orders add column if not exists admin_status text null`);
-  await client.query(`alter table processed_print_orders add column if not exists admin_note text null`);
-  await client.query(`alter table processed_print_orders add column if not exists admin_updated_at timestamptz null`);
+  await client.query(
+    `alter table processed_print_orders add column if not exists order_dedupe_key text null`,
+  );
+  await client.query(
+    `alter table processed_print_orders add column if not exists ignored boolean not null default false`,
+  );
+  await client.query(
+    `alter table processed_print_orders add column if not exists ignore_reason text null`,
+  );
+  await client.query(
+    `alter table processed_print_orders add column if not exists admin_status text null`,
+  );
+  await client.query(
+    `alter table processed_print_orders add column if not exists admin_note text null`,
+  );
+  await client.query(
+    `alter table processed_print_orders add column if not exists admin_updated_at timestamptz null`,
+  );
   await client.query(`drop index if exists processed_print_orders_guid_idx`);
-  await client.query(`create index if not exists processed_print_orders_dedupe_key_idx on processed_print_orders (order_dedupe_key)`);
-  await client.query(`create index if not exists processed_print_orders_queued_idx on processed_print_orders (queued_date_time desc nulls last, id desc)`);
-  await client.query(`create index if not exists processed_print_orders_source_month_idx on processed_print_orders (source_month)`);
-  await client.query(`create index if not exists processed_print_orders_source_path_idx on processed_print_orders (source_xml_path)`);
-  await client.query(`create index if not exists processed_print_orders_ignored_idx on processed_print_orders (ignored, admin_status)`);
+  await client.query(
+    `create index if not exists processed_print_orders_dedupe_key_idx on processed_print_orders (order_dedupe_key)`,
+  );
+  await client.query(
+    `create index if not exists processed_print_orders_queued_idx on processed_print_orders (queued_date_time desc nulls last, id desc)`,
+  );
+  await client.query(
+    `create index if not exists processed_print_orders_source_month_idx on processed_print_orders (source_month)`,
+  );
+  await client.query(
+    `create index if not exists processed_print_orders_source_path_idx on processed_print_orders (source_xml_path)`,
+  );
+  await client.query(
+    `create index if not exists processed_print_orders_ignored_idx on processed_print_orders (ignored, admin_status)`,
+  );
 
   await client.query(`
     create table if not exists processed_order_reprint_requests (
@@ -142,14 +173,30 @@ async function ensureProcessedPrintOrderTables(client) {
       note text null
     )
   `);
-  await client.query(`alter table processed_order_reprint_requests add column if not exists reason text null`);
-  await client.query(`alter table processed_order_reprint_requests add column if not exists note text null`);
-  await client.query(`alter table processed_order_reprint_requests add column if not exists confirmed_at timestamptz null`);
-  await client.query(`alter table processed_order_reprint_requests add column if not exists confirmed_by text null`);
-  await client.query(`create index if not exists processed_reprint_order_idx on processed_order_reprint_requests (order_id, requested_at desc)`);
-  await client.query(`create index if not exists processed_reprint_order_status_idx on processed_order_reprint_requests (order_id, status, requested_at desc)`);
-  await client.query(`create index if not exists processed_reprint_status_order_idx on processed_order_reprint_requests (status, order_id, requested_at desc)`);
-  await client.query(`create index if not exists processed_reprint_order_name_idx on processed_order_reprint_requests (order_name)`);
+  await client.query(
+    `alter table processed_order_reprint_requests add column if not exists reason text null`,
+  );
+  await client.query(
+    `alter table processed_order_reprint_requests add column if not exists note text null`,
+  );
+  await client.query(
+    `alter table processed_order_reprint_requests add column if not exists confirmed_at timestamptz null`,
+  );
+  await client.query(
+    `alter table processed_order_reprint_requests add column if not exists confirmed_by text null`,
+  );
+  await client.query(
+    `create index if not exists processed_reprint_order_idx on processed_order_reprint_requests (order_id, requested_at desc)`,
+  );
+  await client.query(
+    `create index if not exists processed_reprint_order_status_idx on processed_order_reprint_requests (order_id, status, requested_at desc)`,
+  );
+  await client.query(
+    `create index if not exists processed_reprint_status_order_idx on processed_order_reprint_requests (status, order_id, requested_at desc)`,
+  );
+  await client.query(
+    `create index if not exists processed_reprint_order_name_idx on processed_order_reprint_requests (order_name)`,
+  );
   await client.query(`
     create index if not exists processed_reprint_pending_lookup_idx
       on processed_order_reprint_requests (order_id, print_file_path)
@@ -169,7 +216,9 @@ function chunkArray(values, size) {
 
 async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
   await ensureProcessedPrintOrderTables(client);
-  const paths = Array.from(new Set((sourceXmlPaths || []).map(cleanString).filter(Boolean)));
+  const paths = Array.from(
+    new Set((sourceXmlPaths || []).map(cleanString).filter(Boolean)),
+  );
   const known = new Map();
   for (const chunk of chunkArray(paths, 500)) {
     const result = await client.query(
@@ -178,7 +227,7 @@ async function listKnownProcessedXmlHashes(client, sourceXmlPaths) {
         from processed_print_orders
         where source_xml_path = any($1::text[])
       `,
-      [chunk]
+      [chunk],
     );
     for (const row of result.rows) {
       known.set(row.source_xml_path, row.source_xml_hash);
@@ -196,8 +245,14 @@ function mapProcessedOrderRow(row) {
     xmlFileName: row.xml_file_name,
     guid: row.guid,
     status: row.status,
-    orderDateTime: row.order_date_time instanceof Date ? row.order_date_time.toISOString() : String(row.order_date_time || ''),
-    queuedDateTime: row.queued_date_time instanceof Date ? row.queued_date_time.toISOString() : String(row.queued_date_time || ''),
+    orderDateTime:
+      row.order_date_time instanceof Date
+        ? row.order_date_time.toISOString()
+        : String(row.order_date_time || ''),
+    queuedDateTime:
+      row.queued_date_time instanceof Date
+        ? row.queued_date_time.toISOString()
+        : String(row.queued_date_time || ''),
     printerName: row.printer_name,
     runWorkflow: row.run_workflow,
     workflowName: row.workflow_name,
@@ -210,16 +265,31 @@ function mapProcessedOrderRow(row) {
     ignoreReason: row.ignore_reason,
     adminStatus: row.admin_status,
     adminNote: row.admin_note,
-    adminUpdatedAt: row.admin_updated_at instanceof Date ? row.admin_updated_at.toISOString() : String(row.admin_updated_at || ''),
+    adminUpdatedAt:
+      row.admin_updated_at instanceof Date
+        ? row.admin_updated_at.toISOString()
+        : String(row.admin_updated_at || ''),
     sourceMonth: row.source_month,
-    importedAt: row.imported_at instanceof Date ? row.imported_at.toISOString() : String(row.imported_at || ''),
-    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+    importedAt:
+      row.imported_at instanceof Date
+        ? row.imported_at.toISOString()
+        : String(row.imported_at || ''),
+    updatedAt:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : String(row.updated_at || ''),
   };
 }
 
 async function updateProcessedPrintOrderAdminStatus(client, input) {
   await ensureProcessedPrintOrderTables(client);
-  const id = Number(input && (input.id || input.orderId || input.processedOrderId || input.processed_order_id));
+  const id = Number(
+    input &&
+      (input.id ||
+        input.orderId ||
+        input.processedOrderId ||
+        input.processed_order_id),
+  );
   const orderName = cleanString(input && (input.orderName || input.order_name));
   const action = cleanString(input && input.action);
   const note = cleanString(input && input.note);
@@ -250,7 +320,7 @@ async function updateProcessedPrintOrderAdminStatus(client, input) {
       )
       returning *
     `,
-    [Number.isInteger(id) && id > 0 ? id : 0, orderName, action, note]
+    [Number.isInteger(id) && id > 0 ? id : 0, orderName, action, note],
   );
   const row = result.rows[0];
   if (!row) {
@@ -267,7 +337,9 @@ async function upsertProcessedPrintOrder(client, input) {
   const sourceXmlPath = cleanString(input && input.sourceXmlPath);
   const sourceXmlHash = cleanString(input && input.sourceXmlHash);
   if (!orderName || !sourceXmlPath || !sourceXmlHash) {
-    throw new Error('Processed order requires orderName, sourceXmlPath, and sourceXmlHash');
+    throw new Error(
+      'Processed order requires orderName, sourceXmlPath, and sourceXmlHash',
+    );
   }
 
   const order = {
@@ -294,9 +366,10 @@ async function upsertProcessedPrintOrder(client, input) {
 
   const existing = await client.query(
     `select source_xml_hash from processed_print_orders where order_key = $1 limit 1`,
-    [orderKey]
+    [orderKey],
   );
-  const wasUnchanged = existing.rows[0] && existing.rows[0].source_xml_hash === sourceXmlHash;
+  const wasUnchanged =
+    existing.rows[0] && existing.rows[0].source_xml_hash === sourceXmlHash;
 
   const result = await client.query(
     `
@@ -350,7 +423,7 @@ async function upsertProcessedPrintOrder(client, input) {
       order.sourceXmlPath,
       order.sourceXmlHash,
       order.sourceMonth,
-    ]
+    ],
   );
 
   const inserted = Boolean(result.rows[0] && result.rows[0].inserted);
@@ -405,7 +478,7 @@ async function listProcessedPrintOrders(client, options = {}) {
       order by queued_date_time desc nulls last, updated_at desc, id desc
       limit $1
     `,
-    params
+    params,
   );
   return result.rows.map(mapProcessedOrderRow);
 }
@@ -427,11 +500,12 @@ async function listProcessedOrderMonths(client) {
 async function createReprintRequest(client, input) {
   await ensureProcessedPrintOrderTables(client);
   const orderId = Number(input && input.orderId);
-  if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
+  if (!Number.isInteger(orderId) || orderId <= 0)
+    throw new Error('Missing order id');
 
   const orderResult = await client.query(
     `select id, order_name, print_files from processed_print_orders where id = $1 and coalesce(ignored, false) = false limit 1`,
-    [orderId]
+    [orderId],
   );
   const order = orderResult.rows[0];
   if (!order) {
@@ -475,7 +549,7 @@ async function createReprintRequest(client, input) {
       cleanString(input.requestedBy),
       cleanString(input.workstationId),
       note,
-    ]
+    ],
   );
 
   const row = result.rows[0];
@@ -486,8 +560,14 @@ async function createReprintRequest(client, input) {
     printFilePath: row.print_file_path,
     reason: row.reason,
     requestedBy: row.requested_by,
-    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
-    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    requestedAt:
+      row.requested_at instanceof Date
+        ? row.requested_at.toISOString()
+        : String(row.requested_at || ''),
+    confirmedAt:
+      row.confirmed_at instanceof Date
+        ? row.confirmed_at.toISOString()
+        : String(row.confirmed_at || ''),
     confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
@@ -498,7 +578,8 @@ async function createReprintRequest(client, input) {
 async function resolveReprintRequest(client, input) {
   await ensureProcessedPrintOrderTables(client);
   const orderId = Number(input && input.orderId);
-  if (!Number.isInteger(orderId) || orderId <= 0) throw new Error('Missing order id');
+  if (!Number.isInteger(orderId) || orderId <= 0)
+    throw new Error('Missing order id');
   const printFilePath = cleanString(input && input.printFilePath);
   const confirmedBy = cleanString(input && input.confirmedBy);
 
@@ -519,7 +600,7 @@ async function resolveReprintRequest(client, input) {
       )
       returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, confirmed_by, workstation_id, status, note
     `,
-    [orderId, printFilePath, confirmedBy]
+    [orderId, printFilePath, confirmedBy],
   );
 
   const row = result.rows[0];
@@ -536,8 +617,14 @@ async function resolveReprintRequest(client, input) {
     printFilePath: row.print_file_path,
     reason: row.reason,
     requestedBy: row.requested_by,
-    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
-    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    requestedAt:
+      row.requested_at instanceof Date
+        ? row.requested_at.toISOString()
+        : String(row.requested_at || ''),
+    confirmedAt:
+      row.confirmed_at instanceof Date
+        ? row.confirmed_at.toISOString()
+        : String(row.confirmed_at || ''),
     confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
@@ -548,7 +635,8 @@ async function resolveReprintRequest(client, input) {
 async function deleteReprintRequest(client, input) {
   await ensureProcessedPrintOrderTables(client);
   const id = Number(input && input.id);
-  if (!Number.isInteger(id) || id <= 0) throw new Error('Missing reprint request id');
+  if (!Number.isInteger(id) || id <= 0)
+    throw new Error('Missing reprint request id');
   const onlyPending = Boolean(input && input.onlyPending);
 
   const result = await client.query(
@@ -558,11 +646,15 @@ async function deleteReprintRequest(client, input) {
         and ($2::boolean = false or status = 'pending')
       returning id, order_id, order_name, print_file_path, reason, requested_by, requested_at, confirmed_at, confirmed_by, workstation_id, status, note
     `,
-    [id, onlyPending]
+    [id, onlyPending],
   );
   const row = result.rows[0];
   if (!row) {
-    const error = new Error(onlyPending ? 'Pending reprint request not found' : 'Reprint request not found');
+    const error = new Error(
+      onlyPending
+        ? 'Pending reprint request not found'
+        : 'Reprint request not found',
+    );
     error.statusCode = 404;
     throw error;
   }
@@ -573,8 +665,14 @@ async function deleteReprintRequest(client, input) {
     printFilePath: row.print_file_path,
     reason: row.reason,
     requestedBy: row.requested_by,
-    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
-    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    requestedAt:
+      row.requested_at instanceof Date
+        ? row.requested_at.toISOString()
+        : String(row.requested_at || ''),
+    confirmedAt:
+      row.confirmed_at instanceof Date
+        ? row.confirmed_at.toISOString()
+        : String(row.confirmed_at || ''),
     confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,
@@ -584,9 +682,13 @@ async function deleteReprintRequest(client, input) {
 
 async function listReprintRequests(client, orderIds) {
   await ensureProcessedPrintOrderTables(client);
-  const ids = Array.from(new Set((Array.isArray(orderIds) ? orderIds : [])
-    .map((value) => Number(value))
-    .filter((value) => Number.isInteger(value) && value > 0)));
+  const ids = Array.from(
+    new Set(
+      (Array.isArray(orderIds) ? orderIds : [])
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    ),
+  );
   if (!ids.length) return [];
 
   const result = await client.query(
@@ -597,7 +699,7 @@ async function listReprintRequests(client, orderIds) {
       where order_id = any($1::bigint[])
       order by requested_at desc, id desc
     `,
-    [ids]
+    [ids],
   );
 
   return result.rows.map((row) => ({
@@ -607,8 +709,14 @@ async function listReprintRequests(client, orderIds) {
     printFilePath: row.print_file_path,
     reason: row.reason,
     requestedBy: row.requested_by,
-    requestedAt: row.requested_at instanceof Date ? row.requested_at.toISOString() : String(row.requested_at || ''),
-    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    requestedAt:
+      row.requested_at instanceof Date
+        ? row.requested_at.toISOString()
+        : String(row.requested_at || ''),
+    confirmedAt:
+      row.confirmed_at instanceof Date
+        ? row.confirmed_at.toISOString()
+        : String(row.confirmed_at || ''),
     confirmedBy: row.confirmed_by,
     workstationId: row.workstation_id,
     status: row.status,

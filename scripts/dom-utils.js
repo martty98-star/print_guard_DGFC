@@ -26,7 +26,11 @@
     let actionConfig = null;
     if (typeof action === 'function') {
       actionConfig = { label: 'Vrátit zpět', onClick: action };
-    } else if (action && typeof action === 'object' && typeof action.onClick === 'function') {
+    } else if (
+      action &&
+      typeof action === 'object' &&
+      typeof action.onClick === 'function'
+    ) {
       actionConfig = {
         label: action.label || 'Vrátit zpět',
         onClick: action.onClick,
@@ -47,13 +51,14 @@
     }
 
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.add('hidden'), actionConfig ? 5000 : 3000);
+    toastTimer = setTimeout(
+      () => toast.classList.add('hidden'),
+      actionConfig ? 5000 : 3000,
+    );
   }
 
   function showConfirm(input, onOk) {
-    const cfg = typeof input === 'object' && input
-      ? input
-      : { body: input };
+    const cfg = typeof input === 'object' && input ? input : { body: input };
     const title = cfg.title || 'Potvrzeni';
     const body = cfg.body || cfg.text || '';
     const confirmLabel = cfg.confirmLabel || 'Potvrdit';
@@ -66,7 +71,10 @@
     el('confirm-cancel').textContent = cancelLabel;
     modal.classList.remove('hidden');
     const close = () => modal.classList.add('hidden');
-    el('confirm-ok').onclick = () => { close(); onOk(); };
+    el('confirm-ok').onclick = () => {
+      close();
+      onOk();
+    };
     el('confirm-cancel').onclick = close;
     el('confirm-close').onclick = close;
   }

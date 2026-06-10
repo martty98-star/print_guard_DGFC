@@ -16,7 +16,10 @@
       sessionStorage.removeItem('pg_sw_updated');
       const message = `Nová verze aplikace byla načtena (${APP_VERSION})`;
       showToast(message, 'success');
-      if ('Notification' in global && global.Notification.permission === 'granted') {
+      if (
+        'Notification' in global &&
+        global.Notification.permission === 'granted'
+      ) {
         try {
           new global.Notification('PrintGuard update', {
             body: message,
@@ -38,11 +41,14 @@
     });
 
     const requestUpdate = () => {
-      navigator.serviceWorker.getRegistration().then((registration) => {
-        if (registration) {
-          registration.update().catch(() => {});
-        }
-      }).catch(() => {});
+      navigator.serviceWorker
+        .getRegistration()
+        .then((registration) => {
+          if (registration) {
+            registration.update().catch(() => {});
+          }
+        })
+        .catch(() => {});
     };
 
     global.addEventListener('focus', requestUpdate);

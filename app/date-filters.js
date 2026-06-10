@@ -3,7 +3,8 @@
 
 (function attachPrintGuardDateFilters(global) {
   function createDateFilters(deps) {
-    const { Reports, S, el, loadPrintLog, renderCoHistory, renderStockLog } = deps;
+    const { Reports, S, el, loadPrintLog, renderCoHistory, renderStockLog } =
+      deps;
 
     function dateRangeFilter(timestamp, from, to) {
       return Reports.date.dateRangeFilter(timestamp, from, to);
@@ -11,17 +12,18 @@
 
     function applyPreset(range, target) {
       const now = new Date();
-      const p = n => String(n).padStart(2, '0');
-      const fmt = d => `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      const p = (n) => String(n).padStart(2, '0');
+      const fmt = (d) =>
+        `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
       const todayStr = fmt(now);
       let fromStr = '';
       if (range === 'month') {
-        fromStr = `${now.getFullYear()}-${p(now.getMonth()+1)}-01`;
+        fromStr = `${now.getFullYear()}-${p(now.getMonth() + 1)}-01`;
       } else if (range === 'year') {
         fromStr = `${now.getFullYear()}-01-01`;
       } else {
         const d = new Date(now);
-        d.setDate(d.getDate() - parseInt(range));
+        d.setDate(d.getDate() - parseInt(range, 10));
         fromStr = fmt(d);
       }
       if (target === 'log') {

@@ -5,7 +5,9 @@ const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
 const { withClient } = require('../netlify/functions/_lib/db');
-const { ensurePrintOrdersTable } = require('../netlify/functions/_lib/postpurchase-orders');
+const {
+  ensurePrintOrdersTable,
+} = require('../netlify/functions/_lib/postpurchase-orders');
 
 const SOURCE = 'submit_tool';
 const WORKFLOW_STATUS = 'WorkflowRun';
@@ -49,7 +51,10 @@ function getDateFolders(days, explicitDate) {
 }
 
 function sha256(value) {
-  return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(String(value || ''), 'utf8')
+    .digest('hex');
 }
 
 function parseKeyValues(value) {
@@ -67,21 +72,30 @@ function parseSubmitToolLine(rawLine) {
   const line = String(rawLine || '').trim();
   if (!line) return null;
 
-  const match = line.match(/^(\d{4}-\d{2}-\d{2}),(\d{2})\.(\d{2})\.(\d{2})\.(\d{3}),([^,]+),(.+)$/);
+  const match = line.match(
+    /^(\d{4}-\d{2}-\d{2}),(\d{2})\.(\d{2})\.(\d{2})\.(\d{3}),([^,]+),(.+)$/,
+  );
   if (!match) return null;
 
   const [, date, hh, mm, ss, ms, moduleName, message] = match;
-  const messageMatch = message.trim().match(/^(PrintJob|OpenPrintJob)\s+(\S+)(?:,\s*(.*))?$/);
+  const messageMatch = message
+    .trim()
+    .match(/^(PrintJob|OpenPrintJob)\s+(\S+)(?:,\s*(.*))?$/);
   if (!messageMatch) return null;
 
   const [, eventType, orderIdentifier, attrsText] = messageMatch;
   const attrs = parseKeyValues(attrsText);
-  const eventStatus = attrs.status || (attrs.runWF ? `runWF=${attrs.runWF}` : '');
+  const eventStatus =
+    attrs.status || (attrs.runWF ? `runWF=${attrs.runWF}` : '');
 
   if (eventType === 'PrintJob' && eventStatus === 'Opened') {
     return { skipped: true, reason: 'opened-noise' };
   }
-  if (eventType === 'OpenPrintJob' && attrs.print === 'False' && attrs.runWF === 'True') {
+  if (
+    eventType === 'OpenPrintJob' &&
+    attrs.print === 'False' &&
+    attrs.runWF === 'True'
+  ) {
     return { skipped: true, reason: 'runwf-noise' };
   }
   if (eventType !== 'PrintJob' || eventStatus !== WORKFLOW_STATUS) return null;
@@ -92,7 +106,12 @@ function parseSubmitToolLine(rawLine) {
   const rawLineHash = sha256(line);
   // WorkflowRun is the durable marker that Submit Tool actually started
   // workflow execution; Opened and runWF=True are intermediate noise.
-  const lifecycleDedupeKey = [SOURCE, orderIdentifier, WORKFLOW_STATUS, eventAtIso || rawLineHash].join('|');
+  const lifecycleDedupeKey = [
+    SOURCE,
+    orderIdentifier,
+    WORKFLOW_STATUS,
+    eventAtIso || rawLineHash,
+  ].join('|');
 
   return {
     source: SOURCE,
@@ -125,8 +144,12 @@ async function ensureLifecycleEventsTable(client) {
       created_at timestamptz not null default now()
     )
   `);
-  await client.query(`alter table print_lifecycle_events add column if not exists source_module text null`);
-  await client.query(`alter table print_lifecycle_events add column if not exists lifecycle_dedupe_key text null`);
+  await client.query(
+    `alter table print_lifecycle_events add column if not exists source_module text null`,
+  );
+  await client.query(
+    `alter table print_lifecycle_events add column if not exists lifecycle_dedupe_key text null`,
+  );
   await client.query(`
     update print_lifecycle_events
     set lifecycle_dedupe_key = concat_ws('|', source, order_identifier, coalesce(event_status, ''), to_char(event_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
@@ -168,7 +191,7 @@ async function findMatchingOrder(client, identifier) {
       order by coalesce(received_at, api_seen_at) desc, id desc
       limit 1
     `,
-    [candidates]
+    [candidates],
   );
   return result.rows[0] || null;
 }
@@ -210,7 +233,7 @@ async function insertLifecycleEvent(client, event, matchedOrder) {
       event.raw_line,
       event.raw_line_hash,
       event.lifecycle_dedupe_key,
-    ]
+    ],
   );
   return Boolean(result.rows[0] && result.rows[0].inserted);
 }
@@ -242,7 +265,7 @@ async function updateSubmitToolStatus(client, event, matchedOrder) {
         )
       returning external_order_id
     `,
-    [matchedOrder.external_order_id, event.event_at]
+    [matchedOrder.external_order_id, event.event_at],
   );
 
   return result.rowCount > 0;
@@ -258,8 +281,10 @@ async function listTxtFiles(folderPath) {
   }
 
   return entries
-    .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.txt'))
-    .map(entry => path.join(folderPath, entry.name));
+    .filter(
+      (entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.txt'),
+    )
+    .map((entry) => path.join(folderPath, entry.name));
 }
 
 async function readEventsFromFile(filePath, stats) {
@@ -281,7 +306,9 @@ async function readEventsFromFile(filePath, stats) {
       }
     } catch (error) {
       stats.parseErrors += 1;
-      console.warn(`[submit-tool] parse error ${filePath}:${index + 1} ${error.message}`);
+      console.warn(
+        `[submit-tool] parse error ${filePath}:${index + 1} ${error.message}`,
+      );
     }
   }
 
@@ -316,12 +343,23 @@ async function syncSubmitToolLogs(client, options) {
       const events = await readEventsFromFile(filePath, stats);
 
       for (const event of events) {
-        const matchedOrder = await findMatchingOrder(client, event.order_identifier);
-        const inserted = await insertLifecycleEvent(client, event, matchedOrder);
+        const matchedOrder = await findMatchingOrder(
+          client,
+          event.order_identifier,
+        );
+        const inserted = await insertLifecycleEvent(
+          client,
+          event,
+          matchedOrder,
+        );
         if (inserted) stats.eventsInserted += 1;
         else stats.duplicateEventsSkipped += 1;
 
-        const updated = await updateSubmitToolStatus(client, event, matchedOrder);
+        const updated = await updateSubmitToolStatus(
+          client,
+          event,
+          matchedOrder,
+        );
         if (updated) {
           stats.ordersUpdated += 1;
         } else if (!matchedOrder) {
@@ -350,15 +388,25 @@ async function main() {
     date: args.date ? String(args.date) : '',
   };
 
-  console.log(`[submit-tool] sync start root=${options.root} days=${options.date || options.days}`);
+  console.log(
+    `[submit-tool] sync start root=${options.root} days=${options.date || options.days}`,
+  );
 
-  const result = await withClient(client => syncSubmitToolLogs(client, options));
+  const result = await withClient((client) =>
+    syncSubmitToolLogs(client, options),
+  );
 
   console.log('[submit-tool] sync success');
-  console.log(`[submit-tool] folders=${result.foldersScanned} files=${result.filesScanned} lines=${result.linesRead} workflowEvents=${result.linesParsed} noisySkipped=${result.noisyEventsSkipped} duplicateSkipped=${result.duplicateEventsSkipped} parseErrors=${result.parseErrors}`);
-  console.log(`[submit-tool] eventsInserted=${result.eventsInserted} ordersUpdated=${result.ordersUpdated} unmatched=${result.unmatchedIdentifiers.length}`);
+  console.log(
+    `[submit-tool] folders=${result.foldersScanned} files=${result.filesScanned} lines=${result.linesRead} workflowEvents=${result.linesParsed} noisySkipped=${result.noisyEventsSkipped} duplicateSkipped=${result.duplicateEventsSkipped} parseErrors=${result.parseErrors}`,
+  );
+  console.log(
+    `[submit-tool] eventsInserted=${result.eventsInserted} ordersUpdated=${result.ordersUpdated} unmatched=${result.unmatchedIdentifiers.length}`,
+  );
   if (result.unmatchedIdentifiers.length) {
-    console.log(`[submit-tool] unmatchedIdentifiers=${result.unmatchedIdentifiers.slice(0, 50).join(',')}`);
+    console.log(
+      `[submit-tool] unmatchedIdentifiers=${result.unmatchedIdentifiers.slice(0, 50).join(',')}`,
+    );
   }
 }
 

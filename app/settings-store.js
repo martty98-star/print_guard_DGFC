@@ -25,7 +25,7 @@
 
   async function loadSettingsFromIDB() {
     const all = await idbAll(ST_SETTINGS);
-    const rec = all.find(r => r.key === 'config');
+    const rec = all.find((r) => r.key === 'config');
     if (!rec) return;
     if (rec.weeksN != null) cfg.weeksN = rec.weeksN;
     if (rec.rollingN != null) cfg.rollingN = rec.rollingN;

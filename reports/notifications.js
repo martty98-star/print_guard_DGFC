@@ -1,17 +1,22 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
-  const stockApi = root.stock || (
-    typeof module !== 'undefined' && module.exports
+  const stockApi =
+    root.stock ||
+    (typeof module !== 'undefined' && module.exports
       ? require('./stock.js')
-      : null
-  );
+      : null);
 
   function buildStockNotificationCandidate(item, movements, config, nowInput) {
     if (!stockApi || typeof stockApi.buildStockSummary !== 'function') {
       return null;
     }
 
-    const summary = stockApi.buildStockSummary(item, movements, config, nowInput);
+    const summary = stockApi.buildStockSummary(
+      item,
+      movements,
+      config,
+      nowInput,
+    );
     const name = item.name || item.articleNumber || 'Položka';
     const articleNumber = String(item.articleNumber || '').trim();
     const unit = item.unit || 'ks';
@@ -57,10 +62,17 @@
     return null;
   }
 
-  function buildStockNotificationCandidates(items, movements, config, nowInput) {
+  function buildStockNotificationCandidates(
+    items,
+    movements,
+    config,
+    nowInput,
+  ) {
     return (items || [])
-      .filter(item => item && item.isActive !== false)
-      .map(item => buildStockNotificationCandidate(item, movements, config, nowInput))
+      .filter((item) => item && item.isActive !== false)
+      .map((item) =>
+        buildStockNotificationCandidate(item, movements, config, nowInput),
+      )
       .filter(Boolean);
   }
 
@@ -70,7 +82,7 @@
         context?.items,
         context?.movements,
         context?.config,
-        context?.now
+        context?.now,
       ),
     };
   }

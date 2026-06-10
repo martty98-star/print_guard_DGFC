@@ -5,8 +5,7 @@
 
   function getPdfProxyBase() {
     const configured = String(
-      window.PRINTGUARD_PDF_PROXY_BASE ||
-      DEFAULT_PDF_PROXY_BASE
+      window.PRINTGUARD_PDF_PROXY_BASE || DEFAULT_PDF_PROXY_BASE,
     ).trim();
     return configured.replace(/\/+$/, '');
   }
@@ -41,9 +40,9 @@
   }
 
   function openPdfUrl(options) {
-    const pdfUrl = String(options && options.url || '').trim();
+    const pdfUrl = String((options && options.url) || '').trim();
     if (!pdfUrl) return;
-    const showToast = options && options.showToast || function noop() {};
+    const showToast = (options && options.showToast) || function noop() {};
     try {
       window.open(pdfUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {

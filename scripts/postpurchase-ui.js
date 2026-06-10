@@ -9,7 +9,9 @@
   const PdfOpen = window.PrintGuardPdfOpen;
 
   function t(key) {
-    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+    return window.I18N && typeof window.I18N.t === 'function'
+      ? window.I18N.t(key)
+      : key;
   }
 
   if (!Api || !Filters || !Render || !ReprintModal || !ReprintXml || !PdfOpen) {
@@ -44,25 +46,37 @@
     if (!state.S || !state.cfg || !state.el || !state.elSet) {
       throw new Error('Missing Processed Print Orders UI dependencies');
     }
-    if (!(state.reprintPendingKeys instanceof Set)) state.reprintPendingKeys = new Set();
-    if (!(state.reprintHistoryByKey instanceof Map)) state.reprintHistoryByKey = new Map();
-    if (!(state.reprintActionStateByKey instanceof Map)) state.reprintActionStateByKey = new Map();
-    if (!(state.reprintStateTimers instanceof Map)) state.reprintStateTimers = new Map();
+    if (!(state.reprintPendingKeys instanceof Set))
+      state.reprintPendingKeys = new Set();
+    if (!(state.reprintHistoryByKey instanceof Map))
+      state.reprintHistoryByKey = new Map();
+    if (!(state.reprintActionStateByKey instanceof Map))
+      state.reprintActionStateByKey = new Map();
+    if (!(state.reprintStateTimers instanceof Map))
+      state.reprintStateTimers = new Map();
   }
 
   function cleanApiError(error) {
     if (typeof state.postPurchaseErrorMessage === 'function') {
       return state.postPurchaseErrorMessage(error);
     }
-    return error && error.message ? error.message : t('processed.error.database');
+    return error && error.message
+      ? error.message
+      : t('processed.error.database');
   }
 
   function updateMonthFilter(months) {
     const select = state.el('postpurchase-month-filter');
     if (!select) return;
     const current = state.S.postPurchaseMonth || '';
-    const options = [`<option value="">${t('processed.month.all')}</option>`]
-      .concat((months || []).map(month => `<option value="${state.esc(month)}">${state.esc(month)}</option>`));
+    const options = [
+      `<option value="">${t('processed.month.all')}</option>`,
+    ].concat(
+      (months || []).map(
+        (month) =>
+          `<option value="${state.esc(month)}">${state.esc(month)}</option>`,
+      ),
+    );
     select.innerHTML = options.join('');
     select.value = current;
   }
@@ -82,17 +96,21 @@
     if (advanced) {
       advanced.open = Boolean(
         (state.S.postPurchaseReprint || 'all') !== 'all' ||
-        Boolean(state.S.postPurchaseMonth) ||
-        Boolean(state.S.postPurchaseDateFrom) ||
-        Boolean(state.S.postPurchaseDateTo) ||
-        (state.S.postPurchaseDatePreset || 'this_month') !== 'this_month'
+          Boolean(state.S.postPurchaseMonth) ||
+          Boolean(state.S.postPurchaseDateFrom) ||
+          Boolean(state.S.postPurchaseDateTo) ||
+          (state.S.postPurchaseDatePreset || 'this_month') !== 'this_month',
       );
     }
-    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
-      const active = (button.dataset.postpurchaseStatus || 'all') === (state.S.postPurchaseStatus || 'all');
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
+    document
+      .querySelectorAll('[data-postpurchase-status]')
+      .forEach((button) => {
+        const active =
+          (button.dataset.postpurchaseStatus || 'all') ===
+          (state.S.postPurchaseStatus || 'all');
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
   }
 
   function getQuickFilterLabel(status) {
@@ -123,10 +141,18 @@
 
   function getActiveFilterLabel(filters) {
     if (!filters) return '';
-    if (filters.status && filters.status !== 'all') return getQuickFilterLabel(filters.status);
-    if (filters.reprint && filters.reprint !== 'all') return getReprintFilterLabel(filters.reprint);
-    if (filters.month) return `${t('processed.filters.month')}: ${filters.month}`;
-    if ((filters.datePreset || 'this_month') !== 'this_month') return t(`processed.date.${String(filters.datePreset || '').replace(/_/g, '-')}`) || String(filters.datePreset || '');
+    if (filters.status && filters.status !== 'all')
+      return getQuickFilterLabel(filters.status);
+    if (filters.reprint && filters.reprint !== 'all')
+      return getReprintFilterLabel(filters.reprint);
+    if (filters.month)
+      return `${t('processed.filters.month')}: ${filters.month}`;
+    if ((filters.datePreset || 'this_month') !== 'this_month')
+      return (
+        t(
+          `processed.date.${String(filters.datePreset || '').replace(/_/g, '-')}`,
+        ) || String(filters.datePreset || '')
+      );
     return '';
   }
 
@@ -167,8 +193,10 @@
       history.forEach((entry) => {
         if (entry && String(entry.status || '').toLowerCase() === 'pending') {
           entry.status = request.status || 'done';
-          if (!entry.confirmedAt) entry.confirmedAt = request.confirmedAt || new Date().toISOString();
-          if (!entry.confirmedBy && request.confirmedBy) entry.confirmedBy = request.confirmedBy;
+          if (!entry.confirmedAt)
+            entry.confirmedAt = request.confirmedAt || new Date().toISOString();
+          if (!entry.confirmedBy && request.confirmedBy)
+            entry.confirmedBy = request.confirmedBy;
         }
       });
       state.reprintHistoryByKey.set(key, history);
@@ -182,8 +210,14 @@
     for (const bucket of ['global', 'scope']) {
       const current = stats[bucket];
       if (!current) continue;
-      current.reprintBacklog = Math.max(0, Number(current.reprintBacklog || 0) - 1);
-      current.needsAttention = Math.max(0, Number(current.needsAttention || 0) - 1);
+      current.reprintBacklog = Math.max(
+        0,
+        Number(current.reprintBacklog || 0) - 1,
+      );
+      current.needsAttention = Math.max(
+        0,
+        Number(current.needsAttention || 0) - 1,
+      );
     }
   }
 
@@ -202,7 +236,9 @@
   function getRenderOptions() {
     return {
       esc: state.esc,
-      isAdmin: Boolean(state.cfg && state.cfg.role === 'admin' && state.cfg.adminPin),
+      isAdmin: Boolean(
+        state.cfg && state.cfg.role === 'admin' && state.cfg.adminPin,
+      ),
       reprintActionStateByKey: state.reprintActionStateByKey,
       reprintHistoryByKey: state.reprintHistoryByKey,
       reprintPendingKeys: state.reprintPendingKeys,
@@ -218,17 +254,23 @@
   function setPostPurchaseQuickFilter(status) {
     state.S.postPurchaseStatus = status || 'all';
     state.S.postPurchaseReprint = 'all';
-    if (state.el('postpurchase-reprint-filter')) state.el('postpurchase-reprint-filter').value = 'all';
-    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
-      const active = (button.dataset.postpurchaseStatus || 'all') === state.S.postPurchaseStatus;
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
+    if (state.el('postpurchase-reprint-filter'))
+      state.el('postpurchase-reprint-filter').value = 'all';
+    document
+      .querySelectorAll('[data-postpurchase-status]')
+      .forEach((button) => {
+        const active =
+          (button.dataset.postpurchaseStatus || 'all') ===
+          state.S.postPurchaseStatus;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
     loadPostPurchaseOrders(true);
   }
 
   function resetPostPurchaseFilters() {
-    if (state.S.postPurchaseSearchTimer) clearTimeout(state.S.postPurchaseSearchTimer);
+    if (state.S.postPurchaseSearchTimer)
+      clearTimeout(state.S.postPurchaseSearchTimer);
     state.S.postPurchaseSearchTimer = null;
     state.S.postPurchaseSearch = '';
     state.S.postPurchaseMonth = '';
@@ -237,17 +279,25 @@
     state.S.postPurchaseDateTo = '';
     state.S.postPurchaseStatus = 'all';
     state.S.postPurchaseReprint = 'all';
-    if (state.el('postpurchase-search')) state.el('postpurchase-search').value = '';
-    if (state.el('postpurchase-date-preset')) state.el('postpurchase-date-preset').value = 'this_month';
-    if (state.el('postpurchase-month-filter')) state.el('postpurchase-month-filter').value = '';
-    if (state.el('postpurchase-date-from')) state.el('postpurchase-date-from').value = '';
-    if (state.el('postpurchase-date-to')) state.el('postpurchase-date-to').value = '';
-    if (state.el('postpurchase-reprint-filter')) state.el('postpurchase-reprint-filter').value = 'all';
-    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
-      const active = (button.dataset.postpurchaseStatus || 'all') === 'all';
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
+    if (state.el('postpurchase-search'))
+      state.el('postpurchase-search').value = '';
+    if (state.el('postpurchase-date-preset'))
+      state.el('postpurchase-date-preset').value = 'this_month';
+    if (state.el('postpurchase-month-filter'))
+      state.el('postpurchase-month-filter').value = '';
+    if (state.el('postpurchase-date-from'))
+      state.el('postpurchase-date-from').value = '';
+    if (state.el('postpurchase-date-to'))
+      state.el('postpurchase-date-to').value = '';
+    if (state.el('postpurchase-reprint-filter'))
+      state.el('postpurchase-reprint-filter').value = 'all';
+    document
+      .querySelectorAll('[data-postpurchase-status]')
+      .forEach((button) => {
+        const active = (button.dataset.postpurchaseStatus || 'all') === 'all';
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
     loadPostPurchaseOrders(true);
   }
 
@@ -258,44 +308,58 @@
     state.el('postpurchase-refresh-btn')?.addEventListener('click', () => {
       loadPostPurchaseOrders(true);
     });
-    state.el('postpurchase-search')?.addEventListener('input', e => {
+    state.el('postpurchase-search')?.addEventListener('input', (e) => {
       state.S.postPurchaseSearch = e.target.value || '';
-      if (state.S.postPurchaseSearchTimer) clearTimeout(state.S.postPurchaseSearchTimer);
-      if (state.S.postPurchaseLoaded) state.elSet('postpurchase-status', t('processed.status.searching'));
+      if (state.S.postPurchaseSearchTimer)
+        clearTimeout(state.S.postPurchaseSearchTimer);
+      if (state.S.postPurchaseLoaded)
+        state.elSet('postpurchase-status', t('processed.status.searching'));
       state.S.postPurchaseSearchTimer = setTimeout(() => {
         loadPostPurchaseOrders(true);
       }, 300);
     });
-    state.el('postpurchase-date-preset')?.addEventListener('change', e => {
+    state.el('postpurchase-date-preset')?.addEventListener('change', (e) => {
       state.S.postPurchaseDatePreset = e.target.value || 'this_month';
       loadPostPurchaseOrders(true);
     });
-    state.el('postpurchase-month-filter')?.addEventListener('change', e => {
+    state.el('postpurchase-month-filter')?.addEventListener('change', (e) => {
       state.S.postPurchaseMonth = e.target.value || '';
       loadPostPurchaseOrders(true);
     });
-    state.el('postpurchase-date-from')?.addEventListener('change', e => {
+    state.el('postpurchase-date-from')?.addEventListener('change', (e) => {
       state.S.postPurchaseDateFrom = e.target.value || '';
-      if (state.S.postPurchaseDateFrom || state.S.postPurchaseDateTo) state.S.postPurchaseDatePreset = 'custom';
-      if (state.el('postpurchase-date-preset')) state.el('postpurchase-date-preset').value = state.S.postPurchaseDatePreset;
+      if (state.S.postPurchaseDateFrom || state.S.postPurchaseDateTo)
+        state.S.postPurchaseDatePreset = 'custom';
+      if (state.el('postpurchase-date-preset'))
+        state.el('postpurchase-date-preset').value =
+          state.S.postPurchaseDatePreset;
       loadPostPurchaseOrders(true);
     });
-    state.el('postpurchase-date-to')?.addEventListener('change', e => {
+    state.el('postpurchase-date-to')?.addEventListener('change', (e) => {
       state.S.postPurchaseDateTo = e.target.value || '';
-      if (state.S.postPurchaseDateFrom || state.S.postPurchaseDateTo) state.S.postPurchaseDatePreset = 'custom';
-      if (state.el('postpurchase-date-preset')) state.el('postpurchase-date-preset').value = state.S.postPurchaseDatePreset;
+      if (state.S.postPurchaseDateFrom || state.S.postPurchaseDateTo)
+        state.S.postPurchaseDatePreset = 'custom';
+      if (state.el('postpurchase-date-preset'))
+        state.el('postpurchase-date-preset').value =
+          state.S.postPurchaseDatePreset;
       loadPostPurchaseOrders(true);
     });
-    state.el('postpurchase-reprint-filter')?.addEventListener('change', e => {
+    state.el('postpurchase-reprint-filter')?.addEventListener('change', (e) => {
       state.S.postPurchaseReprint = e.target.value || 'all';
       loadPostPurchaseOrders(true);
     });
-    document.querySelectorAll('[data-postpurchase-status]').forEach((button) => {
-      button.addEventListener('click', () => {
-        setPostPurchaseQuickFilter(button.dataset.postpurchaseStatus || 'all');
+    document
+      .querySelectorAll('[data-postpurchase-status]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          setPostPurchaseQuickFilter(
+            button.dataset.postpurchaseStatus || 'all',
+          );
+        });
       });
-    });
-    state.el('postpurchase-clear-filters')?.addEventListener('click', resetPostPurchaseFilters);
+    state
+      .el('postpurchase-clear-filters')
+      ?.addEventListener('click', resetPostPurchaseFilters);
     state.el('postpurchase-unlock-btn')?.addEventListener('click', () => {
       const pin = (state.el('postpurchase-pin')?.value || '').trim();
       if (!pin) {
@@ -323,12 +387,12 @@
   function hasScopedStatsFilter(filters) {
     return Boolean(
       (filters.q || '').trim() ||
-      filters.status !== 'all' ||
-      filters.reprint !== 'all' ||
-      filters.month ||
-      filters.datePreset !== 'this_month' ||
-      filters.from ||
-      filters.to
+        filters.status !== 'all' ||
+        filters.reprint !== 'all' ||
+        filters.month ||
+        filters.datePreset !== 'this_month' ||
+        filters.from ||
+        filters.to,
     );
   }
 
@@ -355,7 +419,9 @@
       if (String(getProcessedOrderId(row) || '') !== id) continue;
       if (!printFilePath) return { row, printFile: null };
       const files = Array.isArray(row.printFiles) ? row.printFiles : [];
-      const printFile = files.find((file) => (file.printFilePath || '') === printFilePath);
+      const printFile = files.find(
+        (file) => (file.printFilePath || '') === printFilePath,
+      );
       if (printFile) return { row, printFile };
     }
     return { row: null, printFile: null };
@@ -365,7 +431,8 @@
     state.reprintHistoryByKey = new Map();
     (Array.isArray(requests) ? requests : []).forEach((request) => {
       const key = Render.getReprintKey(request.orderId, request.printFilePath);
-      if (!state.reprintHistoryByKey.has(key)) state.reprintHistoryByKey.set(key, []);
+      if (!state.reprintHistoryByKey.has(key))
+        state.reprintHistoryByKey.set(key, []);
       state.reprintHistoryByKey.get(key).push(request);
     });
   }
@@ -394,7 +461,10 @@
 
   async function createReprintRequest(payload) {
     try {
-      const selected = findOrderAndPrintFile(payload.orderId, payload.printFilePath);
+      const selected = findOrderAndPrintFile(
+        payload.orderId,
+        payload.printFilePath,
+      );
       const result = await Api.createReprintRequest({
         fetchImpl: state.fetchImpl,
         headers: state.postPurchaseJsonHeaders(),
@@ -404,10 +474,21 @@
           workstationId: state.cfg && state.cfg.deviceId,
         },
       });
-      state.reprintPendingKeys.add(Render.getReprintKey(payload.orderId, payload.printFilePath));
-      const downloadOrderName = payload.orderName || (selected.row && (selected.row.externalOrderId || selected.row.customerOrderId || selected.row.orderName)) || payload.orderId;
+      state.reprintPendingKeys.add(
+        Render.getReprintKey(payload.orderId, payload.printFilePath),
+      );
+      const downloadOrderName =
+        payload.orderName ||
+        (selected.row &&
+          (selected.row.externalOrderId ||
+            selected.row.customerOrderId ||
+            selected.row.orderName)) ||
+        payload.orderId;
       if (selected.row) {
-        const xml = ReprintXml.generateReprintXml(selected.row, selected.printFile);
+        const xml = ReprintXml.generateReprintXml(
+          selected.row,
+          selected.printFile,
+        );
         ReprintXml.downloadXml(xml, downloadOrderName);
       }
       state.showToast(t('processed.toast.reprint-created'), 'success');
@@ -440,10 +521,14 @@
       markReprintHistoryDone(result.request);
       adjustStatsAfterReprintResolve();
       state.showToast(t('processed.toast.reprint-done'), 'success');
-      setReprintActionState(key, {
-        state: 'resolved',
-        message: t('processed.action.reprint-resolved-text'),
-      }, { clearAfterMs: 2500 });
+      setReprintActionState(
+        key,
+        {
+          state: 'resolved',
+          message: t('processed.action.reprint-resolved-text'),
+        },
+        { clearAfterMs: 2500 },
+      );
       renderPostPurchaseOrders();
       schedulePostPurchaseRefresh(1200);
       return result;
@@ -451,37 +536,58 @@
       console.error('Resolve reprint request failed', error);
       setReprintActionState(key, {
         state: 'error',
-        message: error && error.message ? error.message : t('processed.toast.reprint-resolve-failed'),
+        message:
+          error && error.message
+            ? error.message
+            : t('processed.toast.reprint-resolve-failed'),
       });
       renderPostPurchaseOrders();
-      state.showToast(error && error.message ? error.message : t('processed.toast.reprint-resolve-failed'), 'error');
+      state.showToast(
+        error && error.message
+          ? error.message
+          : t('processed.toast.reprint-resolve-failed'),
+        'error',
+      );
       throw error;
     }
   }
 
   async function deleteReprintRequest(payload) {
     const admin = payload && payload.admin;
-    const confirmed = window.confirm(admin
-      ? t('processed.confirm.delete-reprint')
-      : t('processed.confirm.cancel-reprint'));
+    const confirmed = window.confirm(
+      admin
+        ? t('processed.confirm.delete-reprint')
+        : t('processed.confirm.cancel-reprint'),
+    );
     if (!confirmed) return;
     try {
       await Api.deleteReprintRequest({
         fetchImpl: state.fetchImpl,
-        headers: admin && typeof state.adminJsonHeaders === 'function'
-          ? state.adminJsonHeaders()
-          : state.postPurchaseJsonHeaders(),
+        headers:
+          admin && typeof state.adminJsonHeaders === 'function'
+            ? state.adminJsonHeaders()
+            : state.postPurchaseJsonHeaders(),
         payload: {
           id: payload.id,
           action: admin ? 'delete_reprint' : 'cancel_reprint',
         },
       });
-      state.showToast(admin ? t('processed.toast.reprint-deleted') : t('processed.toast.reprint-cancelled'), 'success');
+      state.showToast(
+        admin
+          ? t('processed.toast.reprint-deleted')
+          : t('processed.toast.reprint-cancelled'),
+        'success',
+      );
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
     } catch (error) {
       console.error('Delete reprint request failed', error);
-      state.showToast(error && error.message ? error.message : t('processed.toast.reprint-delete-failed'), 'error');
+      state.showToast(
+        error && error.message
+          ? error.message
+          : t('processed.toast.reprint-delete-failed'),
+        'error',
+      );
       throw error;
     }
   }
@@ -489,8 +595,10 @@
   async function loadOrderDetail(orderId, orderNumber) {
     const rows = state.S.postPurchaseOrders || [];
     const index = rows.findIndex((row) => {
-      const sameId = orderId && String(getProcessedOrderId(row) || '') === String(orderId);
-      const sameOrder = orderNumber && String(row.orderName || '') === String(orderNumber);
+      const sameId =
+        orderId && String(getProcessedOrderId(row) || '') === String(orderId);
+      const sameOrder =
+        orderNumber && String(row.orderName || '') === String(orderNumber);
       return sameId || sameOrder;
     });
     if (index < 0) return;
@@ -518,7 +626,8 @@
     const append = Boolean(options.append);
     if (state.S.postPurchaseLoading) {
       if (append) return;
-      if (state.S.postPurchaseAbortController) state.S.postPurchaseAbortController.abort();
+      if (state.S.postPurchaseAbortController)
+        state.S.postPurchaseAbortController.abort();
     }
     if (state.S.postPurchaseLoaded && !force && !append) {
       renderPostPurchaseOrders();
@@ -527,7 +636,10 @@
     if (!state.requirePostPurchasePinForScreen()) return;
 
     if (!append) state.S.postPurchaseOffset = 0;
-    const controller = !append && typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const controller =
+      !append && typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null;
     if (controller) state.S.postPurchaseAbortController = controller;
     state.S.postPurchaseLoading = true;
     state.elSet('postpurchase-status', t('processed.status.loading'));
@@ -544,9 +656,15 @@
         signal: controller ? controller.signal : undefined,
       });
       const rows = Array.isArray(payload.rows) ? payload.rows : [];
-      state.S.postPurchaseOrders = append ? (state.S.postPurchaseOrders || []).concat(rows) : rows;
-      state.S.postPurchaseOffset = Number(payload.page?.nextOffset ?? payload.nextOffset) || state.S.postPurchaseOrders.length;
-      state.S.postPurchaseHasMore = Boolean(payload.page?.hasMore ?? payload.hasMore);
+      state.S.postPurchaseOrders = append
+        ? (state.S.postPurchaseOrders || []).concat(rows)
+        : rows;
+      state.S.postPurchaseOffset =
+        Number(payload.page?.nextOffset ?? payload.nextOffset) ||
+        state.S.postPurchaseOrders.length;
+      state.S.postPurchaseHasMore = Boolean(
+        payload.page?.hasMore ?? payload.hasMore,
+      );
       if (payload.stats) state.S.postPurchaseStats = payload.stats;
       await loadVisibleReprintHistory();
       state.S.postPurchaseLoaded = true;
@@ -559,7 +677,9 @@
       const message = cleanApiError(error);
       if (wrap && !(state.S.postPurchaseOrders || []).length) {
         wrap.innerHTML = Render.renderError(message, state.esc);
-        wrap.querySelector('[data-pp-retry="true"]')?.addEventListener('click', () => loadPostPurchaseOrders(true));
+        wrap
+          .querySelector('[data-pp-retry="true"]')
+          ?.addEventListener('click', () => loadPostPurchaseOrders(true));
       } else {
         renderPostPurchaseOrders();
       }
@@ -575,9 +695,11 @@
 
   async function updateOrderAdminStatus(payload) {
     const action = payload && payload.action;
-    const confirmed = window.confirm(action === 'delete_order'
-      ? t('processed.confirm.delete-order')
-      : t('processed.confirm.cancel-order'));
+    const confirmed = window.confirm(
+      action === 'delete_order'
+        ? t('processed.confirm.delete-order')
+        : t('processed.confirm.cancel-order'),
+    );
     if (!confirmed) return;
     try {
       await Api.updateOrderAdminStatus({
@@ -585,14 +707,22 @@
         headers: state.adminJsonHeaders(),
         payload,
       });
-      state.showToast(action === 'delete_order'
-        ? t('processed.toast.order-deleted')
-        : t('processed.toast.order-cancelled'), 'success');
+      state.showToast(
+        action === 'delete_order'
+          ? t('processed.toast.order-deleted')
+          : t('processed.toast.order-cancelled'),
+        'success',
+      );
       state.S.postPurchaseLoaded = false;
       await loadPostPurchaseOrders(true);
     } catch (error) {
       console.error('Admin order action failed', error);
-      state.showToast(error && error.message ? error.message : t('processed.toast.order-action-failed'), 'error');
+      state.showToast(
+        error && error.message
+          ? error.message
+          : t('processed.toast.order-action-failed'),
+        'error',
+      );
       throw error;
     }
   }
@@ -602,40 +732,52 @@
     if (!wrap) return;
     const rows = getVisibleOrders();
     const searchActive = Boolean((state.S.postPurchaseSearch || '').trim());
-    const activeFilterLabel = getActiveFilterLabel(Filters.getFiltersFromState(state.S));
-    wrap.innerHTML = Render.renderOrders(rows, getRenderOptions())
-      + (state.S.postPurchaseHasMore
+    const activeFilterLabel = getActiveFilterLabel(
+      Filters.getFiltersFromState(state.S),
+    );
+    wrap.innerHTML =
+      Render.renderOrders(rows, getRenderOptions()) +
+      (state.S.postPurchaseHasMore
         ? `<div class="pp-load-more-wrap"><button class="btn-sm" type="button" data-pp-load-more="true">${t('processed.button.load-more')}</button></div>`
         : '');
     bindProcessedOrderActions(wrap);
-    state.elSet('postpurchase-status', searchActive
-      ? `${rows.length} ${t('processed.status.search-results')}${activeFilterLabel ? ` · ${activeFilterLabel}` : ''}`
-      : `${rows.length} ${t('processed.status.rows')}${activeFilterLabel ? ` · ${activeFilterLabel}` : ''}`);
+    state.elSet(
+      'postpurchase-status',
+      searchActive
+        ? `${rows.length} ${t('processed.status.search-results')}${activeFilterLabel ? ` · ${activeFilterLabel}` : ''}`
+        : `${rows.length} ${t('processed.status.rows')}${activeFilterLabel ? ` · ${activeFilterLabel}` : ''}`,
+    );
     if (typeof state.applyRoleUI === 'function') state.applyRoleUI();
   }
 
   function bindPdfOpenDelegation(wrap) {
     if (!wrap || wrap.dataset.pdfOpenBound === '1') return;
     wrap.dataset.pdfOpenBound = '1';
-    wrap.addEventListener('click', (event) => {
-      const target = event.target && typeof event.target.closest === 'function'
-        ? event.target
-        : event.target && event.target.parentElement;
-      const button = target && typeof target.closest === 'function'
-        ? target.closest('[data-open-pdf-url]')
-        : null;
-      if (!button || !wrap.contains(button)) return;
+    wrap.addEventListener(
+      'click',
+      (event) => {
+        const target =
+          event.target && typeof event.target.closest === 'function'
+            ? event.target
+            : event.target && event.target.parentElement;
+        const button =
+          target && typeof target.closest === 'function'
+            ? target.closest('[data-open-pdf-url]')
+            : null;
+        if (!button || !wrap.contains(button)) return;
 
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
 
-      if (button.disabled) return;
-      PdfOpen.openPdfUrl({
-        url: button.dataset.openPdfUrl || '',
-        showToast: state.showToast,
-      });
-    }, true);
+        if (button.disabled) return;
+        PdfOpen.openPdfUrl({
+          url: button.dataset.openPdfUrl || '',
+          showToast: state.showToast,
+        });
+      },
+      true,
+    );
   }
 
   function bindProcessedOrderActions(wrap) {
@@ -651,57 +793,73 @@
         }
       });
     });
-    wrap.querySelectorAll('[data-load-order-detail-id], [data-load-order-detail-number]').forEach((button) => {
-      button.addEventListener('click', () => {
+    wrap
+      .querySelectorAll(
+        '[data-load-order-detail-id], [data-load-order-detail-number]',
+      )
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          button.disabled = true;
+          button.textContent = t('processed.status.loading');
+          loadOrderDetail(
+            button.dataset.loadOrderDetailId,
+            button.dataset.loadOrderDetailNumber,
+          ).finally(() => {
+            button.disabled = false;
+          });
+        });
+      });
+    wrap
+      .querySelector('[data-pp-load-more="true"]')
+      ?.addEventListener('click', (event) => {
+        const button = event.currentTarget;
         button.disabled = true;
         button.textContent = t('processed.status.loading');
-        loadOrderDetail(button.dataset.loadOrderDetailId, button.dataset.loadOrderDetailNumber).finally(() => {
+        loadPostPurchaseOrders(true, { append: true }).finally(() => {
           button.disabled = false;
         });
       });
-    });
-    wrap.querySelector('[data-pp-load-more="true"]')?.addEventListener('click', (event) => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      button.textContent = t('processed.status.loading');
-      loadPostPurchaseOrders(true, { append: true }).finally(() => {
-        button.disabled = false;
-      });
-    });
     wrap.querySelectorAll('[data-reprint-order-id]').forEach((button) => {
       button.addEventListener('click', () => {
-        ReprintModal.open({
-          orderId: button.dataset.reprintOrderId,
-          orderName: button.dataset.reprintOrderName,
-          operatorName: getOperatorName(),
-          printFilePath: button.dataset.printFilePath || '',
-          printFileLabel: button.dataset.printFileLabel,
-        }, {
-          esc: state.esc,
-          fileNameFromPath: Render.fileNameFromPath,
-          onSubmit: createReprintRequest,
-        });
+        ReprintModal.open(
+          {
+            orderId: button.dataset.reprintOrderId,
+            orderName: button.dataset.reprintOrderName,
+            operatorName: getOperatorName(),
+            printFilePath: button.dataset.printFilePath || '',
+            printFileLabel: button.dataset.printFileLabel,
+          },
+          {
+            esc: state.esc,
+            fileNameFromPath: Render.fileNameFromPath,
+            onSubmit: createReprintRequest,
+          },
+        );
       });
     });
-    wrap.querySelectorAll('[data-resolve-reprint-order-id]').forEach((button) => {
-      button.addEventListener('click', () => {
-        resolveReprintRequest({
-          orderId: button.dataset.resolveReprintOrderId,
-          printFilePath: button.dataset.resolvePrintFilePath || '',
+    wrap
+      .querySelectorAll('[data-resolve-reprint-order-id]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          resolveReprintRequest({
+            orderId: button.dataset.resolveReprintOrderId,
+            printFilePath: button.dataset.resolvePrintFilePath || '',
+          });
         });
       });
-    });
-    wrap.querySelectorAll('[data-delete-reprint-request-id]').forEach((button) => {
-      button.addEventListener('click', () => {
-        button.disabled = true;
-        deleteReprintRequest({
-          id: button.dataset.deleteReprintRequestId,
-          admin: button.dataset.deleteReprintAdmin === 'true',
-        }).catch(() => {
-          button.disabled = false;
+    wrap
+      .querySelectorAll('[data-delete-reprint-request-id]')
+      .forEach((button) => {
+        button.addEventListener('click', () => {
+          button.disabled = true;
+          deleteReprintRequest({
+            id: button.dataset.deleteReprintRequestId,
+            admin: button.dataset.deleteReprintAdmin === 'true',
+          }).catch(() => {
+            button.disabled = false;
+          });
         });
       });
-    });
     wrap.querySelectorAll('[data-admin-order-action]').forEach((button) => {
       button.addEventListener('click', () => {
         button.disabled = true;

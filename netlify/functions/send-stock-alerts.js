@@ -1,13 +1,13 @@
-const { Client } = require("pg");
-const webPush = require("web-push");
-const notificationRules = require("../../reports/notification-rules.js");
+const { Client } = require('pg');
+const webPush = require('web-push');
+const notificationRules = require('../../reports/notification-rules.js');
 
 function json(statusCode, body, extraHeaders) {
   return {
     statusCode,
     headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
       ...extraHeaders,
     },
     body: JSON.stringify(body),
@@ -15,23 +15,23 @@ function json(statusCode, body, extraHeaders) {
 }
 
 function parseRequestBody(event) {
-  if (!event || event.body == null || event.body === "") {
+  if (!event || event.body == null || event.body === '') {
     return {};
   }
 
-  if (typeof event.body === "object") {
+  if (typeof event.body === 'object') {
     return event.body;
   }
 
   const rawBody = event.isBase64Encoded
-    ? Buffer.from(event.body, "base64").toString("utf8")
+    ? Buffer.from(event.body, 'base64').toString('utf8')
     : event.body;
 
   return JSON.parse(rawBody);
 }
 
 function isValidVapidSubject(value) {
-  return typeof value === "string" && /^(mailto:|https:\/\/)/i.test(value);
+  return typeof value === 'string' && /^(mailto:|https:\/\/)/i.test(value);
 }
 
 function getStatusCode(error) {
@@ -43,11 +43,11 @@ function getStatusCode(error) {
 function normalizeAlertTypes(value) {
   if (Array.isArray(value)) {
     return value
-      .filter((item) => typeof item === "string" && item.trim())
+      .filter((item) => typeof item === 'string' && item.trim())
       .map((item) => item.trim().toLowerCase());
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const trimmed = value.trim();
     if (!trimmed) {
       return [];
@@ -70,7 +70,10 @@ function subscriptionMatchesAlertType(subscription, alertType) {
     return true;
   }
 
-  return types.includes("all") || types.includes(String(alertType || "").toLowerCase());
+  return (
+    types.includes('all') ||
+    types.includes(String(alertType || '').toLowerCase())
+  );
 }
 
 async function ensureNotificationStateTable(client) {
@@ -88,13 +91,17 @@ async function ensureNotificationStateTable(client) {
         resolved_at timestamptz null,
         updated_at timestamptz not null default now()
       )
-    `
+    `,
   );
 }
 
 async function ensureStockSoftDeleteColumns(client) {
-  await client.query("alter table public.pg_items add column if not exists deleted_at timestamptz null");
-  await client.query("alter table public.pg_movements add column if not exists deleted_at timestamptz null");
+  await client.query(
+    'alter table public.pg_items add column if not exists deleted_at timestamptz null',
+  );
+  await client.query(
+    'alter table public.pg_movements add column if not exists deleted_at timestamptz null',
+  );
 }
 
 async function sendAlertToSubscriptions(client, subscriptions, payload) {
@@ -114,7 +121,7 @@ async function sendAlertToSubscriptions(client, subscriptions, payload) {
             auth: subscription.auth,
           },
         },
-        JSON.stringify(payload)
+        JSON.stringify(payload),
       );
 
       deliveriesSent += 1;
@@ -125,7 +132,7 @@ async function sendAlertToSubscriptions(client, subscriptions, payload) {
           set last_push_at = now()
           where endpoint = $1
         `,
-        [subscription.endpoint]
+        [subscription.endpoint],
       );
     } catch (error) {
       deliveriesFailed += 1;
@@ -140,17 +147,17 @@ async function sendAlertToSubscriptions(client, subscriptions, payload) {
                   updated_at = now()
               where endpoint = $1
             `,
-            [subscription.endpoint]
+            [subscription.endpoint],
           );
         } catch (updateError) {
-          console.error("Failed to deactivate expired subscription", {
+          console.error('Failed to deactivate expired subscription', {
             endpoint: subscription.endpoint,
             error: updateError,
           });
         }
       }
 
-      console.error("Failed to deliver stock alert", {
+      console.error('Failed to deliver stock alert', {
         subscriptionId: subscription.id,
         endpoint: subscription.endpoint,
         statusCode,
@@ -163,33 +170,42 @@ async function sendAlertToSubscriptions(client, subscriptions, payload) {
 }
 
 exports.handler = async function handler(event) {
-  if (event.httpMethod !== "POST") {
+  if (event.httpMethod !== 'POST') {
     return json(
       405,
-      { ok: false, error: "Method not allowed" },
-      { allow: "POST" }
+      { ok: false, error: 'Method not allowed' },
+      { allow: 'POST' },
     );
   }
 
-  const connectionString = typeof process.env.NEON_DATABASE_URL === "string"
-    ? process.env.NEON_DATABASE_URL.trim()
-    : "";
-  const vapidPublicKey = typeof process.env.VAPID_PUBLIC_KEY === "string"
-    ? process.env.VAPID_PUBLIC_KEY.trim()
-    : "";
-  const vapidPrivateKey = typeof process.env.VAPID_PRIVATE_KEY === "string"
-    ? process.env.VAPID_PRIVATE_KEY.trim()
-    : "";
-  const vapidSubject = typeof process.env.VAPID_SUBJECT === "string"
-    ? process.env.VAPID_SUBJECT.trim()
-    : "";
+  const connectionString =
+    typeof process.env.NEON_DATABASE_URL === 'string'
+      ? process.env.NEON_DATABASE_URL.trim()
+      : '';
+  const vapidPublicKey =
+    typeof process.env.VAPID_PUBLIC_KEY === 'string'
+      ? process.env.VAPID_PUBLIC_KEY.trim()
+      : '';
+  const vapidPrivateKey =
+    typeof process.env.VAPID_PRIVATE_KEY === 'string'
+      ? process.env.VAPID_PRIVATE_KEY.trim()
+      : '';
+  const vapidSubject =
+    typeof process.env.VAPID_SUBJECT === 'string'
+      ? process.env.VAPID_SUBJECT.trim()
+      : '';
 
-  if (!connectionString || !vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
-    return json(500, { ok: false, error: "Missing push configuration" });
+  if (
+    !connectionString ||
+    !vapidPublicKey ||
+    !vapidPrivateKey ||
+    !vapidSubject
+  ) {
+    return json(500, { ok: false, error: 'Missing push configuration' });
   }
 
   if (!isValidVapidSubject(vapidSubject)) {
-    return json(500, { ok: false, error: "Invalid VAPID_SUBJECT" });
+    return json(500, { ok: false, error: 'Invalid VAPID_SUBJECT' });
   }
 
   try {
@@ -197,7 +213,8 @@ exports.handler = async function handler(event) {
   } catch (error) {
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : "Invalid VAPID configuration",
+      error:
+        error && error.message ? error.message : 'Invalid VAPID configuration',
     });
   }
 
@@ -205,13 +222,14 @@ exports.handler = async function handler(event) {
   try {
     payload = parseRequestBody(event);
   } catch (error) {
-    return json(400, { ok: false, error: "Invalid JSON body" });
+    return json(400, { ok: false, error: 'Invalid JSON body' });
   }
 
   const weeksN = Math.max(1, Number(payload.weeksN) || 8);
-  const trigger = typeof payload.trigger === "string" && payload.trigger.trim()
-    ? payload.trigger.trim()
-    : "manual";
+  const trigger =
+    typeof payload.trigger === 'string' && payload.trigger.trim()
+      ? payload.trigger.trim()
+      : 'manual';
 
   const client = new Client({
     connectionString,
@@ -223,10 +241,18 @@ exports.handler = async function handler(event) {
     await ensureNotificationStateTable(client);
     await ensureStockSoftDeleteColumns(client);
 
-    const items = (await client.query("select data from public.pg_items where deleted_at is null")).rows
+    const items = (
+      await client.query(
+        'select data from public.pg_items where deleted_at is null',
+      )
+    ).rows
       .map((row) => row.data)
       .filter(Boolean);
-    const movements = (await client.query("select data from public.pg_movements where deleted_at is null order by timestamp asc")).rows
+    const movements = (
+      await client.query(
+        'select data from public.pg_movements where deleted_at is null order by timestamp asc',
+      )
+    ).rows
       .map((row) => row.data)
       .filter(Boolean);
 
@@ -234,29 +260,38 @@ exports.handler = async function handler(event) {
       items,
       movements,
       { weeksN },
-      new Date()
+      new Date(),
     );
 
-    console.log("Stock notification candidates loaded", {
+    console.log('Stock notification candidates loaded', {
       loadedItems: items.length,
       loadedMovements: movements.length,
       candidates: candidates.length,
     });
     candidates.forEach((candidate) => {
-      console.log("Stock notification candidate", { eventKey: candidate.dedupeKey, type: candidate.type });
+      console.log('Stock notification candidate', {
+        eventKey: candidate.dedupeKey,
+        type: candidate.type,
+      });
     });
 
-    const activeStateRows = (await client.query(
-      `
+    const activeStateRows = (
+      await client.query(
+        `
         select event_key, is_active
         from push_notification_state
         where category = 'stock'
-      `
-    )).rows;
+      `,
+      )
+    ).rows;
 
-    const activeStateByKey = new Map(activeStateRows.map((row) => [row.event_key, row]));
+    const activeStateByKey = new Map(
+      activeStateRows.map((row) => [row.event_key, row]),
+    );
     const candidateKeys = new Set(
-      candidates.map((candidate) => candidate && candidate.dedupeKey).filter(Boolean)
+      candidates
+        .map((candidate) => candidate && candidate.dedupeKey)
+        .filter(Boolean),
     );
 
     let resolvedAlerts = 0;
@@ -270,25 +305,27 @@ exports.handler = async function handler(event) {
                 updated_at = now()
             where event_key = $1
           `,
-          [row.event_key]
+          [row.event_key],
         );
         resolvedAlerts += 1;
       }
     }
 
-    const subscriptions = (await client.query(
-      `
+    const subscriptions = (
+      await client.query(
+        `
         select id, endpoint, p256dh, auth, device_name, alert_types
         from push_subscriptions
         where is_active = true
-      `
-    )).rows;
+      `,
+      )
+    ).rows;
 
     const stockSubscriptions = subscriptions.filter((subscription) =>
-      subscriptionMatchesAlertType(subscription, "stock")
+      subscriptionMatchesAlertType(subscription, 'stock'),
     );
 
-    console.log("Stock notification subscriptions matched", {
+    console.log('Stock notification subscriptions matched', {
       matchedSubscriptions: stockSubscriptions.length,
     });
 
@@ -300,9 +337,10 @@ exports.handler = async function handler(event) {
 
     for (const candidate of candidates) {
       const eventKey = candidate.dedupeKey;
-      const articleNumber = candidate.metadata && candidate.metadata.articleNumber
-        ? candidate.metadata.articleNumber
-        : null;
+      const articleNumber =
+        candidate.metadata && candidate.metadata.articleNumber
+          ? candidate.metadata.articleNumber
+          : null;
 
       if (!eventKey) {
         continue;
@@ -312,9 +350,9 @@ exports.handler = async function handler(event) {
 
       if (existing && existing.is_active) {
         skippedAlerts += 1;
-        console.log("Skipping active stock notification state", {
+        console.log('Skipping active stock notification state', {
           eventKey,
-          reason: "already_active",
+          reason: 'already_active',
         });
         await client.query(
           `
@@ -323,28 +361,32 @@ exports.handler = async function handler(event) {
                 updated_at = now()
             where event_key = $1
           `,
-          [eventKey, JSON.stringify(candidate)]
+          [eventKey, JSON.stringify(candidate)],
         );
         continue;
       }
 
-      console.log("Attempting stock notification delivery", {
+      console.log('Attempting stock notification delivery', {
         eventKey,
         matchedSubscriptions: stockSubscriptions.length,
-        stateWrite: "pending_until_success",
+        stateWrite: 'pending_until_success',
       });
 
-      const deliveryResult = await sendAlertToSubscriptions(client, stockSubscriptions, {
-        title: candidate.title,
-        body: candidate.body,
-        url: candidate.url,
-      });
+      const deliveryResult = await sendAlertToSubscriptions(
+        client,
+        stockSubscriptions,
+        {
+          title: candidate.title,
+          body: candidate.body,
+          url: candidate.url,
+        },
+      );
 
       attemptedNotifications += deliveryResult.attemptedNotifications;
       deliveriesSent += deliveryResult.deliveriesSent;
       deliveriesFailed += deliveryResult.deliveriesFailed;
 
-      console.log("Stock notification delivery result", {
+      console.log('Stock notification delivery result', {
         eventKey,
         attemptedNotifications: deliveryResult.attemptedNotifications,
         sent: deliveryResult.deliveriesSent,
@@ -352,20 +394,26 @@ exports.handler = async function handler(event) {
       });
 
       if (deliveryResult.deliveriesSent <= 0) {
-        console.log("Stock notification state not marked as sent", {
+        console.log('Stock notification state not marked as sent', {
           eventKey,
-          reason: stockSubscriptions.length === 0 ? "no_matched_subscriptions" : "no_successful_delivery",
-          stateWrite: "skipped",
+          reason:
+            stockSubscriptions.length === 0
+              ? 'no_matched_subscriptions'
+              : 'no_successful_delivery',
+          stateWrite: 'skipped',
         });
         continue;
       }
 
       sentAlerts += 1;
 
-      console.log("Writing stock notification state after successful delivery", {
-        eventKey,
-        stateWrite: "insert_or_update_after_success",
-      });
+      console.log(
+        'Writing stock notification state after successful delivery',
+        {
+          eventKey,
+          stateWrite: 'insert_or_update_after_success',
+        },
+      );
 
       await client.query(
         `
@@ -410,11 +458,11 @@ exports.handler = async function handler(event) {
           candidate.type,
           articleNumber,
           JSON.stringify(candidate),
-        ]
+        ],
       );
     }
 
-    console.log("Stock notifications evaluated", {
+    console.log('Stock notifications evaluated', {
       loadedItems: items.length,
       loadedMovements: movements.length,
       candidates: candidates.length,
@@ -444,16 +492,17 @@ exports.handler = async function handler(event) {
       deliveriesFailed,
     });
   } catch (error) {
-    console.error("send-stock-alerts failed", error);
+    console.error('send-stock-alerts failed', error);
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : "send-stock-alerts failed",
+      error:
+        error && error.message ? error.message : 'send-stock-alerts failed',
     });
   } finally {
     try {
       await client.end();
     } catch (error) {
-      console.error("send-stock-alerts cleanup failed", error);
+      console.error('send-stock-alerts cleanup failed', error);
     }
   }
 };

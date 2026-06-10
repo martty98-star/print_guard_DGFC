@@ -5,7 +5,8 @@
    ============================================================ */
 'use strict';
 
-const PrintGuardAppConfig = typeof window !== 'undefined' && window.PrintGuardAppConfig;
+const PrintGuardAppConfig =
+  typeof window !== 'undefined' && window.PrintGuardAppConfig;
 if (!PrintGuardAppConfig) throw new Error('Missing PrintGuardAppConfig');
 const { APP_VERSION, cfg, ls } = PrintGuardAppConfig;
 
@@ -36,14 +37,14 @@ const {
   idbClear,
 } = PrintGuardAppDB;
 
-const PrintGuardSettingsStore = typeof window !== 'undefined' && window.PrintGuardSettingsStore;
-if (!PrintGuardSettingsStore) throw new Error('Missing PrintGuardSettingsStore');
-const {
-  loadSettingsFromIDB,
-  saveSettingsToIDB,
-} = PrintGuardSettingsStore;
+const PrintGuardSettingsStore =
+  typeof window !== 'undefined' && window.PrintGuardSettingsStore;
+if (!PrintGuardSettingsStore)
+  throw new Error('Missing PrintGuardSettingsStore');
+const { loadSettingsFromIDB, saveSettingsToIDB } = PrintGuardSettingsStore;
 
-const PrintGuardPushBridge = typeof window !== 'undefined' && window.PrintGuardPushBridge;
+const PrintGuardPushBridge =
+  typeof window !== 'undefined' && window.PrintGuardPushBridge;
 if (!PrintGuardPushBridge) throw new Error('Missing PrintGuardPushBridge');
 const { getPushEndpointSuffix } = PrintGuardPushBridge;
 
@@ -65,40 +66,55 @@ const {
   dlBlob,
 } = PrintGuardUtils;
 
-const PrintGuardAppUpdates = typeof window !== 'undefined' && window.PrintGuardAppUpdates;
+const PrintGuardAppUpdates =
+  typeof window !== 'undefined' && window.PrintGuardAppUpdates;
 if (!PrintGuardAppUpdates) throw new Error('Missing PrintGuardAppUpdates');
-const {
-  showPendingUpdateToast,
-  setupAppUpdateChecks,
-} = PrintGuardAppUpdates;
+const { showPendingUpdateToast, setupAppUpdateChecks } = PrintGuardAppUpdates;
 
-const PrintGuardAdminAuth = typeof window !== 'undefined' && window.PrintGuardAdminAuth;
+const PrintGuardAdminAuth =
+  typeof window !== 'undefined' && window.PrintGuardAdminAuth;
 if (!PrintGuardAdminAuth) throw new Error('Missing PrintGuardAdminAuth');
-const PrintGuardNavigation = typeof window !== 'undefined' && window.PrintGuardNavigation;
+const PrintGuardNavigation =
+  typeof window !== 'undefined' && window.PrintGuardNavigation;
 if (!PrintGuardNavigation) throw new Error('Missing PrintGuardNavigation');
-const PrintGuardAccess = typeof window !== 'undefined' && window.PrintGuardAccess;
+const PrintGuardAccess =
+  typeof window !== 'undefined' && window.PrintGuardAccess;
 if (!PrintGuardAccess) throw new Error('Missing PrintGuardAccess');
-const PrintGuardSettingsRuntime = typeof window !== 'undefined' && window.PrintGuardSettingsRuntime;
-if (!PrintGuardSettingsRuntime) throw new Error('Missing PrintGuardSettingsRuntime');
-const PrintGuardRuntimeUI = typeof window !== 'undefined' && window.PrintGuardRuntimeUI;
+const PrintGuardSettingsRuntime =
+  typeof window !== 'undefined' && window.PrintGuardSettingsRuntime;
+if (!PrintGuardSettingsRuntime)
+  throw new Error('Missing PrintGuardSettingsRuntime');
+const PrintGuardRuntimeUI =
+  typeof window !== 'undefined' && window.PrintGuardRuntimeUI;
 if (!PrintGuardRuntimeUI) throw new Error('Missing PrintGuardRuntimeUI');
-const PrintGuardRuntimeState = typeof window !== 'undefined' && window.PrintGuardRuntimeState;
+const PrintGuardRuntimeState =
+  typeof window !== 'undefined' && window.PrintGuardRuntimeState;
 if (!PrintGuardRuntimeState) throw new Error('Missing PrintGuardRuntimeState');
-const PrintGuardColoradoRuntime = typeof window !== 'undefined' && window.PrintGuardColoradoRuntime;
-if (!PrintGuardColoradoRuntime) throw new Error('Missing PrintGuardColoradoRuntime');
-const PrintGuardPostPurchaseRuntime = typeof window !== 'undefined' && window.PrintGuardPostPurchaseRuntime;
-if (!PrintGuardPostPurchaseRuntime) throw new Error('Missing PrintGuardPostPurchaseRuntime');
-const PrintGuardStockRuntime = typeof window !== 'undefined' && window.PrintGuardStockRuntime;
+const PrintGuardColoradoRuntime =
+  typeof window !== 'undefined' && window.PrintGuardColoradoRuntime;
+if (!PrintGuardColoradoRuntime)
+  throw new Error('Missing PrintGuardColoradoRuntime');
+const PrintGuardPostPurchaseRuntime =
+  typeof window !== 'undefined' && window.PrintGuardPostPurchaseRuntime;
+if (!PrintGuardPostPurchaseRuntime)
+  throw new Error('Missing PrintGuardPostPurchaseRuntime');
+const PrintGuardStockRuntime =
+  typeof window !== 'undefined' && window.PrintGuardStockRuntime;
 if (!PrintGuardStockRuntime) throw new Error('Missing PrintGuardStockRuntime');
 const PrintGuardShell = typeof window !== 'undefined' && window.PrintGuardShell;
 if (!PrintGuardShell) throw new Error('Missing PrintGuardShell');
-const PrintGuardAppLifecycle = typeof window !== 'undefined' && window.PrintGuardAppLifecycle;
+const PrintGuardAppLifecycle =
+  typeof window !== 'undefined' && window.PrintGuardAppLifecycle;
 if (!PrintGuardAppLifecycle) throw new Error('Missing PrintGuardAppLifecycle');
-const PrintGuardPrintLogRuntime = typeof window !== 'undefined' && window.PrintGuardPrintLogRuntime;
-if (!PrintGuardPrintLogRuntime) throw new Error('Missing PrintGuardPrintLogRuntime');
-const PrintGuardReporting = typeof window !== 'undefined' && window.PrintGuardReporting;
+const PrintGuardPrintLogRuntime =
+  typeof window !== 'undefined' && window.PrintGuardPrintLogRuntime;
+if (!PrintGuardPrintLogRuntime)
+  throw new Error('Missing PrintGuardPrintLogRuntime');
+const PrintGuardReporting =
+  typeof window !== 'undefined' && window.PrintGuardReporting;
 if (!PrintGuardReporting) throw new Error('Missing PrintGuardReporting');
-const PrintGuardDateFilters = typeof window !== 'undefined' && window.PrintGuardDateFilters;
+const PrintGuardDateFilters =
+  typeof window !== 'undefined' && window.PrintGuardDateFilters;
 if (!PrintGuardDateFilters) throw new Error('Missing PrintGuardDateFilters');
 const PrintGuardPush = typeof window !== 'undefined' && window.PrintGuardPush;
 if (!PrintGuardPush) throw new Error('Missing PrintGuardPush');
@@ -106,32 +122,46 @@ const PrintGuardSync = typeof window !== 'undefined' && window.PrintGuardSync;
 if (!PrintGuardSync) throw new Error('Missing PrintGuardSync');
 
 function i18n(key) {
-  if (typeof window !== 'undefined' && window.I18N && typeof window.I18N.t === 'function') {
+  if (
+    typeof window !== 'undefined' &&
+    window.I18N &&
+    typeof window.I18N.t === 'function'
+  ) {
     return window.I18N.t(key);
   }
   return key;
 }
 
-const Reports = (typeof window !== 'undefined' && window.PrintGuardReports) || {};
-const CoreUtils = (typeof window !== 'undefined' && window.PrintGuardCoreUtils) || null;
+const Reports =
+  (typeof window !== 'undefined' && window.PrintGuardReports) || {};
+const CoreUtils =
+  (typeof window !== 'undefined' && window.PrintGuardCoreUtils) || null;
 if (!CoreUtils) throw new Error('Missing PrintGuardCoreUtils');
-const DomUtils = (typeof window !== 'undefined' && window.PrintGuardDomUtils) || null;
+const DomUtils =
+  (typeof window !== 'undefined' && window.PrintGuardDomUtils) || null;
 if (!DomUtils) throw new Error('Missing PrintGuardDomUtils');
-const PushUtils = (typeof window !== 'undefined' && window.PrintGuardPushUtils) || null;
+const PushUtils =
+  (typeof window !== 'undefined' && window.PrintGuardPushUtils) || null;
 if (!PushUtils) throw new Error('Missing PrintGuardPushUtils');
-const ExportUtils = (typeof window !== 'undefined' && window.PrintGuardExportUtils) || null;
+const ExportUtils =
+  (typeof window !== 'undefined' && window.PrintGuardExportUtils) || null;
 if (!ExportUtils) throw new Error('Missing PrintGuardExportUtils');
-const StockUI = (typeof window !== 'undefined' && window.PrintGuardStockUI) || null;
+const StockUI =
+  (typeof window !== 'undefined' && window.PrintGuardStockUI) || null;
 if (!StockUI) throw new Error('Missing PrintGuardStockUI');
 const StockStore = (typeof window !== 'undefined' && window.StockStore) || null;
 if (!StockStore) throw new Error('Missing StockStore');
-const StockFeature = (typeof window !== 'undefined' && window.StockFeature) || null;
+const StockFeature =
+  (typeof window !== 'undefined' && window.StockFeature) || null;
 if (!StockFeature) throw new Error('Missing StockFeature');
-const StockActions = (typeof window !== 'undefined' && window.PrintGuardStockActions) || null;
+const StockActions =
+  (typeof window !== 'undefined' && window.PrintGuardStockActions) || null;
 if (!StockActions) throw new Error('Missing PrintGuardStockActions');
-const StockLogModule = (typeof window !== 'undefined' && window.PrintGuardStockLog) || null;
+const StockLogModule =
+  (typeof window !== 'undefined' && window.PrintGuardStockLog) || null;
 if (!StockLogModule) throw new Error('Missing PrintGuardStockLog');
-const ChecklistUI = (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
+const ChecklistUI =
+  (typeof window !== 'undefined' && window.PrintGuardChecklistUI) || null;
 if (!ChecklistUI) throw new Error('Missing PrintGuardChecklistUI');
 const {
   fmtDuration,
@@ -141,10 +171,7 @@ const {
   genId,
   getNullableNumber,
 } = CoreUtils;
-const {
-  showConfirm,
-  showToast,
-} = DomUtils;
+const { showConfirm, showToast } = DomUtils;
 const {
   buildPushSubscriptionPayload,
   getPushDeviceName,
@@ -156,10 +183,7 @@ const runtimeUiApi = PrintGuardRuntimeUI.createRuntimeUI({
   cfg,
   t: i18n,
 });
-const {
-  getCostUnitPerM2,
-  getCostUnitPerMonth,
-} = runtimeUiApi;
+const { getCostUnitPerM2, getCostUnitPerMonth } = runtimeUiApi;
 const accessApi = PrintGuardAccess.createAccessGuards({
   cfg,
   el,
@@ -172,9 +196,7 @@ const {
   requireAdminPinForScreen,
   requirePostPurchasePinForScreen,
 } = accessApi;
-const {
-  fmtExportDateTime,
-} = ExportUtils;
+const { fmtExportDateTime } = ExportUtils;
 
 function renderChecklistScreen(force = false) {
   return ChecklistUI.renderChecklistScreen(force);
@@ -252,7 +274,8 @@ const coloradoRuntimeApi = PrintGuardColoradoRuntime.createColoradoRuntime({
   adminErrorMessage,
   getCostUnitPerM2,
   getCostUnitPerMonth,
-  exportCSVCombinedLifetimeCo: (...args) => exportCSVCombinedLifetimeCo(...args),
+  exportCSVCombinedLifetimeCo: (...args) =>
+    exportCSVCombinedLifetimeCo(...args),
 });
 const {
   MACHINES,
@@ -283,7 +306,6 @@ const {
 
 //  SETTINGS + EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════
-
 
 // ── CSV helpers ──────────────────────────────────────────
 
@@ -329,10 +351,7 @@ const pushApi = PrintGuardPush.createPush({
   showToast,
   urlBase64ToUint8Array,
 });
-const {
-  enablePushNotifications,
-  sendStockNotifications,
-} = pushApi;
+const { enablePushNotifications, sendStockNotifications } = pushApi;
 
 const syncApi = PrintGuardSync.createSync({
   S,
@@ -429,11 +448,7 @@ const adminAuth = PrintGuardAdminAuth.createAdminAuth({
   navigate: (...args) => navigationApi.navigate(...args),
   showToast,
 });
-const {
-  applyRoleUI,
-  isAdmin,
-  setupAdminAuthHandlers,
-} = adminAuth;
+const { applyRoleUI, isAdmin, setupAdminAuthHandlers } = adminAuth;
 
 const stockRuntimeApi = PrintGuardStockRuntime.createStockRuntime({
   S,
@@ -519,28 +534,26 @@ const settingsRuntimeApi = PrintGuardSettingsRuntime.createSettingsRuntime({
   showConfirm,
   showToast,
 });
-const {
-  initRuntime: initSettingsRuntime,
-  loadSettingsUI,
-} = settingsRuntimeApi;
+const { initRuntime: initSettingsRuntime, loadSettingsUI } = settingsRuntimeApi;
 
-const postPurchaseRuntimeApi = PrintGuardPostPurchaseRuntime.createPostPurchaseRuntime({
-  S,
-  adminJsonHeaders,
-  applyRoleUI,
-  cfg,
-  el,
-  elSet,
-  esc,
-  fetchImpl: appFetch,
-  fmtDT,
-  postPurchaseErrorMessage,
-  postPurchaseHeaders,
-  postPurchaseJsonHeaders,
-  renderPostPurchaseAccessRequired,
-  requirePostPurchasePinForScreen,
-  showToast,
-});
+const postPurchaseRuntimeApi =
+  PrintGuardPostPurchaseRuntime.createPostPurchaseRuntime({
+    S,
+    adminJsonHeaders,
+    applyRoleUI,
+    cfg,
+    el,
+    elSet,
+    esc,
+    fetchImpl: appFetch,
+    fmtDT,
+    postPurchaseErrorMessage,
+    postPurchaseHeaders,
+    postPurchaseJsonHeaders,
+    renderPostPurchaseAccessRequired,
+    requirePostPurchasePinForScreen,
+    showToast,
+  });
 const {
   bindControls: bindPostPurchaseControls,
   initRuntime: initPostPurchaseRuntime,
@@ -557,18 +570,19 @@ dateFilters = PrintGuardDateFilters.createDateFilters({
   renderCoHistory,
   renderStockLog,
 });
-const {
-  applyPreset,
-  dateRangeFilter,
-} = dateFilters;
+const { applyPreset, dateRangeFilter } = dateFilters;
 
 navigationApi = PrintGuardNavigation.createNavigation({
   applyRoleUI,
   el,
-  loadManagementReporting: window.PrintGuardManagementReportingUI && window.PrintGuardManagementReportingUI.loadManagementReporting,
+  loadManagementReporting:
+    window.PrintGuardManagementReportingUI &&
+    window.PrintGuardManagementReportingUI.loadManagementReporting,
   loadPostPurchaseOrders,
   loadPrintLog,
-  loadScanCaptureScreen: window.PrintGuardScanCaptureUI && window.PrintGuardScanCaptureUI.loadScanCaptureScreen,
+  loadScanCaptureScreen:
+    window.PrintGuardScanCaptureUI &&
+    window.PrintGuardScanCaptureUI.loadScanCaptureScreen,
   loadSettingsUI,
   ls,
   renderAlerts,
@@ -578,12 +592,8 @@ navigationApi = PrintGuardNavigation.createNavigation({
   renderStockLog,
   state: S,
 });
-const {
-  getInitialScreen,
-  navigate,
-  setMode,
-  updateOfflineBanner,
-} = navigationApi;
+const { getInitialScreen, navigate, setMode, updateOfflineBanner } =
+  navigationApi;
 
 const shellApi = PrintGuardShell.createShell({
   applyPreset,

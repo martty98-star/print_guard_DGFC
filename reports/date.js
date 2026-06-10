@@ -1,4 +1,4 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   function dateRangeFilter(timestamp, from, to) {
@@ -13,7 +13,15 @@
   function getCurrentMonthExportRange(nowInput) {
     const now = nowInput ? new Date(nowInput) : new Date();
     const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const to = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
     const pad = (n) => String(n).padStart(2, '0');
     return {
       fromMs: from.getTime(),

@@ -64,7 +64,12 @@
     if (!record || typeof record !== 'object') return record;
     return {
       ...record,
-      updatedAt: record.updatedAt || record.updated_at || record.createdAt || record.timestamp || null,
+      updatedAt:
+        record.updatedAt ||
+        record.updated_at ||
+        record.createdAt ||
+        record.timestamp ||
+        null,
     };
   }
 
@@ -107,15 +112,19 @@
 
     async function loadAll(renderers) {
       state.items = await StockStore.getAllItems(stockDbAdapter());
-      state.movements = (await StockStore.getAllMovements(stockDbAdapter()))
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      state.movements = (
+        await StockStore.getAllMovements(stockDbAdapter())
+      ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       state.coRecords = (await idbAll(ST_CORECS))
         .map(normalizeCoRecord)
-        .filter(record => record && !record.deletedAt)
+        .filter((record) => record && !record.deletedAt)
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       await loadSettingsFromIDB();
 
-      const ts = new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+      const ts = new Date().toLocaleTimeString('cs-CZ', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
       elSet('stock-last-update', ts);
       elSet('co-last-update', ts);
 

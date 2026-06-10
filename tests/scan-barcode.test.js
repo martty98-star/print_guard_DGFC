@@ -124,6 +124,9 @@ assert.deepStrictEqual(parseBarcode('26967599R'), {
 });
 
 assert.strictEqual(parseBarcode('123456-XYZ').ok, false);
-assert.match(parseBarcode('123456-XYZ').error, /unsupported barcode order type suffix/);
+assert.match(
+  parseBarcode('123456-XYZ').error,
+  /unsupported barcode order type suffix/,
+);
 
 console.log('scan barcode parser tests passed');

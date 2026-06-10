@@ -1,4 +1,4 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   function normalizeText(value) {
@@ -27,7 +27,13 @@
       stocktake: 'Inventura skladu',
     };
 
-    return labels[String(type || '').trim().toLowerCase()] || 'Pohyb skladu';
+    return (
+      labels[
+        String(type || '')
+          .trim()
+          .toLowerCase()
+      ] || 'Pohyb skladu'
+    );
   }
 
   function buildStockMovementNotification(move, item) {
@@ -55,7 +61,10 @@
       return null;
     }
 
-    const label = normalizeText(machineLabel) || normalizeText(record.machineId) || 'Colorado';
+    const label =
+      normalizeText(machineLabel) ||
+      normalizeText(record.machineId) ||
+      'Colorado';
     const timestamp = formatTimestamp(record.timestamp);
     const suffix = timestamp ? ` · ${timestamp}` : '';
 
@@ -80,7 +89,9 @@
     });
 
     let result = null;
-    try { result = await res.json(); } catch (_) {}
+    try {
+      result = await res.json();
+    } catch (_) {}
 
     if (!res.ok || !result?.ok) {
       throw new Error(result?.error || 'Odeslání app notifikace selhalo.');

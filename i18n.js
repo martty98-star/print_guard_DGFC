@@ -33,7 +33,8 @@
       'scan.status.saved-local': 'Scan uložen do lokální browser fronty.',
       'scan.status.save-failed': 'Scan se nepodařilo uložit lokálně',
       'scan.status.committing': 'Odesílám lokální scan batch do PrintGuardu…',
-      'scan.status.commit-done': 'Commit hotový. Spárované objednávky jsou označené jako Dotisknuto.',
+      'scan.status.commit-done':
+        'Commit hotový. Spárované objednávky jsou označené jako Dotisknuto.',
       'scan.status.commit-failed': 'Commit selhal',
       'scan.status.deleted': 'Scan smazán z lokální fronty.',
       'scan.status.delete-failed': 'Scan nejde smazat',
@@ -54,8 +55,10 @@
       'scan.kpi.commit.desc': 'nově zapsáno do PrintGuardu',
       'scan.commit.title': 'Commit do PrintGuardu',
       'scan.commit.button': 'Odeslat do PrintGuardu',
-      'scan.commit.hint': 'Scany se nejdřív ukládají lokálně v prohlížeči. Do Neon DB se odešlou až po potvrzení operátorem.',
-      'scan.commit.summary-empty': 'Souhrn se zobrazí po kliknutí na Odeslat do PrintGuardu.',
+      'scan.commit.hint':
+        'Scany se nejdřív ukládají lokálně v prohlížeči. Do Neon DB se odešlou až po potvrzení operátorem.',
+      'scan.commit.summary-empty':
+        'Souhrn se zobrazí po kliknutí na Odeslat do PrintGuardu.',
       'scan.recent.title': 'Poslední scany',
       'scan.recent.badge': 'lokální queue',
       'scan.loading': 'Načítám scany…',
@@ -86,7 +89,8 @@
       'processed.status.resolving': 'Řeším…',
       'processed.status.resolved': 'Vyřešeno',
       'processed.status.resolve-failed': 'Vyřešení selhalo',
-      'processed.hint': 'Operátorský přehled ze zpracovaných XML v Submit Toolu.',
+      'processed.hint':
+        'Operátorský přehled ze zpracovaných XML v Submit Toolu.',
       'processed.quick.all': 'Všechny objednávky',
       'processed.quick.attention': 'K řešení',
       'processed.quick.unprocessed': 'Nezpracované',
@@ -104,7 +108,8 @@
       'processed.summary.top': 'Nahoře',
       'processed.pin.placeholder': 'PIN operátora',
       'processed.pin.required': 'Je vyžadován PIN pro zpracované objednávky.',
-      'processed.pin.required-note': 'Zadej nahoře PIN operátora a odemkni tabulku objednávek.',
+      'processed.pin.required-note':
+        'Zadej nahoře PIN operátora a odemkni tabulku objednávek.',
       'processed.pin.enter': 'Zadej PIN pro zpracované objednávky',
       'processed.unlock': 'Odemknout',
       'processed.lock': 'Zamknout',
@@ -139,16 +144,22 @@
       'processed.badge.cancelled': 'CANCELLED',
       'processed.badge.printed-out': 'DOTISKNUTO',
       'processed.action.reprint-pending': 'Čeká na dotisk',
-      'processed.action.reprint-pending-text': 'Po vytištění označ reprint jako hotový.',
-      'processed.action.reprint-resolving-text': 'Ukládám označení reprintu jako hotového.',
-      'processed.action.reprint-resolved-text': 'Reprint byl označen jako hotový.',
-      'processed.action.reprint-error-text': 'Reprint se nepodařilo označit jako hotový.',
+      'processed.action.reprint-pending-text':
+        'Po vytištění označ reprint jako hotový.',
+      'processed.action.reprint-resolving-text':
+        'Ukládám označení reprintu jako hotového.',
+      'processed.action.reprint-resolved-text':
+        'Reprint byl označen jako hotový.',
+      'processed.action.reprint-error-text':
+        'Reprint se nepodařilo označit jako hotový.',
       'processed.action.retry-resolve': 'Zkusit znovu',
       'processed.action.needed': 'Missing',
       'processed.action.missing-text': 'Missing',
       'processed.action.none': 'Bez akce',
-      'processed.action.none-text': 'Objednávka je sledovaná. Reprint zadávej jen v případě potřeby.',
-      'processed.action.cancelled-text': 'Objednávka je označená jako cancelled a nepočítá se mezi úkoly k řešení.',
+      'processed.action.none-text':
+        'Objednávka je sledovaná. Reprint zadávej jen v případě potřeby.',
+      'processed.action.cancelled-text':
+        'Objednávka je označená jako cancelled a nepočítá se mezi úkoly k řešení.',
       'processed.history.by': 'Zadal',
       'processed.history.requested': 'Zadáno',
       'processed.history.confirmed': 'Potvrzeno',
@@ -158,7 +169,8 @@
       'processed.button.open-pdf': 'Otevřít PDF',
       'processed.button.copy-path': 'Kopírovat cestu',
       'processed.button.request-reprint': 'Zadat reprint',
-      'processed.button.mark-full-reprinted': 'Označit celý reprint jako vytištěný',
+      'processed.button.mark-full-reprinted':
+        'Označit celý reprint jako vytištěný',
       'processed.button.full-reprint': 'Reprint celé objednávky',
       'processed.button.copy-xml-path': 'Kopírovat cestu XML',
       'processed.button.load-details': 'Načíst PDF a reprinty',
@@ -171,13 +183,18 @@
       'processed.reprint.create': 'Vytvořit reprint',
       'processed.reprint.error.operator': 'Jméno operátora je povinné.',
       'processed.reprint.error.reason': 'Důvod je povinný.',
-      'processed.reprint.error.other-note': 'U důvodu Jiné je poznámka povinná.',
-      'processed.reprint.reason.printer-dots-contamination': 'Tečky tiskárny / kontaminace',
-      'processed.reprint.reason.cutter-oil-contamination': 'Kontaminace olejem z cutteru',
-      'processed.reprint.reason.incorrect-cut-not-cut-through': 'Špatný řez / neproříznuto',
+      'processed.reprint.error.other-note':
+        'U důvodu Jiné je poznámka povinná.',
+      'processed.reprint.reason.printer-dots-contamination':
+        'Tečky tiskárny / kontaminace',
+      'processed.reprint.reason.cutter-oil-contamination':
+        'Kontaminace olejem z cutteru',
+      'processed.reprint.reason.incorrect-cut-not-cut-through':
+        'Špatný řez / neproříznuto',
       'processed.reprint.reason.wrong-media': 'Špatné médium',
       'processed.reprint.reason.color-issue': 'Problém s barvou',
-      'processed.reprint.reason.damaged-during-handling': 'Poškozeno při manipulaci',
+      'processed.reprint.reason.damaged-during-handling':
+        'Poškozeno při manipulaci',
       'processed.reprint.reason.missing-print': 'Chybějící tisk',
       'processed.reprint.reason.other': 'Jiné',
       'processed.reprint.card-title': 'Reprint',
@@ -234,29 +251,41 @@
       'processed.label.printed-out': 'Dotisknuto',
       'processed.warning.missing-xml': 'Missing',
       'processed.error.load': 'Zpracované objednávky se nepodařilo načíst.',
-      'processed.error.database': 'Databáze/API není dostupné. Zkus obnovit později.',
+      'processed.error.database':
+        'Databáze/API není dostupné. Zkus obnovit později.',
       'processed.error.request-failed': 'Požadavek selhal',
-      'processed.error.pipeline-load': 'Pipeline objednávek se nepodařilo načíst',
-      'processed.error.reprint-history': 'Historii reprintů se nepodařilo načíst',
+      'processed.error.pipeline-load':
+        'Pipeline objednávek se nepodařilo načíst',
+      'processed.error.reprint-history':
+        'Historii reprintů se nepodařilo načíst',
       'processed.toast.reprint-created': 'Reprint požadavek vytvořen',
-      'processed.toast.reprint-create-failed': 'Reprint požadavek se nepodařilo vytvořit',
+      'processed.toast.reprint-create-failed':
+        'Reprint požadavek se nepodařilo vytvořit',
       'processed.toast.reprint-done': 'Reprint označen jako hotový',
-      'processed.toast.reprint-resolve-failed': 'Reprint požadavek se nepodařilo vyřešit',
+      'processed.toast.reprint-resolve-failed':
+        'Reprint požadavek se nepodařilo vyřešit',
       'processed.toast.reprint-deleted': 'Reprint záznam smazán',
       'processed.toast.reprint-cancelled': 'Reprint požadavek zrušen',
-      'processed.toast.reprint-delete-failed': 'Reprint požadavek se nepodařilo smazat',
+      'processed.toast.reprint-delete-failed':
+        'Reprint požadavek se nepodařilo smazat',
       'processed.toast.path-copied': 'Cesta zkopírována',
       'processed.toast.copy-failed': 'Kopírování selhalo',
-      'processed.toast.sync-server-task': 'Sync zpracovaných XML běží jako úloha na workstation/serveru.',
+      'processed.toast.sync-server-task':
+        'Sync zpracovaných XML běží jako úloha na workstation/serveru.',
       'processed.toast.unlocked': 'Zpracované objednávky odemčeny',
       'processed.toast.locked': 'Zpracované objednávky zamčeny',
       'processed.toast.order-cancelled': 'Objednávka označena jako cancelled',
       'processed.toast.order-deleted': 'Objednávka skryta z PrintGuardu',
-      'processed.toast.order-action-failed': 'Akci s objednávkou se nepodařilo uložit',
-      'processed.confirm.delete-reprint': 'Smazat tento reprint záznam z PrintGuardu? Soubory ani objednávky se nesmažou.',
-      'processed.confirm.cancel-reprint': 'Zrušit tento čekající reprint požadavek? Soubory ani objednávky se nesmažou.',
-      'processed.confirm.cancel-order': 'Označit tuto objednávku jako cancelled? Zůstane viditelná v pipeline, ale nebude se počítat jako úkol k řešení.',
-      'processed.confirm.delete-order': 'Smazat tuto objednávku z PrintGuard pipeline? Soubory, XML ani externí objednávka se nesmažou.',
+      'processed.toast.order-action-failed':
+        'Akci s objednávkou se nepodařilo uložit',
+      'processed.confirm.delete-reprint':
+        'Smazat tento reprint záznam z PrintGuardu? Soubory ani objednávky se nesmažou.',
+      'processed.confirm.cancel-reprint':
+        'Zrušit tento čekající reprint požadavek? Soubory ani objednávky se nesmažou.',
+      'processed.confirm.cancel-order':
+        'Označit tuto objednávku jako cancelled? Zůstane viditelná v pipeline, ale nebude se počítat jako úkol k řešení.',
+      'processed.confirm.delete-order':
+        'Smazat tuto objednávku z PrintGuard pipeline? Soubory, XML ani externí objednávka se nesmažou.',
 
       'btn.add-movement': 'Nový pohyb',
       'btn.add-item': '+ Přidat položku',
@@ -300,7 +329,8 @@
       'checklist.form.category': 'Kategorie',
       'checklist.form.category.placeholder': 'maintenance',
       'checklist.form.description': 'Popis',
-      'checklist.form.description.placeholder': 'např. Na cutteru kondenzuje olej, otřít před směnou.',
+      'checklist.form.description.placeholder':
+        'např. Na cutteru kondenzuje olej, otřít před směnou.',
       'checklist.form.time': 'Čas reminderu *',
       'checklist.form.enabled': 'Aktivní',
       'checklist.form.days': 'Dny *',
@@ -338,17 +368,21 @@
       'settings.language': 'Jazyk / Language',
       'settings.stock.title': 'Sklad — výpočet spotřeby',
       'settings.stock.weeks': 'Počet týdnů pro průměr spotřeby (N)',
-      'settings.stock.hint': 'Průměrná týdenní spotřeba = suma výdejů za posledních N týdnů ÷ N. Doporučeno 6–8.',
+      'settings.stock.hint':
+        'Průměrná týdenní spotřeba = suma výdejů za posledních N týdnů ÷ N. Doporučeno 6–8.',
       'settings.colorado.title': 'Colorado — výpočet průměrů',
       'settings.colorado.n': 'Počet intervalů pro klouzavý průměr (N)',
-      'settings.colorado.hint': 'Průměr z posledních N meziodečtů. Doporučeno 6–8.',
+      'settings.colorado.hint':
+        'Průměr z posledních N meziodečtů. Doporučeno 6–8.',
       'settings.cost.title': 'Nákladové sazby — Colorado (volitelné)',
       'settings.cost.currency': 'Měna nákladů',
       'settings.cost.ink': 'Náklad inkoustu (za litr)',
       'settings.cost.media': 'Náklad média (za m²)',
-      'settings.cost.hint': 'Po vyplnění se zobrazí finanční metriky v přehledu Colorado.',
+      'settings.cost.hint':
+        'Po vyplnění se zobrazí finanční metriky v přehledu Colorado.',
       'daily-report.settings.title': 'Denní produkční report',
-      'daily-report.settings.hint': 'Vygeneruje operátorský report z Colorado tiskových logů, API objednávek, Submit Tool XML a reprintů. E-mail se automaticky neodesílá.',
+      'daily-report.settings.hint':
+        'Vygeneruje operátorský report z Colorado tiskových logů, API objednávek, Submit Tool XML a reprintů. E-mail se automaticky neodesílá.',
       'daily-report.title': 'Denní produkční report',
       'daily-report.button': 'Denní report',
       'daily-report.date': 'Datum',
@@ -373,7 +407,8 @@
       'settings.admin.pin': 'PIN',
       'settings.admin.unlock': 'Odemknout admin',
       'settings.admin.lock': 'Zamknout (režim operátor)',
-      'settings.admin.hint': 'Admin odemyká správu katalogu položek (Položky + Přidat/Upravit/Smazat). Operátor má jen zadávání záznamů.',
+      'settings.admin.hint':
+        'Admin odemyká správu katalogu položek (Položky + Přidat/Upravit/Smazat). Operátor má jen zadávání záznamů.',
       'settings.export.colorado.title': 'Export CSV — Colorado (pro finance)',
       'settings.export.colorado.intervals': 'Export CSV — intervaly spotřeby',
       'settings.export.colorado.raw': 'Export CSV — surové záznamy Colorado',
@@ -385,14 +420,16 @@
       'settings.backup.title': 'Záloha JSON',
       'settings.backup.export': 'Export celé zálohy (JSON)',
       'settings.backup.import': 'Import zálohy (JSON / StockGuard)',
-      'settings.backup.hint': 'Import je kompatibilní se starým formátem StockGuard — snapshots se automaticky převedou jako inventurní záznamy.',
+      'settings.backup.hint':
+        'Import je kompatibilní se starým formátem StockGuard — snapshots se automaticky převedou jako inventurní záznamy.',
       'settings.device.title': 'Zařízení',
       'settings.device.id': 'ID zařízení',
       'settings.device.version': 'Verze aplikace',
       'settings.device.clear': 'Smazat všechna lokální data',
       'settings.save': 'Uložit nastavení',
       'settings.toast.saved': 'Nastavení uloženo',
-      'settings.clear.confirm': 'Smazat VŠECHNA lokální data? Tato akce je nevratná.',
+      'settings.clear.confirm':
+        'Smazat VŠECHNA lokální data? Tato akce je nevratná.',
       'settings.clear.done': 'Data smazána',
       'stock.search.placeholder': 'Hledat položku…',
       'stock.log.search': 'Hledat položku, typ…',
@@ -476,17 +513,23 @@
       'status.warn': 'Varování',
       'status.crit': 'Kritické',
 
-      'colorado.info': 'Průměry jsou vypočítány z posledních N intervalů (nastavitelné). Čisticí / purge cykly způsobí vyšší L/m² pro daný interval — to je záměrné, auditní hodnota reálné spotřeby.',
+      'colorado.info':
+        'Průměry jsou vypočítány z posledních N intervalů (nastavitelné). Čisticí / purge cykly způsobí vyšší L/m² pro daný interval — to je záměrné, auditní hodnota reálné spotřeby.',
       'colorado.entry.printer': 'Tiskárna *',
       'colorado.entry.ink.label': 'Inkoust celkem — lifetime čítač (L) *',
-      'colorado.entry.ink.hint': 'Celoživotní hodnota z displeje tiskárny v litrech',
+      'colorado.entry.ink.hint':
+        'Celoživotní hodnota z displeje tiskárny v litrech',
       'colorado.entry.media.label': 'Médium celkem — lifetime čítač (m²) *',
-      'colorado.entry.media.hint': 'Celoživotní hodnota z displeje tiskárny v m²',
+      'colorado.entry.media.hint':
+        'Celoživotní hodnota z displeje tiskárny v m²',
       'colorado.entry.timestamp.label': 'Datum a čas záznamu',
-      'colorado.entry.timestamp.hint': 'Výchozí: aktuální čas. Lze upravit pro zpětné zadání.',
+      'colorado.entry.timestamp.hint':
+        'Výchozí: aktuální čas. Lze upravit pro zpětné zadání.',
       'colorado.entry.note.label': 'Poznámka',
-      'colorado.entry.note.placeholder': 'Např. po čisticím cyklu, po výměně cartridge…',
-      'colorado.entry.preview.title': 'Náhled výpočtu (oproti předchozímu záznamu)',
+      'colorado.entry.note.placeholder':
+        'Např. po čisticím cyklu, po výměně cartridge…',
+      'colorado.entry.preview.title':
+        'Náhled výpočtu (oproti předchozímu záznamu)',
       'colorado.entry.preview.ink': 'Spotřeba inkoustu',
       'colorado.entry.preview.media': 'Spotřeba média',
       'colorado.entry.preview.ratio': 'Spotřeba inkoustu na m²',
@@ -496,7 +539,8 @@
       'colorado.card.record.other': 'záznamů',
       'colorado.card.interval.one': 'interval',
       'colorado.card.interval.other': 'intervalů',
-      'colorado.card.need-two': 'Potřeba alespoň 2 záznamy pro výpočet spotřeby.',
+      'colorado.card.need-two':
+        'Potřeba alespoň 2 záznamy pro výpočet spotřeby.',
       'colorado.card.need-two.last': 'Poslední',
       'colorado.card.records': 'záznamů ·',
       'colorado.card.metrics.ink-day': 'Průměrná spotřeba inkoustu',
@@ -515,7 +559,8 @@
       'colorado.card.combined.media-total': 'Médium celkem',
       'colorado.card.combined.media-month': 'Médium celkem / měsíc',
       'colorado.card.combined.cost-month': 'Odhadované celkové náklady',
-      'colorado.card.formats.note': 'Odhad spotřeby podle formátu vychází z kombinované reálné lifetime spotřeby obou Colorado tiskáren:',
+      'colorado.card.formats.note':
+        'Odhad spotřeby podle formátu vychází z kombinované reálné lifetime spotřeby obou Colorado tiskáren:',
       'colorado.card.formats.intervals': 'intervalů:',
       'colorado.card.formats.table.format': 'Formát',
       'colorado.card.formats.table.area': 'Plocha',
@@ -524,11 +569,14 @@
       'colorado.card.no-data': 'Data nejsou k dispozici.',
       'colorado.roll.load': 'Nová role',
       'colorado.export.monthly': '↓ Měsíční CSV',
-      'colorado.export.monthly.none': 'V aktuálním měsíci nejsou žádné intervaly spotřeby.',
+      'colorado.export.monthly.none':
+        'V aktuálním měsíci nejsou žádné intervaly spotřeby.',
       'colorado.export.monthly.done': 'Měsíční export Colorado je hotový.',
       'colorado.export.lifetime-combined': '↓ Lifetime CSV',
-      'colorado.export.lifetime-combined.none': 'Nejsou k dispozici žádná lifetime Colorado data.',
-      'colorado.export.lifetime-combined.done': 'Lifetime export Colorado je hotový.',
+      'colorado.export.lifetime-combined.none':
+        'Nejsou k dispozici žádná lifetime Colorado data.',
+      'colorado.export.lifetime-combined.done':
+        'Lifetime export Colorado je hotový.',
       'colorado.table.datetime': 'Datum a čas',
       'colorado.table.ink-total': 'Ink celkem (L)',
       'colorado.table.ink-delta': 'Δ Ink (L)',
@@ -590,7 +638,8 @@
       'print.lifecycle.expl.open_issue': 'Stále nevyřešeno',
       'print.lifecycle.expl.deleted_only': 'Pouze smazané pokusy',
       'print.lifecycle.expl.aborted_only': 'Pouze přerušené pokusy',
-      'print.lifecycle.expl.multiple_attempts_success': 'úspěšných pokusů v záznamu',
+      'print.lifecycle.expl.multiple_attempts_success':
+        'úspěšných pokusů v záznamu',
       'print.lifecycle.expl.unresolved': 'Smíšený průběh úlohy',
       'print.result.done': 'Hotovo',
       'print.result.abrt': 'Přerušeno',
@@ -603,7 +652,7 @@
       'msg.delete-confirm': 'Smazat tuto položku?',
 
       'lang.cs': 'Čeština',
-      'lang.en': 'English'
+      'lang.en': 'English',
     },
 
     en: {
@@ -639,7 +688,8 @@
       'scan.status.saved-local': 'Scan saved to the local browser queue.',
       'scan.status.save-failed': 'Could not save scan locally',
       'scan.status.committing': 'Sending local scan batch to PrintGuard…',
-      'scan.status.commit-done': 'Commit complete. Matched orders are marked as Printed out.',
+      'scan.status.commit-done':
+        'Commit complete. Matched orders are marked as Printed out.',
       'scan.status.commit-failed': 'Commit failed',
       'scan.status.deleted': 'Scan removed from local queue.',
       'scan.status.delete-failed': 'Could not remove scan',
@@ -660,8 +710,10 @@
       'scan.kpi.commit.desc': 'newly written to PrintGuard',
       'scan.commit.title': 'Commit to PrintGuard',
       'scan.commit.button': 'Send to PrintGuard',
-      'scan.commit.hint': 'Scans are stored locally in the browser first. They are sent to Neon DB only after operator confirmation.',
-      'scan.commit.summary-empty': 'The summary appears after clicking Send to PrintGuard.',
+      'scan.commit.hint':
+        'Scans are stored locally in the browser first. They are sent to Neon DB only after operator confirmation.',
+      'scan.commit.summary-empty':
+        'The summary appears after clicking Send to PrintGuard.',
       'scan.recent.title': 'Recent scans',
       'scan.recent.badge': 'local queue',
       'scan.loading': 'Loading scans…',
@@ -692,7 +744,8 @@
       'processed.status.resolving': 'Saving…',
       'processed.status.resolved': 'Resolved',
       'processed.status.resolve-failed': 'Resolve failed',
-      'processed.hint': 'Clean operator view from SubmitTool processed XML files.',
+      'processed.hint':
+        'Clean operator view from SubmitTool processed XML files.',
       'processed.quick.all': 'All orders',
       'processed.quick.attention': 'Needs attention',
       'processed.quick.unprocessed': 'Unprocessed',
@@ -710,7 +763,8 @@
       'processed.summary.top': 'Top',
       'processed.pin.placeholder': 'Operator PIN',
       'processed.pin.required': 'Processed Orders PIN is required.',
-      'processed.pin.required-note': 'Enter the operator PIN above and unlock the orders table.',
+      'processed.pin.required-note':
+        'Enter the operator PIN above and unlock the orders table.',
       'processed.pin.enter': 'Enter Processed Orders PIN',
       'processed.unlock': 'Unlock',
       'processed.lock': 'Lock',
@@ -745,16 +799,20 @@
       'processed.badge.cancelled': 'CANCELLED',
       'processed.badge.printed-out': 'PRINTED OUT',
       'processed.action.reprint-pending': 'Waiting for reprint',
-      'processed.action.reprint-pending-text': 'Mark the reprint as done after it is printed.',
+      'processed.action.reprint-pending-text':
+        'Mark the reprint as done after it is printed.',
       'processed.action.reprint-resolving-text': 'Saving the reprint as done.',
       'processed.action.reprint-resolved-text': 'Reprint marked as done.',
-      'processed.action.reprint-error-text': 'The reprint could not be marked as done.',
+      'processed.action.reprint-error-text':
+        'The reprint could not be marked as done.',
       'processed.action.retry-resolve': 'Try again',
       'processed.action.needed': 'Missing',
       'processed.action.missing-text': 'Missing',
       'processed.action.none': 'No action needed',
-      'processed.action.none-text': 'Order is tracked. Request a reprint only if needed.',
-      'processed.action.cancelled-text': 'Order is marked cancelled and is not counted as action required.',
+      'processed.action.none-text':
+        'Order is tracked. Request a reprint only if needed.',
+      'processed.action.cancelled-text':
+        'Order is marked cancelled and is not counted as action required.',
       'processed.history.by': 'By',
       'processed.history.requested': 'Requested',
       'processed.history.confirmed': 'Confirmed',
@@ -778,12 +836,16 @@
       'processed.reprint.error.operator': 'Operator name is required.',
       'processed.reprint.error.reason': 'Reason is required.',
       'processed.reprint.error.other-note': 'Note is required for Other.',
-      'processed.reprint.reason.printer-dots-contamination': 'Printer dots / contamination',
-      'processed.reprint.reason.cutter-oil-contamination': 'Cutter oil contamination',
-      'processed.reprint.reason.incorrect-cut-not-cut-through': 'Incorrect cut / not cut through',
+      'processed.reprint.reason.printer-dots-contamination':
+        'Printer dots / contamination',
+      'processed.reprint.reason.cutter-oil-contamination':
+        'Cutter oil contamination',
+      'processed.reprint.reason.incorrect-cut-not-cut-through':
+        'Incorrect cut / not cut through',
       'processed.reprint.reason.wrong-media': 'Wrong media',
       'processed.reprint.reason.color-issue': 'Color issue',
-      'processed.reprint.reason.damaged-during-handling': 'Damaged during handling',
+      'processed.reprint.reason.damaged-during-handling':
+        'Damaged during handling',
       'processed.reprint.reason.missing-print': 'Missing print',
       'processed.reprint.reason.other': 'Other',
       'processed.reprint.card-title': 'Reprint',
@@ -840,29 +902,38 @@
       'processed.label.printed-out': 'Printed out',
       'processed.warning.missing-xml': 'Missing',
       'processed.error.load': 'Processed orders could not be loaded.',
-      'processed.error.database': 'Database/API unavailable. Try refresh later.',
+      'processed.error.database':
+        'Database/API unavailable. Try refresh later.',
       'processed.error.request-failed': 'Request failed',
       'processed.error.pipeline-load': 'Failed to load order pipeline',
       'processed.error.reprint-history': 'Failed to load reprint history',
       'processed.toast.reprint-created': 'Reprint request created',
-      'processed.toast.reprint-create-failed': 'Reprint request could not be created',
+      'processed.toast.reprint-create-failed':
+        'Reprint request could not be created',
       'processed.toast.reprint-done': 'Reprint marked as done',
-      'processed.toast.reprint-resolve-failed': 'Reprint request could not be resolved',
+      'processed.toast.reprint-resolve-failed':
+        'Reprint request could not be resolved',
       'processed.toast.reprint-deleted': 'Reprint record deleted',
       'processed.toast.reprint-cancelled': 'Reprint request cancelled',
-      'processed.toast.reprint-delete-failed': 'Reprint request could not be deleted',
+      'processed.toast.reprint-delete-failed':
+        'Reprint request could not be deleted',
       'processed.toast.path-copied': 'Path copied',
       'processed.toast.copy-failed': 'Copy failed',
-      'processed.toast.sync-server-task': 'Processed XML sync runs on the workstation/server task.',
+      'processed.toast.sync-server-task':
+        'Processed XML sync runs on the workstation/server task.',
       'processed.toast.unlocked': 'Processed orders unlocked',
       'processed.toast.locked': 'Processed orders locked',
       'processed.toast.order-cancelled': 'Order marked cancelled',
       'processed.toast.order-deleted': 'Order hidden from PrintGuard',
       'processed.toast.order-action-failed': 'Order action could not be saved',
-      'processed.confirm.delete-reprint': 'Delete this reprint record from PrintGuard? Files and orders will not be deleted.',
-      'processed.confirm.cancel-reprint': 'Cancel this pending reprint request? Files and orders will not be deleted.',
-      'processed.confirm.cancel-order': 'Mark this order cancelled? It will stay visible in the pipeline but will not count as action required.',
-      'processed.confirm.delete-order': 'Delete this order from the PrintGuard pipeline? Files, XML and the external order will not be deleted.',
+      'processed.confirm.delete-reprint':
+        'Delete this reprint record from PrintGuard? Files and orders will not be deleted.',
+      'processed.confirm.cancel-reprint':
+        'Cancel this pending reprint request? Files and orders will not be deleted.',
+      'processed.confirm.cancel-order':
+        'Mark this order cancelled? It will stay visible in the pipeline but will not count as action required.',
+      'processed.confirm.delete-order':
+        'Delete this order from the PrintGuard pipeline? Files, XML and the external order will not be deleted.',
 
       'btn.add-movement': 'New Movement',
       'btn.add-item': '+ Add Item',
@@ -906,7 +977,8 @@
       'checklist.form.category': 'Category',
       'checklist.form.category.placeholder': 'maintenance',
       'checklist.form.description': 'Description',
-      'checklist.form.description.placeholder': 'e.g. Oil condenses on the cutter, wipe it before the shift.',
+      'checklist.form.description.placeholder':
+        'e.g. Oil condenses on the cutter, wipe it before the shift.',
       'checklist.form.time': 'Reminder time *',
       'checklist.form.enabled': 'Enabled',
       'checklist.form.days': 'Days *',
@@ -944,17 +1016,21 @@
       'settings.language': 'Language / Jazyk',
       'settings.stock.title': 'Stock — consumption calculation',
       'settings.stock.weeks': 'Number of weeks for average consumption (N)',
-      'settings.stock.hint': 'Average weekly consumption = total issues over the last N weeks ÷ N. Recommended 6–8.',
+      'settings.stock.hint':
+        'Average weekly consumption = total issues over the last N weeks ÷ N. Recommended 6–8.',
       'settings.colorado.title': 'Colorado — average calculation',
       'settings.colorado.n': 'Number of intervals for rolling average (N)',
-      'settings.colorado.hint': 'Average of the last N interval deltas. Recommended 6–8.',
+      'settings.colorado.hint':
+        'Average of the last N interval deltas. Recommended 6–8.',
       'settings.cost.title': 'Cost rates — Colorado (optional)',
       'settings.cost.currency': 'Cost currency',
       'settings.cost.ink': 'Ink cost (per liter)',
       'settings.cost.media': 'Media cost (per m²)',
-      'settings.cost.hint': 'Once filled in, financial metrics will appear in the Colorado overview.',
+      'settings.cost.hint':
+        'Once filled in, financial metrics will appear in the Colorado overview.',
       'daily-report.settings.title': 'Daily production report',
-      'daily-report.settings.hint': 'Generates an operator report from Colorado print logs, API orders, Submit Tool XML and reprints. No email is sent automatically.',
+      'daily-report.settings.hint':
+        'Generates an operator report from Colorado print logs, API orders, Submit Tool XML and reprints. No email is sent automatically.',
       'daily-report.title': 'Daily production report',
       'daily-report.button': 'Daily report',
       'daily-report.date': 'Date',
@@ -979,9 +1055,11 @@
       'settings.admin.pin': 'PIN',
       'settings.admin.unlock': 'Unlock admin',
       'settings.admin.lock': 'Lock (operator mode)',
-      'settings.admin.hint': 'Admin unlocks item catalog management (Items + Add/Edit/Delete). Operator can only enter records.',
+      'settings.admin.hint':
+        'Admin unlocks item catalog management (Items + Add/Edit/Delete). Operator can only enter records.',
       'settings.export.colorado.title': 'Export CSV — Colorado (for finance)',
-      'settings.export.colorado.intervals': 'Export CSV — consumption intervals',
+      'settings.export.colorado.intervals':
+        'Export CSV — consumption intervals',
       'settings.export.colorado.raw': 'Export CSV — raw Colorado records',
       'settings.export.colorado.columns': 'Interval columns:',
       'settings.export.stock.title': 'Export CSV — Stock',
@@ -991,14 +1069,16 @@
       'settings.backup.title': 'JSON backup',
       'settings.backup.export': 'Export full backup (JSON)',
       'settings.backup.import': 'Import backup (JSON / StockGuard)',
-      'settings.backup.hint': 'Import is compatible with the old StockGuard format — snapshots are automatically converted into stocktake records.',
+      'settings.backup.hint':
+        'Import is compatible with the old StockGuard format — snapshots are automatically converted into stocktake records.',
       'settings.device.title': 'Device',
       'settings.device.id': 'Device ID',
       'settings.device.version': 'App version',
       'settings.device.clear': 'Clear all local data',
       'settings.save': 'Save settings',
       'settings.toast.saved': 'Settings saved',
-      'settings.clear.confirm': 'Delete ALL local data? This action cannot be undone.',
+      'settings.clear.confirm':
+        'Delete ALL local data? This action cannot be undone.',
       'settings.clear.done': 'Data deleted',
       'stock.search.placeholder': 'Search item…',
       'stock.log.search': 'Search item, type…',
@@ -1082,17 +1162,22 @@
       'status.warn': 'Warning',
       'status.crit': 'Critical',
 
-      'colorado.info': 'Averages are computed from the last N intervals (configurable). Cleaning / purge cycles raise L/m² for that interval — intentionally reflecting real consumption.',
+      'colorado.info':
+        'Averages are computed from the last N intervals (configurable). Cleaning / purge cycles raise L/m² for that interval — intentionally reflecting real consumption.',
       'colorado.entry.printer': 'Printer *',
       'colorado.entry.ink.label': 'Ink total — lifetime counter (L) *',
       'colorado.entry.ink.hint': 'Value from the printer display in liters',
       'colorado.entry.media.label': 'Media total — lifetime counter (m²) *',
-      'colorado.entry.media.hint': 'Value from the printer display in square meters',
+      'colorado.entry.media.hint':
+        'Value from the printer display in square meters',
       'colorado.entry.timestamp.label': 'Record date & time',
-      'colorado.entry.timestamp.hint': 'Default: current time. Adjust for backdated entries.',
+      'colorado.entry.timestamp.hint':
+        'Default: current time. Adjust for backdated entries.',
       'colorado.entry.note.label': 'Note',
-      'colorado.entry.note.placeholder': 'e.g. after cleaning cycle, after cartridge swap…',
-      'colorado.entry.preview.title': 'Computation preview (vs previous record)',
+      'colorado.entry.note.placeholder':
+        'e.g. after cleaning cycle, after cartridge swap…',
+      'colorado.entry.preview.title':
+        'Computation preview (vs previous record)',
       'colorado.entry.preview.ink': 'Ink consumption',
       'colorado.entry.preview.media': 'Media consumption',
       'colorado.entry.preview.ratio': 'Ink consumption per m²',
@@ -1102,7 +1187,8 @@
       'colorado.card.record.other': 'records',
       'colorado.card.interval.one': 'interval',
       'colorado.card.interval.other': 'intervals',
-      'colorado.card.need-two': 'Need at least 2 records to compute consumption.',
+      'colorado.card.need-two':
+        'Need at least 2 records to compute consumption.',
       'colorado.card.need-two.last': 'Latest',
       'colorado.card.records': 'records ·',
       'colorado.card.metrics.ink-day': 'Average ink consumption',
@@ -1121,7 +1207,8 @@
       'colorado.card.combined.media-total': 'Media total',
       'colorado.card.combined.media-month': 'Media total / month',
       'colorado.card.combined.cost-month': 'Estimated total cost',
-      'colorado.card.formats.note': 'Format consumption estimate is based on the combined real lifetime consumption of both Colorado printers:',
+      'colorado.card.formats.note':
+        'Format consumption estimate is based on the combined real lifetime consumption of both Colorado printers:',
       'colorado.card.formats.intervals': 'intervals:',
       'colorado.card.formats.table.format': 'Format',
       'colorado.card.formats.table.area': 'Area',
@@ -1130,11 +1217,14 @@
       'colorado.card.no-data': 'Data not available.',
       'colorado.roll.load': 'New roll',
       'colorado.export.monthly': '↓ Monthly CSV',
-      'colorado.export.monthly.none': 'There are no consumption intervals in the current month.',
+      'colorado.export.monthly.none':
+        'There are no consumption intervals in the current month.',
       'colorado.export.monthly.done': 'Colorado monthly export is ready.',
       'colorado.export.lifetime-combined': '↓ Lifetime CSV',
-      'colorado.export.lifetime-combined.none': 'No Colorado lifetime data is available.',
-      'colorado.export.lifetime-combined.done': 'Colorado lifetime export is ready.',
+      'colorado.export.lifetime-combined.none':
+        'No Colorado lifetime data is available.',
+      'colorado.export.lifetime-combined.done':
+        'Colorado lifetime export is ready.',
       'colorado.table.datetime': 'Date & Time',
       'colorado.table.ink-total': 'Ink total (L)',
       'colorado.table.ink-delta': 'Δ Ink (L)',
@@ -1196,7 +1286,8 @@
       'print.lifecycle.expl.open_issue': 'Still unresolved',
       'print.lifecycle.expl.deleted_only': 'Only deleted attempts',
       'print.lifecycle.expl.aborted_only': 'Only aborted attempts',
-      'print.lifecycle.expl.multiple_attempts_success': 'successful attempts in the record',
+      'print.lifecycle.expl.multiple_attempts_success':
+        'successful attempts in the record',
       'print.lifecycle.expl.unresolved': 'Mixed job lifecycle',
       'print.result.done': 'Done',
       'print.result.abrt': 'Aborted',
@@ -1209,8 +1300,8 @@
       'msg.delete-confirm': 'Delete this item?',
 
       'lang.cs': 'Czech',
-      'lang.en': 'English'
-    }
+      'lang.en': 'English',
+    },
   };
 
   const I18N = {
@@ -1240,21 +1331,21 @@
     },
 
     applyTranslations() {
-      document.querySelectorAll('[data-i18n]').forEach(el => {
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
         const key = el.dataset.i18n;
         if (!key) return;
         const txt = this.t(key);
         if (el.textContent !== txt) el.textContent = txt;
       });
 
-      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
         const key = el.dataset.i18nPlaceholder;
         if (!key) return;
         const txt = this.t(key);
         if (el.placeholder !== txt) el.placeholder = txt;
       });
 
-      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      document.querySelectorAll('[data-i18n-title]').forEach((el) => {
         const key = el.dataset.i18nTitle;
         if (!key) return;
         const txt = this.t(key);
@@ -1266,9 +1357,11 @@
         select.value = this.currentLang;
       }
 
-      window.dispatchEvent(new CustomEvent('i18n:changed', {
-        detail: { lang: this.currentLang }
-      }));
+      window.dispatchEvent(
+        new CustomEvent('i18n:changed', {
+          detail: { lang: this.currentLang },
+        }),
+      );
     },
 
     init() {
@@ -1279,7 +1372,7 @@
         saved = this.defaultLang;
       }
       this.setLang(saved);
-    }
+    },
   };
 
   window.I18N = I18N;

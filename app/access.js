@@ -3,13 +3,7 @@
 
 (function attachPrintGuardAccess(global) {
   function createAccessGuards(deps) {
-    const {
-      cfg,
-      el,
-      elSet,
-      showToast,
-      t,
-    } = deps;
+    const { cfg, el, elSet, showToast, t } = deps;
 
     function requireAdminPinForScreen(statusId, wrapId) {
       if (cfg.adminPin) return true;
@@ -17,7 +11,8 @@
       if (statusId) elSet(statusId, 'Admin PIN required');
       const wrap = wrapId ? el(wrapId) : null;
       if (wrap) {
-        wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Admin PIN is required for this action.</p><div class="table-empty-note">Open Settings, enter the admin PIN, and unlock admin mode.</div></div>';
+        wrap.innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">⚠</div><p>Admin PIN is required for this action.</p><div class="table-empty-note">Open Settings, enter the admin PIN, and unlock admin mode.</div></div>';
       }
       showToast('Admin PIN is required for this action.', 'error');
       return false;
@@ -34,7 +29,10 @@
     function requirePostPurchasePinForScreen() {
       if (cfg.postPurchasePin || cfg.adminPin) return true;
       renderPostPurchaseAccessRequired();
-      showToast(t('processed.pin.required') || 'Processed Orders PIN is required.', 'error');
+      showToast(
+        t('processed.pin.required') || 'Processed Orders PIN is required.',
+        'error',
+      );
       return false;
     }
 

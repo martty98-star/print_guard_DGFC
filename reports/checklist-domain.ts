@@ -89,7 +89,15 @@ export interface ChecklistTimeOfDayParts {
   minute: number;
 }
 
-export const WEEKDAY_ORDER: ChecklistWeekdayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+export const WEEKDAY_ORDER: ChecklistWeekdayKey[] = [
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  'fri',
+  'sat',
+  'sun',
+];
 
 const WEEKDAY_LABELS_CS: Record<ChecklistWeekdayKey, string> = {
   mon: 'Po',
@@ -126,7 +134,9 @@ function normalizeChecklistLookupKey(value: unknown): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-export function normalizeChecklistWeekday(value: unknown): ChecklistWeekdayKey | null {
+export function normalizeChecklistWeekday(
+  value: unknown,
+): ChecklistWeekdayKey | null {
   const raw = normalizeChecklistLookupKey(value);
   const aliases: Record<string, ChecklistWeekdayKey> = {
     mon: 'mon',
@@ -167,7 +177,9 @@ export function normalizeChecklistWeekday(value: unknown): ChecklistWeekdayKey |
   return aliases[raw] || null;
 }
 
-export function normalizeChecklistDaysOfWeek(value: unknown): ChecklistWeekdayKey[] {
+export function normalizeChecklistDaysOfWeek(
+  value: unknown,
+): ChecklistWeekdayKey[] {
   const input = Array.isArray(value) ? value : [];
   const normalized = input
     .map((item) => normalizeChecklistWeekday(item))
@@ -181,13 +193,22 @@ export function normalizeChecklistTimeOfDay(value: unknown): string | null {
   if (!match) return null;
   const hour = Number(match[1]);
   const minute = Number(match[2]);
-  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
     return null;
   }
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-export function parseChecklistTimeOfDay(value: string): ChecklistTimeOfDayParts | null {
+export function parseChecklistTimeOfDay(
+  value: string,
+): ChecklistTimeOfDayParts | null {
   const normalized = normalizeChecklistTimeOfDay(value);
   if (!normalized) return null;
   const parts = normalized.split(':').map(Number);
@@ -203,13 +224,17 @@ export function validateChecklistItemInput(
   if (!title) throw new Error('Checklist title is required');
 
   const scheduleType: ChecklistScheduleType =
-    String((input && input.scheduleType) || '').trim().toLowerCase() === 'monthly'
+    String((input && input.scheduleType) || '')
+      .trim()
+      .toLowerCase() === 'monthly'
       ? 'monthly'
       : 'weekly';
   const daysOfWeek = normalizeChecklistDaysOfWeek(input && input.daysOfWeek);
   const dayOfMonth = normalizeChecklistDayOfMonth(input && input.dayOfMonth);
-  if (scheduleType === 'weekly' && !daysOfWeek.length) throw new Error('Checklist requires at least one day of week');
-  if (scheduleType === 'monthly' && !dayOfMonth) throw new Error('Checklist requires a valid day of month');
+  if (scheduleType === 'weekly' && !daysOfWeek.length)
+    throw new Error('Checklist requires at least one day of week');
+  if (scheduleType === 'monthly' && !dayOfMonth)
+    throw new Error('Checklist requires a valid day of month');
 
   const timeOfDay = normalizeChecklistTimeOfDay(input && input.timeOfDay);
   if (!timeOfDay) throw new Error('Checklist requires a valid time of day');
@@ -223,8 +248,10 @@ export function validateChecklistItemInput(
     dayOfMonth,
     timeOfDay,
     category: cleanOptionalString(input && input.category),
-    createdAt: cleanOptionalString(input && input.createdAt) || current.toISOString(),
-    updatedAt: cleanOptionalString(input && input.updatedAt) || current.toISOString(),
+    createdAt:
+      cleanOptionalString(input && input.createdAt) || current.toISOString(),
+    updatedAt:
+      cleanOptionalString(input && input.updatedAt) || current.toISOString(),
     createdBy: cleanOptionalString(input && input.createdBy),
     updatedBy: cleanOptionalString(input && input.updatedBy),
     scheduleType,
@@ -232,7 +259,10 @@ export function validateChecklistItemInput(
   };
 }
 
-export function getChecklistZonedParts(input: Date | string | number, timeZone?: string): ZonedDateParts {
+export function getChecklistZonedParts(
+  input: Date | string | number,
+  timeZone?: string,
+): ZonedDateParts {
   const zone = timeZone || 'Europe/Prague';
   const date = input instanceof Date ? input : new Date(input);
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -246,7 +276,8 @@ export function getChecklistZonedParts(input: Date | string | number, timeZone?:
     hour12: false,
   });
   const parts = formatter.formatToParts(date);
-  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value || 0);
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value || 0);
   return {
     year: get('year'),
     month: get('month'),
@@ -257,55 +288,122 @@ export function getChecklistZonedParts(input: Date | string | number, timeZone?:
   };
 }
 
-export function getChecklistLocalDateKey(input: Date | string | number, timeZone?: string): string {
+export function getChecklistLocalDateKey(
+  input: Date | string | number,
+  timeZone?: string,
+): string {
   const parts = getChecklistZonedParts(input, timeZone);
   return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
 }
 
 export function getChecklistLocalWeekday(dateKey: string): ChecklistWeekdayKey {
-  const parts = String(dateKey || '').split('-').map(Number);
-  const utcDay = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])).getUTCDay();
-  const mapping: ChecklistWeekdayKey[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const parts = String(dateKey || '')
+    .split('-')
+    .map(Number);
+  const utcDay = new Date(
+    Date.UTC(parts[0], parts[1] - 1, parts[2]),
+  ).getUTCDay();
+  const mapping: ChecklistWeekdayKey[] = [
+    'sun',
+    'mon',
+    'tue',
+    'wed',
+    'thu',
+    'fri',
+    'sat',
+  ];
   return mapping[utcDay];
 }
 
-export function addChecklistLocalDays(dateKey: string, offsetDays: number): string {
-  const parts = String(dateKey || '').split('-').map(Number);
-  const date = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + offsetDays));
+export function addChecklistLocalDays(
+  dateKey: string,
+  offsetDays: number,
+): string {
+  const parts = String(dateKey || '')
+    .split('-')
+    .map(Number);
+  const date = new Date(
+    Date.UTC(parts[0], parts[1] - 1, parts[2] + offsetDays),
+  );
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
-export function getChecklistPseudoEpochMs(dateKey: string, timeOfDay: string): number {
-  const parts = String(dateKey || '').split('-').map(Number);
+export function getChecklistPseudoEpochMs(
+  dateKey: string,
+  timeOfDay: string,
+): number {
+  const parts = String(dateKey || '')
+    .split('-')
+    .map(Number);
   const time = parseChecklistTimeOfDay(timeOfDay);
   if (!time) throw new Error(`Invalid checklist time: ${timeOfDay}`);
-  return Date.UTC(parts[0], parts[1] - 1, parts[2], time.hour, time.minute, 0, 0);
+  return Date.UTC(
+    parts[0],
+    parts[1] - 1,
+    parts[2],
+    time.hour,
+    time.minute,
+    0,
+    0,
+  );
 }
 
-export function buildChecklistOccurrenceKey(item: ChecklistItem | string, localDate: string, timeOfDay: string): string {
+export function buildChecklistOccurrenceKey(
+  item: ChecklistItem | string,
+  localDate: string,
+  timeOfDay: string,
+): string {
   const id = typeof item === 'string' ? item : item.id;
-  const scheduleType = typeof item === 'string' ? 'weekly' : item.scheduleType || 'weekly';
+  const scheduleType =
+    typeof item === 'string' ? 'weekly' : item.scheduleType || 'weekly';
   return `${scheduleType}:${id}:${localDate}:${timeOfDay}`;
 }
 
-export function getNextChecklistOccurrence(item: ChecklistItemInput, options?: DueEvaluationOptions): ChecklistOccurrence | null {
+export function getNextChecklistOccurrence(
+  item: ChecklistItemInput,
+  options?: DueEvaluationOptions,
+): ChecklistOccurrence | null {
   const normalized = validateChecklistItemInput(item, new Date());
-  const timeZone = (options && options.timeZone) || normalized.timeZone || 'Europe/Prague';
+  const timeZone =
+    (options && options.timeZone) || normalized.timeZone || 'Europe/Prague';
   const now = options && options.now ? new Date(options.now) : new Date();
   const nowDateKey = getChecklistLocalDateKey(now, timeZone);
   const nowParts = getChecklistZonedParts(now, timeZone);
-  const nowPseudo = Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day, nowParts.hour, nowParts.minute, nowParts.second, 0);
+  const nowPseudo = Date.UTC(
+    nowParts.year,
+    nowParts.month - 1,
+    nowParts.day,
+    nowParts.hour,
+    nowParts.minute,
+    nowParts.second,
+    0,
+  );
 
   for (let offset = 0; offset < 8; offset += 1) {
     const candidateDate = addChecklistLocalDays(nowDateKey, offset);
     const weekday = getChecklistLocalWeekday(candidateDate);
     const dayOfMonth = Number(candidateDate.split('-')[2]);
-    if (normalized.scheduleType === 'weekly' && !normalized.daysOfWeek.includes(weekday)) continue;
-    if (normalized.scheduleType === 'monthly' && normalized.dayOfMonth !== dayOfMonth) continue;
-    const candidatePseudo = getChecklistPseudoEpochMs(candidateDate, normalized.timeOfDay);
+    if (
+      normalized.scheduleType === 'weekly' &&
+      !normalized.daysOfWeek.includes(weekday)
+    )
+      continue;
+    if (
+      normalized.scheduleType === 'monthly' &&
+      normalized.dayOfMonth !== dayOfMonth
+    )
+      continue;
+    const candidatePseudo = getChecklistPseudoEpochMs(
+      candidateDate,
+      normalized.timeOfDay,
+    );
     if (candidatePseudo < nowPseudo) continue;
     return {
-      occurrenceKey: buildChecklistOccurrenceKey(normalized, candidateDate, normalized.timeOfDay),
+      occurrenceKey: buildChecklistOccurrenceKey(
+        normalized,
+        candidateDate,
+        normalized.timeOfDay,
+      ),
       checklistId: normalized.id,
       item: normalized,
       localDate: candidateDate,
@@ -318,20 +416,29 @@ export function getNextChecklistOccurrence(item: ChecklistItemInput, options?: D
   return null;
 }
 
-export function getVisibleChecklistOccurrence(item: ChecklistItemInput, options?: DueEvaluationOptions): ChecklistOccurrence | null {
+export function getVisibleChecklistOccurrence(
+  item: ChecklistItemInput,
+  options?: DueEvaluationOptions,
+): ChecklistOccurrence | null {
   const normalized = validateChecklistItemInput(item, new Date());
-  const timeZone = (options && options.timeZone) || normalized.timeZone || 'Europe/Prague';
+  const timeZone =
+    (options && options.timeZone) || normalized.timeZone || 'Europe/Prague';
   const now = options && options.now ? new Date(options.now) : new Date();
   const today = getChecklistLocalDateKey(now, timeZone);
   const weekday = getChecklistLocalWeekday(today);
   const dayOfMonth = Number(today.split('-')[2]);
-  const occursToday = normalized.scheduleType === 'weekly'
-    ? normalized.daysOfWeek.includes(weekday)
-    : normalized.dayOfMonth === dayOfMonth;
+  const occursToday =
+    normalized.scheduleType === 'weekly'
+      ? normalized.daysOfWeek.includes(weekday)
+      : normalized.dayOfMonth === dayOfMonth;
 
   if (occursToday) {
     return {
-      occurrenceKey: buildChecklistOccurrenceKey(normalized, today, normalized.timeOfDay),
+      occurrenceKey: buildChecklistOccurrenceKey(
+        normalized,
+        today,
+        normalized.timeOfDay,
+      ),
       checklistId: normalized.id,
       item: normalized,
       localDate: today,
@@ -344,33 +451,63 @@ export function getVisibleChecklistOccurrence(item: ChecklistItemInput, options?
   return getNextChecklistOccurrence(normalized, options);
 }
 
-export function evaluateDueChecklistOccurrences(items: ChecklistItemInput[], options?: DueEvaluationOptions): ChecklistOccurrence[] {
+export function evaluateDueChecklistOccurrences(
+  items: ChecklistItemInput[],
+  options?: DueEvaluationOptions,
+): ChecklistOccurrence[] {
   const now = options && options.now ? new Date(options.now) : new Date();
-  const lookbackMinutes = Math.max(1, Number(options && options.lookbackMinutes) || 15);
+  const lookbackMinutes = Math.max(
+    1,
+    Number(options && options.lookbackMinutes) || 15,
+  );
   const occurrences: ChecklistOccurrence[] = [];
 
   for (const rawItem of items || []) {
     const item = validateChecklistItemInput(rawItem, now);
-    if (!item.enabled || (item.scheduleType !== 'weekly' && item.scheduleType !== 'monthly')) continue;
+    if (
+      !item.enabled ||
+      (item.scheduleType !== 'weekly' && item.scheduleType !== 'monthly')
+    )
+      continue;
 
-    const itemTimeZone = item.timeZone || (options && options.timeZone) || 'Europe/Prague';
+    const itemTimeZone =
+      item.timeZone || (options && options.timeZone) || 'Europe/Prague';
     const nowParts = getChecklistZonedParts(now, itemTimeZone);
     const nowDateKey = getChecklistLocalDateKey(now, itemTimeZone);
-    const nowPseudo = Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day, nowParts.hour, nowParts.minute, nowParts.second, 0);
+    const nowPseudo = Date.UTC(
+      nowParts.year,
+      nowParts.month - 1,
+      nowParts.day,
+      nowParts.hour,
+      nowParts.minute,
+      nowParts.second,
+      0,
+    );
     const windowStartPseudo = nowPseudo - lookbackMinutes * 60 * 1000;
-    const candidateDates = item.scheduleType === 'monthly'
-      ? [nowDateKey, addChecklistLocalDays(nowDateKey, -1)]
-      : [addChecklistLocalDays(nowDateKey, -1), nowDateKey];
+    const candidateDates =
+      item.scheduleType === 'monthly'
+        ? [nowDateKey, addChecklistLocalDays(nowDateKey, -1)]
+        : [addChecklistLocalDays(nowDateKey, -1), nowDateKey];
 
     for (const localDate of candidateDates) {
       const weekday = getChecklistLocalWeekday(localDate);
       const dayOfMonth = Number(localDate.split('-')[2]);
-      if (item.scheduleType === 'weekly' && !item.daysOfWeek.includes(weekday)) continue;
-      if (item.scheduleType === 'monthly' && item.dayOfMonth !== dayOfMonth) continue;
-      const occurrencePseudo = getChecklistPseudoEpochMs(localDate, item.timeOfDay);
-      if (occurrencePseudo > nowPseudo || occurrencePseudo < windowStartPseudo) continue;
+      if (item.scheduleType === 'weekly' && !item.daysOfWeek.includes(weekday))
+        continue;
+      if (item.scheduleType === 'monthly' && item.dayOfMonth !== dayOfMonth)
+        continue;
+      const occurrencePseudo = getChecklistPseudoEpochMs(
+        localDate,
+        item.timeOfDay,
+      );
+      if (occurrencePseudo > nowPseudo || occurrencePseudo < windowStartPseudo)
+        continue;
       occurrences.push({
-        occurrenceKey: buildChecklistOccurrenceKey(item, localDate, item.timeOfDay),
+        occurrenceKey: buildChecklistOccurrenceKey(
+          item,
+          localDate,
+          item.timeOfDay,
+        ),
         checklistId: item.id,
         item,
         localDate,
@@ -381,7 +518,11 @@ export function evaluateDueChecklistOccurrences(items: ChecklistItemInput[], opt
     }
   }
 
-  occurrences.sort((a, b) => a.pseudoEpochMs - b.pseudoEpochMs || a.item.title.localeCompare(b.item.title));
+  occurrences.sort(
+    (a, b) =>
+      a.pseudoEpochMs - b.pseudoEpochMs ||
+      a.item.title.localeCompare(b.item.title),
+  );
   return occurrences;
 }
 
@@ -415,8 +556,15 @@ export function buildChecklistReminderEvent(
 export function formatChecklistScheduleLabel(item: ChecklistItemInput): string {
   const normalized = validateChecklistItemInput(item, new Date());
   if (normalized.scheduleType === 'monthly') {
-    return 'Každý měsíc dne ' + (normalized.dayOfMonth || '?') + ' · ' + normalized.timeOfDay;
+    return (
+      'Každý měsíc dne ' +
+      (normalized.dayOfMonth || '?') +
+      ' · ' +
+      normalized.timeOfDay
+    );
   }
-  const dayLabel = normalized.daysOfWeek.map((day) => WEEKDAY_LABELS_CS[day]).join(', ');
+  const dayLabel = normalized.daysOfWeek
+    .map((day) => WEEKDAY_LABELS_CS[day])
+    .join(', ');
   return dayLabel + ' · ' + normalized.timeOfDay;
 }

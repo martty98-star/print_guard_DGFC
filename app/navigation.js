@@ -7,9 +7,20 @@
 
   function createNavigation(deps) {
     const {
-      applyRoleUI, el, loadManagementReporting, loadPostPurchaseOrders, loadPrintLog, loadScanCaptureScreen, loadSettingsUI,
-      ls, renderAlerts, renderChecklistScreen, renderCoHistory, renderItemsMgmt,
-      renderStockLog, state,
+      applyRoleUI,
+      el,
+      loadManagementReporting,
+      loadPostPurchaseOrders,
+      loadPrintLog,
+      loadScanCaptureScreen,
+      loadSettingsUI,
+      ls,
+      renderAlerts,
+      renderChecklistScreen,
+      renderCoHistory,
+      renderItemsMgmt,
+      renderStockLog,
+      state,
     } = deps;
 
     function isValidScreen(screenId) {
@@ -26,15 +37,24 @@
     }
 
     function getModeForScreen(screenId) {
-      return ['co-dashboard', 'co-entry', 'co-history', 'print-log', 'postpurchase-orders', 'scan-capture', 'management-reporting'].includes(screenId)
+      return [
+        'co-dashboard',
+        'co-entry',
+        'co-history',
+        'print-log',
+        'postpurchase-orders',
+        'scan-capture',
+        'management-reporting',
+      ].includes(screenId)
         ? 'colorado'
         : 'stock';
     }
 
     function applyModeUI(mode) {
       state.mode = mode === 'colorado' ? 'colorado' : 'stock';
-      document.querySelectorAll('.mode-btn').forEach(b =>
-        b.classList.toggle('active', b.dataset.mode === state.mode));
+      document.querySelectorAll('.mode-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.mode === state.mode);
+      });
       el('stock-nav')?.classList.toggle('hidden', state.mode !== 'stock');
       el('colorado-nav')?.classList.toggle('hidden', state.mode !== 'colorado');
     }
@@ -54,11 +74,15 @@
     function navigate(screenId, options = {}) {
       if (!isValidScreen(screenId)) screenId = DEFAULT_SCREEN;
       applyModeUI(getModeForScreen(screenId));
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach((s) => {
+        s.classList.remove('active');
+      });
       el('screen-' + screenId)?.classList.add('active');
-      document.querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item').forEach(b =>
-        b.classList.toggle('active', b.dataset.screen === screenId)
-      );
+      document
+        .querySelectorAll('#stock-nav .nav-item, #colorado-nav .nav-item')
+        .forEach((b) => {
+          b.classList.toggle('active', b.dataset.screen === screenId);
+        });
       if (screenId === 'stock-alerts') renderAlerts();
       if (screenId === 'checklist') renderChecklistScreen();
       if (screenId === 'stock-items') renderItemsMgmt();
@@ -66,8 +90,16 @@
       if (screenId === 'co-history') renderCoHistory();
       if (screenId === 'print-log') loadPrintLog();
       if (screenId === 'postpurchase-orders') loadPostPurchaseOrders();
-      if (screenId === 'scan-capture' && typeof loadScanCaptureScreen === 'function') loadScanCaptureScreen();
-      if (screenId === 'management-reporting' && typeof loadManagementReporting === 'function') loadManagementReporting();
+      if (
+        screenId === 'scan-capture' &&
+        typeof loadScanCaptureScreen === 'function'
+      )
+        loadScanCaptureScreen();
+      if (
+        screenId === 'management-reporting' &&
+        typeof loadManagementReporting === 'function'
+      )
+        loadManagementReporting();
       if (screenId === 'settings') loadSettingsUI();
       persistScreenRoute(screenId, options);
       global.scrollTo(0, 0);

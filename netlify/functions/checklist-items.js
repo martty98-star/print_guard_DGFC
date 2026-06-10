@@ -1,6 +1,11 @@
 'use strict';
 
-const { json, parseRequestBody, requireAdminPin, withClient } = require('./_lib/db');
+const {
+  json,
+  parseRequestBody,
+  requireAdminPin,
+  withClient,
+} = require('./_lib/db');
 const {
   deleteChecklistItem,
   listChecklistItems,
@@ -8,12 +13,16 @@ const {
 } = require('./_lib/checklist-store');
 
 function getActor(event, body) {
-  const headerValue = event && event.headers
-    ? event.headers['x-printguard-actor'] || event.headers['X-PrintGuard-Actor']
-    : null;
+  const headerValue =
+    event && event.headers
+      ? event.headers['x-printguard-actor'] ||
+        event.headers['X-PrintGuard-Actor']
+      : null;
   const bodyValue = body && typeof body.actor === 'string' ? body.actor : null;
   const actor = bodyValue || headerValue || 'printguard-admin';
-  return typeof actor === 'string' && actor.trim() ? actor.trim() : 'printguard-admin';
+  return typeof actor === 'string' && actor.trim()
+    ? actor.trim()
+    : 'printguard-admin';
 }
 
 exports.handler = async function handler(event) {
@@ -36,7 +45,11 @@ exports.handler = async function handler(event) {
       const requestBody = parseRequestBody(event);
       const actor = getActor(event, requestBody);
       const body = await withClient(async (client) => {
-        const item = await saveChecklistItem(client, requestBody.item || requestBody, actor);
+        const item = await saveChecklistItem(
+          client,
+          requestBody.item || requestBody,
+          actor,
+        );
         return { ok: true, item };
       });
       return json(200, body);
@@ -47,9 +60,7 @@ exports.handler = async function handler(event) {
 
       const requestBody = parseRequestBody(event);
       const id = String(
-        requestBody.id ||
-        event.queryStringParameters?.id ||
-        ''
+        requestBody.id || event.queryStringParameters?.id || '',
       ).trim();
 
       if (!id) {
@@ -63,10 +74,22 @@ exports.handler = async function handler(event) {
       return json(200, body);
     }
 
-    return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,PUT,DELETE,OPTIONS' });
+    return json(
+      405,
+      { ok: false, error: 'Method not allowed' },
+      { allow: 'GET,POST,PUT,DELETE,OPTIONS' },
+    );
   } catch (error) {
-    if (error && (error.statusCode === 401 || error.statusCode === 403 || error.statusCode === 429)) {
-      return json(error.statusCode, { ok: false, error: error.message || 'Request failed' });
+    if (
+      error &&
+      (error.statusCode === 401 ||
+        error.statusCode === 403 ||
+        error.statusCode === 429)
+    ) {
+      return json(error.statusCode, {
+        ok: false,
+        error: error.message || 'Request failed',
+      });
     }
     console.error('checklist-items failed', error);
     return json(500, {
