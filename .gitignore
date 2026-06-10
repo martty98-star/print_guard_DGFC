@@ -10,3 +10,6 @@ preview-*.txt
 processed_print_orders.json
 graphify-out/
 backups/*.dump
+
+# Lint
+.lint/tmp/

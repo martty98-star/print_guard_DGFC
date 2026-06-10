@@ -1927,6 +1927,28 @@ textarea { resize: vertical; min-height: 58px; }
 .reporting-table th {
   white-space: nowrap;
 }
+.reporting-debug {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+.reporting-debug summary {
+  cursor: pointer;
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.reporting-debug .hint {
+  margin: 8px 0 10px;
+  color: var(--text-faint);
+  font-size: .68rem;
+}
+.reporting-debug-total {
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: .72rem;
+}
 
 /* Info note */
 .info-note {

@@ -84,6 +84,31 @@
     </table>`;
   }
 
+  function renderColoradoCounterDebug(breakdown, printLogMediaM2) {
+    if (!breakdown) return '';
+    const rows = breakdown.printers || [];
+    return `<details class="reporting-debug">
+      <summary>Colorado lifetime counter debug</summary>
+      <div class="hint">130 m roll · ${fmt(breakdown.mediaWidthM, 3, ' m')} width · print-log diagnostic ${fmt(printLogMediaM2, 3, ' m²')}</div>
+      ${renderRows(rows, [
+        { label: 'Printer', value: (row) => row.printer },
+        { label: 'Start timestamp', value: (row) => row.start?.timestamp || '—' },
+        { label: 'Start ink L', value: (row) => fmt(row.start?.inkTotalL, 4) },
+        { label: 'Start media m²', value: (row) => fmt(row.start?.mediaAreaM2, 3) },
+        { label: 'End timestamp', value: (row) => row.end?.timestamp || '—' },
+        { label: 'End ink L', value: (row) => fmt(row.end?.inkTotalL, 4) },
+        { label: 'End media m²', value: (row) => fmt(row.end?.mediaAreaM2, 3) },
+        { label: 'Delta length m', value: (row) => fmt(row.deltaMediaLengthM, 3) },
+        { label: 'Delta media m²', value: (row) => fmt(row.deltaMediaAreaM2, 3) },
+        { label: '130m rolls', value: (row) => fmt(row.equivalentRolls130m, 3) },
+      ])}
+      <div class="reporting-debug-total">
+        Total counter media: <strong>${fmt(breakdown.total?.deltaMediaAreaM2, 3, ' m²')}</strong> ·
+        equivalent rolls: <strong>${fmt(breakdown.total?.equivalentRolls130m, 3)}</strong>
+      </div>
+    </details>`;
+  }
+
   function renderTrend(rows) {
     if (!rows || !rows.length) return '';
     const max = Math.max(...rows.map((row) => num(row.totalConsumedMediaM2)), 1);
@@ -137,8 +162,8 @@
       metric('Processed XML', fmt(report.processed_xml_count)),
       metric('Processed orders / API incoming / missing', `${fmt(report.processed_sales_order_count)} / ${fmt(report.expected_count)} / ${fmt(report.missing_count)}`),
       metric('Nett printing hours', fmt(report.nett_printing_time_hours, 3, ' h')),
-      metric('Consumed media', fmt(report.consumed_media_m2, 3, ' m²')),
-      metric('Consumed ink', fmt(report.consumed_ink_l, 4, ' L')),
+      metric('Consumed media (counter)', fmt(report.consumed_media_m2, 3, ' m²'), `print-log ${fmt(report.print_log_consumed_media_m2, 3, ' m²')}`),
+      metric('Consumed ink (counter)', fmt(report.consumed_ink_l, 4, ' L'), `print-log ${fmt(report.print_log_consumed_ink_l, 4, ' L')}`),
       metric('Avg files / sales order', fmt(report.avg_files_per_sales_order, 3)),
       metric('Standard / reprint files', `${fmt(report.standard_file_count)} / ${fmt(report.reprint_file_count)}`),
     ].join('');
@@ -148,13 +173,13 @@
       { label: 'Jobs', value: (row) => fmt(row.doneJobs) },
       { label: 'Nett h', value: (row) => fmt(row.nettPrintingTimeHours, 3) },
       { label: 'Gross h', value: (row) => fmt(row.grossElapsedTimeHours, 3) },
-      { label: 'Media m²', value: (row) => fmt(row.consumedMediaM2, 3) },
-      { label: 'Ink L', value: (row) => fmt(row.consumedInkL, 4) },
+      { label: 'Print-log media m²', value: (row) => fmt(row.printLogConsumedMediaM2, 3) },
+      { label: 'Print-log ink L', value: (row) => fmt(row.printLogConsumedInkL, 4) },
     ]);
-    document.getElementById('reporting-eod-status-table').innerHTML = renderRows(report.statusBreakdown || [], [
+    document.getElementById('reporting-eod-status-table').innerHTML = `${renderColoradoCounterDebug(report.coloradoCounterBreakdown, report.print_log_consumed_media_m2)}${renderRows(report.statusBreakdown || [], [
       { label: 'Status', value: (row) => row.status },
       { label: 'Count', value: (row) => fmt(row.count) },
-    ]);
+    ])}`;
   }
 
   async function loadMonthly() {

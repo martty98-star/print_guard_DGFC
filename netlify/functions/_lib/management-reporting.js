@@ -1,5 +1,10 @@
 'use strict';
 
+const {
+  DEFAULT_MEDIA_WIDTH_M,
+  summarizeCounterBreakdown,
+} = require('./eod-media-counters');
+
 const TIMEZONE = 'Europe/Prague';
 const INK_BOTTLE_L_FALLBACK = 0.7;
 
@@ -692,9 +697,37 @@ async function loadEodProductionSummary(client, reportDate) {
       group by coalesce(nullif(media_type, ''), 'Unknown media')
       order by consumed_media_m2 desc
     `, [reportDate, nextDay]);
+  const counterResult = await client.query(`
+      select
+        machine_id,
+        (array_agg(jsonb_build_object('id', id, 'machine_id', machine_id, 'timestamp', timestamp, 'data', data) order by timestamp asc, updated_at asc))[1] as start_record,
+        (array_agg(jsonb_build_object('id', id, 'machine_id', machine_id, 'timestamp', timestamp, 'data', data) order by timestamp desc, updated_at desc))[1] as end_record,
+        count(*)::int as record_count
+      from public.pg_co_records
+      where timestamp >= $1::date
+        and timestamp < $2::date
+      group by machine_id
+    `, [reportDate, nextDay]);
 
   const files = filesResult.rows[0] || {};
   const accounting = accountingResult.rows[0] || {};
+  const rowsByMachine = {};
+  for (const row of counterResult.rows || []) {
+    rowsByMachine[row.machine_id] = {
+      start: row.start_record,
+      end: row.end_record,
+      recordCount: int(row.record_count),
+    };
+  }
+  const coloradoCounterBreakdown = summarizeCounterBreakdown(rowsByMachine, {
+    mediaWidthM: DEFAULT_MEDIA_WIDTH_M,
+  });
+  const counterMediaM2 = coloradoCounterBreakdown.complete
+    ? coloradoCounterBreakdown.total.deltaMediaAreaM2
+    : null;
+  const counterInkL = coloradoCounterBreakdown.complete
+    ? coloradoCounterBreakdown.printers.reduce((sum, row) => sum + num(row.deltaInkL), 0)
+    : null;
   return {
     files: {
       totalXmlCount: int(files.total_xml_count),
@@ -708,24 +741,28 @@ async function loadEodProductionSummary(client, reportDate) {
       totalNettPrintingTimeMinutes: round(accounting.nett_printing_time_sec / 60, 2),
       totalNettPrintingTimeHours: round(accounting.nett_printing_time_sec / 3600, 3),
       grossElapsedTimeHours: round(accounting.gross_elapsed_time_sec / 3600, 3),
-      consumedMediaM2: round(accounting.consumed_media_m2, 3),
+      consumedMediaM2: counterMediaM2,
+      consumedMediaSource: coloradoCounterBreakdown.complete ? 'colorado_lifetime_counters' : 'unavailable_missing_counter_records',
+      printLogConsumedMediaM2: round(accounting.consumed_media_m2, 3),
       consumedMediaLengthM: round(accounting.consumed_media_length_m, 3),
-      consumedInkL: round(accounting.consumed_ink_l, 4),
+      consumedInkL: counterInkL == null ? null : round(counterInkL, 4),
+      printLogConsumedInkL: round(accounting.consumed_ink_l, 4),
     },
+    coloradoCounterBreakdown,
     nettPrintingTimeByPrinter: printerResult.rows.map((row) => ({
       printer: row.printer_name || 'Unknown printer',
       doneJobs: int(row.done_jobs),
       nettPrintingTimeHours: round(row.nett_printing_time_sec / 3600, 3),
       grossElapsedTimeHours: round(row.gross_elapsed_time_sec / 3600, 3),
-      consumedMediaM2: round(row.consumed_media_m2, 3),
-      consumedInkL: round(row.consumed_ink_l, 4),
+      printLogConsumedMediaM2: round(row.consumed_media_m2, 3),
+      printLogConsumedInkL: round(row.consumed_ink_l, 4),
     })),
     nettPrintingTimeByMediaType: mediaResult.rows.map((row) => ({
       mediaType: row.media_type,
       doneJobs: int(row.done_jobs),
       nettPrintingTimeHours: round(row.nett_printing_time_sec / 3600, 3),
-      consumedMediaM2: round(row.consumed_media_m2, 3),
-      consumedInkL: round(row.consumed_ink_l, 4),
+      printLogConsumedMediaM2: round(row.consumed_media_m2, 3),
+      printLogConsumedInkL: round(row.consumed_ink_l, 4),
     })),
   };
 }
@@ -742,6 +779,12 @@ async function loadEodReport(client, options = {}) {
   ];
   if (production.accounting.nettTimeRowCount < production.accounting.doneJobs) {
     warnings.push('Nett printing time uses active_time_sec only; rows without active time are excluded from nett time and shown only in gross elapsed time.');
+  }
+  for (const warning of production.coloradoCounterBreakdown.warnings || []) {
+    warnings.push(warning);
+  }
+  if (!production.coloradoCounterBreakdown.complete) {
+    warnings.push('Consumed media from Colorado lifetime counters is unavailable for this report date; print-log area is shown only as diagnostic data.');
   }
   const avgFilesPerSalesOrder = incoming.apiReceivedSalesOrders
     ? round(incoming.apiReceivedFileCount / incoming.apiReceivedSalesOrders, 3)
@@ -767,7 +810,10 @@ async function loadEodReport(client, options = {}) {
     avg_files_per_sales_order: avgFilesPerSalesOrder,
     nett_printing_time_hours: production.accounting.totalNettPrintingTimeHours,
     consumed_media_m2: production.accounting.consumedMediaM2,
+    print_log_consumed_media_m2: production.accounting.printLogConsumedMediaM2,
     consumed_ink_l: production.accounting.consumedInkL,
+    print_log_consumed_ink_l: production.accounting.printLogConsumedInkL,
+    coloradoCounterBreakdown: production.coloradoCounterBreakdown,
     production,
     statusBreakdown: [
       { status: 'processed_orders', count: incoming.processedSalesOrderCount },
