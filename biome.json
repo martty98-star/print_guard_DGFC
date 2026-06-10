@@ -1,34 +1,54 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"files": {
-		"ignoreUnknown": false
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab"
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		}
-	},
-	"assist": {
-		"enabled": true,
-		"actions": {
-			"source": {
-				"organizeImports": "on"
-			}
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "app/**",
+      "netlify/functions/**",
+      "reports/**",
+      "scripts/**",
+      "tests/**",
+      "*.css",
+      "*.html",
+      "*.js",
+      "*.json",
+      "*.ts",
+      "!package-lock.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "lineEnding": "crlf"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useNodejsImportProtocol": "off"
+      },
+      "suspicious": {
+        "noRedundantUseStrict": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
 }

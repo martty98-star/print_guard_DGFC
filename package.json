@@ -3,8 +3,13 @@
   "private": true,
   "version": "8.1.3",
   "scripts": {
+    "check": "npm run typecheck && npm run lint",
     "db:audit": "node scripts/audit-db-schema.js",
     "db:indexes": "node scripts/audit-db-indexes.js",
+    "format": "biome format . --write",
+    "format:check": "biome format .",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
     "test": "node tests/scan-barcode.test.js && node tests/reprint-xml.test.js && node tests/order-pipeline-identity.test.js && node tests/order-pipeline-render-labels.test.js && node tests/commit-scan-batch.test.js && node tests/scan-capture-api.test.js && node tests/stock-sync-safety.test.js && node tests/eod-media-counters.test.js",
     "export:colorado-monthly": "node scripts/export-colorado-monthly.js",
     "typecheck": "tsc --noEmit",
