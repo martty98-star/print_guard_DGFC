@@ -4029,6 +4029,35 @@ body.nav-open .bottom-nav-toggle {
   opacity: 1;
 }
 
+[data-theme="dark"] :is(.hist-tabs, .detail-tabs) {
+  background: #151B1E;
+  border-color: #303A3F;
+}
+
+[data-theme="dark"] :is(.hist-tab, .detail-tab, .machine-btn, .pill, .pp-filter-tab, .pp-filter-chip) {
+  background: #151B1E;
+  border-color: #303A3F;
+  color: #9AA6AC;
+}
+
+[data-theme="dark"] :is(.hist-tab, .detail-tab, .machine-btn, .pill, .pp-filter-tab, .pp-filter-chip):hover {
+  background: #20282C;
+  border-color: #46535A;
+  color: #D7DFE2;
+}
+
+[data-theme="dark"] :is(.hist-tab.active, .detail-tab.active, .machine-btn.active, .pill.active, .btn-sm.active, .pp-filter-tab.active, .pp-filter-chip.active, .pp-filter-chip[aria-pressed="true"]) {
+  background: linear-gradient(180deg, #303A3F 0%, #222A2E 100%);
+  border-color: #46535A;
+  color: #F1F5F6;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.055), 0 5px 16px rgba(0,0,0,.34);
+}
+
+[data-theme="dark"] .pp-filter-tab.active span {
+  color: #CBD3D7;
+}
+
 [data-theme="dark"] .bottom-nav {
   background: color-mix(in srgb, #171D20 94%, transparent);
   border-color: #303A3F;
