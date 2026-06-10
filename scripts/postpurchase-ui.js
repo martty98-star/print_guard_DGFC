@@ -38,6 +38,9 @@
     reprintActionStateByKey: new Map(),
     reprintStateTimers: new Map(),
     reprintRefreshTimer: null,
+    expandedOrderIds: new Set(),
+    orderDetailCacheById: new Map(),
+    activeOrderId: null,
     controlsBound: false,
   };
 
@@ -54,6 +57,10 @@
       state.reprintActionStateByKey = new Map();
     if (!(state.reprintStateTimers instanceof Map))
       state.reprintStateTimers = new Map();
+    if (!(state.expandedOrderIds instanceof Set))
+      state.expandedOrderIds = new Set();
+    if (!(state.orderDetailCacheById instanceof Map))
+      state.orderDetailCacheById = new Map();
   }
 
   function cleanApiError(error) {
@@ -177,6 +184,53 @@
     }
   }
 
+  function getOrderStateId(rowOrId) {
+    if (rowOrId && typeof rowOrId === 'object') {
+      return String(rowOrId.processedOrderId || rowOrId.id || '').trim();
+    }
+    return String(rowOrId || '').trim();
+  }
+
+  function rememberDetailedOrder(row) {
+    const orderId = getOrderStateId(row);
+    if (!orderId || !row || !row.hasDetail) return;
+    state.expandedOrderIds.add(orderId);
+    state.activeOrderId = orderId;
+    state.orderDetailCacheById.set(orderId, { ...row });
+  }
+
+  function mergeCachedDetails(rows) {
+    return (Array.isArray(rows) ? rows : []).map((row) => {
+      const orderId = getOrderStateId(row);
+      if (!orderId || !state.expandedOrderIds.has(orderId)) return row;
+      const cached = state.orderDetailCacheById.get(orderId);
+      if (!cached) return row;
+      return {
+        ...row,
+        ...cached,
+        ...row,
+        hasDetail: true,
+        printFiles: cached.printFiles || row.printFiles,
+        reprintRecords: row.reprintRecords || cached.reprintRecords,
+      };
+    });
+  }
+
+  function captureScrollPosition(options = {}) {
+    if (!options.preserveScroll) return null;
+    return {
+      x: window.scrollX || 0,
+      y: window.scrollY || 0,
+    };
+  }
+
+  function restoreScrollPosition(position) {
+    if (!position) return;
+    window.requestAnimationFrame(() => {
+      window.scrollTo(position.x, position.y);
+    });
+  }
+
   function clearReprintActionState(key) {
     if (!key) return;
     const existingTimer = state.reprintStateTimers.get(key);
@@ -225,7 +279,7 @@
     if (state.reprintRefreshTimer) clearTimeout(state.reprintRefreshTimer);
     state.reprintRefreshTimer = setTimeout(() => {
       state.reprintRefreshTimer = null;
-      loadPostPurchaseOrders(true);
+      loadPostPurchaseOrders(true, { preserveScroll: true });
     }, delayMs);
   }
 
@@ -477,6 +531,13 @@
       state.reprintPendingKeys.add(
         Render.getReprintKey(payload.orderId, payload.printFilePath),
       );
+      setReprintActionState(
+        Render.getReprintKey(payload.orderId, payload.printFilePath),
+        {
+          state: 'pending',
+          message: t('processed.action.reprint-pending-text'),
+        },
+      );
       const downloadOrderName =
         payload.orderName ||
         (selected.row &&
@@ -485,6 +546,7 @@
             selected.row.orderName)) ||
         payload.orderId;
       if (selected.row) {
+        rememberDetailedOrder(selected.row);
         const xml = ReprintXml.generateReprintXml(
           selected.row,
           selected.printFile,
@@ -492,11 +554,22 @@
         ReprintXml.downloadXml(xml, downloadOrderName);
       }
       state.showToast(t('processed.toast.reprint-created'), 'success');
-      state.S.postPurchaseLoaded = false;
-      await loadPostPurchaseOrders(true);
+      renderPostPurchaseOrders();
+      schedulePostPurchaseRefresh(25000);
       return result;
     } catch (error) {
       console.error('Reprint request failed', error);
+      setReprintActionState(
+        Render.getReprintKey(payload.orderId, payload.printFilePath),
+        {
+          state: 'error',
+          message:
+            error && error.message
+              ? error.message
+              : t('processed.toast.reprint-create-failed'),
+        },
+      );
+      renderPostPurchaseOrders();
       state.showToast(t('processed.toast.reprint-create-failed'), 'error');
       throw error;
     }
@@ -612,6 +685,7 @@
       });
       if (payload.row) {
         rows[index] = { ...rows[index], ...payload.row, hasDetail: true };
+        rememberDetailedOrder(rows[index]);
         state.S.postPurchaseOrders = rows;
         await loadVisibleReprintHistory();
         renderPostPurchaseOrders();
@@ -624,6 +698,7 @@
 
   async function loadPostPurchaseOrders(force = false, options = {}) {
     const append = Boolean(options.append);
+    const scrollPosition = captureScrollPosition(options);
     if (state.S.postPurchaseLoading) {
       if (append) return;
       if (state.S.postPurchaseAbortController)
@@ -658,7 +733,7 @@
       const rows = Array.isArray(payload.rows) ? payload.rows : [];
       state.S.postPurchaseOrders = append
         ? (state.S.postPurchaseOrders || []).concat(rows)
-        : rows;
+        : mergeCachedDetails(rows);
       state.S.postPurchaseOffset =
         Number(payload.page?.nextOffset ?? payload.nextOffset) ||
         state.S.postPurchaseOrders.length;
@@ -671,6 +746,7 @@
       updateMonthFilter(payload.months || []);
       updateFilterControls();
       renderPostPurchaseOrders();
+      restoreScrollPosition(scrollPosition);
     } catch (error) {
       if (error && error.name === 'AbortError') return;
       console.error('Order pipeline load failed', error);

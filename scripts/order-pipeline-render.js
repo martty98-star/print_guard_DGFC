@@ -417,7 +417,7 @@
       return renderReprintStateBlock(row, state, options);
     }
     if (state.state === 'pending' || row.reprintPending) {
-      return `<span class="pp-action-text">${t('processed.action.reprint-pending-text')}</span>`;
+      return renderReprintStateBlock(row, state, options);
     }
     const xmlStatus = getXmlStatus(row);
     if (xmlStatus)
@@ -891,7 +891,7 @@
     }
     if (actionState.state === 'pending') {
       return `<div class="pp-reprint-action-state pending">
-        <span>${t('processed.action.reprint-pending-text')}</span>
+        <span>${esc(actionState.message || t('processed.action.reprint-pending-text'))}</span>
       </div>`;
     }
     return '';

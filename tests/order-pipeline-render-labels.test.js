@@ -99,4 +99,46 @@ assert.match(
   /<span class="pp-order-chip reprint-single is-reprint-single">RS<\/span>/,
 );
 
+const pendingKey = Render.getReprintKey(26852, '');
+const pendingHtml = Render.renderOrders(
+  [
+    {
+      id: 26852,
+      processedOrderId: 26852,
+      processedOrderName: '4770995',
+      orderName: '4770995',
+      orderType: 'S',
+      pipelineStatus: 'processed',
+      hasDetail: true,
+      printFiles: [
+        {
+          printFilePath: 'C:\\Print\\4770995.pdf',
+          pageSize: '100x100',
+        },
+      ],
+    },
+  ],
+  {
+    esc,
+    stats: null,
+    reprintHistoryByKey: new Map(),
+    reprintActionStateByKey: new Map([
+      [
+        pendingKey,
+        {
+          state: 'pending',
+          message: 'Reprint vytvořen',
+        },
+      ],
+    ]),
+    reprintPendingKeys: new Set(),
+  },
+);
+
+assert.match(pendingHtml, /Reprint vytvořen/);
+assert.doesNotMatch(
+  pendingHtml,
+  /data-print-file-label="processed.full-order"/,
+);
+
 console.log('order-pipeline render label tests passed');
