@@ -61,7 +61,7 @@
     });
 
     if (el('cfg-theme')) {
-      el('cfg-theme').addEventListener('change', event => {
+      el('cfg-theme').addEventListener('change', (event) => {
         cfg.theme = event.target.value || 'light';
       });
     }
@@ -77,50 +77,76 @@
         });
 
         let result = null;
-        try { result = await res.json(); } catch (_) {}
+        try {
+          result = await res.json();
+        } catch (_) {}
 
         if (!res.ok || !result?.ok) {
           throw new Error(result?.error || 'Odeslání test notifikace selhalo.');
         }
 
-        showToast(`Test notifikace: odesláno ${result.sent || 0}, selhalo ${result.failed || 0}.`, 'success');
+        showToast(
+          `Test notifikace: odesláno ${result.sent || 0}, selhalo ${result.failed || 0}.`,
+          'success',
+        );
       } catch (error) {
         console.error('[Push] send test failed', error);
-        showToast(error?.message || 'Odeslání test notifikace selhalo.', 'error');
+        showToast(
+          error?.message || 'Odeslání test notifikace selhalo.',
+          'error',
+        );
       }
     });
 
     el('send-stock-alerts-btn').addEventListener('click', async () => {
-      await sendStockNotifications({ silent: false, trigger: 'manual-settings' });
+      await sendStockNotifications({
+        silent: false,
+        trigger: 'manual-settings',
+      });
     });
 
     el('export-csv-intervals').addEventListener('click', exportCSVIntervals);
     el('export-csv-raw-co').addEventListener('click', exportCSVRawCo);
     el('export-csv-stock').addEventListener('click', exportCSVStock);
-    el('export-csv-stock-levels').addEventListener('click', exportCSVStockLevels);
+    el('export-csv-stock-levels').addEventListener(
+      'click',
+      exportCSVStockLevels,
+    );
     el('export-json').addEventListener('click', exportJSON);
-    el('import-json-btn').addEventListener('click', () => el('import-json-input').click());
+    el('import-json-btn').addEventListener('click', () =>
+      el('import-json-input').click(),
+    );
     el('import-json-input').addEventListener('change', handleImportJSON);
 
     el('reset-stock-cache-btn')?.addEventListener('click', () => {
-      showConfirm('Resetovat lokální cache skladu na tomto zařízení?', async () => {
-        if (typeof resetLocalStockCache === 'function') {
-          await resetLocalStockCache();
-        } else {
-          await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES)]);
-          S.items = [];
-          S.movements = [];
-        }
-        renderStockOverview();
-        renderAlerts();
-        renderItemsMgmt();
-        showToast('Lokální cache skladu byla resetována. Spusťte Sync pro načtení DB stavu.');
-      });
+      showConfirm(
+        'Resetovat lokální cache skladu na tomto zařízení?',
+        async () => {
+          if (typeof resetLocalStockCache === 'function') {
+            await resetLocalStockCache();
+          } else {
+            await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES)]);
+            S.items = [];
+            S.movements = [];
+          }
+          renderStockOverview();
+          renderAlerts();
+          renderItemsMgmt();
+          showToast(
+            'Lokální cache skladu byla resetována. Spusťte Sync pro načtení DB stavu.',
+          );
+        },
+      );
     });
 
     el('clear-all-btn').addEventListener('click', () => {
       showConfirm(i18n('settings.clear.confirm'), async () => {
-        await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
+        await Promise.all([
+          idbClear(ST_ITEMS),
+          idbClear(ST_MOVES),
+          idbClear(ST_CORECS),
+          idbClear(ST_SETTINGS),
+        ]);
         try {
           localStorage.removeItem('pg_stock_action_queue_v1');
           localStorage.removeItem('pg_sync_dirty_reasons');

@@ -56,15 +56,33 @@
       if (costCurrencySelect && !storage('pg_cost_currency')) {
         costCurrencySelect.value = cfg.costCurrency;
       }
-      try { renderStockOverview(); } catch (_) {}
-      try { renderAlerts(); } catch (_) {}
-      try { renderItemsMgmt(); } catch (_) {}
-      try { renderStockLog(); } catch (_) {}
-      try { renderCoDashboard(); } catch (_) {}
-      try { renderCoHistory(); } catch (_) {}
-      try { renderPrintLogRows(); } catch (_) {}
-      try { renderPostPurchaseOrders(); } catch (_) {}
-      try { renderChecklistScreen(false); } catch (_) {}
+      try {
+        renderStockOverview();
+      } catch (_) {}
+      try {
+        renderAlerts();
+      } catch (_) {}
+      try {
+        renderItemsMgmt();
+      } catch (_) {}
+      try {
+        renderStockLog();
+      } catch (_) {}
+      try {
+        renderCoDashboard();
+      } catch (_) {}
+      try {
+        renderCoHistory();
+      } catch (_) {}
+      try {
+        renderPrintLogRows();
+      } catch (_) {}
+      try {
+        renderPostPurchaseOrders();
+      } catch (_) {}
+      try {
+        renderChecklistScreen(false);
+      } catch (_) {}
     }
 
     async function init() {
@@ -112,7 +130,8 @@
       }
 
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js?v=8.1.3')
+        navigator.serviceWorker
+          .register('sw.js?v=8.1.3')
           .then((registration) => {
             registration.update().catch(() => {});
           })

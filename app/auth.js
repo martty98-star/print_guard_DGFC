@@ -36,8 +36,11 @@
   }
 
   function adminErrorMessage(error) {
-    const message = error && error.message ? error.message : String(error || '');
-    return message === 'Unauthorized' ? 'Invalid or expired admin PIN.' : message;
+    const message =
+      error && error.message ? error.message : String(error || '');
+    return message === 'Unauthorized'
+      ? 'Invalid or expired admin PIN.'
+      : message;
   }
 
   function getPostPurchasePinForRequest() {
@@ -66,9 +69,15 @@
   }
 
   function postPurchaseErrorMessage(error) {
-    const message = error && error.message ? error.message : String(error || '');
-    if (message === 'Unauthorized') return 'Invalid or expired Processed Orders PIN.';
-    if (/illegal invocation/i.test(message) || /failed to fetch/i.test(message) || /networkerror/i.test(message)) {
+    const message =
+      error && error.message ? error.message : String(error || '');
+    if (message === 'Unauthorized')
+      return 'Invalid or expired Processed Orders PIN.';
+    if (
+      /illegal invocation/i.test(message) ||
+      /failed to fetch/i.test(message) ||
+      /networkerror/i.test(message)
+    ) {
       return 'Database/API unavailable. Try refresh later.';
     }
     return message;

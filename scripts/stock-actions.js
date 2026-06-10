@@ -58,7 +58,7 @@
     }
 
     function openStockDetail(articleNumber) {
-      const item = S.items.find(it => it.articleNumber === articleNumber);
+      const item = S.items.find((it) => it.articleNumber === articleNumber);
       if (!item) return;
       S.detailArticle = articleNumber;
       el('detail-title').textContent = item.name || articleNumber;
@@ -104,10 +104,14 @@
         <button class="btn-sm" id="detail-add-mov-btn">+ Nový pohyb</button>
       </div>
         <div class="detail-tab-pane table-wrap" data-pane="movements" style="margin-top:10px">
-        ${moves.length ? `<table class="data-table">
+        ${
+          moves.length
+            ? `<table class="data-table">
           <thead><tr><th>${i18n('table.date')}</th><th>${i18n('table.type')}</th><th>${i18n('table.qty')}</th><th>${i18n('table.after')}</th><th>${i18n('table.note')}</th><th></th></tr></thead>
           <tbody>${buildMovementRows(item, moves)}</tbody>
-        </table>` : '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby. Přidejte příjem nebo inventuru.</p></div>'}
+        </table>`
+            : '<div class="empty-state" style="padding:18px 0"><p>Žádné pohyby. Přidejte příjem nebo inventuru.</p></div>'
+        }
       </div>
       <div class="detail-tab-pane table-wrap hidden" data-pane="history" style="margin-top:10px">
         ${buildStockHistoryTable(item, moves)}
@@ -119,12 +123,15 @@
     }
 
     async function deleteMovementAdmin(id) {
-      if (!isAdmin()) { showToast('Mazání pohybů — jen admin', 'error'); return; }
+      if (!isAdmin()) {
+        showToast('Mazání pohybů — jen admin', 'error');
+        return;
+      }
       showConfirm('Smazat tento pohyb skladu? (Admin)', async () => {
         try {
           await StockStore.deleteMovementRemote(id, stockApiAdapter());
           await StockStore.deleteMovementLocal(stockDbAdapter(), id);
-          S.movements = S.movements.filter(m => m.id !== id);
+          S.movements = S.movements.filter((m) => m.id !== id);
           renderStockOverview();
           renderAlerts();
           renderStockLog();
@@ -141,7 +148,7 @@
         try {
           await StockStore.deleteMovementRemote(id, stockApiAdapter());
           await StockStore.deleteMovementLocal(stockDbAdapter(), id);
-          S.movements = S.movements.filter(m => m.id !== id);
+          S.movements = S.movements.filter((m) => m.id !== id);
           renderStockOverview();
           renderAlerts();
           if (S.detailArticle) openStockDetail(S.detailArticle);
@@ -153,9 +160,15 @@
     }
 
     async function saveMovement() {
-      if (!S.movItem) { showToast('Vyberte položku', 'error'); return; }
+      if (!S.movItem) {
+        showToast('Vyberte položku', 'error');
+        return;
+      }
       const qty = parseFloat(el('mov-qty').value);
-      if (isNaN(qty) || qty < 0) { showToast('Zadejte platné množství', 'error'); return; }
+      if (isNaN(qty) || qty < 0) {
+        showToast('Zadejte platné množství', 'error');
+        return;
+      }
 
       const move = {
         id: genId('mov'),
@@ -185,7 +198,9 @@
         } else {
           setSyncDirtyReason('stock');
         }
-        S.movements.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        S.movements.sort(
+          (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+        );
         const typeLabel = movementLabel(S.movType);
         showToast(`${typeLabel} — ${i18n('msg.save-success')}`, 'success');
         el('mov-qty').value = '';
@@ -195,8 +210,11 @@
         renderAlerts();
         navigate('stock-overview');
         runNotificationDispatch(
-          Reports.notificationDispatch?.emitStockMovementCreated?.(move, notifyItem),
-          'stock movement event'
+          Reports.notificationDispatch?.emitStockMovementCreated?.(
+            move,
+            notifyItem,
+          ),
+          'stock movement event',
         );
       } catch (err) {
         showToast('Chyba: ' + err.message, 'error');
@@ -209,22 +227,27 @@
       const list = el('items-mgmt-list');
       const lblOnHand = i18n('stock.metric.onhand');
       if (!S.items.length) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné položky.\nKlikněte + Přidat položku nebo importujte JSON.</p></div>';
+        list.innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Žádné položky.\nKlikněte + Přidat položku nebo importujte JSON.</p></div>';
         return;
       }
       const byCategory = {};
-      S.items.forEach(it => {
+      S.items.forEach((it) => {
         const cat = it.category || 'Ostatní';
         if (!byCategory[cat]) byCategory[cat] = [];
         byCategory[cat].push(it);
       });
 
-      list.innerHTML = Object.entries(byCategory).sort(([a], [b]) => a.localeCompare(b)).map(([cat, items]) => `
+      list.innerHTML = Object.entries(byCategory)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(
+          ([cat, items]) => `
     <div style="margin-bottom:6px">
       <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);padding:10px 0 6px">${esc(cat)}</div>
-      ${items.map(it => {
-        const stock = computeStock(it);
-        return `<div class="mgmt-card" style="margin-bottom:5px">
+      ${items
+        .map((it) => {
+          const stock = computeStock(it);
+          return `<div class="mgmt-card" style="margin-bottom:5px">
           <div class="mgmt-info">
             <div class="mgmt-name">${esc(it.name || it.articleNumber)}</div>
             <div class="mgmt-meta">${esc(it.articleNumber)} · ${esc(it.unit || 'ks')} · ${lblOnHand}: ${fmtN(stock.onHand, 0)}</div>
@@ -235,21 +258,37 @@
             <button class="btn-icon-sm danger" data-del="${esc(it.articleNumber)}" title="Smazat">✕</button>
           </div>
         </div>`;
-      }).join('')}
-    </div>`).join('');
+        })
+        .join('')}
+    </div>`,
+        )
+        .join('');
 
-      list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openItemModal(b.dataset.edit)));
-      list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
+      list
+        .querySelectorAll('[data-edit]')
+        .forEach((b) =>
+          b.addEventListener('click', () => openItemModal(b.dataset.edit)),
+        );
+      list
+        .querySelectorAll('[data-del]')
+        .forEach((b) =>
+          b.addEventListener('click', () => deleteItem(b.dataset.del)),
+        );
     }
 
     function openItemModal(articleNumber) {
-      if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
+      if (!isAdmin()) {
+        showToast('Jen admin může spravovat položky', 'error');
+        return;
+      }
 
       S.editingItem = articleNumber
-        ? (S.items.find(it => it.articleNumber === articleNumber) || null)
+        ? S.items.find((it) => it.articleNumber === articleNumber) || null
         : null;
 
-      el('item-modal-title').textContent = S.editingItem ? 'Upravit položku' : 'Nová položka';
+      el('item-modal-title').textContent = S.editingItem
+        ? 'Upravit položku'
+        : 'Nová položka';
       const item = S.editingItem || {};
       el('im-name').value = item.name || '';
       el('im-article').value = item.articleNumber || '';
@@ -267,14 +306,30 @@
     }
 
     async function saveItemModal() {
-      if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
+      if (!isAdmin()) {
+        showToast('Jen admin může spravovat položky', 'error');
+        return;
+      }
 
       const name = el('im-name').value.trim();
-      const article = el('im-article').value.trim().toUpperCase().replace(/\s+/g, '-');
-      if (!name) { showToast('Zadejte název', 'error'); return; }
-      if (!article) { showToast('Zadejte číslo artiklu', 'error'); return; }
-      if (!S.editingItem && S.items.find(it => it.articleNumber === article)) {
-        showToast('Artikl s tímto číslem již existuje', 'error'); return;
+      const article = el('im-article')
+        .value.trim()
+        .toUpperCase()
+        .replace(/\s+/g, '-');
+      if (!name) {
+        showToast('Zadejte název', 'error');
+        return;
+      }
+      if (!article) {
+        showToast('Zadejte číslo artiklu', 'error');
+        return;
+      }
+      if (
+        !S.editingItem &&
+        S.items.find((it) => it.articleNumber === article)
+      ) {
+        showToast('Artikl s tímto číslem již existuje', 'error');
+        return;
       }
 
       const updatedAt = new Date().toISOString();
@@ -284,9 +339,9 @@
         unit: el('im-unit').value.trim() || 'ks',
         category: el('im-category').value.trim() || '',
         supplier: el('im-supplier').value.trim() || '',
-        MOQ: parseInt(el('im-moq').value) || 1,
-        leadTimeDays: parseInt(el('im-lead').value) || 7,
-        safetyDays: parseInt(el('im-safety').value) || 7,
+        MOQ: parseInt(el('im-moq').value, 10) || 1,
+        leadTimeDays: parseInt(el('im-lead').value, 10) || 7,
+        safetyDays: parseInt(el('im-safety').value, 10) || 7,
         minQty: parseFloat(el('im-minqty').value) || 0,
         orderUrl: el('im-url').value.trim() || undefined,
         isActive: true,
@@ -294,8 +349,9 @@
       };
 
       await StockStore.putItem(stockDbAdapter(), item);
-      const idx = S.items.findIndex(it => it.articleNumber === article);
-      if (idx >= 0) S.items[idx] = item; else S.items.push(item);
+      const idx = S.items.findIndex((it) => it.articleNumber === article);
+      if (idx >= 0) S.items[idx] = item;
+      else S.items.push(item);
       if (typeof enqueueStockAction === 'function') {
         enqueueStockAction({
           entity: 'item',
@@ -312,28 +368,45 @@
       el('item-modal').classList.add('hidden');
       renderItemsMgmt();
       renderStockOverview();
-      showToast(S.editingItem ? 'Položka upravena' : 'Položka přidána', 'success');
+      showToast(
+        S.editingItem ? 'Položka upravena' : 'Položka přidána',
+        'success',
+      );
     }
 
     async function deleteItem(articleNumber) {
-      if (!isAdmin()) { showToast('Jen admin může spravovat položky', 'error'); return; }
+      if (!isAdmin()) {
+        showToast('Jen admin může spravovat položky', 'error');
+        return;
+      }
 
-      showConfirm(`Smazat položku "${articleNumber}" včetně všech pohybů?`, async () => {
-        try {
-          await cloudDelete('item', articleNumber);
-          await StockStore.deleteItem(stockDbAdapter(), articleNumber);
-          await StockStore.deleteMovementsForArticle(stockDbAdapter(), S.movements, articleNumber);
-          S.items = S.items.filter(it => it.articleNumber !== articleNumber);
-          S.movements = S.movements.filter(m => m.articleNumber !== articleNumber);
-          setSyncDirtyReason('stock');
-          renderItemsMgmt();
-          renderStockOverview();
-          renderAlerts();
-          showToast('Položka smazána');
-        } catch (err) {
-          showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
-        }
-      });
+      showConfirm(
+        `Smazat položku "${articleNumber}" včetně všech pohybů?`,
+        async () => {
+          try {
+            await cloudDelete('item', articleNumber);
+            await StockStore.deleteItem(stockDbAdapter(), articleNumber);
+            await StockStore.deleteMovementsForArticle(
+              stockDbAdapter(),
+              S.movements,
+              articleNumber,
+            );
+            S.items = S.items.filter(
+              (it) => it.articleNumber !== articleNumber,
+            );
+            S.movements = S.movements.filter(
+              (m) => m.articleNumber !== articleNumber,
+            );
+            setSyncDirtyReason('stock');
+            renderItemsMgmt();
+            renderStockOverview();
+            renderAlerts();
+            showToast('Položka smazána');
+          } catch (err) {
+            showToast(`Mazání selhalo: ${adminErrorMessage(err)}`, 'error');
+          }
+        },
+      );
     }
 
     return {

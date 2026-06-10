@@ -1,6 +1,11 @@
 'use strict';
 
-const { json, parseRequestBody, requireAdminAccess, withClient } = require('./_lib/db');
+const {
+  json,
+  parseRequestBody,
+  requireAdminAccess,
+  withClient,
+} = require('./_lib/db');
 const { evaluateChecklistReminders } = require('./_lib/checklist-reminders');
 
 exports.handler = async function handler(event) {
@@ -9,7 +14,11 @@ exports.handler = async function handler(event) {
   }
 
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-    return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,OPTIONS' });
+    return json(
+      405,
+      { ok: false, error: 'Method not allowed' },
+      { allow: 'GET,POST,OPTIONS' },
+    );
   }
 
   try {
@@ -17,12 +26,14 @@ exports.handler = async function handler(event) {
       requireAdminAccess(event);
     }
 
-    const bodyInput = event.httpMethod === 'POST' ? parseRequestBody(event) : {};
+    const bodyInput =
+      event.httpMethod === 'POST' ? parseRequestBody(event) : {};
     const query = event.queryStringParameters || {};
     const lookbackRaw = bodyInput.lookbackMinutes ?? query.lookbackMinutes;
     const dryRunRaw = bodyInput.dryRun ?? query.dryRun;
     const lookbackMinutes = Math.max(1, Number(lookbackRaw) || 15);
-    const dryRun = dryRunRaw === true || dryRunRaw === 'true' || dryRunRaw === '1';
+    const dryRun =
+      dryRunRaw === true || dryRunRaw === 'true' || dryRunRaw === '1';
 
     const body = await withClient(async (client) => {
       const result = await evaluateChecklistReminders(client, {
@@ -36,12 +47,16 @@ exports.handler = async function handler(event) {
     return json(200, body);
   } catch (error) {
     if (error && (error.statusCode === 401 || error.statusCode === 429)) {
-      return json(error.statusCode, { ok: false, error: error.message || 'Unauthorized' });
+      return json(error.statusCode, {
+        ok: false,
+        error: error.message || 'Unauthorized',
+      });
     }
     console.error('checklist-evaluate failed', error);
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : 'checklist-evaluate failed',
+      error:
+        error && error.message ? error.message : 'checklist-evaluate failed',
     });
   }
 };

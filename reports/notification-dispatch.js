@@ -1,4 +1,4 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   function getNotificationModel() {
@@ -25,10 +25,14 @@
     });
 
     let result = null;
-    try { result = await res.json(); } catch (_) {}
+    try {
+      result = await res.json();
+    } catch (_) {}
 
     if (!res.ok || !result || !result.ok) {
-      throw new Error((result && result.error) || 'Notification request failed.');
+      throw new Error(
+        (result && result.error) || 'Notification request failed.',
+      );
     }
 
     return result;
@@ -44,18 +48,20 @@
 
   function emitStockMovementCreated(move, item) {
     const model = getNotificationModel();
-    const event = model && typeof model.buildStockMovementCreatedEvent === 'function'
-      ? model.buildStockMovementCreatedEvent(move, item)
-      : null;
+    const event =
+      model && typeof model.buildStockMovementCreatedEvent === 'function'
+        ? model.buildStockMovementCreatedEvent(move, item)
+        : null;
 
     return dispatchNotificationEvent(event);
   }
 
   function emitColoradoRecordCreated(record, machineLabel) {
     const model = getNotificationModel();
-    const event = model && typeof model.buildColoradoRecordCreatedEvent === 'function'
-      ? model.buildColoradoRecordCreatedEvent(record, machineLabel)
-      : null;
+    const event =
+      model && typeof model.buildColoradoRecordCreatedEvent === 'function'
+        ? model.buildColoradoRecordCreatedEvent(record, machineLabel)
+        : null;
 
     return dispatchNotificationEvent(event);
   }

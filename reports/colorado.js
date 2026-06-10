@@ -1,4 +1,4 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   const DEFAULT_MACHINES = [
@@ -12,7 +12,9 @@
   }
 
   function sortByTimestampAsc(records) {
-    return [...records].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    return [...records].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+    );
   }
 
   function normalizePositiveNumber(value, fallback = null) {
@@ -43,57 +45,78 @@
   function formatApproxAgeLabel(minutes) {
     if (!Number.isFinite(minutes)) return 'waiting for next sync';
     if (minutes < 15) return 'updated just now';
-    if (minutes < 60) return `updated ~${Math.max(15, Math.round(minutes / 15) * 15)} min ago`;
+    if (minutes < 60)
+      return `updated ~${Math.max(15, Math.round(minutes / 15) * 15)} min ago`;
     const hours = Math.max(1, Math.round(minutes / 60));
     return `updated ~${hours} h ago`;
   }
 
   function getColoradoRecords(records, machineId) {
-    return sortByTimestampAsc((records || []).filter(record => record.machineId === machineId));
+    return sortByTimestampAsc(
+      (records || []).filter((record) => record.machineId === machineId),
+    );
   }
 
   function buildColoradoRollSummary(records, rollState, options) {
     const cfg = options || {};
     const state = rollState || {};
-    const accountingUsage = cfg.accountingUsage && typeof cfg.accountingUsage === 'object' ? cfg.accountingUsage : null;
+    const accountingUsage =
+      cfg.accountingUsage && typeof cfg.accountingUsage === 'object'
+        ? cfg.accountingUsage
+        : null;
     const machineId = String(state.machineId || '');
-    const latest = machineId ? getLatestColoradoRecord(records, machineId) : null;
-    const nowMs = Number.isFinite(Number(cfg.nowMs)) ? Number(cfg.nowMs) : Date.now();
+    const latest = machineId
+      ? getLatestColoradoRecord(records, machineId)
+      : null;
+    const nowMs = Number.isFinite(Number(cfg.nowMs))
+      ? Number(cfg.nowMs)
+      : Date.now();
     const rollLengthM = normalizePositiveNumber(state.rollLengthM, 130) || 130;
     const mediaWidthMm = normalizePositiveNumber(state.mediaWidthMm, null);
     const widthM = mediaWidthMm ? mediaWidthMm / 1000 : null;
     const baselineMediaTotalM2 = Number(state.baselineMediaTotalM2);
     const hasBaseline = Number.isFinite(baselineMediaTotalM2);
-    const loadedAtMs = state.loadedAt ? new Date(state.loadedAt).getTime() : null;
-    const latestSampleAtMs = latest && latest.timestamp ? new Date(latest.timestamp).getTime() : null;
+    const loadedAtMs = state.loadedAt
+      ? new Date(state.loadedAt).getTime()
+      : null;
+    const latestSampleAtMs =
+      latest && latest.timestamp ? new Date(latest.timestamp).getTime() : null;
     const accountingSampleCandidates = accountingUsage
       ? [accountingUsage.latestReadyAt, accountingUsage.latestImportedAt]
-        .map(value => ({ value, ms: value ? new Date(value).getTime() : NaN }))
-        .filter(item => Number.isFinite(item.ms))
+          .map((value) => ({
+            value,
+            ms: value ? new Date(value).getTime() : NaN,
+          }))
+          .filter((item) => Number.isFinite(item.ms))
       : [];
-    const accountingSample = accountingSampleCandidates.sort((a, b) => b.ms - a.ms)[0] || null;
+    const accountingSample =
+      accountingSampleCandidates.sort((a, b) => b.ms - a.ms)[0] || null;
     const accountingSampleAtMs = accountingSample ? accountingSample.ms : null;
-    const accountingMediaLengthM = accountingUsage ? Number(accountingUsage.mediaLengthM) : NaN;
-    const hasAccountingUsage = Number.isFinite(accountingMediaLengthM) && Number.isFinite(accountingSampleAtMs);
+    const accountingMediaLengthM = accountingUsage
+      ? Number(accountingUsage.mediaLengthM)
+      : NaN;
+    const hasAccountingUsage =
+      Number.isFinite(accountingMediaLengthM) &&
+      Number.isFinite(accountingSampleAtMs);
     const staleMinutes = Math.max(1, Number(cfg.staleMinutes) || 90);
     const statusSampleAtMs = hasAccountingUsage
       ? accountingSampleAtMs
       : Number.isFinite(latestSampleAtMs)
         ? latestSampleAtMs
         : loadedAtMs;
-    const sampleAgeMinutes = Number.isFinite(statusSampleAtMs) ? (nowMs - statusSampleAtMs) / 60000 : null;
+    const sampleAgeMinutes = Number.isFinite(statusSampleAtMs)
+      ? (nowMs - statusSampleAtMs) / 60000
+      : null;
     const hasActiveRoll = Boolean(
-      state.activeRollId
-      || state.loadedAt
-      || hasBaseline
+      state.activeRollId || state.loadedAt || hasBaseline,
     );
     const canHydrateBaseline = Boolean(
-      latest
-      && !hasBaseline
-      && Number.isFinite(loadedAtMs)
-      && Number.isFinite(latestSampleAtMs)
-      && latestSampleAtMs >= loadedAtMs
-      && Number.isFinite(widthM)
+      latest &&
+        !hasBaseline &&
+        Number.isFinite(loadedAtMs) &&
+        Number.isFinite(latestSampleAtMs) &&
+        latestSampleAtMs >= loadedAtMs &&
+        Number.isFinite(widthM),
     );
 
     let status = 'waiting';
@@ -114,7 +137,10 @@
       remainingPct = rollLengthM > 0 ? remainingM / rollLengthM : null;
       bucketStatus = bucketRemainingState(remainingM);
       status = bucketStatus;
-      if (Number.isFinite(sampleAgeMinutes) && sampleAgeMinutes > staleMinutes) {
+      if (
+        Number.isFinite(sampleAgeMinutes) &&
+        sampleAgeMinutes > staleMinutes
+      ) {
         status = 'stale';
       }
     } else if (!hasActiveRoll) {
@@ -126,32 +152,49 @@
       remainingPct = 1;
       bucketStatus = bucketRemainingState(remainingM);
       status = bucketStatus;
-      if (Number.isFinite(sampleAgeMinutes) && sampleAgeMinutes > staleMinutes) {
+      if (
+        Number.isFinite(sampleAgeMinutes) &&
+        sampleAgeMinutes > staleMinutes
+      ) {
         status = 'stale';
       }
     } else if (!mediaWidthMm || !hasBaseline || !latest) {
       status = 'no_data';
     } else {
-      usedAreaM2 = Math.max(0, toNumber(latest.mediaTotalM2) - baselineMediaTotalM2);
+      usedAreaM2 = Math.max(
+        0,
+        toNumber(latest.mediaTotalM2) - baselineMediaTotalM2,
+      );
       usedLinearM = widthM ? usedAreaM2 / widthM : null;
-      remainingM = Number.isFinite(usedLinearM) ? Math.max(0, rollLengthM - usedLinearM) : null;
-      remainingPct = Number.isFinite(remainingM) && rollLengthM > 0 ? remainingM / rollLengthM : null;
+      remainingM = Number.isFinite(usedLinearM)
+        ? Math.max(0, rollLengthM - usedLinearM)
+        : null;
+      remainingPct =
+        Number.isFinite(remainingM) && rollLengthM > 0
+          ? remainingM / rollLengthM
+          : null;
       bucketStatus = bucketRemainingState(remainingM);
       status = bucketStatus;
-      if (Number.isFinite(sampleAgeMinutes) && sampleAgeMinutes > staleMinutes) {
+      if (
+        Number.isFinite(sampleAgeMinutes) &&
+        sampleAgeMinutes > staleMinutes
+      ) {
         status = 'stale';
       }
     }
 
-    const canEstimate = Boolean(hasAccountingUsage || (mediaWidthMm && hasBaseline && latest));
+    const canEstimate = Boolean(
+      hasAccountingUsage || (mediaWidthMm && hasBaseline && latest),
+    );
     const fillPercent = canEstimate ? bucketFillPercent(remainingPct) : null;
-    const remainingLabel = status === 'loading'
-      ? 'WAIT'
-      : status === 'error'
-        ? 'ERR'
-        : status === 'no_data'
-          ? 'NO DATA'
-          : formatApproxRemainingMeters(remainingM);
+    const remainingLabel =
+      status === 'loading'
+        ? 'WAIT'
+        : status === 'error'
+          ? 'ERR'
+          : status === 'no_data'
+            ? 'NO DATA'
+            : formatApproxRemainingMeters(remainingM);
 
     return {
       machineId,
@@ -185,11 +228,11 @@
           ? formatApproxAgeLabel(sampleAgeMinutes)
           : Number.isFinite(sampleAgeMinutes)
             ? formatApproxAgeLabel(sampleAgeMinutes)
-          : status === 'loading'
-            ? 'loading accounting'
-            : status === 'error'
-              ? 'accounting error'
-              : 'no data',
+            : status === 'loading'
+              ? 'loading accounting'
+              : status === 'error'
+                ? 'accounting error'
+                : 'no data',
       accountingUsage: accountingUsage || null,
       latest,
     };
@@ -202,8 +245,14 @@
       const previous = sorted[index];
       const ms = new Date(current.timestamp) - new Date(previous.timestamp);
       const days = Math.max(ms / 86400000, 0.0001);
-      const inkUsed = Math.max(0, toNumber(current.inkTotalLiters) - toNumber(previous.inkTotalLiters));
-      const mediaUsed = Math.max(0, toNumber(current.mediaTotalM2) - toNumber(previous.mediaTotalM2));
+      const inkUsed = Math.max(
+        0,
+        toNumber(current.inkTotalLiters) - toNumber(previous.inkTotalLiters),
+      );
+      const mediaUsed = Math.max(
+        0,
+        toNumber(current.mediaTotalM2) - toNumber(previous.mediaTotalM2),
+      );
       const inkPerM2 = mediaUsed > 0 ? inkUsed / mediaUsed : null;
       const inkCost = inkUsed * toNumber(cfg.inkCost);
       const mediaCost = mediaUsed * toNumber(cfg.mediaCost);
@@ -238,14 +287,20 @@
     const recent = intervals.slice(-rollingN);
     if (!recent.length) return null;
 
-    const avg = values => values.reduce((sum, value) => sum + value, 0) / values.length;
-    const avgInkDay = avg(recent.map(row => row.inkPerDay));
-    const avgMediaDay = avg(recent.map(row => row.mediaPerDay));
-    const validInkPerM2 = recent.filter(row => row.inkPerM2 !== null);
-    const avgInkPM2 = validInkPerM2.length ? avg(validInkPerM2.map(row => row.inkPerM2)) : null;
+    const avg = (values) =>
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+    const avgInkDay = avg(recent.map((row) => row.inkPerDay));
+    const avgMediaDay = avg(recent.map((row) => row.mediaPerDay));
+    const validInkPerM2 = recent.filter((row) => row.inkPerM2 !== null);
+    const avgInkPM2 = validInkPerM2.length
+      ? avg(validInkPerM2.map((row) => row.inkPerM2))
+      : null;
     const hasCosts = toNumber(cfg.inkCost) > 0 || toNumber(cfg.mediaCost) > 0;
-    const validCosts = recent.filter(row => row.costPerM2 !== null);
-    const avgCostPM2 = hasCosts && validCosts.length ? avg(validCosts.map(row => row.costPerM2)) : null;
+    const validCosts = recent.filter((row) => row.costPerM2 !== null);
+    const avgCostPM2 =
+      hasCosts && validCosts.length
+        ? avg(validCosts.map((row) => row.costPerM2))
+        : null;
     const sorted = sortByTimestampAsc(records || []);
 
     return {
@@ -265,8 +320,11 @@
 
   function buildColoradoIntervalRows(records, config, machines) {
     const machineDefs = machines || DEFAULT_MACHINES;
-    return machineDefs.flatMap(machine =>
-      buildColoradoIntervals(getColoradoRecords(records, machine.id), config).map(interval => ({
+    return machineDefs.flatMap((machine) =>
+      buildColoradoIntervals(
+        getColoradoRecords(records, machine.id),
+        config,
+      ).map((interval) => ({
         timestampFrom: interval.from,
         timestampTo: interval.to,
         daysElapsed: interval.days,
@@ -280,7 +338,7 @@
         mediaCost: interval.mediaCost,
         totalCost: interval.totalCost,
         costPerM2: interval.costPerM2,
-      }))
+      })),
     );
   }
 
@@ -289,16 +347,20 @@
     const rows = [];
     const totals = [];
 
-    machineDefs.forEach(machine => {
-      const intervals = buildColoradoIntervals(getColoradoRecords(records, machine.id), config)
-        .filter(interval => {
-          const toMs = new Date(interval.to).getTime();
-          return Number.isFinite(toMs) && toMs >= range.fromMs && toMs <= range.toMs;
-        });
+    machineDefs.forEach((machine) => {
+      const intervals = buildColoradoIntervals(
+        getColoradoRecords(records, machine.id),
+        config,
+      ).filter((interval) => {
+        const toMs = new Date(interval.to).getTime();
+        return (
+          Number.isFinite(toMs) && toMs >= range.fromMs && toMs <= range.toMs
+        );
+      });
 
       if (!intervals.length) return;
 
-      intervals.forEach(interval => {
+      intervals.forEach((interval) => {
         rows.push({
           rowType: 'interval',
           reportMonthFrom: range.fromDate,
@@ -319,10 +381,22 @@
         });
       });
 
-      const inkUsed = intervals.reduce((sum, interval) => sum + interval.inkUsed, 0);
-      const mediaUsed = intervals.reduce((sum, interval) => sum + interval.mediaUsed, 0);
-      const inkCost = intervals.reduce((sum, interval) => sum + interval.inkCost, 0);
-      const mediaCost = intervals.reduce((sum, interval) => sum + interval.mediaCost, 0);
+      const inkUsed = intervals.reduce(
+        (sum, interval) => sum + interval.inkUsed,
+        0,
+      );
+      const mediaUsed = intervals.reduce(
+        (sum, interval) => sum + interval.mediaUsed,
+        0,
+      );
+      const inkCost = intervals.reduce(
+        (sum, interval) => sum + interval.inkCost,
+        0,
+      );
+      const mediaCost = intervals.reduce(
+        (sum, interval) => sum + interval.mediaCost,
+        0,
+      );
       const totalCost = inkCost + mediaCost;
 
       totals.push({ inkUsed, mediaUsed, inkCost, mediaCost, totalCost });
@@ -343,10 +417,22 @@
 
     if (!totals.length) return [];
 
-    const totalInkUsed = totals.reduce((sum, record) => sum + record.inkUsed, 0);
-    const totalMediaUsed = totals.reduce((sum, record) => sum + record.mediaUsed, 0);
-    const totalInkCost = totals.reduce((sum, record) => sum + record.inkCost, 0);
-    const totalMediaCost = totals.reduce((sum, record) => sum + record.mediaCost, 0);
+    const totalInkUsed = totals.reduce(
+      (sum, record) => sum + record.inkUsed,
+      0,
+    );
+    const totalMediaUsed = totals.reduce(
+      (sum, record) => sum + record.mediaUsed,
+      0,
+    );
+    const totalInkCost = totals.reduce(
+      (sum, record) => sum + record.inkCost,
+      0,
+    );
+    const totalMediaCost = totals.reduce(
+      (sum, record) => sum + record.mediaCost,
+      0,
+    );
     const totalCost = totalInkCost + totalMediaCost;
 
     rows.push({
@@ -368,38 +454,49 @@
 
   function getLatestColoradoRecord(records, machineId) {
     const machineRecords = getColoradoRecords(records, machineId);
-    return machineRecords.length ? machineRecords[machineRecords.length - 1] : null;
+    return machineRecords.length
+      ? machineRecords[machineRecords.length - 1]
+      : null;
   }
 
   function buildColoradoLifetimeSummary(records, machines) {
     const machineDefs = machines || DEFAULT_MACHINES;
-    const rows = machineDefs.map(machine => {
-      const latest = getLatestColoradoRecord(records, machine.id);
-      if (!latest) return null;
-      return {
-        rowType: 'printer',
-        printerId: machine.id,
-        printerLabel: machine.label,
-        lifetimePrintedAreaM2: null,
-        lifetimeMediaUsageM2: toNumber(latest.mediaTotalM2),
-        lifetimeInkUsageTotalL: toNumber(latest.inkTotalLiters),
-        lifetimeInkCyanL: null,
-        lifetimeInkMagentaL: null,
-        lifetimeInkYellowL: null,
-        lifetimeInkBlackL: null,
-        lifetimeInkWhiteL: null,
-        lastUpdatedTimestamp: latest.timestamp,
-      };
-    }).filter(Boolean);
+    const rows = machineDefs
+      .map((machine) => {
+        const latest = getLatestColoradoRecord(records, machine.id);
+        if (!latest) return null;
+        return {
+          rowType: 'printer',
+          printerId: machine.id,
+          printerLabel: machine.label,
+          lifetimePrintedAreaM2: null,
+          lifetimeMediaUsageM2: toNumber(latest.mediaTotalM2),
+          lifetimeInkUsageTotalL: toNumber(latest.inkTotalLiters),
+          lifetimeInkCyanL: null,
+          lifetimeInkMagentaL: null,
+          lifetimeInkYellowL: null,
+          lifetimeInkBlackL: null,
+          lifetimeInkWhiteL: null,
+          lastUpdatedTimestamp: latest.timestamp,
+        };
+      })
+      .filter(Boolean);
 
     if (!rows.length) return [];
 
-    const combinedInk = rows.reduce((sum, row) => sum + row.lifetimeInkUsageTotalL, 0);
-    const combinedMedia = rows.reduce((sum, row) => sum + row.lifetimeMediaUsageM2, 0);
+    const combinedInk = rows.reduce(
+      (sum, row) => sum + row.lifetimeInkUsageTotalL,
+      0,
+    );
+    const combinedMedia = rows.reduce(
+      (sum, row) => sum + row.lifetimeMediaUsageM2,
+      0,
+    );
     const combinedLastUpdated = rows.reduce((latest, row) => {
       const currentMs = new Date(row.lastUpdatedTimestamp).getTime();
       if (!Number.isFinite(currentMs)) return latest;
-      if (!latest || currentMs > latest.ms) return { ms: currentMs, iso: row.lastUpdatedTimestamp };
+      if (!latest || currentMs > latest.ms)
+        return { ms: currentMs, iso: row.lastUpdatedTimestamp };
       return latest;
     }, null);
 
@@ -417,7 +514,9 @@
         lifetimeInkYellowL: null,
         lifetimeInkBlackL: null,
         lifetimeInkWhiteL: null,
-        lastUpdatedTimestamp: combinedLastUpdated ? combinedLastUpdated.iso : null,
+        lastUpdatedTimestamp: combinedLastUpdated
+          ? combinedLastUpdated.iso
+          : null,
       },
     ];
   }

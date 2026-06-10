@@ -1,9 +1,14 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   function csvEsc(value) {
     const str = String(value === null || value === undefined ? '' : value);
-    if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+    if (
+      str.includes('"') ||
+      str.includes(',') ||
+      str.includes('\n') ||
+      str.includes('\r')
+    ) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
@@ -14,8 +19,10 @@
   }
 
   function rowsToCsv(rows, columns) {
-    const header = csvRow(columns.map(col => col.header));
-    const body = rows.map(row => csvRow(columns.map(col => col.value(row))));
+    const header = csvRow(columns.map((col) => col.header));
+    const body = rows.map((row) =>
+      csvRow(columns.map((col) => col.value(row))),
+    );
     return [header, ...body].join('\r\n');
   }
 

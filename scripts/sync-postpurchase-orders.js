@@ -2,7 +2,9 @@
 'use strict';
 
 const { withClient } = require('../netlify/functions/_lib/db');
-const { syncPostPurchaseOrders } = require('../netlify/functions/_lib/postpurchase-orders');
+const {
+  syncPostPurchaseOrders,
+} = require('../netlify/functions/_lib/postpurchase-orders');
 
 function parseArgs(argv) {
   const args = {};
@@ -47,8 +49,11 @@ async function main() {
   console.log('[postpurchase] sync success');
   console.log(`[postpurchase] endpoint=${result.endpoint}`);
   console.log(`[postpurchase] fromId=${result.fromId}`);
-  if (result.newestCreatedAt) console.log(`[postpurchase] newestCreatedAt=${result.newestCreatedAt}`);
-  console.log(`[postpurchase] fetched=${result.fetched} normalized=${result.normalized} inserted=${result.inserted} updated=${result.updated} skipped=${result.skipped}`);
+  if (result.newestCreatedAt)
+    console.log(`[postpurchase] newestCreatedAt=${result.newestCreatedAt}`);
+  console.log(
+    `[postpurchase] fetched=${result.fetched} normalized=${result.normalized} inserted=${result.inserted} updated=${result.updated} skipped=${result.skipped}`,
+  );
 }
 
 main().catch((error) => {

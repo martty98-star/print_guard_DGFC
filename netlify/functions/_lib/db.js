@@ -62,7 +62,8 @@ function getAdminPin() {
 }
 
 function getPostPurchaseOperatorPin() {
-  const value = process.env.POSTPURCHASE_OPERATOR_PIN || process.env.POSTPURCHASE_PIN || '';
+  const value =
+    process.env.POSTPURCHASE_OPERATOR_PIN || process.env.POSTPURCHASE_PIN || '';
   const pin = typeof value === 'string' ? value.trim() : '';
   if (!pin) {
     throw new Error('POSTPURCHASE_OPERATOR_PIN is not configured');
@@ -82,9 +83,11 @@ function getHeader(event, name) {
 }
 
 function getRequestIdentity(event) {
-  return getHeader(event, 'x-forwarded-for').split(',')[0].trim() ||
+  return (
+    getHeader(event, 'x-forwarded-for').split(',')[0].trim() ||
     getHeader(event, 'client-ip') ||
-    'unknown';
+    'unknown'
+  );
 }
 
 function checkRateLimit(event, options = {}) {

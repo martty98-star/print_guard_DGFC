@@ -11,9 +11,25 @@
 
   function createSync(deps) {
     const {
-      S, ST_CORECS, ST_ITEMS, ST_MOVES, ST_SETTINGS, StockStore, adminHeaders,
-      applyRoleUI, cfg, el, idbClear, idbPut, loadAll, ls, renderColoradoRollTracker, sendStockNotifications,
-      showToast, stockDbAdapter, updateOfflineBanner,
+      S,
+      ST_CORECS,
+      ST_ITEMS,
+      ST_MOVES,
+      ST_SETTINGS,
+      StockStore,
+      adminHeaders,
+      applyRoleUI,
+      cfg,
+      el,
+      idbClear,
+      idbPut,
+      loadAll,
+      ls,
+      renderColoradoRollTracker,
+      sendStockNotifications,
+      showToast,
+      stockDbAdapter,
+      updateOfflineBanner,
       idbAll,
     } = deps;
 
@@ -31,7 +47,11 @@
       if (!raw) return [];
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed.filter(reason => ['stock', 'colorado', 'all'].includes(reason)) : [];
+        return Array.isArray(parsed)
+          ? parsed.filter((reason) =>
+              ['stock', 'colorado', 'all'].includes(reason),
+            )
+          : [];
       } catch (_) {
         return [];
       }
@@ -51,7 +71,7 @@
     }
 
     function removeSyncDirtyReason(reason) {
-      const next = getSyncDirtyReasons().filter(item => item !== reason);
+      const next = getSyncDirtyReasons().filter((item) => item !== reason);
       if (next.length) {
         ls(SYNC_DIRTY_REASONS_KEY, JSON.stringify(next));
         ls(SYNC_DIRTY_VERSION_KEY, String(Date.now()));
@@ -74,24 +94,35 @@
 
     function readStockActionQueue() {
       try {
-        const parsed = JSON.parse(localStorage.getItem(STOCK_ACTION_QUEUE_KEY) || '[]');
-        return Array.isArray(parsed) ? parsed.filter(action => action && action.actionId) : [];
+        const parsed = JSON.parse(
+          localStorage.getItem(STOCK_ACTION_QUEUE_KEY) || '[]',
+        );
+        return Array.isArray(parsed)
+          ? parsed.filter((action) => action && action.actionId)
+          : [];
       } catch (_) {
         return [];
       }
     }
 
     function writeStockActionQueue(actions) {
-      localStorage.setItem(STOCK_ACTION_QUEUE_KEY, JSON.stringify(Array.isArray(actions) ? actions : []));
+      localStorage.setItem(
+        STOCK_ACTION_QUEUE_KEY,
+        JSON.stringify(Array.isArray(actions) ? actions : []),
+      );
     }
 
     function clearCompletedStockActions(results) {
-      const completedIds = new Set((Array.isArray(results) ? results : [])
-        .map(result => result && result.actionId)
-        .filter(Boolean));
+      const completedIds = new Set(
+        (Array.isArray(results) ? results : [])
+          .map((result) => result && result.actionId)
+          .filter(Boolean),
+      );
       if (!completedIds.size) return 0;
       const before = readStockActionQueue();
-      const after = before.filter(action => !completedIds.has(action.actionId));
+      const after = before.filter(
+        (action) => !completedIds.has(action.actionId),
+      );
       writeStockActionQueue(after);
       return before.length - after.length;
     }
@@ -104,30 +135,50 @@
     }
 
     function normalizeArticleNumber(value) {
-      return String(value || '').trim().toUpperCase().replace(/\s+/g, '-');
+      return String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, '-');
     }
 
     function enqueueStockAction(input) {
       const entity = String(input?.entity || '').trim();
       const action = String(input?.action || '').trim();
-      const payload = input?.payload && typeof input.payload === 'object' ? { ...input.payload } : {};
-      const updatedAt = input?.updatedAt || payload.updatedAt || payload.timestamp || new Date().toISOString();
-      const key = entity === 'item'
-        ? normalizeArticleNumber(input?.key || payload.articleNumber)
-        : String(input?.key || payload.id || '').trim();
-      if (!['item', 'movement'].includes(entity) || !['upsert', 'delete'].includes(action) || !key) {
+      const payload =
+        input?.payload && typeof input.payload === 'object'
+          ? { ...input.payload }
+          : {};
+      const updatedAt =
+        input?.updatedAt ||
+        payload.updatedAt ||
+        payload.timestamp ||
+        new Date().toISOString();
+      const key =
+        entity === 'item'
+          ? normalizeArticleNumber(input?.key || payload.articleNumber)
+          : String(input?.key || payload.id || '').trim();
+      if (
+        !['item', 'movement'].includes(entity) ||
+        !['upsert', 'delete'].includes(action) ||
+        !key
+      ) {
         console.warn('[stock-sync] dropped invalid stock action', input);
         return null;
       }
       if (entity === 'item') payload.articleNumber = key;
-      if (entity === 'movement' && payload.articleNumber) payload.articleNumber = normalizeArticleNumber(payload.articleNumber);
+      if (entity === 'movement' && payload.articleNumber)
+        payload.articleNumber = normalizeArticleNumber(payload.articleNumber);
       payload.updatedAt = payload.updatedAt || updatedAt;
-      if (action === 'delete') payload.deletedAt = payload.deletedAt || updatedAt;
+      if (action === 'delete')
+        payload.deletedAt = payload.deletedAt || updatedAt;
 
-      const context = getStockSyncClientContext(input?.source || 'browser_stock_action');
+      const context = getStockSyncClientContext(
+        input?.source || 'browser_stock_action',
+      );
       const stockAction = {
         action,
-        actionId: input?.actionId || makeStockActionId(entity, action, key, updatedAt),
+        actionId:
+          input?.actionId || makeStockActionId(entity, action, key, updatedAt),
         clientId: context.clientId,
         entity,
         key,
@@ -162,19 +213,27 @@
     }
 
     function getCoRecordUpdatedAtMs(record) {
-      const value = record?.updatedAt || record?.updated_at || record?.deletedAt || record?.createdAt || record?.timestamp || '';
+      const value =
+        record?.updatedAt ||
+        record?.updated_at ||
+        record?.deletedAt ||
+        record?.createdAt ||
+        record?.timestamp ||
+        '';
       const ms = Date.parse(value);
       return Number.isFinite(ms) ? ms : 0;
     }
 
     function getColoradoRollStatesForSync() {
-      return Object.values(S.coloradoRolls || {}).filter(state => state && state.machineId);
+      return Object.values(S.coloradoRolls || {}).filter(
+        (state) => state && state.machineId,
+      );
     }
 
     function getColoradoRollEventsForSync() {
       return Object.values(S.coloradoRollEvents || {})
-        .flatMap(events => Array.isArray(events) ? events : [])
-        .filter(event => event && event.id && event.machineId);
+        .flatMap((events) => (Array.isArray(events) ? events : []))
+        .filter((event) => event && event.id && event.machineId);
     }
 
     function groupColoradoRollEvents(events) {
@@ -198,7 +257,10 @@
       S.coloradoRolls = mapColoradoRollStates(states);
       S.coloradoRollEvents = groupColoradoRollEvents(events);
       ls(COLORADO_ROLL_STORAGE_KEY, JSON.stringify(S.coloradoRolls));
-      ls(COLORADO_ROLL_EVENTS_STORAGE_KEY, JSON.stringify(S.coloradoRollEvents));
+      ls(
+        COLORADO_ROLL_EVENTS_STORAGE_KEY,
+        JSON.stringify(S.coloradoRollEvents),
+      );
     }
 
     function shouldRunBackgroundSync() {
@@ -224,8 +286,14 @@
         }
       }
       if (!res.ok || !payload.ok) {
-        const detail = payload.error || bodyText.slice(0, 500) || res.statusText || fallbackMessage;
-        const error = new Error(`${fallbackMessage}: HTTP ${res.status} ${detail}`);
+        const detail =
+          payload.error ||
+          bodyText.slice(0, 500) ||
+          res.statusText ||
+          fallbackMessage;
+        const error = new Error(
+          `${fallbackMessage}: HTTP ${res.status} ${detail}`,
+        );
         error.status = res.status;
         error.payload = payload;
         error.responseText = bodyText;
@@ -235,14 +303,17 @@
     }
 
     async function cloudPull() {
-      const res = await fetch('/.netlify/functions/sync', { method: 'GET', cache: 'no-store' });
+      const res = await fetch('/.netlify/functions/sync', {
+        method: 'GET',
+        cache: 'no-store',
+      });
       return readCloudResponse(res, 'Cloud pull failed');
     }
 
     async function cloudPush() {
       const lastSyncMs = getLastCloudSyncMs();
       const rawCoRecords = await idbAll(ST_CORECS);
-      const coRecords = rawCoRecords.filter(record => {
+      const coRecords = rawCoRecords.filter((record) => {
         const updatedMs = getCoRecordUpdatedAtMs(record);
         return !lastSyncMs || updatedMs > lastSyncMs;
       });
@@ -267,15 +338,17 @@
           coRecords,
           coloradoRollStates: getColoradoRollStatesForSync(),
           coloradoRollEvents: getColoradoRollEventsForSync(),
-          settings: [{
-            key: 'config',
-            weeksN: cfg.weeksN,
-            rollingN: cfg.rollingN,
-            inkCost: cfg.inkCost,
-            mediaCost: cfg.mediaCost,
-            costCurrency: cfg.costCurrency,
-            savedAt: new Date().toISOString(),
-          }],
+          settings: [
+            {
+              key: 'config',
+              weeksN: cfg.weeksN,
+              rollingN: cfg.rollingN,
+              inkCost: cfg.inkCost,
+              mediaCost: cfg.mediaCost,
+              costCurrency: cfg.costCurrency,
+              savedAt: new Date().toISOString(),
+            },
+          ],
         }),
       });
       const j = await readCloudResponse(res, 'Cloud push failed');
@@ -293,7 +366,10 @@
     }
 
     async function cloudDelete(kind, key) {
-      const params = new URLSearchParams({ kind: String(kind || ''), key: String(key || '') });
+      const params = new URLSearchParams({
+        kind: String(kind || ''),
+        key: String(key || ''),
+      });
       const res = await fetch(`/.netlify/functions/sync?${params.toString()}`, {
         method: 'DELETE',
         headers: adminHeaders({
@@ -321,79 +397,146 @@
       try {
         if (!silent) showToast('Sync…');
         await loadAll();
-        const badLocalItem = (S.items || []).find(it => !it?.articleNumber);
+        const badLocalItem = (S.items || []).find((it) => !it?.articleNumber);
         if (badLocalItem) {
-          console.warn('[SYNC] Local item missing articleNumber:', badLocalItem);
-          if (!silent) showToast('Lokální data: některé položky nemají articleNumber.', 'error');
+          console.warn(
+            '[SYNC] Local item missing articleNumber:',
+            badLocalItem,
+          );
+          if (!silent)
+            showToast(
+              'Lokální data: některé položky nemají articleNumber.',
+              'error',
+            );
           return false;
         }
-        const badLocalMove = (S.movements || []).find(m => !m?.id);
+        const badLocalMove = (S.movements || []).find((m) => !m?.id);
         if (badLocalMove) {
           console.warn('[SYNC] Local movement missing id:', badLocalMove);
-          if (!silent) showToast('Lokální data: některé pohyby nemají id.', 'error');
+          if (!silent)
+            showToast('Lokální data: některé pohyby nemají id.', 'error');
           return false;
         }
-        const badLocalCo = (S.coRecords || []).find(r => !r?.id);
+        const badLocalCo = (S.coRecords || []).find((r) => !r?.id);
         if (badLocalCo) {
           console.warn('[SYNC] Local coRecord missing id:', badLocalCo);
-          if (!silent) showToast('Lokální data: některé Colorado záznamy nemají id.', 'error');
+          if (!silent)
+            showToast(
+              'Lokální data: některé Colorado záznamy nemají id.',
+              'error',
+            );
           return false;
         }
 
         const pushRes = await cloudPush();
         const remote = await cloudPull();
         const rawItems = Array.isArray(remote?.items) ? remote.items : [];
-        const rawMoves = Array.isArray(remote?.movements) ? remote.movements : [];
+        const rawMoves = Array.isArray(remote?.movements)
+          ? remote.movements
+          : [];
         const rawCo = Array.isArray(remote?.coRecords) ? remote.coRecords : [];
-        const rawSettings = Array.isArray(remote?.settings) ? remote.settings : [];
-        const rawRollStates = Array.isArray(remote?.coloradoRollStates) ? remote.coloradoRollStates : [];
-        const rawRollEvents = Array.isArray(remote?.coloradoRollEvents) ? remote.coloradoRollEvents : [];
+        const rawSettings = Array.isArray(remote?.settings)
+          ? remote.settings
+          : [];
+        const rawRollStates = Array.isArray(remote?.coloradoRollStates)
+          ? remote.coloradoRollStates
+          : [];
+        const rawRollEvents = Array.isArray(remote?.coloradoRollEvents)
+          ? remote.coloradoRollEvents
+          : [];
         const goodItems = [];
         const badItems = [];
         for (const it of rawItems) {
-          const articleNumber = it?.articleNumber ?? it?.ArticleNumber ?? it?.article ?? it?.code ?? null;
+          const articleNumber =
+            it?.articleNumber ??
+            it?.ArticleNumber ??
+            it?.article ??
+            it?.code ??
+            null;
           if (!articleNumber || String(articleNumber).trim() === '') {
             badItems.push(it);
             continue;
           }
-          goodItems.push({ ...it, articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-') });
+          goodItems.push({
+            ...it,
+            articleNumber: String(articleNumber)
+              .trim()
+              .toUpperCase()
+              .replace(/\s+/g, '-'),
+          });
         }
         const goodMoves = [];
         const badMoves = [];
         for (const m of rawMoves) {
           const id = m?.id ?? null;
           const articleNumber = m?.articleNumber ?? m?.ArticleNumber ?? null;
-          if (!id || String(id).trim() === '' || !articleNumber || String(articleNumber).trim() === '') {
+          if (
+            !id ||
+            String(id).trim() === '' ||
+            !articleNumber ||
+            String(articleNumber).trim() === ''
+          ) {
             badMoves.push(m);
             continue;
           }
-          goodMoves.push({ ...m, id: String(id).trim(), articleNumber: String(articleNumber).trim().toUpperCase().replace(/\s+/g, '-') });
+          goodMoves.push({
+            ...m,
+            id: String(id).trim(),
+            articleNumber: String(articleNumber)
+              .trim()
+              .toUpperCase()
+              .replace(/\s+/g, '-'),
+          });
         }
         const goodCo = [];
         const badCo = [];
         for (const r of rawCo) {
           const id = r?.id ?? null;
           const machineId = r?.machineId ?? null;
-          if (!id || String(id).trim() === '' || !machineId || String(machineId).trim() === '') {
+          if (
+            !id ||
+            String(id).trim() === '' ||
+            !machineId ||
+            String(machineId).trim() === ''
+          ) {
             badCo.push(r);
             continue;
           }
-          goodCo.push({ ...r, id: String(id).trim(), machineId: String(machineId).trim() });
+          goodCo.push({
+            ...r,
+            id: String(id).trim(),
+            machineId: String(machineId).trim(),
+          });
         }
         if (badItems.length || badMoves.length || badCo.length) {
-          console.warn('[SYNC] Dropping invalid remote records:', { badItems, badMoves, badCo });
+          console.warn('[SYNC] Dropping invalid remote records:', {
+            badItems,
+            badMoves,
+            badCo,
+          });
         }
-        await Promise.all([idbClear(ST_ITEMS), idbClear(ST_MOVES), idbClear(ST_CORECS), idbClear(ST_SETTINGS)]);
-        for (const it of goodItems) await StockStore.putItem(stockDbAdapter(), it);
-        for (const m of goodMoves) await StockStore.putMovement(stockDbAdapter(), m);
+        await Promise.all([
+          idbClear(ST_ITEMS),
+          idbClear(ST_MOVES),
+          idbClear(ST_CORECS),
+          idbClear(ST_SETTINGS),
+        ]);
+        for (const it of goodItems)
+          await StockStore.putItem(stockDbAdapter(), it);
+        for (const m of goodMoves)
+          await StockStore.putMovement(stockDbAdapter(), m);
         for (const r of goodCo) await idbPut(ST_CORECS, r);
         for (const s of rawSettings) {
           if (s?.key) await idbPut(ST_SETTINGS, s);
         }
         persistColoradoRollCloudState(rawRollStates, rawRollEvents);
         await loadAll();
-        if (typeof renderColoradoRollTracker === 'function') renderColoradoRollTracker();
-        if (dirtyReasonsBeforeSync.includes('stock') || dirtyReasonsBeforeSync.includes('all')) {
+        if (typeof renderColoradoRollTracker === 'function')
+          renderColoradoRollTracker();
+        if (
+          dirtyReasonsBeforeSync.includes('stock') ||
+          dirtyReasonsBeforeSync.includes('all')
+        ) {
           await sendStockNotifications({ silent: true, trigger: 'sync' });
         } else {
           console.log('stock alerts skipped: no stock dirty reason');
@@ -402,13 +545,14 @@
         if (!silent) {
           showToast(
             `Sync OK · items:${pushRes?.upserted?.items ?? 0} · moves:${pushRes?.upserted?.movements ?? 0} · co:${pushRes?.upserted?.coRecords ?? 0}` +
-            ` · rolls:${pushRes?.upserted?.coloradoRollEvents ?? 0}` +
-            (dropped ? ` · zahoz.:${dropped}` : ''),
-            dropped ? 'warn' : 'success'
+              ` · rolls:${pushRes?.upserted?.coloradoRollEvents ?? 0}` +
+              (dropped ? ` · zahoz.:${dropped}` : ''),
+            dropped ? 'warn' : 'success',
           );
         }
         markCloudSyncComplete();
-        if (getSyncDirtyVersion() === dirtyVersionBeforeSync) clearSyncDirtyReasons();
+        if (getSyncDirtyVersion() === dirtyVersionBeforeSync)
+          clearSyncDirtyReasons();
         return true;
       } catch (e) {
         console.error('[SYNC] Error:', e, {

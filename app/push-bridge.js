@@ -5,7 +5,9 @@
   function getPushEndpointSuffix(endpoint) {
     return typeof endpoint === 'string' && endpoint.length > 24
       ? endpoint.slice(-24)
-      : (typeof endpoint === 'string' ? endpoint : '');
+      : typeof endpoint === 'string'
+        ? endpoint
+        : '';
   }
 
   global.PrintGuardPushBridge = {

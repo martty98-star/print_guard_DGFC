@@ -1,12 +1,12 @@
-const { Client } = require("pg");
-const webPush = require("web-push");
+const { Client } = require('pg');
+const webPush = require('web-push');
 
 function json(statusCode, body, extraHeaders) {
   return {
     statusCode,
     headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
       ...extraHeaders,
     },
     body: JSON.stringify(body),
@@ -14,23 +14,23 @@ function json(statusCode, body, extraHeaders) {
 }
 
 function parseRequestBody(event) {
-  if (!event || event.body == null || event.body === "") {
+  if (!event || event.body == null || event.body === '') {
     return {};
   }
 
-  if (typeof event.body === "object") {
+  if (typeof event.body === 'object') {
     return event.body;
   }
 
   const rawBody = event.isBase64Encoded
-    ? Buffer.from(event.body, "base64").toString("utf8")
+    ? Buffer.from(event.body, 'base64').toString('utf8')
     : event.body;
 
   return JSON.parse(rawBody);
 }
 
 function isValidVapidSubject(value) {
-  return typeof value === "string" && /^(mailto:|https:\/\/)/i.test(value);
+  return typeof value === 'string' && /^(mailto:|https:\/\/)/i.test(value);
 }
 
 function getStatusCode(error) {
@@ -42,11 +42,11 @@ function getStatusCode(error) {
 function normalizeAlertTypes(value) {
   if (Array.isArray(value)) {
     return value
-      .filter((item) => typeof item === "string" && item.trim())
+      .filter((item) => typeof item === 'string' && item.trim())
       .map((item) => item.trim().toLowerCase());
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const trimmed = value.trim();
     if (!trimmed) {
       return [];
@@ -68,37 +68,49 @@ function subscriptionMatchesCategory(subscription, category) {
     return true;
   }
 
-  return types.includes("all") || types.includes(String(category || "").toLowerCase());
+  return (
+    types.includes('all') ||
+    types.includes(String(category || '').toLowerCase())
+  );
 }
 
 exports.handler = async function handler(event) {
-  if (event.httpMethod !== "POST") {
+  if (event.httpMethod !== 'POST') {
     return json(
       405,
-      { ok: false, error: "Method not allowed" },
-      { allow: "POST" }
+      { ok: false, error: 'Method not allowed' },
+      { allow: 'POST' },
     );
   }
 
-  const connectionString = typeof process.env.NEON_DATABASE_URL === "string"
-    ? process.env.NEON_DATABASE_URL.trim()
-    : "";
-  const vapidPublicKey = typeof process.env.VAPID_PUBLIC_KEY === "string"
-    ? process.env.VAPID_PUBLIC_KEY.trim()
-    : "";
-  const vapidPrivateKey = typeof process.env.VAPID_PRIVATE_KEY === "string"
-    ? process.env.VAPID_PRIVATE_KEY.trim()
-    : "";
-  const vapidSubject = typeof process.env.VAPID_SUBJECT === "string"
-    ? process.env.VAPID_SUBJECT.trim()
-    : "";
+  const connectionString =
+    typeof process.env.NEON_DATABASE_URL === 'string'
+      ? process.env.NEON_DATABASE_URL.trim()
+      : '';
+  const vapidPublicKey =
+    typeof process.env.VAPID_PUBLIC_KEY === 'string'
+      ? process.env.VAPID_PUBLIC_KEY.trim()
+      : '';
+  const vapidPrivateKey =
+    typeof process.env.VAPID_PRIVATE_KEY === 'string'
+      ? process.env.VAPID_PRIVATE_KEY.trim()
+      : '';
+  const vapidSubject =
+    typeof process.env.VAPID_SUBJECT === 'string'
+      ? process.env.VAPID_SUBJECT.trim()
+      : '';
 
-  if (!connectionString || !vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
-    return json(500, { ok: false, error: "Missing push configuration" });
+  if (
+    !connectionString ||
+    !vapidPublicKey ||
+    !vapidPrivateKey ||
+    !vapidSubject
+  ) {
+    return json(500, { ok: false, error: 'Missing push configuration' });
   }
 
   if (!isValidVapidSubject(vapidSubject)) {
-    return json(500, { ok: false, error: "Invalid VAPID_SUBJECT" });
+    return json(500, { ok: false, error: 'Invalid VAPID_SUBJECT' });
   }
 
   try {
@@ -106,7 +118,8 @@ exports.handler = async function handler(event) {
   } catch (error) {
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : "Invalid VAPID configuration",
+      error:
+        error && error.message ? error.message : 'Invalid VAPID configuration',
     });
   }
 
@@ -114,23 +127,33 @@ exports.handler = async function handler(event) {
   try {
     payload = parseRequestBody(event);
   } catch (error) {
-    return json(400, { ok: false, error: "Invalid JSON body" });
+    return json(400, { ok: false, error: 'Invalid JSON body' });
   }
 
-  const type = typeof payload.type === "string" ? payload.type.trim() : "";
-  const category = typeof payload.category === "string" ? payload.category.trim().toLowerCase() : "";
-  const title = typeof payload.title === "string" ? payload.title.trim() : "";
-  const body = typeof payload.body === "string" ? payload.body.trim() : "";
-  const url = typeof payload.url === "string" && payload.url.trim() ? payload.url.trim() : "/";
-  const metadata = payload && typeof payload.metadata === "object" && !Array.isArray(payload.metadata)
-    ? payload.metadata
-    : {};
-  const dedupeKey = typeof payload.dedupeKey === "string" && payload.dedupeKey.trim()
-    ? payload.dedupeKey.trim()
-    : null;
+  const type = typeof payload.type === 'string' ? payload.type.trim() : '';
+  const category =
+    typeof payload.category === 'string'
+      ? payload.category.trim().toLowerCase()
+      : '';
+  const title = typeof payload.title === 'string' ? payload.title.trim() : '';
+  const body = typeof payload.body === 'string' ? payload.body.trim() : '';
+  const url =
+    typeof payload.url === 'string' && payload.url.trim()
+      ? payload.url.trim()
+      : '/';
+  const metadata =
+    payload &&
+    typeof payload.metadata === 'object' &&
+    !Array.isArray(payload.metadata)
+      ? payload.metadata
+      : {};
+  const dedupeKey =
+    typeof payload.dedupeKey === 'string' && payload.dedupeKey.trim()
+      ? payload.dedupeKey.trim()
+      : null;
 
   if (!type || !category || !title || !body) {
-    return json(400, { ok: false, error: "Missing notification event fields" });
+    return json(400, { ok: false, error: 'Missing notification event fields' });
   }
 
   const client = new Client({
@@ -149,11 +172,11 @@ exports.handler = async function handler(event) {
         select id, endpoint, p256dh, auth, alert_types
         from push_subscriptions
         where is_active = true
-      `
+      `,
     );
 
     const matchedSubscriptions = result.rows.filter((subscription) =>
-      subscriptionMatchesCategory(subscription, category)
+      subscriptionMatchesCategory(subscription, category),
     );
 
     const notificationPayload = JSON.stringify({ title, body, url });
@@ -168,7 +191,7 @@ exports.handler = async function handler(event) {
               auth: subscription.auth,
             },
           },
-          notificationPayload
+          notificationPayload,
         );
 
         sent += 1;
@@ -179,7 +202,7 @@ exports.handler = async function handler(event) {
             set last_push_at = now()
             where endpoint = $1
           `,
-          [subscription.endpoint]
+          [subscription.endpoint],
         );
       } catch (error) {
         failed += 1;
@@ -194,17 +217,17 @@ exports.handler = async function handler(event) {
                     updated_at = now()
                 where endpoint = $1
               `,
-              [subscription.endpoint]
+              [subscription.endpoint],
             );
           } catch (updateError) {
-            console.error("Failed to deactivate subscription", {
+            console.error('Failed to deactivate subscription', {
               endpoint: subscription.endpoint,
               error: updateError,
             });
           }
         }
 
-        console.error("Failed to send app notification", {
+        console.error('Failed to send app notification', {
           type,
           category,
           dedupeKey,
@@ -226,16 +249,17 @@ exports.handler = async function handler(event) {
       failed,
     });
   } catch (error) {
-    console.error("send-app-notification failed", error);
+    console.error('send-app-notification failed', error);
     return json(500, {
       ok: false,
-      error: error && error.message ? error.message : "send-app-notification failed",
+      error:
+        error && error.message ? error.message : 'send-app-notification failed',
     });
   } finally {
     try {
       await client.end();
     } catch (error) {
-      console.error("send-app-notification cleanup failed", error);
+      console.error('send-app-notification cleanup failed', error);
     }
   }
 };

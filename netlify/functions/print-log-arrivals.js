@@ -1,22 +1,26 @@
-import pg from "pg";
+import pg from 'pg';
+
 const { Client } = pg;
 const columnCache = new Map();
-const PRINT_LOG_TIMEZONE = "Europe/Prague";
+const PRINT_LOG_TIMEZONE = 'Europe/Prague';
 
 function resp(statusCode, body) {
   return {
     statusCode,
     headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
     },
     body: JSON.stringify(body),
   };
 }
 
 async function withClient(run) {
-  const conn = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
-  if (!conn) throw new Error("Missing database connection string");
+  const conn =
+    process.env.NEON_DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    process.env.NETLIFY_DATABASE_URL;
+  if (!conn) throw new Error('Missing database connection string');
   const client = new Client({
     connectionString: conn,
     ssl: { rejectUnauthorized: false },
@@ -25,7 +29,9 @@ async function withClient(run) {
   try {
     return await run(client);
   } finally {
-    try { await client.end(); } catch {}
+    try {
+      await client.end();
+    } catch {}
   }
 }
 
@@ -45,8 +51,8 @@ function pick(cols, candidates, label) {
   }
   throw new Error(
     `Missing ${label} column in print_accounting_rows. ` +
-    `Tried: [${candidates.join(", ")}]. ` +
-    `Available: [${[...cols].join(", ")}]`
+      `Tried: [${candidates.join(', ')}]. ` +
+      `Available: [${[...cols].join(', ')}]`,
   );
 }
 
@@ -65,7 +71,7 @@ function buildFilters(query, map, values, arrivalLocalExpr, arrivalZonedExpr) {
   const where = [];
 
   if (map.rowType) {
-    values.push("print");
+    values.push('print');
     where.push(`${map.rowType} = $${values.length}`);
   }
 
@@ -89,17 +95,17 @@ function buildFilters(query, map, values, arrivalLocalExpr, arrivalZonedExpr) {
     where.push(`${arrivalZonedExpr} <= $${values.length}::timestamptz`);
   }
 
-  if (query.printer && query.printer !== "all") {
+  if (query.printer && query.printer !== 'all') {
     values.push(query.printer);
     where.push(`${map.printerName} = $${values.length}`);
   }
 
-  if (query.result && query.result !== "all") {
+  if (query.result && query.result !== 'all') {
     values.push(query.result);
     where.push(`${map.result} = $${values.length}`);
   }
 
-  return where.length ? `where ${where.join(" and ")}` : "";
+  return where.length ? `where ${where.join(' and ')}` : '';
 }
 
 function buildLogicalJobExpr(map, arrivalExpr) {
@@ -110,11 +116,11 @@ function buildLogicalJobExpr(map, arrivalExpr) {
   if (map.jobName) candidates.push(`${map.jobName}::text`);
 
   candidates.push(`coalesce(${arrivalExpr}::text, '')`);
-  return `coalesce(${candidates.join(", ")})`;
+  return `coalesce(${candidates.join(', ')})`;
 }
 
 function buildSourcePriorityExpr(map) {
-  if (!map.sourceFile) return "0";
+  if (!map.sourceFile) return '0';
   return `
     case
       when lower(${map.sourceFile}) like '%.csv' then 2
@@ -125,26 +131,46 @@ function buildSourcePriorityExpr(map) {
 }
 
 export async function handler(event) {
-  if (event.httpMethod !== "GET") {
-    return resp(405, { ok: false, error: "Method not allowed" });
+  if (event.httpMethod !== 'GET') {
+    return resp(405, { ok: false, error: 'Method not allowed' });
   }
 
   try {
     const body = await withClient(async (client) => {
-      const cols = await getColumns(client, "print_accounting_rows");
+      const cols = await getColumns(client, 'print_accounting_rows');
       const query = event.queryStringParameters || {};
 
       const map = {
-        receptionAt: pickOptional(cols, ["reception_at", "receptionat", "receptionAt"]),
-        readyAt: pick(cols, ["ready_at", "readyat", "readyAt"], "readyAt"),
-        printerName: pick(cols, ["printer_name", "printername", "printer", "printerName"], "printerName"),
-        result: pick(cols, ["result", "status", "print_result"], "result"),
-        rowType: pickOptional(cols, ["row_type", "rowtype", "rowType"]),
-        jobId: pickOptional(cols, ["job_id", "jobid", "jobId"]),
-        documentId: pickOptional(cols, ["document_id", "documentid", "documentId"]),
-        jobName: pickOptional(cols, ["job_name", "jobname", "jobName"]),
-        sourceFile: pickOptional(cols, ["source_file", "sourcefile", "sourceFile"]),
-        importedAt: pickOptional(cols, ["imported_at", "importedat", "importedAt"]),
+        receptionAt: pickOptional(cols, [
+          'reception_at',
+          'receptionat',
+          'receptionAt',
+        ]),
+        readyAt: pick(cols, ['ready_at', 'readyat', 'readyAt'], 'readyAt'),
+        printerName: pick(
+          cols,
+          ['printer_name', 'printername', 'printer', 'printerName'],
+          'printerName',
+        ),
+        result: pick(cols, ['result', 'status', 'print_result'], 'result'),
+        rowType: pickOptional(cols, ['row_type', 'rowtype', 'rowType']),
+        jobId: pickOptional(cols, ['job_id', 'jobid', 'jobId']),
+        documentId: pickOptional(cols, [
+          'document_id',
+          'documentid',
+          'documentId',
+        ]),
+        jobName: pickOptional(cols, ['job_name', 'jobname', 'jobName']),
+        sourceFile: pickOptional(cols, [
+          'source_file',
+          'sourcefile',
+          'sourceFile',
+        ]),
+        importedAt: pickOptional(cols, [
+          'imported_at',
+          'importedat',
+          'importedAt',
+        ]),
       };
 
       const arrivalLocalExpr = map.receptionAt
@@ -155,7 +181,13 @@ export async function handler(event) {
       const sourcePriorityExpr = buildSourcePriorityExpr(map);
 
       const values = [];
-      const where = buildFilters(query, map, values, arrivalLocalExpr, arrivalZonedExpr);
+      const where = buildFilters(
+        query,
+        map,
+        values,
+        arrivalLocalExpr,
+        arrivalZonedExpr,
+      );
       const baseSql = `
         with ranked as (
           select
@@ -225,13 +257,13 @@ export async function handler(event) {
 
       return {
         ok: true,
-        basis: map.receptionAt ? "reception_at_fallback_ready_at" : "ready_at",
-        dedupe: "logical_job_prefer_csv_over_acl",
+        basis: map.receptionAt ? 'reception_at_fallback_ready_at' : 'ready_at',
+        dedupe: 'logical_job_prefer_csv_over_acl',
         filters: {
           from: query.from || null,
           to: query.to || null,
-          printer: query.printer || "all",
-          result: query.result || "all",
+          printer: query.printer || 'all',
+          result: query.result || 'all',
         },
         totals: {
           totalJobs: totals.total_jobs || 0,

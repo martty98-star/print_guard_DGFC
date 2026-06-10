@@ -17,12 +17,11 @@ const {
   resolveReprintRequest,
   updateProcessedPrintOrderAdminStatus,
 } = require('./_lib/processed-print-orders');
-const {
-  updatePrintOrderAdminStatus,
-} = require('./_lib/postpurchase-orders');
+const { updatePrintOrderAdminStatus } = require('./_lib/postpurchase-orders');
 
 function cleanApiError(error) {
-  const message = error && error.message ? error.message : 'processed-print-orders failed';
+  const message =
+    error && error.message ? error.message : 'processed-print-orders failed';
   if (/connect|timeout|database|neon|ECONN|ENOTFOUND/i.test(message)) {
     return 'Database/API unavailable. Try refresh later.';
   }
@@ -36,7 +35,11 @@ exports.handler = async function handler(event) {
   }
 
   try {
-    checkRateLimit(event, { name: 'processed-print-orders', maxRequests: 60, windowMs: 60 * 1000 });
+    checkRateLimit(event, {
+      name: 'processed-print-orders',
+      maxRequests: 60,
+      windowMs: 60 * 1000,
+    });
     requirePostPurchaseAccess(event);
 
     if (event.httpMethod === 'GET') {
@@ -82,7 +85,9 @@ exports.handler = async function handler(event) {
 
     if (event.httpMethod === 'POST') {
       const bodyInput = parseRequestBody(event);
-      const action = String(bodyInput.action || '').trim().toLowerCase();
+      const action = String(bodyInput.action || '')
+        .trim()
+        .toLowerCase();
       if (
         action !== 'reprint' &&
         action !== 'resolve_reprint' &&
@@ -99,30 +104,43 @@ exports.handler = async function handler(event) {
         requireAdminAccess(event);
         const adminAction = action === 'cancel_order' ? 'cancelled' : 'deleted';
         const body = await withClient(async (client) => {
-          const processedOrderId = bodyInput.processedOrderId || bodyInput.processed_order_id || bodyInput.orderId || bodyInput.order_id;
-          const externalOrderId = bodyInput.externalOrderId || bodyInput.external_order_id;
-          const orderNumber = bodyInput.orderNumber || bodyInput.order_number || bodyInput.orderName || bodyInput.order_name;
+          const processedOrderId =
+            bodyInput.processedOrderId ||
+            bodyInput.processed_order_id ||
+            bodyInput.orderId ||
+            bodyInput.order_id;
+          const externalOrderId =
+            bodyInput.externalOrderId || bodyInput.external_order_id;
+          const orderNumber =
+            bodyInput.orderNumber ||
+            bodyInput.order_number ||
+            bodyInput.orderName ||
+            bodyInput.order_name;
           const results = {};
           if (processedOrderId || orderNumber) {
             try {
-              results.processedOrder = await updateProcessedPrintOrderAdminStatus(client, {
-                id: processedOrderId,
-                orderName: orderNumber,
-                action: adminAction,
-                note: bodyInput.note,
-              });
+              results.processedOrder =
+                await updateProcessedPrintOrderAdminStatus(client, {
+                  id: processedOrderId,
+                  orderName: orderNumber,
+                  action: adminAction,
+                  note: bodyInput.note,
+                });
             } catch (error) {
               if (!externalOrderId || error.statusCode !== 404) throw error;
             }
           }
           if (externalOrderId || orderNumber) {
             try {
-              results.receivedOrder = await updatePrintOrderAdminStatus(client, {
-                externalOrderId,
-                orderNumber,
-                action: adminAction,
-                note: bodyInput.note,
-              });
+              results.receivedOrder = await updatePrintOrderAdminStatus(
+                client,
+                {
+                  externalOrderId,
+                  orderNumber,
+                  action: adminAction,
+                  note: bodyInput.note,
+                },
+              );
             } catch (error) {
               if (!processedOrderId || error.statusCode !== 404) throw error;
             }
@@ -147,7 +165,9 @@ exports.handler = async function handler(event) {
       if (action === 'delete_reprint') {
         requireAdminAccess(event);
         const body = await withClient(async (client) => {
-          const request = await deleteReprintRequest(client, { id: bodyInput.id || bodyInput.requestId || bodyInput.request_id });
+          const request = await deleteReprintRequest(client, {
+            id: bodyInput.id || bodyInput.requestId || bodyInput.request_id,
+          });
           return { ok: true, request };
         });
         console.log('processed-print-orders timing', {
@@ -162,7 +182,10 @@ exports.handler = async function handler(event) {
 
       if (action === 'cancel_reprint') {
         const body = await withClient(async (client) => {
-          const request = await deleteReprintRequest(client, { id: bodyInput.id || bodyInput.requestId || bodyInput.request_id, onlyPending: true });
+          const request = await deleteReprintRequest(client, {
+            id: bodyInput.id || bodyInput.requestId || bodyInput.request_id,
+            onlyPending: true,
+          });
           return { ok: true, request };
         });
         console.log('processed-print-orders timing', {
@@ -215,10 +238,24 @@ exports.handler = async function handler(event) {
       return json(200, body);
     }
 
-    return json(405, { ok: false, error: 'Method not allowed' }, { allow: 'GET,POST,OPTIONS' });
+    return json(
+      405,
+      { ok: false, error: 'Method not allowed' },
+      { allow: 'GET,POST,OPTIONS' },
+    );
   } catch (error) {
-    if (error && (error.statusCode === 400 || error.statusCode === 401 || error.statusCode === 403 || error.statusCode === 404 || error.statusCode === 429)) {
-      return json(error.statusCode, { ok: false, error: error.message || 'Request failed' });
+    if (
+      error &&
+      (error.statusCode === 400 ||
+        error.statusCode === 401 ||
+        error.statusCode === 403 ||
+        error.statusCode === 404 ||
+        error.statusCode === 429)
+    ) {
+      return json(error.statusCode, {
+        ok: false,
+        error: error.message || 'Request failed',
+      });
     }
     console.error('processed-print-orders failed', error);
     return json(500, {

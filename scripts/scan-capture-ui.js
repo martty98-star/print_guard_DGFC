@@ -56,7 +56,9 @@
   }
 
   function t(key) {
-    return global.I18N && typeof global.I18N.t === 'function' ? global.I18N.t(key) : key;
+    return global.I18N && typeof global.I18N.t === 'function'
+      ? global.I18N.t(key)
+      : key;
   }
 
   function getInputValue(id) {
@@ -71,7 +73,10 @@
   }
 
   function makeBatchId() {
-    const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+    const stamp = new Date()
+      .toISOString()
+      .replace(/[-:.TZ]/g, '')
+      .slice(0, 14);
     if (global.crypto && typeof global.crypto.randomUUID === 'function') {
       return `browser-scan-batch-${stamp}-${global.crypto.randomUUID()}`;
     }
@@ -79,7 +84,7 @@
   }
 
   function getScanBatchId(scan) {
-    return String(scan && (scan.batchId || scan.batch_id) || '').trim();
+    return String((scan && (scan.batchId || scan.batch_id)) || '').trim();
   }
 
   function setStatus(message, tone = '') {
@@ -91,15 +96,21 @@
   }
 
   function isBatchActiveStatus(status) {
-    return ['received', 'processing', 'matching'].includes(String(status || '').toLowerCase());
+    return ['received', 'processing', 'matching'].includes(
+      String(status || '').toLowerCase(),
+    );
   }
 
   function isBatchSuccessStatus(status) {
-    return ['matched', 'already_completed', 'committed'].includes(String(status || '').toLowerCase());
+    return ['matched', 'already_completed', 'committed'].includes(
+      String(status || '').toLowerCase(),
+    );
   }
 
   function isRecoverableCommitError(error) {
-    return Boolean(error && (error.isTimeout || error.status >= 500 || !error.status));
+    return Boolean(
+      error && (error.isTimeout || error.status >= 500 || !error.status),
+    );
   }
 
   function openQueueDB() {
@@ -114,13 +125,16 @@
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(STORE_SCANS)) {
-          const store = db.createObjectStore(STORE_SCANS, { keyPath: 'scanId' });
+          const store = db.createObjectStore(STORE_SCANS, {
+            keyPath: 'scanId',
+          });
           store.createIndex('commitStatus', 'commitStatus', { unique: false });
           store.createIndex('scannedAt', 'scannedAt', { unique: false });
         }
       };
       request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
+      request.onerror = () =>
+        reject(request.error || new Error('IndexedDB open failed'));
     }).catch(() => {
       state.useLocalStorageFallback = true;
       return null;
@@ -130,7 +144,9 @@
 
   function readFallbackQueue() {
     try {
-      const rows = JSON.parse(global.localStorage.getItem(LS_QUEUE_FALLBACK) || '[]');
+      const rows = JSON.parse(
+        global.localStorage.getItem(LS_QUEUE_FALLBACK) || '[]',
+      );
       return Array.isArray(rows) ? rows : [];
     } catch (_) {
       return [];
@@ -139,30 +155,42 @@
 
   function writeFallbackQueue(rows) {
     try {
-      global.localStorage.setItem(LS_QUEUE_FALLBACK, JSON.stringify(rows || []));
+      global.localStorage.setItem(
+        LS_QUEUE_FALLBACK,
+        JSON.stringify(rows || []),
+      );
     } catch (_) {}
   }
 
   async function queueAll() {
     const db = await openQueueDB();
     if (!db) {
-      return readFallbackQueue().sort((a, b) => String(b.scannedAt || '').localeCompare(String(a.scannedAt || '')));
+      return readFallbackQueue().sort((a, b) =>
+        String(b.scannedAt || '').localeCompare(String(a.scannedAt || '')),
+      );
     }
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_SCANS, 'readonly');
       const request = tx.objectStore(STORE_SCANS).getAll();
       request.onsuccess = () => {
         const rows = Array.isArray(request.result) ? request.result : [];
-        resolve(rows.sort((a, b) => String(b.scannedAt || '').localeCompare(String(a.scannedAt || ''))));
+        resolve(
+          rows.sort((a, b) =>
+            String(b.scannedAt || '').localeCompare(String(a.scannedAt || '')),
+          ),
+        );
       };
-      request.onerror = () => reject(request.error || new Error('IndexedDB read failed'));
+      request.onerror = () =>
+        reject(request.error || new Error('IndexedDB read failed'));
     });
   }
 
   async function queuePut(scan) {
     const db = await openQueueDB();
     if (!db) {
-      const rows = readFallbackQueue().filter((row) => row.scanId !== scan.scanId);
+      const rows = readFallbackQueue().filter(
+        (row) => row.scanId !== scan.scanId,
+      );
       rows.push(scan);
       writeFallbackQueue(rows);
       return;
@@ -171,12 +199,15 @@
       const tx = db.transaction(STORE_SCANS, 'readwrite');
       tx.objectStore(STORE_SCANS).put(scan);
       tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error || new Error('IndexedDB write failed'));
+      tx.onerror = () =>
+        reject(tx.error || new Error('IndexedDB write failed'));
     });
   }
 
   async function queuePutMany(scans) {
-    const rowsToSave = Array.isArray(scans) ? scans.filter((scan) => scan && scan.scanId) : [];
+    const rowsToSave = Array.isArray(scans)
+      ? scans.filter((scan) => scan && scan.scanId)
+      : [];
     if (!rowsToSave.length) return;
     const db = await openQueueDB();
     if (!db) {
@@ -190,7 +221,8 @@
       const store = tx.objectStore(STORE_SCANS);
       rowsToSave.forEach((scan) => store.put(scan));
       tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error || new Error('IndexedDB batch write failed'));
+      tx.onerror = () =>
+        reject(tx.error || new Error('IndexedDB batch write failed'));
     });
   }
 
@@ -198,14 +230,17 @@
     if (!scanId) return;
     const db = await openQueueDB();
     if (!db) {
-      writeFallbackQueue(readFallbackQueue().filter((row) => row.scanId !== scanId));
+      writeFallbackQueue(
+        readFallbackQueue().filter((row) => row.scanId !== scanId),
+      );
       return;
     }
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_SCANS, 'readwrite');
       tx.objectStore(STORE_SCANS).delete(scanId);
       tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error || new Error('IndexedDB delete failed'));
+      tx.onerror = () =>
+        reject(tx.error || new Error('IndexedDB delete failed'));
     });
   }
 
@@ -215,7 +250,9 @@
     const db = await openQueueDB();
     if (!db) {
       const idSet = new Set(ids);
-      writeFallbackQueue(readFallbackQueue().filter((row) => !idSet.has(row.scanId)));
+      writeFallbackQueue(
+        readFallbackQueue().filter((row) => !idSet.has(row.scanId)),
+      );
       return;
     }
     await new Promise((resolve, reject) => {
@@ -223,12 +260,15 @@
       const store = tx.objectStore(STORE_SCANS);
       ids.forEach((scanId) => store.delete(scanId));
       tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error || new Error('IndexedDB batch delete failed'));
+      tx.onerror = () =>
+        reject(tx.error || new Error('IndexedDB batch delete failed'));
     });
   }
 
   function pendingScans() {
-    return state.queue.filter((scan) => String(scan.commitStatus || 'pending') === 'pending');
+    return state.queue.filter(
+      (scan) => String(scan.commitStatus || 'pending') === 'pending',
+    );
   }
 
   async function ensurePendingBatchId(scans) {
@@ -243,15 +283,22 @@
     });
     if (updatedById.size) {
       await queuePutMany(Array.from(updatedById.values()));
-      state.queue = state.queue.map((scan) => updatedById.get(scan.scanId) || scan);
+      state.queue = state.queue.map(
+        (scan) => updatedById.get(scan.scanId) || scan,
+      );
     }
     return { batchId, scans: updatedScans };
   }
 
   function renderKpis() {
     const pending = pendingScans();
-    const latest = state.lastBarcode || (pending[0] && (pending[0].barcode || pending[0].orderNumber)) || '—';
-    const committed = state.commitResult ? Number(state.commitResult.newScansCommitted || 0) : 0;
+    const latest =
+      state.lastBarcode ||
+      (pending[0] && (pending[0].barcode || pending[0].orderNumber)) ||
+      '—';
+    const committed = state.commitResult
+      ? Number(state.commitResult.newScansCommitted || 0)
+      : 0;
     const map = {
       'scan-kpi-pending': fmtInt(pending.length),
       'scan-kpi-last': latest,
@@ -272,7 +319,10 @@
       wrap.innerHTML = `<div class="empty-state">${esc(t('scan.queue.empty'))}</div>`;
       return;
     }
-    wrap.innerHTML = rows.slice(0, 50).map((scan) => `
+    wrap.innerHTML = rows
+      .slice(0, 50)
+      .map(
+        (scan) => `
       <div class="scan-recent-row">
         <div>
           <strong>${esc(scan.barcode || scan.orderNumber || scan.rawBarcode || '—')}</strong>
@@ -280,7 +330,9 @@
         </div>
         <button class="btn-sm scan-delete-btn" type="button" data-scan-id="${esc(scan.scanId)}">${esc(t('scan.delete'))}</button>
       </div>
-    `).join('');
+    `,
+      )
+      .join('');
   }
 
   function renderCommitResult() {
@@ -291,7 +343,9 @@
       wrap.innerHTML = `<div class="hint">${esc(t('scan.commit.summary-empty'))}</div>`;
       return;
     }
-    const skipped = Number(result.duplicateCount || 0) + Number(result.skippedAlreadyCommitted || 0);
+    const skipped =
+      Number(result.duplicateCount || 0) +
+      Number(result.skippedAlreadyCommitted || 0);
     const committed = Number(result.newScansCommitted || 0);
     const matched = Number(result.matchedCount || 0);
     const orderUpdates = Number(result.orderUpdateCount || 0);
@@ -299,7 +353,10 @@
       [t('scan.summary.read'), result.totalScansRead],
       [t('scan.summary.committed'), result.newScansCommitted],
       [t('scan.summary.matched'), result.matchedCount],
-      [t('scan.summary.unmatched'), Number(result.unmatchedCount || 0) + Number(result.ambiguousCount || 0)],
+      [
+        t('scan.summary.unmatched'),
+        Number(result.unmatchedCount || 0) + Number(result.ambiguousCount || 0),
+      ],
       [t('scan.summary.skipped'), skipped],
       [t('scan.summary.errors'), result.errorCount],
     ];
@@ -309,28 +366,37 @@
       ['Chyba', result.errorMessage || '—'],
       ['Začátek', result.startedAt ? fmtDateTime(result.startedAt) : '—'],
       ['Konec', result.finishedAt ? fmtDateTime(result.finishedAt) : '—'],
-      ['Trvání', result.durationMs == null ? '—' : `${fmtInt(result.durationMs)} ms`],
+      [
+        'Trvání',
+        result.durationMs == null ? '—' : `${fmtInt(result.durationMs)} ms`,
+      ],
     ];
     const zeroMatchCommit = committed > 0 && matched === 0;
-    const retrySkippedWithoutUpdate = skipped > 0
-      && committed === 0
-      && matched === 0
-      && orderUpdates === 0
-      && result.retryMode
-      && result.retryMode !== 'fresh';
-    const warningText = result.commitOk === false || zeroMatchCommit
-      ? 'Scany byly zapsány, ale žádná objednávka nebyla spárována.'
-      : retrySkippedWithoutUpdate
-        ? 'Retry našel již zapsané scany, ale objednávky nebyly aktualizované.'
-        : '';
+    const retrySkippedWithoutUpdate =
+      skipped > 0 &&
+      committed === 0 &&
+      matched === 0 &&
+      orderUpdates === 0 &&
+      result.retryMode &&
+      result.retryMode !== 'fresh';
+    const warningText =
+      result.commitOk === false || zeroMatchCommit
+        ? 'Scany byly zapsány, ale žádná objednávka nebyla spárována.'
+        : retrySkippedWithoutUpdate
+          ? 'Retry našel již zapsané scany, ale objednávky nebyly aktualizované.'
+          : '';
     wrap.innerHTML = `
       <div class="scan-result-grid">
-        ${cells.map(([label, value]) => `
+        ${cells
+          .map(
+            ([label, value]) => `
           <div class="metric-block">
             <span class="metric-big">${esc(fmtInt(value))}</span>
             <span class="metric-unit">${esc(label)}</span>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
       <div class="header-meta">Batch ${esc(result.batchId || '—')} · ${esc(result.retryMode || 'fresh')} · ${esc(result.status || 'unknown')}</div>
       <div class="header-meta">
@@ -349,7 +415,9 @@
   async function refreshScanCapture() {
     state.queue = await queueAll();
     renderAll();
-    const fallback = state.useLocalStorageFallback ? ' · localStorage fallback' : '';
+    const fallback = state.useLocalStorageFallback
+      ? ' · localStorage fallback'
+      : '';
     setStatus(`${t('scan.status.local-ready')}${fallback}`, 'ok');
   }
 
@@ -382,7 +450,10 @@
       setStatus(t('scan.status.saved-local'), 'ok');
       input?.focus();
     } catch (error) {
-      setStatus(`${t('scan.status.save-failed')}: ${error.message || error}`, 'error');
+      setStatus(
+        `${t('scan.status.save-failed')}: ${error.message || error}`,
+        'error',
+      );
       input?.focus();
     }
   }
@@ -450,12 +521,18 @@
       return false;
     }
     if (statusResult.status === 'failed') {
-      const detail = statusResult.errorMessage || statusResult.failedPhase || 'neznámá chyba';
+      const detail =
+        statusResult.errorMessage ||
+        statusResult.failedPhase ||
+        'neznámá chyba';
       setStatus(`Chyba batch: ${detail}`, 'error');
       return false;
     }
     if (statusResult.status === 'partial') {
-      const detail = statusResult.errorMessage || statusResult.failedPhase || 'část scanů nebyla spárována';
+      const detail =
+        statusResult.errorMessage ||
+        statusResult.failedPhase ||
+        'část scanů nebyla spárována';
       setStatus(`Batch skončil částečně: ${detail}`, 'error');
       return false;
     }
@@ -470,11 +547,17 @@
       latest = await fetchBatchStatus(batchId);
       if (latest) {
         const done = await applyBatchStatus(latest);
-        if (done || latest.status === 'failed' || latest.status === 'partial') return latest;
+        if (done || latest.status === 'failed' || latest.status === 'partial')
+          return latest;
       }
-      await new Promise((resolve) => global.setTimeout(resolve, STATUS_POLL_INTERVAL_MS));
+      await new Promise((resolve) =>
+        global.setTimeout(resolve, STATUS_POLL_INTERVAL_MS),
+      );
     }
-    setStatus('Server stále zpracovává batch. Fronta zůstává lokálně uložená.', 'error');
+    setStatus(
+      'Server stále zpracovává batch. Fronta zůstává lokálně uložená.',
+      'error',
+    );
     return latest;
   }
 
@@ -542,7 +625,9 @@
         return;
       }
       if (currentStatus && currentStatus.status === 'partial') {
-        setStatus('Předchozí batch je partial. Zkouším reprocess unfinished rows...');
+        setStatus(
+          'Předchozí batch je partial. Zkouším reprocess unfinished rows...',
+        );
       } else if (currentStatus && currentStatus.status === 'failed') {
         setStatus('Předchozí batch skončil chybou. Zkouším retry...');
       } else {
@@ -571,33 +656,58 @@
         ...(state.commitResult.processedScanIds || []),
         ...(state.commitResult.duplicateScanIds || []),
       ]);
-      (state.commitResult.errorScanIds || []).forEach((scanId) => removeIds.delete(scanId));
+      (state.commitResult.errorScanIds || []).forEach((scanId) =>
+        removeIds.delete(scanId),
+      );
       if (removeIds.size) await queueDeleteMany(Array.from(removeIds));
       await refreshScanCapture();
       renderCommitResult();
       const committed = Number(state.commitResult.newScansCommitted || 0);
       const matched = Number(state.commitResult.matchedCount || 0);
       const orderUpdates = Number(state.commitResult.orderUpdateCount || 0);
-      if (state.commitResult.commitOk === false || (committed > 0 && matched === 0)) {
-        setStatus('Scany byly zapsány, ale žádná objednávka nebyla spárována.', 'error');
-      } else if (matched === 0 && orderUpdates === 0 && state.commitResult.retryMode && state.commitResult.retryMode !== 'fresh') {
-        setStatus('Retry našel již zapsané scany, ale objednávky nebyly aktualizované.', 'error');
+      if (
+        state.commitResult.commitOk === false ||
+        (committed > 0 && matched === 0)
+      ) {
+        setStatus(
+          'Scany byly zapsány, ale žádná objednávka nebyla spárována.',
+          'error',
+        );
+      } else if (
+        matched === 0 &&
+        orderUpdates === 0 &&
+        state.commitResult.retryMode &&
+        state.commitResult.retryMode !== 'fresh'
+      ) {
+        setStatus(
+          'Retry našel již zapsané scany, ale objednávky nebyly aktualizované.',
+          'error',
+        );
       } else {
         setStatus(t('scan.status.commit-done'), 'ok');
       }
     } catch (error) {
       if (state.activeBatchId && isRecoverableCommitError(error)) {
-        console.warn('[scan-capture] commit request did not finish; polling status', error);
+        console.warn(
+          '[scan-capture] commit request did not finish; polling status',
+          error,
+        );
         setStatus('Server neodpověděl včas. Kontroluji stav batch...');
         try {
           await pollBatchStatus(state.activeBatchId);
           return;
         } catch (statusError) {
-          setStatus(`Kontrola batch selhala: ${statusError.message || statusError}`, 'error');
+          setStatus(
+            `Kontrola batch selhala: ${statusError.message || statusError}`,
+            'error',
+          );
           return;
         }
       }
-      setStatus(`${t('scan.status.commit-failed')}: ${error.message || error}`, 'error');
+      setStatus(
+        `${t('scan.status.commit-failed')}: ${error.message || error}`,
+        'error',
+      );
     } finally {
       state.loading = false;
       if (button) button.disabled = false;
@@ -612,7 +722,10 @@
       await refreshScanCapture();
       setStatus(t('scan.status.deleted'), 'ok');
     } catch (error) {
-      setStatus(`${t('scan.status.delete-failed')}: ${error.message || error}`, 'error');
+      setStatus(
+        `${t('scan.status.delete-failed')}: ${error.message || error}`,
+        'error',
+      );
     }
   }
 
@@ -622,21 +735,34 @@
     const operator = el('scan-operator-input');
     const station = el('scan-station-input');
     try {
-      if (operator) operator.value = global.localStorage.getItem(LS_OPERATOR) || '';
-      if (station) station.value = global.localStorage.getItem(LS_STATION) || DEFAULT_STATION;
+      if (operator)
+        operator.value = global.localStorage.getItem(LS_OPERATOR) || '';
+      if (station)
+        station.value =
+          global.localStorage.getItem(LS_STATION) || DEFAULT_STATION;
     } catch (_) {
       if (station) station.value = DEFAULT_STATION;
     }
     operator?.addEventListener('change', () => {
-      try { global.localStorage.setItem(LS_OPERATOR, operator.value.trim()); } catch (_) {}
+      try {
+        global.localStorage.setItem(LS_OPERATOR, operator.value.trim());
+      } catch (_) {}
     });
     station?.addEventListener('change', () => {
-      try { global.localStorage.setItem(LS_STATION, station.value.trim() || DEFAULT_STATION); } catch (_) {}
+      try {
+        global.localStorage.setItem(
+          LS_STATION,
+          station.value.trim() || DEFAULT_STATION,
+        );
+      } catch (_) {}
     });
     el('scan-refresh-btn')?.addEventListener('click', refreshScanCapture);
     el('scan-submit-btn')?.addEventListener('click', submitScan);
     el('scan-commit-btn')?.addEventListener('click', commitScans);
-    el('scan-check-status-btn')?.addEventListener('click', checkCurrentBatchStatus);
+    el('scan-check-status-btn')?.addEventListener(
+      'click',
+      checkCurrentBatchStatus,
+    );
     el('scan-copy-debug-btn')?.addEventListener('click', copyDebugInfo);
     el('scan-barcode-input')?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -666,5 +792,8 @@
     setTimeout(() => el('scan-barcode-input')?.focus(), 0);
   }
 
-  global.PrintGuardScanCaptureUI = { loadScanCaptureScreen, refreshScanCapture };
+  global.PrintGuardScanCaptureUI = {
+    loadScanCaptureScreen,
+    refreshScanCapture,
+  };
 })(window);

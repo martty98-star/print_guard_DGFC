@@ -1,4 +1,4 @@
-(function (global) {
+((global) => {
   const root = global.PrintGuardReports || (global.PrintGuardReports = {});
 
   const EVENT_TYPES = {
@@ -37,11 +37,19 @@
       stocktake: 'Inventura skladu',
     };
 
-    return labels[String(type || '').trim().toLowerCase()] || 'Pohyb skladu';
+    return (
+      labels[
+        String(type || '')
+          .trim()
+          .toLowerCase()
+      ] || 'Pohyb skladu'
+    );
   }
 
   function getMovementEventType(type) {
-    const normalized = String(type || '').trim().toLowerCase();
+    const normalized = String(type || '')
+      .trim()
+      .toLowerCase();
 
     if (normalized === 'receipt') return EVENT_TYPES.STOCK_RECEIPT_CREATED;
     if (normalized === 'issue') return EVENT_TYPES.STOCK_ISSUE_CREATED;
@@ -60,9 +68,12 @@
     const title = normalizeText(input.title);
     const body = normalizeText(input.body);
     const url = normalizeText(input.url) || '/';
-    const metadata = input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata)
-      ? input.metadata
-      : {};
+    const metadata =
+      input.metadata &&
+      typeof input.metadata === 'object' &&
+      !Array.isArray(input.metadata)
+        ? input.metadata
+        : {};
     const dedupeKey = normalizeText(input.dedupeKey) || null;
 
     if (!type || !category || !title || !body) {
@@ -85,7 +96,8 @@
       return null;
     }
 
-    const itemName = normalizeText(item && item.name) || normalizeText(move.articleNumber);
+    const itemName =
+      normalizeText(item && item.name) || normalizeText(move.articleNumber);
     const articleNumber = normalizeText(move.articleNumber);
     const unit = normalizeText(item && item.unit) || 'ks';
     const qty = Number(move.qty);
@@ -114,7 +126,10 @@
       return null;
     }
 
-    const label = normalizeText(machineLabel) || normalizeText(record.machineId) || 'Colorado';
+    const label =
+      normalizeText(machineLabel) ||
+      normalizeText(record.machineId) ||
+      'Colorado';
     const timestamp = formatTimestamp(record.timestamp);
     const suffix = timestamp ? ` · ${timestamp}` : '';
 
@@ -138,7 +153,8 @@
     }
 
     const articleNumber = normalizeText(input.articleNumber);
-    const itemName = normalizeText(input.itemName) || articleNumber || 'Polozka';
+    const itemName =
+      normalizeText(input.itemName) || articleNumber || 'Polozka';
     const unit = normalizeText(input.unit) || 'ks';
     const onHand = Number(input.onHand);
     const daysLeft = Number(input.daysLeft);
@@ -168,7 +184,8 @@
     }
 
     const articleNumber = normalizeText(input.articleNumber);
-    const itemName = normalizeText(input.itemName) || articleNumber || 'Polozka';
+    const itemName =
+      normalizeText(input.itemName) || articleNumber || 'Polozka';
     const unit = normalizeText(input.unit) || 'ks';
     const onHand = Number(input.onHand);
     const daysLeft = Number(input.daysLeft);

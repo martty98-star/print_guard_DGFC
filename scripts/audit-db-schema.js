@@ -3,8 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
-const connectionString = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
-const outputPath = path.resolve(process.cwd(), 'docs', 'database-schema.generated.md');
+const connectionString =
+  process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+const outputPath = path.resolve(
+  process.cwd(),
+  'docs',
+  'database-schema.generated.md',
+);
 
 const SQL = {
   tables: `
@@ -104,7 +109,9 @@ function markdownTable(headers, rows) {
 
   const headerRow = `| ${headers.join(' | ')} |`;
   const separatorRow = `| ${headers.map(() => '---').join(' | ')} |`;
-  const bodyRows = rows.map(row => `| ${row.map(quoteMarkdown).join(' | ')} |`);
+  const bodyRows = rows.map(
+    (row) => `| ${row.map(quoteMarkdown).join(' | ')} |`,
+  );
   return [headerRow, separatorRow, ...bodyRows].join('\n');
 }
 
@@ -144,14 +151,22 @@ function buildMarkdown(audit) {
     '',
     markdownTable(
       ['table_name'],
-      audit.tables.map(row => [qualifiedName(row.table_schema, row.table_name)]),
+      audit.tables.map((row) => [
+        qualifiedName(row.table_schema, row.table_name),
+      ]),
     ),
     '',
     '## Columns',
     '',
     markdownTable(
-      ['table_name', 'column_name', 'data_type', 'is_nullable', 'column_default'],
-      audit.columns.map(row => [
+      [
+        'table_name',
+        'column_name',
+        'data_type',
+        'is_nullable',
+        'column_default',
+      ],
+      audit.columns.map((row) => [
         qualifiedName(row.table_schema, row.table_name),
         row.column_name,
         row.data_type,
@@ -164,7 +179,7 @@ function buildMarkdown(audit) {
     '',
     markdownTable(
       ['table_name', 'constraint_name', 'columns'],
-      primaryKeys.map(row => [
+      primaryKeys.map((row) => [
         qualifiedName(row.table_schema, row.table_name),
         row.constraint_name,
         row.columns.join(', '),
@@ -174,8 +189,15 @@ function buildMarkdown(audit) {
     '## Foreign Keys',
     '',
     markdownTable(
-      ['table_name', 'constraint_name', 'column_name', 'references', 'update_rule', 'delete_rule'],
-      audit.foreignKeys.map(row => [
+      [
+        'table_name',
+        'constraint_name',
+        'column_name',
+        'references',
+        'update_rule',
+        'delete_rule',
+      ],
+      audit.foreignKeys.map((row) => [
         qualifiedName(row.table_schema, row.table_name),
         row.constraint_name,
         row.column_name,
@@ -189,7 +211,7 @@ function buildMarkdown(audit) {
     '',
     markdownTable(
       ['table_name', 'index_name', 'index_definition'],
-      audit.indexes.map(row => [
+      audit.indexes.map((row) => [
         qualifiedName(row.table_schema, row.table_name),
         row.index_name,
         row.index_definition,
@@ -200,7 +222,7 @@ function buildMarkdown(audit) {
     '',
     markdownTable(
       ['view_name', 'view_definition'],
-      audit.views.map(row => [
+      audit.views.map((row) => [
         qualifiedName(row.table_schema, row.view_name),
         row.view_definition,
       ]),
@@ -215,7 +237,9 @@ function printSummary(audit) {
   console.log('Database schema audit');
   console.log('---------------------');
   console.log(`Tables: ${audit.tables.length}`);
-  audit.tables.forEach(row => console.log(`  - ${qualifiedName(row.table_schema, row.table_name)}`));
+  audit.tables.forEach((row) =>
+    console.log(`  - ${qualifiedName(row.table_schema, row.table_name)}`),
+  );
   console.log(`Columns: ${audit.columns.length}`);
   console.log(`Primary keys: ${primaryKeys.length}`);
   console.log(`Foreign keys: ${audit.foreignKeys.length}`);
@@ -226,7 +250,9 @@ function printSummary(audit) {
 
 async function main() {
   if (!connectionString) {
-    fail('Missing database URL. Set NEON_DATABASE_URL or DATABASE_URL before running this script.');
+    fail(
+      'Missing database URL. Set NEON_DATABASE_URL or DATABASE_URL before running this script.',
+    );
     return;
   }
 

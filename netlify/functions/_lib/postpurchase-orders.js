@@ -38,9 +38,10 @@ function prefixOrderNumberForBrand(orderNumber, brandCode) {
 
 function resolveOrderNumber(order) {
   if (!order || typeof order !== 'object') return null;
-  const brand = order.order && typeof order.order === 'object'
-    ? order.order.brand_system_code
-    : order.brand_system_code;
+  const brand =
+    order.order && typeof order.order === 'object'
+      ? order.order.brand_system_code
+      : order.brand_system_code;
   const ecommerceId = firstCleanString([
     order.order && order.order.ecommerce_id,
     order.order && order.order.ecommerceId,
@@ -51,70 +52,70 @@ function resolveOrderNumber(order) {
   ]);
   if (ecommerceId) return prefixOrderNumberForBrand(ecommerceId, brand);
 
-  return prefixOrderNumberForBrand(firstCleanString([
-    order.order_number,
-    order.orderNumber,
-    order.order_no,
-    order.orderNo,
-    order.number,
-    order.name,
-    order.reference,
-    order.order_reference,
-    order.orderReference,
-    order.purchase_order_number,
-    order.purchaseOrderNumber,
-    order.purchase_order_no,
-    order.purchaseOrderNo,
-    order.customer_order_number,
-    order.customerOrderNumber,
-    order.customer_reference,
-    order.customerReference,
-    order.client_order_number,
-    order.clientOrderNumber,
-    order.po_number,
-    order.poNumber,
-    order.order && order.order.number,
-    order.order && order.order.orderNumber,
-    order.order && order.order.reference,
-    order.purchaseOrder && order.purchaseOrder.number,
-    order.purchaseOrder && order.purchaseOrder.orderNumber,
-    order.purchaseOrder && order.purchaseOrder.reference,
-  ]), brand);
+  return prefixOrderNumberForBrand(
+    firstCleanString([
+      order.order_number,
+      order.orderNumber,
+      order.order_no,
+      order.orderNo,
+      order.number,
+      order.name,
+      order.reference,
+      order.order_reference,
+      order.orderReference,
+      order.purchase_order_number,
+      order.purchaseOrderNumber,
+      order.purchase_order_no,
+      order.purchaseOrderNo,
+      order.customer_order_number,
+      order.customerOrderNumber,
+      order.customer_reference,
+      order.customerReference,
+      order.client_order_number,
+      order.clientOrderNumber,
+      order.po_number,
+      order.poNumber,
+      order.order && order.order.number,
+      order.order && order.order.orderNumber,
+      order.order && order.order.reference,
+      order.purchaseOrder && order.purchaseOrder.number,
+      order.purchaseOrder && order.purchaseOrder.orderNumber,
+      order.purchaseOrder && order.purchaseOrder.reference,
+    ]),
+    brand,
+  );
 }
 
 function resolveBrand(order) {
   return cleanString(
-    order && (
-      order.brand_system_code ||
-      order.brandSystemCode ||
-      (order.order && order.order.brand_system_code) ||
-      (order.order && order.order.brandSystemCode)
-    )
+    order &&
+      (order.brand_system_code ||
+        order.brandSystemCode ||
+        (order.order && order.order.brand_system_code) ||
+        (order.order && order.order.brandSystemCode)),
   );
 }
 
 function resolveApiOrderId(order) {
   return cleanString(
-    order && (
-      order.id ||
-      order.rawId ||
-      order.external_order_id ||
-      order.externalOrderId ||
-      order.uuid
-    )
+    order &&
+      (order.id ||
+        order.rawId ||
+        order.external_order_id ||
+        order.externalOrderId ||
+        order.uuid),
   );
 }
 
 function getOrderCreatedAt(order) {
   return toIsoOrNull(
-    order && (
-      order.created_at ||
-      order.createdAt ||
-      order.received_at ||
-      order.receivedAt ||
-      order.updated_at ||
-      order.updatedAt
-    )
+    order &&
+      (order.created_at ||
+        order.createdAt ||
+        order.received_at ||
+        order.receivedAt ||
+        order.updated_at ||
+        order.updatedAt),
   );
 }
 
@@ -123,7 +124,9 @@ function mapPostPurchaseOrder(order) {
     orderNumber: resolveOrderNumber(order),
     brand: resolveBrand(order),
     createdAt: getOrderCreatedAt(order),
-    supplier: cleanString(order && (order.supplier_system_code || order.supplierSystemCode)),
+    supplier: cleanString(
+      order && (order.supplier_system_code || order.supplierSystemCode),
+    ),
     rawId: Number(order && order.id) || null,
   };
 }
@@ -152,9 +155,15 @@ function getEnvValue(name) {
 }
 
 function getPostPurchaseConfig(overrides) {
-  const baseUrl = cleanString(overrides && overrides.baseUrl) || getEnvValue('POST_PURCHASE_API_BASE_URL');
-  const token = cleanString(overrides && overrides.token) || getEnvValue('POST_PURCHASE_API_TOKEN');
-  const ordersPath = cleanString(overrides && overrides.ordersPath) || getEnvValue('POST_PURCHASE_API_ORDERS_PATH');
+  const baseUrl =
+    cleanString(overrides && overrides.baseUrl) ||
+    getEnvValue('POST_PURCHASE_API_BASE_URL');
+  const token =
+    cleanString(overrides && overrides.token) ||
+    getEnvValue('POST_PURCHASE_API_TOKEN');
+  const ordersPath =
+    cleanString(overrides && overrides.ordersPath) ||
+    getEnvValue('POST_PURCHASE_API_ORDERS_PATH');
   const supplierSystemCode =
     cleanString(overrides && overrides.supplierSystemCode) ||
     getEnvValue('POST_PURCHASE_API_SUPPLIER_SYSTEM_CODE') ||
@@ -173,16 +182,22 @@ function assertPostPurchaseConfig(config) {
     throw new Error('Invalid POST_PURCHASE_API_BASE_URL');
   }
   if (!/^https?:$/.test(parsedBaseUrl.protocol)) {
-    throw new Error('POST_PURCHASE_API_BASE_URL must start with http:// or https://');
+    throw new Error(
+      'POST_PURCHASE_API_BASE_URL must start with http:// or https://',
+    );
   }
   if (!parsedBaseUrl.hostname || /^base$/i.test(parsedBaseUrl.hostname)) {
-    throw new Error('POST_PURCHASE_API_BASE_URL must be https://post-purchase.desen.io');
+    throw new Error(
+      'POST_PURCHASE_API_BASE_URL must be https://post-purchase.desen.io',
+    );
   }
   if (!config.token) {
     throw new Error('Missing POST_PURCHASE_API_TOKEN');
   }
   if (/^REPLACE_WITH_/i.test(config.token)) {
-    throw new Error('POST_PURCHASE_API_TOKEN still contains the placeholder value');
+    throw new Error(
+      'POST_PURCHASE_API_TOKEN still contains the placeholder value',
+    );
   }
 }
 
@@ -197,7 +212,8 @@ function buildCandidateUrls(baseUrl, ordersPath) {
   const explicitPath = cleanString(ordersPath);
   const candidates = [];
   const currentPath = cleanString(base.pathname);
-  const includeCurrent = currentPath && currentPath !== '/' && !/\/docs(\/|$)/i.test(currentPath);
+  const includeCurrent =
+    currentPath && currentPath !== '/' && !/\/docs(\/|$)/i.test(currentPath);
 
   if (explicitPath) {
     candidates.push(new URL(explicitPath, base).toString());
@@ -225,23 +241,35 @@ function buildCandidateUrls(baseUrl, ordersPath) {
 function applyFilterParams(targetUrl, options, pageState) {
   const url = new URL(targetUrl);
   const params = url.searchParams;
-  const updatedFrom = cleanString(options && (options.updatedFrom || options.since));
+  const updatedFrom = cleanString(
+    options && (options.updatedFrom || options.since),
+  );
   const createdFrom = cleanString(options && options.createdFrom);
-  const limit = Math.max(1, Math.min(100, Number(options && (options.limit || options.pageSize)) || 100));
+  const limit = Math.max(
+    1,
+    Math.min(
+      100,
+      Number(options && (options.limit || options.pageSize)) || 100,
+    ),
+  );
   const fromId = Math.max(0, Number(pageState && pageState.fromId) || 0);
   const cursor = cleanString(pageState && pageState.cursor);
   const supplierSystemCode = cleanString(options && options.supplierSystemCode);
 
   if (updatedFrom) {
-    ['updated_from', 'updatedFrom', 'updated_since', 'updatedSince'].forEach((key) => {
-      if (!params.has(key)) params.set(key, updatedFrom);
-    });
+    ['updated_from', 'updatedFrom', 'updated_since', 'updatedSince'].forEach(
+      (key) => {
+        if (!params.has(key)) params.set(key, updatedFrom);
+      },
+    );
   }
 
   if (createdFrom) {
-    ['created_from', 'createdFrom', 'created_since', 'createdSince'].forEach((key) => {
-      if (!params.has(key)) params.set(key, createdFrom);
-    });
+    ['created_from', 'createdFrom', 'created_since', 'createdSince'].forEach(
+      (key) => {
+        if (!params.has(key)) params.set(key, createdFrom);
+      },
+    );
   }
 
   params.set('limit', String(limit));
@@ -252,9 +280,11 @@ function applyFilterParams(targetUrl, options, pageState) {
   }
 
   if (cursor) {
-    ['cursor', 'page_token', 'pageToken', 'next_cursor', 'nextCursor'].forEach((key) => {
-      if (!params.has(key)) params.set(key, cursor);
-    });
+    ['cursor', 'page_token', 'pageToken', 'next_cursor', 'nextCursor'].forEach(
+      (key) => {
+        if (!params.has(key)) params.set(key, cursor);
+      },
+    );
   }
 
   return url;
@@ -276,7 +306,9 @@ async function fetchJsonOrThrow(url, token, fetchImpl) {
     try {
       payload = JSON.parse(rawText);
     } catch (error) {
-      const invalidJsonError = new Error(`Invalid JSON from Post Purchase API (${url})`);
+      const invalidJsonError = new Error(
+        `Invalid JSON from Post Purchase API (${url})`,
+      );
       invalidJsonError.statusCode = response.status;
       invalidJsonError.responseText = rawText.slice(0, 500);
       invalidJsonError.cause = error;
@@ -285,7 +317,9 @@ async function fetchJsonOrThrow(url, token, fetchImpl) {
   }
 
   if (!response.ok) {
-    const apiError = new Error(`Post Purchase API request failed (${response.status} ${response.statusText})`);
+    const apiError = new Error(
+      `Post Purchase API request failed (${response.status} ${response.statusText})`,
+    );
     apiError.statusCode = response.status;
     apiError.payload = payload;
     apiError.responseText = rawText.slice(0, 500);
@@ -326,10 +360,14 @@ function extractOrdersArray(payload) {
       if (Array.isArray(candidate.data)) return candidate.data;
       if (Array.isArray(candidate.orders)) return candidate.orders;
       if (Array.isArray(candidate.results)) return candidate.results;
-      if (Array.isArray(candidate.purchase_orders)) return candidate.purchase_orders;
-      if (Array.isArray(candidate.purchaseOrders)) return candidate.purchaseOrders;
-      if (Array.isArray(candidate.purchaseOrderList)) return candidate.purchaseOrderList;
-      if (Array.isArray(candidate.purchase_order_list)) return candidate.purchase_order_list;
+      if (Array.isArray(candidate.purchase_orders))
+        return candidate.purchase_orders;
+      if (Array.isArray(candidate.purchaseOrders))
+        return candidate.purchaseOrders;
+      if (Array.isArray(candidate.purchaseOrderList))
+        return candidate.purchaseOrderList;
+      if (Array.isArray(candidate.purchase_order_list))
+        return candidate.purchase_order_list;
       if (Array.isArray(candidate.records)) return candidate.records;
       if (Array.isArray(candidate.payload)) return candidate.payload;
     }
@@ -359,11 +397,18 @@ function describePayloadShape(payload) {
 function resolveNextPage(payload, currentUrl, pageState, itemCount) {
   const items = extractOrdersArray(payload) || [];
   const itemIds = items
-    .map((item) => Number(item && (item.id || item.external_order_id || item.externalOrderId)))
+    .map((item) =>
+      Number(
+        item && (item.id || item.external_order_id || item.externalOrderId),
+      ),
+    )
     .filter((value) => Number.isFinite(value) && value > 0);
   const maxItemId = itemIds.length ? Math.max(...itemIds) : 0;
   const lastItemId = itemIds.length ? itemIds[itemIds.length - 1] : 0;
-  const limit = Math.max(1, Math.min(100, Number(new URL(currentUrl).searchParams.get('limit')) || 100));
+  const limit = Math.max(
+    1,
+    Math.min(100, Number(new URL(currentUrl).searchParams.get('limit')) || 100),
+  );
   const currentFromId = Math.max(0, Number(pageState && pageState.fromId) || 0);
 
   if (lastItemId > 0 && lastItemId !== currentFromId && itemCount >= limit) {
@@ -419,14 +464,19 @@ function resolveNextPage(payload, currentUrl, pageState, itemCount) {
   }
 
   const hasMore = payload.has_more === true || payload.hasMore === true;
-  if (hasMore && lastItemId > 0 && lastItemId !== currentFromId) return { fromId: lastItemId };
+  if (hasMore && lastItemId > 0 && lastItemId !== currentFromId)
+    return { fromId: lastItemId };
 
   return null;
 }
 
 function getLastApiId(orders) {
   const ids = (orders || [])
-    .map((item) => Number(item && (item.id || item.external_order_id || item.externalOrderId)))
+    .map((item) =>
+      Number(
+        item && (item.id || item.external_order_id || item.externalOrderId),
+      ),
+    )
     .filter((value) => Number.isFinite(value) && value > 0);
   return ids.length ? ids[ids.length - 1] : null;
 }
@@ -442,8 +492,17 @@ function normalizeOrder(order) {
   return {
     external_order_id: externalOrderId,
     order_number: mapped.orderNumber,
-    customer_order_id: cleanString(order.customer_order_id || order.customerOrderId || order.customer_id || order.customerId || order.document_id || order.documentId),
-    status: cleanString(order.status || order.order_status || order.orderStatus),
+    customer_order_id: cleanString(
+      order.customer_order_id ||
+        order.customerOrderId ||
+        order.customer_id ||
+        order.customerId ||
+        order.document_id ||
+        order.documentId,
+    ),
+    status: cleanString(
+      order.status || order.order_status || order.orderStatus,
+    ),
     received_at: mapped.createdAt,
     source_payload: order,
   };
@@ -453,12 +512,14 @@ async function fetchPostPurchaseOrders(options) {
   const config = getPostPurchaseConfig(options);
   assertPostPurchaseConfig(config);
 
-  const fetchImpl = options && options.fetchImpl ? options.fetchImpl : global.fetch;
+  const fetchImpl =
+    options && options.fetchImpl ? options.fetchImpl : global.fetch;
   if (typeof fetchImpl !== 'function') {
     throw new Error('Fetch API is not available in this Node runtime');
   }
 
-  const log = options && typeof options.log === 'function' ? options.log : console.log;
+  const log =
+    options && typeof options.log === 'function' ? options.log : console.log;
   const urlsToTry = buildCandidateUrls(config.baseUrl, config.ordersPath);
   const maxPages = Math.max(1, Number(options && options.maxPages) || 100);
   const requestOptions = {
@@ -470,7 +531,10 @@ async function fetchPostPurchaseOrders(options) {
   for (const candidate of urlsToTry) {
     const seenUrls = new Set();
     const pages = [];
-    let pageState = { page: 1, fromId: Math.max(0, Number(options && options.fromId) || 0) };
+    let pageState = {
+      page: 1,
+      fromId: Math.max(0, Number(options && options.fromId) || 0),
+    };
     let currentUrl = candidate;
 
     try {
@@ -486,37 +550,60 @@ async function fetchPostPurchaseOrders(options) {
         seenUrls.add(requestKey);
 
         log(`[postpurchase] fetch page=${pageIndex + 1} ${requestKey}`);
-        const payload = await fetchJsonOrThrow(requestUrl, config.token, fetchImpl);
+        const payload = await fetchJsonOrThrow(
+          requestUrl,
+          config.token,
+          fetchImpl,
+        );
         const items = extractOrdersArray(payload);
         if (!Array.isArray(items)) {
-          throw new Error(`Unsupported Post Purchase API response shape for ${requestKey}: ${describePayloadShape(payload)}`);
+          throw new Error(
+            `Unsupported Post Purchase API response shape for ${requestKey}: ${describePayloadShape(payload)}`,
+          );
         }
 
         pages.push(...items);
         const newestCreatedAt = getNewestCreatedAt(pages);
         const lastApiId = getLastApiId(items);
-        log(`[postpurchase] page=${pageIndex + 1} records=${items.length} total=${pages.length}${lastApiId ? ` last_id=${lastApiId}` : ''}${newestCreatedAt ? ` newest_created_at=${newestCreatedAt}` : ''}`);
-        const nextPage = resolveNextPage(payload, requestUrl, pageState, items.length);
+        log(
+          `[postpurchase] page=${pageIndex + 1} records=${items.length} total=${pages.length}${lastApiId ? ` last_id=${lastApiId}` : ''}${newestCreatedAt ? ` newest_created_at=${newestCreatedAt}` : ''}`,
+        );
+        const nextPage = resolveNextPage(
+          payload,
+          requestUrl,
+          pageState,
+          items.length,
+        );
         if (nextPage && nextPage.fromId) {
           log(`[postpurchase] nextFromId=${nextPage.fromId}`);
         }
         if (!nextPage) {
-          return { endpoint: requestKey, orders: pages, newestCreatedAt: getNewestCreatedAt(pages) };
+          return {
+            endpoint: requestKey,
+            orders: pages,
+            newestCreatedAt: getNewestCreatedAt(pages),
+          };
         }
 
         currentUrl = requestUrl.toString();
         pageState = nextPage;
       }
 
-      return { endpoint: currentUrl, orders: pages, newestCreatedAt: getNewestCreatedAt(pages) };
+      return {
+        endpoint: currentUrl,
+        orders: pages,
+        newestCreatedAt: getNewestCreatedAt(pages),
+      };
     } catch (error) {
       const canContinueDiscovery =
         !cleanString(config.ordersPath) &&
-        (
-          (error && error.statusCode === 404) ||
-          /Invalid JSON from Post Purchase API/i.test(String(error && error.message || '')) ||
-          /Unsupported Post Purchase API response shape/i.test(String(error && error.message || ''))
-        );
+        ((error && error.statusCode === 404) ||
+          /Invalid JSON from Post Purchase API/i.test(
+            String((error && error.message) || ''),
+          ) ||
+          /Unsupported Post Purchase API response shape/i.test(
+            String((error && error.message) || ''),
+          ));
       if (canContinueDiscovery) {
         lastDiscoveryError = error;
         continue;
@@ -525,7 +612,10 @@ async function fetchPostPurchaseOrders(options) {
     }
   }
 
-  throw lastDiscoveryError || new Error('Unable to resolve Post Purchase API orders endpoint');
+  throw (
+    lastDiscoveryError ||
+    new Error('Unable to resolve Post Purchase API orders endpoint')
+  );
 }
 
 async function ensurePrintOrdersTable(client) {
@@ -559,29 +649,53 @@ async function ensurePrintOrdersTable(client) {
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       )
-    `
+    `,
   );
 
   await client.query(
-    `create index if not exists print_orders_received_status_idx on print_orders_received (status)`
+    `create index if not exists print_orders_received_status_idx on print_orders_received (status)`,
   );
 
   await client.query(
-    `create index if not exists print_orders_received_received_at_idx on print_orders_received (received_at desc nulls last)`
+    `create index if not exists print_orders_received_received_at_idx on print_orders_received (received_at desc nulls last)`,
   );
 
-  await client.query(`alter table print_orders_received add column if not exists reprint_needed boolean not null default false`);
-  await client.query(`alter table print_orders_received add column if not exists issue_reason text null`);
-  await client.query(`alter table print_orders_received add column if not exists issue_note text null`);
-  await client.query(`alter table print_orders_received add column if not exists reprinted_at timestamptz null`);
-  await client.query(`alter table print_orders_received add column if not exists submit_tool_at timestamptz null`);
-  await client.query(`alter table print_orders_received add column if not exists submit_tool_status text null`);
-  await client.query(`alter table print_orders_received add column if not exists ignored boolean not null default false`);
-  await client.query(`alter table print_orders_received add column if not exists ignore_reason text null`);
-  await client.query(`alter table print_orders_received add column if not exists admin_status text null`);
-  await client.query(`alter table print_orders_received add column if not exists admin_note text null`);
-  await client.query(`alter table print_orders_received add column if not exists admin_updated_at timestamptz null`);
-  await client.query(`create index if not exists print_orders_received_ignored_idx on print_orders_received (ignored, admin_status)`);
+  await client.query(
+    `alter table print_orders_received add column if not exists reprint_needed boolean not null default false`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists issue_reason text null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists issue_note text null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists reprinted_at timestamptz null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists submit_tool_at timestamptz null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists submit_tool_status text null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists ignored boolean not null default false`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists ignore_reason text null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists admin_status text null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists admin_note text null`,
+  );
+  await client.query(
+    `alter table print_orders_received add column if not exists admin_updated_at timestamptz null`,
+  );
+  await client.query(
+    `create index if not exists print_orders_received_ignored_idx on print_orders_received (ignored, admin_status)`,
+  );
 
   printOrdersSchemaReady = true;
 }
@@ -601,7 +715,7 @@ async function getLastSeenApiId(client) {
         0
       ) as last_seen_api_id
       from print_orders_received
-    `
+    `,
   );
 
   return Number(result.rows[0] && result.rows[0].last_seen_api_id) || 0;
@@ -610,7 +724,8 @@ async function getLastSeenApiId(client) {
 async function upsertPrintOrders(client, orders, options) {
   await ensurePrintOrdersTable(client);
 
-  const log = options && typeof options.log === 'function' ? options.log : console.log;
+  const log =
+    options && typeof options.log === 'function' ? options.log : console.log;
   const stats = {
     fetched: Array.isArray(orders) ? orders.length : 0,
     normalized: 0,
@@ -640,18 +755,20 @@ async function upsertPrintOrders(client, orders, options) {
 
   for (const chunk of chunkArray(normalizedOrders, 300)) {
     const params = [];
-    const valuesSql = chunk.map((order, index) => {
-      const base = index * 6;
-      params.push(
-        order.external_order_id,
-        order.order_number,
-        order.customer_order_id,
-        order.status,
-        JSON.stringify(order.source_payload),
-        order.received_at
-      );
-      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}::jsonb, $${base + 6}::timestamptz, now(), now())`;
-    }).join(',');
+    const valuesSql = chunk
+      .map((order, index) => {
+        const base = index * 6;
+        params.push(
+          order.external_order_id,
+          order.order_number,
+          order.customer_order_id,
+          order.status,
+          JSON.stringify(order.source_payload),
+          order.received_at,
+        );
+        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}::jsonb, $${base + 6}::timestamptz, now(), now())`;
+      })
+      .join(',');
 
     const result = await client.query(
       `
@@ -677,7 +794,7 @@ async function upsertPrintOrders(client, orders, options) {
           updated_at = now()
         returning (xmax = 0) as inserted
       `,
-      params
+      params,
     );
 
     for (const row of result.rows) {
@@ -689,13 +806,18 @@ async function upsertPrintOrders(client, orders, options) {
     }
   }
 
-  log(`[postpurchase] fetched=${stats.fetched} normalized=${stats.normalized} inserted=${stats.inserted} updated=${stats.updated} skipped=${stats.skipped}`);
+  log(
+    `[postpurchase] fetched=${stats.fetched} normalized=${stats.normalized} inserted=${stats.inserted} updated=${stats.updated} skipped=${stats.skipped}`,
+  );
   return stats;
 }
 
 async function listPrintOrdersReceived(client, options) {
   await ensurePrintOrdersTable(client);
-  const limit = Math.max(1, Math.min(500, Number(options && options.limit) || 200));
+  const limit = Math.max(
+    1,
+    Math.min(500, Number(options && options.limit) || 200),
+  );
   const offset = Math.max(0, Number(options && options.offset) || 0);
 
   const result = await client.query(
@@ -728,14 +850,15 @@ async function listPrintOrdersReceived(client, options) {
       limit $1
       offset $2
     `,
-    [limit, offset]
+    [limit, offset],
   );
 
   return result.rows.map(mapPrintOrderRow);
 }
 
 function mapPrintOrderRow(row) {
-  const submitToolProcessed = row.submit_tool_processed_at != null || row.submit_tool_at != null;
+  const submitToolProcessed =
+    row.submit_tool_processed_at != null || row.submit_tool_at != null;
   const onyxSeen = row.onyx_seen_at != null;
   const coloradoPrinted = row.colorado_printed_at != null;
 
@@ -744,22 +867,46 @@ function mapPrintOrderRow(row) {
     order_number: row.order_number || resolveOrderNumber(row.source_payload),
     customer_order_id: row.customer_order_id,
     status: row.status,
-    received_at: row.received_at instanceof Date ? row.received_at.toISOString() : row.received_at,
-    api_seen_at: row.api_seen_at instanceof Date ? row.api_seen_at.toISOString() : row.api_seen_at,
-    submit_tool_at: row.submit_tool_at instanceof Date ? row.submit_tool_at.toISOString() : row.submit_tool_at,
+    received_at:
+      row.received_at instanceof Date
+        ? row.received_at.toISOString()
+        : row.received_at,
+    api_seen_at:
+      row.api_seen_at instanceof Date
+        ? row.api_seen_at.toISOString()
+        : row.api_seen_at,
+    submit_tool_at:
+      row.submit_tool_at instanceof Date
+        ? row.submit_tool_at.toISOString()
+        : row.submit_tool_at,
     submit_tool_status: row.submit_tool_status || '',
-    submit_tool_processed_at: row.submit_tool_processed_at instanceof Date ? row.submit_tool_processed_at.toISOString() : row.submit_tool_processed_at,
-    onyx_seen_at: row.onyx_seen_at instanceof Date ? row.onyx_seen_at.toISOString() : row.onyx_seen_at,
-    colorado_printed_at: row.colorado_printed_at instanceof Date ? row.colorado_printed_at.toISOString() : row.colorado_printed_at,
+    submit_tool_processed_at:
+      row.submit_tool_processed_at instanceof Date
+        ? row.submit_tool_processed_at.toISOString()
+        : row.submit_tool_processed_at,
+    onyx_seen_at:
+      row.onyx_seen_at instanceof Date
+        ? row.onyx_seen_at.toISOString()
+        : row.onyx_seen_at,
+    colorado_printed_at:
+      row.colorado_printed_at instanceof Date
+        ? row.colorado_printed_at.toISOString()
+        : row.colorado_printed_at,
     reprint_needed: Boolean(row.reprint_needed),
     issue_reason: row.issue_reason || '',
     issue_note: row.issue_note || '',
-    reprinted_at: row.reprinted_at instanceof Date ? row.reprinted_at.toISOString() : row.reprinted_at,
+    reprinted_at:
+      row.reprinted_at instanceof Date
+        ? row.reprinted_at.toISOString()
+        : row.reprinted_at,
     ignored: Boolean(row.ignored),
     ignore_reason: row.ignore_reason || '',
     admin_status: row.admin_status || '',
     admin_note: row.admin_note || '',
-    admin_updated_at: row.admin_updated_at instanceof Date ? row.admin_updated_at.toISOString() : row.admin_updated_at,
+    admin_updated_at:
+      row.admin_updated_at instanceof Date
+        ? row.admin_updated_at.toISOString()
+        : row.admin_updated_at,
     statuses: {
       RECEIVED_FROM_API: true,
       SUBMIT_TOOL_PROCESSED: submitToolProcessed,
@@ -772,8 +919,12 @@ function mapPrintOrderRow(row) {
 async function updatePrintOrderAdminStatus(client, options) {
   await ensurePrintOrdersTable(client);
 
-  const externalOrderId = cleanString(options && (options.externalOrderId || options.external_order_id));
-  const orderNumber = cleanString(options && (options.orderNumber || options.order_number));
+  const externalOrderId = cleanString(
+    options && (options.externalOrderId || options.external_order_id),
+  );
+  const orderNumber = cleanString(
+    options && (options.orderNumber || options.order_number),
+  );
   const action = cleanString(options && options.action);
   const note = cleanString(options && options.note);
   if (!externalOrderId && !orderNumber) {
@@ -826,7 +977,7 @@ async function updatePrintOrderAdminStatus(client, options) {
         admin_updated_at,
         source_payload
     `,
-    [...params, action]
+    [...params, action],
   );
   if (!result.rows.length) {
     const error = new Error('Order not found');
@@ -839,20 +990,24 @@ async function updatePrintOrderAdminStatus(client, options) {
 async function updatePrintOrderLifecycleStatus(client, options) {
   await ensurePrintOrdersTable(client);
 
-  const externalOrderId = cleanString(options && (options.externalOrderId || options.external_order_id));
-  const requestedStage = cleanString(options && options.stage);
-  const hasIssueUpdate = options && (
-    Object.prototype.hasOwnProperty.call(options, 'reprintNeeded') ||
-    Object.prototype.hasOwnProperty.call(options, 'reprint_needed') ||
-    Object.prototype.hasOwnProperty.call(options, 'issueReason') ||
-    Object.prototype.hasOwnProperty.call(options, 'issue_reason') ||
-    Object.prototype.hasOwnProperty.call(options, 'note') ||
-    Object.prototype.hasOwnProperty.call(options, 'issue_note') ||
-    Object.prototype.hasOwnProperty.call(options, 'reprintedAt') ||
-    Object.prototype.hasOwnProperty.call(options, 'reprinted_at')
+  const externalOrderId = cleanString(
+    options && (options.externalOrderId || options.external_order_id),
   );
+  const requestedStage = cleanString(options && options.stage);
+  const hasIssueUpdate =
+    options &&
+    (Object.hasOwn(options, 'reprintNeeded') ||
+      Object.hasOwn(options, 'reprint_needed') ||
+      Object.hasOwn(options, 'issueReason') ||
+      Object.hasOwn(options, 'issue_reason') ||
+      Object.hasOwn(options, 'note') ||
+      Object.hasOwn(options, 'issue_note') ||
+      Object.hasOwn(options, 'reprintedAt') ||
+      Object.hasOwn(options, 'reprinted_at'));
   const completed = Boolean(options && options.completed);
-  const completedAt = toIsoOrNull(options && (options.completedAt || options.completed_at));
+  const completedAt = toIsoOrNull(
+    options && (options.completedAt || options.completed_at),
+  );
   const stageMap = {
     SUBMIT_TOOL_PROCESSED: 'submit_tool_processed_at',
     SUBMIT_TOOL_PROCESSED_AT: 'submit_tool_processed_at',
@@ -882,7 +1037,7 @@ async function updatePrintOrderLifecycleStatus(client, options) {
       from print_orders_received
       where external_order_id = $1
     `,
-    [externalOrderId]
+    [externalOrderId],
   );
 
   if (!currentResult.rows.length) {
@@ -892,28 +1047,27 @@ async function updatePrintOrderLifecycleStatus(client, options) {
   }
 
   const current = currentResult.rows[0] || {};
-  const nextReprintNeeded = hasIssueUpdate && (
-    Object.prototype.hasOwnProperty.call(options, 'reprintNeeded') ||
-    Object.prototype.hasOwnProperty.call(options, 'reprint_needed')
-  )
-    ? Boolean(options.reprintNeeded ?? options.reprint_needed)
-    : Boolean(current.reprint_needed);
-  const nextIssueReason = hasIssueUpdate && (
-    Object.prototype.hasOwnProperty.call(options, 'issueReason') ||
-    Object.prototype.hasOwnProperty.call(options, 'issue_reason')
-  )
-    ? cleanString(options.issueReason ?? options.issue_reason)
-    : cleanString(current.issue_reason);
-  const nextIssueNote = hasIssueUpdate && (
-    Object.prototype.hasOwnProperty.call(options, 'note') ||
-    Object.prototype.hasOwnProperty.call(options, 'issue_note')
-  )
-    ? cleanString(options.note ?? options.issue_note)
-    : cleanString(current.issue_note);
-  const hasReprintedUpdate = hasIssueUpdate && (
-    Object.prototype.hasOwnProperty.call(options, 'reprintedAt') ||
-    Object.prototype.hasOwnProperty.call(options, 'reprinted_at')
-  );
+  const nextReprintNeeded =
+    hasIssueUpdate &&
+    (Object.hasOwn(options, 'reprintNeeded') ||
+      Object.hasOwn(options, 'reprint_needed'))
+      ? Boolean(options.reprintNeeded ?? options.reprint_needed)
+      : Boolean(current.reprint_needed);
+  const nextIssueReason =
+    hasIssueUpdate &&
+    (Object.hasOwn(options, 'issueReason') ||
+      Object.hasOwn(options, 'issue_reason'))
+      ? cleanString(options.issueReason ?? options.issue_reason)
+      : cleanString(current.issue_reason);
+  const nextIssueNote =
+    hasIssueUpdate &&
+    (Object.hasOwn(options, 'note') || Object.hasOwn(options, 'issue_note'))
+      ? cleanString(options.note ?? options.issue_note)
+      : cleanString(current.issue_note);
+  const hasReprintedUpdate =
+    hasIssueUpdate &&
+    (Object.hasOwn(options, 'reprintedAt') ||
+      Object.hasOwn(options, 'reprinted_at'));
   const nextReprintedAt = hasReprintedUpdate
     ? toIsoOrNull(options.reprintedAt ?? options.reprinted_at)
     : toIsoOrNull(current.reprinted_at);
@@ -953,7 +1107,13 @@ async function updatePrintOrderLifecycleStatus(client, options) {
           reprinted_at,
           source_payload
       `,
-      [externalOrderId, nextReprintNeeded, nextIssueReason, nextIssueNote, nextReprintedAt]
+      [
+        externalOrderId,
+        nextReprintNeeded,
+        nextIssueReason,
+        nextIssueNote,
+        nextReprintedAt,
+      ],
     );
 
     return mapPrintOrderRow(result.rows[0]);
@@ -1011,7 +1171,7 @@ async function updatePrintOrderLifecycleStatus(client, options) {
       nextReprintedAt,
       columnName === 'submit_tool_processed_at',
       completed,
-    ]
+    ],
   );
 
   if (!result.rows.length) {
@@ -1024,9 +1184,12 @@ async function updatePrintOrderLifecycleStatus(client, options) {
 }
 
 async function syncPostPurchaseOrders(client, options) {
-  const log = options && typeof options.log === 'function' ? options.log : console.log;
+  const log =
+    options && typeof options.log === 'function' ? options.log : console.log;
   const explicitFromId = options && options.fromId != null;
-  const filteredResync = Boolean(options && (options.updatedFrom || options.createdFrom || options.since));
+  const filteredResync = Boolean(
+    options && (options.updatedFrom || options.createdFrom || options.since),
+  );
   const fromId = explicitFromId
     ? Math.max(0, Number(options.fromId) || 0)
     : filteredResync

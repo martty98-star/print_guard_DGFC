@@ -20,13 +20,14 @@ async function run() {
   assert.ok(api, 'scan capture API should attach to window/global');
 
   {
-    const fetchImpl = (_url, options = {}) => new Promise((_resolve, reject) => {
-      options.signal.addEventListener('abort', () => {
-        const error = new Error('aborted');
-        error.name = 'AbortError';
-        reject(error);
+    const fetchImpl = (_url, options = {}) =>
+      new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const error = new Error('aborted');
+          error.name = 'AbortError';
+          reject(error);
+        });
       });
-    });
     let caught = null;
     try {
       await api.commitScanBatch({
@@ -47,7 +48,9 @@ async function run() {
       batchId: 'browser-scan-batch-status-test',
       fetchImpl: async (url, options) => {
         assert.strictEqual(options.method, 'GET');
-        assert.ok(String(url).includes('batchId=browser-scan-batch-status-test'));
+        assert.ok(
+          String(url).includes('batchId=browser-scan-batch-status-test'),
+        );
         return response(200, {
           ok: true,
           batchId: 'browser-scan-batch-status-test',
@@ -61,9 +64,11 @@ async function run() {
   }
 }
 
-run().then(() => {
-  console.log('scan capture API tests passed');
-}).catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+run()
+  .then(() => {
+    console.log('scan capture API tests passed');
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

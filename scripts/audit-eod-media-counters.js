@@ -20,14 +20,27 @@ function fmt(value, digits = 3) {
 
 async function main() {
   const date = arg('date', '2026-06-08');
-  const widthM = Number(arg('width-m', DEFAULT_MEDIA_WIDTH_M)) || DEFAULT_MEDIA_WIDTH_M;
-  const conn = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
-  if (!conn) throw new Error('Missing NEON_DATABASE_URL, DATABASE_URL, or NETLIFY_DATABASE_URL');
+  const widthM =
+    Number(arg('width-m', DEFAULT_MEDIA_WIDTH_M)) || DEFAULT_MEDIA_WIDTH_M;
+  const conn =
+    process.env.NEON_DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    process.env.NETLIFY_DATABASE_URL;
+  if (!conn)
+    throw new Error(
+      'Missing NEON_DATABASE_URL, DATABASE_URL, or NETLIFY_DATABASE_URL',
+    );
 
-  const client = new Client({ connectionString: conn, ssl: { rejectUnauthorized: false } });
+  const client = new Client({
+    connectionString: conn,
+    ssl: { rejectUnauthorized: false },
+  });
   await client.connect();
   try {
-    const nextDayResult = await client.query(`select ($1::date + interval '1 day')::date::text as next_day`, [date]);
+    const nextDayResult = await client.query(
+      `select ($1::date + interval '1 day')::date::text as next_day`,
+      [date],
+    );
     const nextDay = nextDayResult.rows[0].next_day;
 
     const rangeResult = await client.query(`
@@ -36,7 +49,8 @@ async function main() {
       group by machine_id
       order by machine_id
     `);
-    const counterResult = await client.query(`
+    const counterResult = await client.query(
+      `
       select
         machine_id,
         (array_agg(jsonb_build_object('id', id, 'machine_id', machine_id, 'timestamp', timestamp, 'data', data) order by timestamp asc, updated_at asc))[1] as start_record,
@@ -46,8 +60,11 @@ async function main() {
       where timestamp >= $1::date
         and timestamp < $2::date
       group by machine_id
-    `, [date, nextDay]);
-    const printLogResult = await client.query(`
+    `,
+      [date, nextDay],
+    );
+    const printLogResult = await client.query(
+      `
       select
         printer_name,
         count(*)::int as done_jobs,
@@ -61,7 +78,9 @@ async function main() {
         and coalesce(ready_at::date, source_date) < $2::date
       group by printer_name
       order by printer_name
-    `, [date, nextDay]);
+    `,
+      [date, nextDay],
+    );
 
     const rowsByMachine = {};
     for (const row of counterResult.rows) {
@@ -70,16 +89,25 @@ async function main() {
         end: row.end_record,
       };
     }
-    const breakdown = summarizeCounterBreakdown(rowsByMachine, { mediaWidthM: widthM });
-    const printLogTotal = printLogResult.rows.reduce((sum, row) => sum + Number(row.consumed_media_m2 || 0), 0);
+    const breakdown = summarizeCounterBreakdown(rowsByMachine, {
+      mediaWidthM: widthM,
+    });
+    const printLogTotal = printLogResult.rows.reduce(
+      (sum, row) => sum + Number(row.consumed_media_m2 || 0),
+      0,
+    );
 
     console.log(`EOD media counter audit for ${date}`);
     console.log(`Counter window: ${date} <= timestamp < ${nextDay}`);
-    console.log(`Roll reality: 130 m * ${widthM} m = ${(130 * widthM).toFixed(3)} m2 per roll`);
+    console.log(
+      `Roll reality: 130 m * ${widthM} m = ${(130 * widthM).toFixed(3)} m2 per roll`,
+    );
     console.log('');
     console.log('pg_co_records available ranges:');
     for (const row of rangeResult.rows) {
-      console.log(`  ${row.machine_id}: count=${row.count}, min=${row.min_ts ? row.min_ts.toISOString() : '—'}, max=${row.max_ts ? row.max_ts.toISOString() : '—'}`);
+      console.log(
+        `  ${row.machine_id}: count=${row.count}, min=${row.min_ts ? row.min_ts.toISOString() : '—'}, max=${row.max_ts ? row.max_ts.toISOString() : '—'}`,
+      );
     }
     console.log('');
 
@@ -95,21 +123,34 @@ async function main() {
       console.log(`  end media area m2: ${fmt(row.end?.mediaAreaM2, 3)}`);
       console.log(`  delta media length m: ${fmt(row.deltaMediaLengthM, 3)}`);
       console.log(`  delta media area m2: ${fmt(row.deltaMediaAreaM2, 3)}`);
-      console.log(`  equivalent 130m rolls: ${fmt(row.equivalentRolls130m, 3)}`);
-      for (const warning of row.warnings || []) console.log(`  warning: ${warning}`);
+      console.log(
+        `  equivalent 130m rolls: ${fmt(row.equivalentRolls130m, 3)}`,
+      );
+      for (const warning of row.warnings || [])
+        console.log(`  warning: ${warning}`);
       console.log('');
     }
 
     console.log('Print-log EOD diagnostic by printer:');
     for (const row of printLogResult.rows) {
-      console.log(`  ${row.printer_name || 'Unknown'}: jobs=${row.done_jobs}, area=${fmt(row.consumed_media_m2, 3)} m2, length=${fmt(row.consumed_media_length_m, 3)} m, ink=${fmt(row.consumed_ink_l, 4)} L`);
+      console.log(
+        `  ${row.printer_name || 'Unknown'}: jobs=${row.done_jobs}, area=${fmt(row.consumed_media_m2, 3)} m2, length=${fmt(row.consumed_media_length_m, 3)} m, ink=${fmt(row.consumed_ink_l, 4)} L`,
+      );
     }
     console.log('');
     console.log('Total:');
-    console.log(`  counter delta media area m2: ${fmt(breakdown.total.deltaMediaAreaM2, 3)}`);
-    console.log(`  counter equivalent 130m rolls: ${fmt(breakdown.total.equivalentRolls130m, 3)}`);
-    console.log(`  EOD displayed before fix / print-log diagnostic: ${fmt(printLogTotal, 3)} m2`);
-    console.log(`  difference: ${breakdown.total.deltaMediaAreaM2 == null ? '—' : fmt(printLogTotal - breakdown.total.deltaMediaAreaM2, 3)} m2`);
+    console.log(
+      `  counter delta media area m2: ${fmt(breakdown.total.deltaMediaAreaM2, 3)}`,
+    );
+    console.log(
+      `  counter equivalent 130m rolls: ${fmt(breakdown.total.equivalentRolls130m, 3)}`,
+    );
+    console.log(
+      `  EOD displayed before fix / print-log diagnostic: ${fmt(printLogTotal, 3)} m2`,
+    );
+    console.log(
+      `  difference: ${breakdown.total.deltaMediaAreaM2 == null ? '—' : fmt(printLogTotal - breakdown.total.deltaMediaAreaM2, 3)} m2`,
+    );
     if (breakdown.warnings.length) {
       console.log('');
       console.log('Warnings:');

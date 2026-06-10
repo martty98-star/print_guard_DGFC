@@ -1,11 +1,11 @@
-const { Client } = require("pg");
+const { Client } = require('pg');
 
 function json(statusCode, body, extraHeaders) {
   return {
     statusCode,
     headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
       ...extraHeaders,
     },
     body: JSON.stringify(body),
@@ -13,23 +13,23 @@ function json(statusCode, body, extraHeaders) {
 }
 
 function parseRequestBody(event) {
-  if (!event || event.body == null || event.body === "") {
+  if (!event || event.body == null || event.body === '') {
     return {};
   }
 
-  if (typeof event.body === "object") {
+  if (typeof event.body === 'object') {
     return event.body;
   }
 
   const rawBody = event.isBase64Encoded
-    ? Buffer.from(event.body, "base64").toString("utf8")
+    ? Buffer.from(event.body, 'base64').toString('utf8')
     : event.body;
 
   return JSON.parse(rawBody);
 }
 
 function normalizeOptionalString(value) {
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     return null;
   }
 
@@ -38,8 +38,8 @@ function normalizeOptionalString(value) {
 }
 
 function getEndpointSuffix(endpoint) {
-  if (typeof endpoint !== "string" || endpoint.length === 0) {
-    return "";
+  if (typeof endpoint !== 'string' || endpoint.length === 0) {
+    return '';
   }
 
   return endpoint.slice(-24);
@@ -54,39 +54,39 @@ async function getAlertTypesBinding(client, alertTypes) {
         and column_name = 'alert_types'
       order by case when table_schema = current_schema() then 0 else 1 end
       limit 1
-    `
+    `,
   );
 
   const column = result.rows[0];
 
-  if (!column || column.data_type === "ARRAY") {
-    return { sqlValue: "$6", value: alertTypes };
+  if (!column || column.data_type === 'ARRAY') {
+    return { sqlValue: '$6', value: alertTypes };
   }
 
-  if (column.data_type === "jsonb") {
-    return { sqlValue: "$6::jsonb", value: JSON.stringify(alertTypes) };
+  if (column.data_type === 'jsonb') {
+    return { sqlValue: '$6::jsonb', value: JSON.stringify(alertTypes) };
   }
 
-  if (column.data_type === "json") {
-    return { sqlValue: "$6::json", value: JSON.stringify(alertTypes) };
+  if (column.data_type === 'json') {
+    return { sqlValue: '$6::json', value: JSON.stringify(alertTypes) };
   }
 
-  return { sqlValue: "$6", value: JSON.stringify(alertTypes) };
+  return { sqlValue: '$6', value: JSON.stringify(alertTypes) };
 }
 
 exports.handler = async function handler(event) {
-  if (event.httpMethod !== "POST") {
+  if (event.httpMethod !== 'POST') {
     return json(
       405,
-      { ok: false, error: "Method not allowed" },
-      { allow: "POST" }
+      { ok: false, error: 'Method not allowed' },
+      { allow: 'POST' },
     );
   }
 
   const connectionString = process.env.NEON_DATABASE_URL;
   if (!connectionString) {
-    console.error("Missing NEON_DATABASE_URL");
-    return json(500, { ok: false, error: "Internal server error" });
+    console.error('Missing NEON_DATABASE_URL');
+    return json(500, { ok: false, error: 'Internal server error' });
   }
 
   let payload;
@@ -94,27 +94,30 @@ exports.handler = async function handler(event) {
   try {
     payload = parseRequestBody(event);
   } catch (error) {
-    return json(400, { ok: false, error: "Invalid JSON body" });
+    return json(400, { ok: false, error: 'Invalid JSON body' });
   }
 
-  const endpoint = typeof payload.endpoint === "string" ? payload.endpoint.trim() : "";
+  const endpoint =
+    typeof payload.endpoint === 'string' ? payload.endpoint.trim() : '';
   const p256dh =
-    typeof payload?.keys?.p256dh === "string" ? payload.keys.p256dh.trim() : "";
+    typeof payload?.keys?.p256dh === 'string' ? payload.keys.p256dh.trim() : '';
   const auth =
-    typeof payload?.keys?.auth === "string" ? payload.keys.auth.trim() : "";
+    typeof payload?.keys?.auth === 'string' ? payload.keys.auth.trim() : '';
 
   if (!endpoint || !p256dh || !auth) {
     return json(400, {
       ok: false,
-      error: "Missing required fields: endpoint, keys.p256dh, keys.auth",
+      error: 'Missing required fields: endpoint, keys.p256dh, keys.auth',
     });
   }
 
   const deviceName = normalizeOptionalString(payload.deviceName);
   const userLabel = normalizeOptionalString(payload.userLabel);
   const alertTypes = Array.isArray(payload.alertTypes)
-    ? payload.alertTypes.filter((value) => typeof value === "string" && value.trim())
-    : ["all"];
+    ? payload.alertTypes.filter(
+        (value) => typeof value === 'string' && value.trim(),
+      )
+    : ['all'];
 
   const client = new Client({
     connectionString,
@@ -163,7 +166,7 @@ exports.handler = async function handler(event) {
           updated_at = now(),
           last_seen_at = now()
       `,
-      [endpoint, p256dh, auth, deviceName, userLabel, alertTypesBinding.value]
+      [endpoint, p256dh, auth, deviceName, userLabel, alertTypesBinding.value],
     );
 
     let duplicateActiveCount = 0;
@@ -179,13 +182,13 @@ exports.handler = async function handler(event) {
               or ($3::text is not null and user_label = $3)
             )
         `,
-        [endpoint, deviceName, userLabel]
+        [endpoint, deviceName, userLabel],
       );
 
       duplicateActiveCount = duplicateResult.rows[0]?.count || 0;
     }
 
-    console.log("Push subscription saved", {
+    console.log('Push subscription saved', {
       deviceName,
       userLabel,
       endpointSuffix: getEndpointSuffix(endpoint),
@@ -194,13 +197,13 @@ exports.handler = async function handler(event) {
 
     return json(200, { ok: true });
   } catch (error) {
-    console.error("save-subscription failed", error);
-    return json(500, { ok: false, error: "Internal server error" });
+    console.error('save-subscription failed', error);
+    return json(500, { ok: false, error: 'Internal server error' });
   } finally {
     try {
       await client.end();
     } catch (error) {
-      console.error("save-subscription cleanup failed", error);
+      console.error('save-subscription cleanup failed', error);
     }
   }
 };

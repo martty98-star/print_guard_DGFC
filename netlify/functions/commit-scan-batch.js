@@ -8,7 +8,9 @@ const {
   requirePostPurchaseAccess,
   withClient,
 } = require('./_lib/db');
-const { ensureProcessedPrintOrderTables } = require('./_lib/processed-print-orders');
+const {
+  ensureProcessedPrintOrderTables,
+} = require('./_lib/processed-print-orders');
 const { parseBarcode } = require('./_lib/scan-barcode');
 
 const ACTIVE_REPRINT_STATUSES = ['pending', 'active', 'requested', 'open'];
@@ -22,7 +24,9 @@ function safeText(value, maxLen = 120) {
 }
 
 function cleanBarcode(value) {
-  return String(value == null ? '' : value).trim().slice(0, 200);
+  return String(value == null ? '' : value)
+    .trim()
+    .slice(0, 200);
 }
 
 function toIsoDate(value) {
@@ -32,7 +36,10 @@ function toIsoDate(value) {
 }
 
 function makeBatchId(date = new Date()) {
-  const stamp = date.toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const stamp = date
+    .toISOString()
+    .replace(/[-:.TZ]/g, '')
+    .slice(0, 14);
   return `browser-scan-batch-${stamp}-${crypto.randomUUID()}`;
 }
 
@@ -48,10 +55,13 @@ function normalizeScan(row) {
   }
   const scanId = safeText(row.scanId || row.scan_id, 180);
   const scannedAt = toIsoDate(row.scannedAt || row.scanned_at);
-  const parsedBarcode = parseBarcode(row.barcode || row.orderNumber || row.order_number);
+  const parsedBarcode = parseBarcode(
+    row.barcode || row.orderNumber || row.order_number,
+  );
   const barcode = cleanBarcode(parsedBarcode.barcode);
   if (!scanId) return { scan: null, error: 'scanId is missing' };
-  if (!scannedAt) return { scan: null, error: 'scannedAt is missing or invalid' };
+  if (!scannedAt)
+    return { scan: null, error: 'scannedAt is missing or invalid' };
   if (!parsedBarcode.ok) return { scan: null, error: parsedBarcode.error };
   if (!barcode) return { scan: null, error: 'barcode is missing' };
   return {
@@ -59,7 +69,12 @@ function normalizeScan(row) {
       scanId,
       scannedAt,
       barcode,
-      rawBarcode: String(row.rawBarcode || row.raw_barcode || parsedBarcode.rawBarcode || barcode).slice(0, 200),
+      rawBarcode: String(
+        row.rawBarcode ||
+          row.raw_barcode ||
+          parsedBarcode.rawBarcode ||
+          barcode,
+      ).slice(0, 200),
       orderNumber: cleanBarcode(parsedBarcode.poNumber),
       orderType: parsedBarcode.orderType,
       isReprint: parsedBarcode.isReprint,
@@ -96,14 +111,30 @@ async function ensureScanCommitSchema(client) {
       diagnostics jsonb not null default '{}'::jsonb
     )
   `);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists status text not null default 'committed'`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists retry_count integer not null default 0`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists updated_at timestamptz not null default now()`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists started_at timestamptz`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists finished_at timestamptz`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists failed_phase text`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists error_message text`);
-  await client.query(`alter table public.print_scan_commit_batches add column if not exists diagnostics jsonb not null default '{}'::jsonb`);
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists status text not null default 'committed'`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists retry_count integer not null default 0`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists updated_at timestamptz not null default now()`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists started_at timestamptz`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists finished_at timestamptz`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists failed_phase text`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists error_message text`,
+  );
+  await client.query(
+    `alter table public.print_scan_commit_batches add column if not exists diagnostics jsonb not null default '{}'::jsonb`,
+  );
   await client.query(`
     create table if not exists public.print_job_label_scans (
       scan_id text primary key,
@@ -127,32 +158,72 @@ async function ensureScanCommitSchema(client) {
         check (match_status in ('pending', 'matched', 'unmatched', 'ambiguous', 'error'))
     )
   `);
-  await client.query('create index if not exists print_job_label_scans_order_number_idx on public.print_job_label_scans (order_number)');
-  await client.query('create index if not exists print_job_label_scans_scanned_at_desc_idx on public.print_job_label_scans (scanned_at desc)');
-  await client.query('create index if not exists print_job_label_scans_match_status_idx on public.print_job_label_scans (match_status)');
-  await client.query('create index if not exists print_job_label_scans_commit_batch_id_idx on public.print_job_label_scans (commit_batch_id)');
-  await client.query('create index if not exists print_job_label_scans_batch_status_idx on public.print_job_label_scans (commit_batch_id, match_status)');
-  await client.query('alter table public.processed_print_orders add column if not exists physically_printed_at timestamptz');
-  await client.query('alter table public.processed_print_orders add column if not exists physically_printed_by text');
-  await client.query('alter table public.processed_print_orders add column if not exists physically_printed_station text');
-  await client.query('alter table public.processed_print_orders add column if not exists physically_printed_scan_id text');
-  await client.query('alter table public.processed_print_orders add column if not exists physically_printed_batch_id text');
+  await client.query(
+    'create index if not exists print_job_label_scans_order_number_idx on public.print_job_label_scans (order_number)',
+  );
+  await client.query(
+    'create index if not exists print_job_label_scans_scanned_at_desc_idx on public.print_job_label_scans (scanned_at desc)',
+  );
+  await client.query(
+    'create index if not exists print_job_label_scans_match_status_idx on public.print_job_label_scans (match_status)',
+  );
+  await client.query(
+    'create index if not exists print_job_label_scans_commit_batch_id_idx on public.print_job_label_scans (commit_batch_id)',
+  );
+  await client.query(
+    'create index if not exists print_job_label_scans_batch_status_idx on public.print_job_label_scans (commit_batch_id, match_status)',
+  );
+  await client.query(
+    'alter table public.processed_print_orders add column if not exists physically_printed_at timestamptz',
+  );
+  await client.query(
+    'alter table public.processed_print_orders add column if not exists physically_printed_by text',
+  );
+  await client.query(
+    'alter table public.processed_print_orders add column if not exists physically_printed_station text',
+  );
+  await client.query(
+    'alter table public.processed_print_orders add column if not exists physically_printed_scan_id text',
+  );
+  await client.query(
+    'alter table public.processed_print_orders add column if not exists physically_printed_batch_id text',
+  );
   await client.query(`
     create index if not exists processed_print_orders_active_order_name_queued_idx
       on public.processed_print_orders (order_name, queued_date_time desc nulls last, id desc)
       where order_name is not null
         and coalesce(ignored, false) = false
   `);
-  await client.query('alter table public.print_job_label_scans add column if not exists order_type text');
-  await client.query('alter table public.print_job_label_scans add column if not exists is_reprint boolean not null default false');
-  await client.query('alter table public.print_job_label_scans add column if not exists reprint_kind text');
-  await client.query('alter table public.processed_order_reprint_requests add column if not exists order_type text');
-  await client.query('alter table public.processed_order_reprint_requests add column if not exists reprint_kind text');
-  await client.query('alter table public.processed_order_reprint_requests add column if not exists scan_barcode text');
-  await client.query('alter table public.processed_order_reprint_requests add column if not exists scan_raw_barcode text');
-  await client.query('alter table public.processed_order_reprint_requests add column if not exists completed_scan_id text');
-  await client.query('alter table public.processed_order_reprint_requests add column if not exists completed_batch_id text');
-  await client.query('create index if not exists processed_reprint_scan_status_idx on public.processed_order_reprint_requests (status, order_name, requested_at desc, id desc)');
+  await client.query(
+    'alter table public.print_job_label_scans add column if not exists order_type text',
+  );
+  await client.query(
+    'alter table public.print_job_label_scans add column if not exists is_reprint boolean not null default false',
+  );
+  await client.query(
+    'alter table public.print_job_label_scans add column if not exists reprint_kind text',
+  );
+  await client.query(
+    'alter table public.processed_order_reprint_requests add column if not exists order_type text',
+  );
+  await client.query(
+    'alter table public.processed_order_reprint_requests add column if not exists reprint_kind text',
+  );
+  await client.query(
+    'alter table public.processed_order_reprint_requests add column if not exists scan_barcode text',
+  );
+  await client.query(
+    'alter table public.processed_order_reprint_requests add column if not exists scan_raw_barcode text',
+  );
+  await client.query(
+    'alter table public.processed_order_reprint_requests add column if not exists completed_scan_id text',
+  );
+  await client.query(
+    'alter table public.processed_order_reprint_requests add column if not exists completed_batch_id text',
+  );
+  await client.query(
+    'create index if not exists processed_reprint_scan_status_idx on public.processed_order_reprint_requests (status, order_name, requested_at desc, id desc)',
+  );
 }
 
 async function fetchExistingScanIds(client, scanIds) {
@@ -163,7 +234,7 @@ async function fetchExistingScanIds(client, scanIds) {
       from public.print_job_label_scans
       where scan_id = any($1::text[])
     `,
-    [scanIds]
+    [scanIds],
   );
   return new Set(result.rows.map((row) => String(row.scan_id)));
 }
@@ -194,7 +265,7 @@ async function fetchExistingScansById(client, scanIds) {
       from public.print_job_label_scans
       where scan_id = any($1::text[])
     `,
-    [scanIds]
+    [scanIds],
   );
   return new Map(result.rows.map((row) => [String(row.scan_id), row]));
 }
@@ -218,20 +289,30 @@ function parseDiagnostics(value) {
 }
 
 function clientBatchStatus(rawStatus) {
-  const status = String(rawStatus || '').trim().toLowerCase();
+  const status = String(rawStatus || '')
+    .trim()
+    .toLowerCase();
   if (status === 'committed') return 'already_completed';
   if (status === 'partial_failed') return 'partial';
   return status || 'unknown';
 }
 
 function isCompletedBatchStatus(status) {
-  const normalized = String(status || '').trim().toLowerCase();
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase();
   return normalized === 'committed' || normalized === 'matched';
 }
 
 function isActiveBatchStatus(status) {
-  const normalized = String(status || '').trim().toLowerCase();
-  return normalized === 'received' || normalized === 'processing' || normalized === 'matching';
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase();
+  return (
+    normalized === 'received' ||
+    normalized === 'processing' ||
+    normalized === 'matching'
+  );
 }
 
 function formatBatchStatus(row) {
@@ -240,8 +321,15 @@ function formatBatchStatus(row) {
   const finishedAt = rowTimestamp(row.finished_at);
   const lastUpdatedAt = rowTimestamp(row.updated_at);
   const startMs = startedAt ? Date.parse(startedAt) : NaN;
-  const endMs = finishedAt ? Date.parse(finishedAt) : lastUpdatedAt ? Date.parse(lastUpdatedAt) : NaN;
-  const durationMs = Number.isFinite(startMs) && Number.isFinite(endMs) && endMs >= startMs ? endMs - startMs : null;
+  const endMs = finishedAt
+    ? Date.parse(finishedAt)
+    : lastUpdatedAt
+      ? Date.parse(lastUpdatedAt)
+      : NaN;
+  const durationMs =
+    Number.isFinite(startMs) && Number.isFinite(endMs) && endMs >= startMs
+      ? endMs - startMs
+      : null;
   const diagnostics = parseDiagnostics(row.diagnostics);
   return {
     ok: true,
@@ -287,7 +375,7 @@ async function fetchBatchRow(client, batchId) {
       from public.print_scan_commit_batches
       where batch_id = $1
     `,
-    [batchId]
+    [batchId],
   );
   return result.rows[0] || null;
 }
@@ -317,7 +405,7 @@ async function updateBatchPhase(client, batchId, status, diagnostics = {}) {
           updated_at = now()
       where batch_id = $1
     `,
-    [batchId, status, JSON.stringify(payload)]
+    [batchId, status, JSON.stringify(payload)],
   );
   console.log('[scan-commit] phase', { batchId, status, ...diagnostics });
 }
@@ -325,7 +413,10 @@ async function updateBatchPhase(client, batchId, status, diagnostics = {}) {
 function scanFromDbRow(row) {
   return {
     scanId: String(row.scan_id || ''),
-    scannedAt: row.scanned_at instanceof Date ? row.scanned_at.toISOString() : toIsoDate(row.scanned_at),
+    scannedAt:
+      row.scanned_at instanceof Date
+        ? row.scanned_at.toISOString()
+        : toIsoDate(row.scanned_at),
     barcode: cleanBarcode(row.barcode),
     rawBarcode: String(row.raw_barcode || row.barcode || '').slice(0, 200),
     orderNumber: cleanBarcode(row.order_number),
@@ -341,7 +432,13 @@ function scanFromDbRow(row) {
   };
 }
 
-async function prepareBatchForCommit(client, batchId, committedAt, committedBy, station) {
+async function prepareBatchForCommit(
+  client,
+  batchId,
+  committedAt,
+  committedBy,
+  station,
+) {
   const inserted = await client.query(
     `
       insert into public.print_scan_commit_batches (
@@ -365,10 +462,18 @@ async function prepareBatchForCommit(client, batchId, committedAt, committedBy, 
       on conflict (batch_id) do nothing
       returning *
     `,
-    [batchId, committedAt, committedBy, station, JSON.stringify({ phase: 'received', phaseUpdatedAt: committedAt })]
+    [
+      batchId,
+      committedAt,
+      committedBy,
+      station,
+      JSON.stringify({ phase: 'received', phaseUpdatedAt: committedAt }),
+    ],
   );
   if (inserted.rowCount) {
-    await updateBatchPhase(client, batchId, 'processing', { retryMode: 'fresh' });
+    await updateBatchPhase(client, batchId, 'processing', {
+      retryMode: 'fresh',
+    });
     return { action: 'start', batch: inserted.rows[0], retryMode: 'fresh' };
   }
 
@@ -379,15 +484,20 @@ async function prepareBatchForCommit(client, batchId, committedAt, committedBy, 
     throw error;
   }
   if (isCompletedBatchStatus(batch.status)) {
-    return { action: 'already_completed', batch, retryMode: 'already_committed_duplicate' };
+    return {
+      action: 'already_completed',
+      batch,
+      retryMode: 'already_committed_duplicate',
+    };
   }
   if (isActiveBatchStatus(batch.status)) {
     return { action: 'processing', batch, retryMode: 'same_batch_processing' };
   }
 
-  const retryMode = Number(batch.scan_count || 0) > 0 || Number(batch.error_count || 0) > 0
-    ? 'partial_recovery'
-    : 'same_batch_retry';
+  const retryMode =
+    Number(batch.scan_count || 0) > 0 || Number(batch.error_count || 0) > 0
+      ? 'partial_recovery'
+      : 'same_batch_retry';
   const updated = await client.query(
     `
       update public.print_scan_commit_batches
@@ -405,16 +515,37 @@ async function prepareBatchForCommit(client, batchId, committedAt, committedBy, 
         and status not in ('received', 'processing', 'matching', 'committed', 'matched')
       returning *
     `,
-    [batchId, committedBy, station, JSON.stringify({ phase: 'processing', retryMode, phaseUpdatedAt: new Date().toISOString() })]
+    [
+      batchId,
+      committedBy,
+      station,
+      JSON.stringify({
+        phase: 'processing',
+        retryMode,
+        phaseUpdatedAt: new Date().toISOString(),
+      }),
+    ],
   );
   if (!updated.rowCount) {
     const current = await fetchBatchRow(client, batchId);
     if (isCompletedBatchStatus(current?.status)) {
-      return { action: 'already_completed', batch: current, retryMode: 'already_committed_duplicate' };
+      return {
+        action: 'already_completed',
+        batch: current,
+        retryMode: 'already_committed_duplicate',
+      };
     }
-    return { action: 'processing', batch: current, retryMode: 'same_batch_processing' };
+    return {
+      action: 'processing',
+      batch: current,
+      retryMode: 'same_batch_processing',
+    };
   }
-  console.log('[scan-commit] phase', { batchId, status: 'processing', retryMode });
+  console.log('[scan-commit] phase', {
+    batchId,
+    status: 'processing',
+    retryMode,
+  });
   return { action: 'start', batch: updated.rows[0], retryMode };
 }
 
@@ -432,25 +563,35 @@ async function aggregateBatchRows(client, batchId) {
       from public.print_job_label_scans
       where commit_batch_id = $1
     `,
-    [batchId]
+    [batchId],
   );
-  return result.rows[0] || {
-    scan_count: 0,
-    matched_count: 0,
-    unmatched_count: 0,
-    ambiguous_count: 0,
-    error_count: 0,
-    finalized_count: 0,
-    pending_count: 0,
-  };
+  return (
+    result.rows[0] || {
+      scan_count: 0,
+      matched_count: 0,
+      unmatched_count: 0,
+      ambiguous_count: 0,
+      error_count: 0,
+      finalized_count: 0,
+      pending_count: 0,
+    }
+  );
 }
 
 async function finalizeBatch(client, batchId, summary, diagnostics) {
   const aggregate = await aggregateBatchRows(client, batchId);
-  const unmatchedTotal = Number(aggregate.unmatched_count || 0) + Number(aggregate.ambiguous_count || 0);
-  const errorTotal = Math.max(Number(aggregate.error_count || 0), Number(summary.errorCount || 0));
+  const unmatchedTotal =
+    Number(aggregate.unmatched_count || 0) +
+    Number(aggregate.ambiguous_count || 0);
+  const errorTotal = Math.max(
+    Number(aggregate.error_count || 0),
+    Number(summary.errorCount || 0),
+  );
   const matchedTotal = Number(aggregate.matched_count || 0);
-  const finalStatus = errorTotal > 0 || unmatchedTotal > 0 || matchedTotal === 0 ? 'partial' : 'matched';
+  const finalStatus =
+    errorTotal > 0 || unmatchedTotal > 0 || matchedTotal === 0
+      ? 'partial'
+      : 'matched';
   await client.query(
     `
       update public.print_scan_commit_batches
@@ -477,10 +618,20 @@ async function finalizeBatch(client, batchId, summary, diagnostics) {
       errorTotal,
       JSON.stringify(diagnostics || {}),
       errorTotal > 0 ? diagnostics?.failedPhase || 'matching' : null,
-      errorTotal > 0 ? diagnostics?.errorMessage || (summary.errors[0] && summary.errors[0].error) || null : null,
-    ]
+      errorTotal > 0
+        ? diagnostics?.errorMessage ||
+          (summary.errors[0] && summary.errors[0].error) ||
+          null
+        : null,
+    ],
   );
-  console.log('[scan-commit] phase', { batchId, status: finalStatus, matchedTotal, unmatchedTotal, errorTotal });
+  console.log('[scan-commit] phase', {
+    batchId,
+    status: finalStatus,
+    matchedTotal,
+    unmatchedTotal,
+    errorTotal,
+  });
   return aggregate;
 }
 
@@ -497,7 +648,9 @@ function orderCandidatesForScan(scan) {
 }
 
 function normalizeOrderType(value) {
-  const normalized = String(value || '').trim().toUpperCase();
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase();
   return ['S', 'C', 'R', 'RS', 'RC'].includes(normalized) ? normalized : '';
 }
 
@@ -507,7 +660,8 @@ function isReprintOrderType(value) {
 
 function candidateTimestamp(row) {
   const value = row && row.queued_date_time;
-  const time = value instanceof Date ? value.getTime() : Date.parse(String(value || ''));
+  const time =
+    value instanceof Date ? value.getTime() : Date.parse(String(value || ''));
   return Number.isFinite(time) ? time : 0;
 }
 
@@ -525,9 +679,10 @@ function summarizeProcessedOrderCandidate(row) {
     orderName: row.order_name,
     orderType: row.order_type || null,
     status: row.status || null,
-    queuedDateTime: row.queued_date_time instanceof Date
-      ? row.queued_date_time.toISOString()
-      : String(row.queued_date_time || ''),
+    queuedDateTime:
+      row.queued_date_time instanceof Date
+        ? row.queued_date_time.toISOString()
+        : String(row.queued_date_time || ''),
   };
 }
 
@@ -560,7 +715,9 @@ function matchDiagnostic(scan, match) {
 
 function chooseSingleCandidateByPriority(candidates, rows, predicate) {
   for (const candidate of candidates) {
-    const matchingRows = rows.filter((row) => row.order_name === candidate).filter(predicate);
+    const matchingRows = rows
+      .filter((row) => row.order_name === candidate)
+      .filter(predicate);
     if (matchingRows.length === 1) {
       return { row: matchingRows[0], candidate, ambiguousRows: [] };
     }
@@ -595,7 +752,7 @@ function buildProcessedOrderMatch(scan, candidates, rows) {
     const typedChoice = chooseSingleCandidateByPriority(
       candidates,
       rows,
-      (row) => normalizeOrderType(row.order_type) === scannedOrderType
+      (row) => normalizeOrderType(row.order_type) === scannedOrderType,
     );
     if (typedChoice.row) {
       return {
@@ -627,7 +784,7 @@ function buildProcessedOrderMatch(scan, candidates, rows) {
     const normalChoice = chooseSingleCandidateByPriority(
       candidates,
       rows,
-      (row) => !isReprintOrderType(row.order_type)
+      (row) => !isReprintOrderType(row.order_type),
     );
     if (normalChoice.row) {
       return {
@@ -674,7 +831,9 @@ function buildProcessedOrderMatch(scan, candidates, rows) {
 }
 
 async function fetchProcessedOrderCandidateRows(client, candidates) {
-  const keys = Array.from(new Set((candidates || []).map(cleanBarcode).filter(Boolean)));
+  const keys = Array.from(
+    new Set((candidates || []).map(cleanBarcode).filter(Boolean)),
+  );
   if (!keys.length) return [];
   const result = await client.query(
     `
@@ -684,7 +843,7 @@ async function fetchProcessedOrderCandidateRows(client, candidates) {
         and order_name = any($1::text[])
       order by queued_date_time desc nulls last, id desc
     `,
-    [keys]
+    [keys],
   );
   const unique = new Map();
   result.rows.forEach((row) => unique.set(String(row.id), row));
@@ -759,7 +918,7 @@ async function findPendingReprintRequestMatch(client, scan) {
       order by r.requested_at desc nulls last, r.id desc
       limit 1
     `,
-    [candidates, ACTIVE_REPRINT_STATUSES]
+    [candidates, ACTIVE_REPRINT_STATUSES],
   );
   const row = result.rows[0];
   if (!row) {
@@ -785,13 +944,15 @@ async function findPendingReprintRequestMatch(client, scan) {
     candidateDebug: {
       attempted_keys: candidates,
       db_candidate_count: 1,
-      candidates: [{
-        id: row.order_id,
-        orderName: row.processed_order_name || row.order_name,
-        orderType: null,
-        status: row.status || null,
-        reprintRequestId: row.id,
-      }],
+      candidates: [
+        {
+          id: row.order_id,
+          orderName: row.processed_order_name || row.order_name,
+          orderType: null,
+          status: row.status || null,
+          reprintRequestId: row.id,
+        },
+      ],
     },
   };
 }
@@ -835,7 +996,7 @@ async function insertScan(client, scan, batchId, committedAt, committedBy) {
       batchId,
       committedAt,
       committedBy || '',
-    ]
+    ],
   );
   return result.rowCount === 1;
 }
@@ -857,11 +1018,18 @@ async function updateScanMatch(client, scan, match) {
       match.reason || '',
       match.processedOrderId || null,
       match.orderName || null,
-    ]
+    ],
   );
 }
 
-async function markProcessedOrderPhysicallyPrinted(client, scan, match, batchId, committedBy, fallbackStation) {
+async function markProcessedOrderPhysicallyPrinted(
+  client,
+  scan,
+  match,
+  batchId,
+  committedBy,
+  fallbackStation,
+) {
   const result = await client.query(
     `
       update public.processed_print_orders
@@ -880,12 +1048,18 @@ async function markProcessedOrderPhysicallyPrinted(client, scan, match, batchId,
       scan.station || fallbackStation || '',
       scan.scanId,
       batchId,
-    ]
+    ],
   );
   return result.rowCount;
 }
 
-async function completeReprintRequestFromScan(client, scan, match, batchId, committedBy) {
+async function completeReprintRequestFromScan(
+  client,
+  scan,
+  match,
+  batchId,
+  committedBy,
+) {
   const result = await client.query(
     `
       update public.processed_order_reprint_requests
@@ -913,7 +1087,7 @@ async function completeReprintRequestFromScan(client, scan, match, batchId, comm
       scan.scanId,
       batchId,
       ACTIVE_REPRINT_STATUSES,
-    ]
+    ],
   );
   const row = result.rows[0];
   if (!row) {
@@ -925,7 +1099,10 @@ async function completeReprintRequestFromScan(client, scan, match, batchId, comm
     orderName: row.order_name,
     printFilePath: row.print_file_path,
     status: row.status,
-    confirmedAt: row.confirmed_at instanceof Date ? row.confirmed_at.toISOString() : String(row.confirmed_at || ''),
+    confirmedAt:
+      row.confirmed_at instanceof Date
+        ? row.confirmed_at.toISOString()
+        : String(row.confirmed_at || ''),
     confirmedBy: row.confirmed_by,
   };
 }
@@ -936,7 +1113,9 @@ async function commitBrowserScanBatch(client, input) {
   const committedAt = new Date().toISOString();
   const committedBy = safeText(input.committedBy || input.operator, 100);
   const station = safeText(input.station, 100);
-  const batchId = normalizeBatchId(input.batchId || input.batch_id) || makeBatchId(new Date(committedAt));
+  const batchId =
+    normalizeBatchId(input.batchId || input.batch_id) ||
+    makeBatchId(new Date(committedAt));
   const rawScans = Array.isArray(input.scans) ? input.scans : [];
   const performance = {};
   const summary = {
@@ -995,10 +1174,18 @@ async function commitBrowserScanBatch(client, input) {
   performance.normalizeMs = Date.now() - normalizeStartMs;
 
   const prepareStartMs = Date.now();
-  const preparedBatch = await prepareBatchForCommit(client, batchId, committedAt, committedBy, station);
+  const preparedBatch = await prepareBatchForCommit(
+    client,
+    batchId,
+    committedAt,
+    committedBy,
+    station,
+  );
   performance.prepareBatchMs = Date.now() - prepareStartMs;
   summary.retryMode = preparedBatch.retryMode;
-  summary.batchStatusBefore = preparedBatch.batch ? String(preparedBatch.batch.status || '') : null;
+  summary.batchStatusBefore = preparedBatch.batch
+    ? String(preparedBatch.batch.status || '')
+    : null;
 
   if (preparedBatch.action === 'already_completed') {
     const status = formatBatchStatus(preparedBatch.batch);
@@ -1033,7 +1220,9 @@ async function commitBrowserScanBatch(client, input) {
     };
   }
 
-  await updateBatchPhase(client, batchId, 'matching', { retryMode: summary.retryMode });
+  await updateBatchPhase(client, batchId, 'matching', {
+    retryMode: summary.retryMode,
+  });
   await client.query('begin');
   let failedPhase = 'begin';
   try {
@@ -1060,7 +1249,13 @@ async function commitBrowserScanBatch(client, input) {
     }
 
     for (const scan of scansToInsert) {
-      const inserted = await insertScan(client, scan, batchId, committedAt, committedBy || scan.operator || '');
+      const inserted = await insertScan(
+        client,
+        scan,
+        batchId,
+        committedAt,
+        committedBy || scan.operator || '',
+      );
       if (inserted) {
         summary.newScansCommitted += 1;
         summary.insertedScanRows += 1;
@@ -1080,7 +1275,10 @@ async function commitBrowserScanBatch(client, input) {
     performance.insertScanRowsMs = Date.now() - insertStartMs;
 
     failedPhase = 'same_batch_scan_lookup';
-    const sameBatchRowsById = await fetchExistingScansById(client, requestScanIds);
+    const sameBatchRowsById = await fetchExistingScansById(
+      client,
+      requestScanIds,
+    );
     const sameBatchScans = [];
     for (const scan of scans) {
       const row = sameBatchRowsById.get(scan.scanId);
@@ -1089,13 +1287,16 @@ async function commitBrowserScanBatch(client, input) {
       const requested = scansById.get(scan.scanId) || {};
       sameBatchScans.push({ ...requested, ...existingScan });
     }
-    const eligibleScans = sameBatchScans.filter((scan) => scan.matchStatus === 'pending' || scan.matchStatus === 'error');
+    const eligibleScans = sameBatchScans.filter(
+      (scan) => scan.matchStatus === 'pending' || scan.matchStatus === 'error',
+    );
     summary.finalizedRows = sameBatchScans.length - eligibleScans.length;
     summary.rowsEligibleForMatching = eligibleScans.length;
 
     failedPhase = 'candidate_lookup';
     const candidateLookupStartMs = Date.now();
-    const processedOrderCandidateLookup = await fetchProcessedOrderCandidateLookup(client, eligibleScans);
+    const processedOrderCandidateLookup =
+      await fetchProcessedOrderCandidateLookup(client, eligibleScans);
     performance.candidateLookupMs = Date.now() - candidateLookupStartMs;
 
     failedPhase = 'matching';
@@ -1109,7 +1310,13 @@ async function commitBrowserScanBatch(client, input) {
           summary.reprintScans += 1;
           const match = await findPendingReprintRequestMatch(client, scan);
           if (match.status === 'matched') {
-            const completed = await completeReprintRequestFromScan(client, scan, match, batchId, committedBy);
+            const completed = await completeReprintRequestFromScan(
+              client,
+              scan,
+              match,
+              batchId,
+              committedBy,
+            );
             if (completed) {
               await updateScanMatch(client, scan, match);
               summary.matchedCount += 1;
@@ -1130,7 +1337,11 @@ async function commitBrowserScanBatch(client, input) {
               summary.reprintUnmatchedCount += 1;
               summary.processedScanIds.push(scan.scanId);
               summary.matchDiagnostics.push(matchDiagnostic(scan, staleMatch));
-              summary.warnings.push({ scanId: scan.scanId, barcode: scan.barcode, warning: staleMatch.reason });
+              summary.warnings.push({
+                scanId: scan.scanId,
+                barcode: scan.barcode,
+                warning: staleMatch.reason,
+              });
             }
           } else {
             await updateScanMatch(client, scan, match);
@@ -1138,12 +1349,27 @@ async function commitBrowserScanBatch(client, input) {
             summary.reprintUnmatchedCount += 1;
             summary.processedScanIds.push(scan.scanId);
             summary.matchDiagnostics.push(matchDiagnostic(scan, match));
-            summary.warnings.push({ scanId: scan.scanId, barcode: scan.barcode, warning: match.reason });
+            summary.warnings.push({
+              scanId: scan.scanId,
+              barcode: scan.barcode,
+              warning: match.reason,
+            });
           }
         } else {
-          const match = await findProcessedOrderMatch(client, scan, processedOrderCandidateLookup);
+          const match = await findProcessedOrderMatch(
+            client,
+            scan,
+            processedOrderCandidateLookup,
+          );
           if (match.status === 'matched') {
-            const updated = await markProcessedOrderPhysicallyPrinted(client, scan, match, batchId, committedBy, station);
+            const updated = await markProcessedOrderPhysicallyPrinted(
+              client,
+              scan,
+              match,
+              batchId,
+              committedBy,
+              station,
+            );
             if (updated > 0) {
               await updateScanMatch(client, scan, match);
               summary.matchedCount += 1;
@@ -1162,7 +1388,11 @@ async function commitBrowserScanBatch(client, input) {
               await updateScanMatch(client, scan, failedUpdate);
               summary.errorCount += 1;
               summary.errorScanIds.push(scan.scanId);
-              summary.errors.push({ scanId: scan.scanId, barcode: scan.barcode, error: failedUpdate.reason });
+              summary.errors.push({
+                scanId: scan.scanId,
+                barcode: scan.barcode,
+                error: failedUpdate.reason,
+              });
             }
           } else if (match.status === 'ambiguous') {
             await updateScanMatch(client, scan, match);
@@ -1214,22 +1444,30 @@ async function commitBrowserScanBatch(client, input) {
     });
     performance.finalizeMs = Date.now() - finalizeStartMs;
     performance.totalDurationMs = Date.now() - startedMs;
-    summary.batchStatusAfter = summary.errorCount > 0 || Number(aggregate.error_count || 0) > 0
-      || Number(aggregate.unmatched_count || 0) > 0 || Number(aggregate.ambiguous_count || 0) > 0
-      || Number(aggregate.matched_count || 0) === 0
-      ? 'partial'
-      : 'matched';
+    summary.batchStatusAfter =
+      summary.errorCount > 0 ||
+      Number(aggregate.error_count || 0) > 0 ||
+      Number(aggregate.unmatched_count || 0) > 0 ||
+      Number(aggregate.ambiguous_count || 0) > 0 ||
+      Number(aggregate.matched_count || 0) === 0
+        ? 'partial'
+        : 'matched';
     summary.status = summary.batchStatusAfter;
     summary.matchedCount = Number(aggregate.matched_count || 0);
     summary.unmatchedCount = Number(aggregate.unmatched_count || 0);
     summary.ambiguousCount = Number(aggregate.ambiguous_count || 0);
-    summary.errorCount = Math.max(summary.errorCount, Number(aggregate.error_count || 0));
-    const anyCommittedOrProcessed = summary.newScansCommitted > 0 || summary.rowsEligibleForMatching > 0;
+    summary.errorCount = Math.max(
+      summary.errorCount,
+      Number(aggregate.error_count || 0),
+    );
+    const anyCommittedOrProcessed =
+      summary.newScansCommitted > 0 || summary.rowsEligibleForMatching > 0;
     summary.commitOk = summary.matchedCount > 0 || !anyCommittedOrProcessed;
     if (!summary.commitOk) {
       summary.warnings.push({
         reasonCode: 'zero_match_commit',
-        warning: 'Scans were committed or retried, but no processed order was matched or updated.',
+        warning:
+          'Scans were committed or retried, but no processed order was matched or updated.',
       });
     }
     await client.query('commit');
@@ -1244,8 +1482,9 @@ async function commitBrowserScanBatch(client, input) {
     return summary;
   } catch (error) {
     await client.query('rollback').catch(() => {});
-    await client.query(
-      `
+    await client
+      .query(
+        `
         update public.print_scan_commit_batches
         set status = 'failed',
             diagnostics = $2::jsonb,
@@ -1255,21 +1494,22 @@ async function commitBrowserScanBatch(client, input) {
             updated_at = now()
         where batch_id = $1
       `,
-      [
-        batchId,
-        JSON.stringify({
-          error: error.message || String(error),
-          retryMode: summary.retryMode,
+        [
+          batchId,
+          JSON.stringify({
+            error: error.message || String(error),
+            retryMode: summary.retryMode,
+            failedPhase,
+            performance: {
+              ...performance,
+              totalDurationMs: Date.now() - startedMs,
+            },
+          }),
           failedPhase,
-          performance: {
-            ...performance,
-            totalDurationMs: Date.now() - startedMs,
-          },
-        }),
-        failedPhase,
-        error.message || String(error),
-      ]
-    ).catch(() => {});
+          error.message || String(error),
+        ],
+      )
+      .catch(() => {});
     throw error;
   }
 }
@@ -1284,8 +1524,13 @@ exports.handler = async function handler(event) {
   try {
     requirePostPurchaseAccess(event);
     if (event.httpMethod === 'GET') {
-      checkRateLimit(event, { name: 'scan-batch-status', maxRequests: 80, windowMs: 60 * 1000 });
-      const batchId = event.queryStringParameters && event.queryStringParameters.batchId;
+      checkRateLimit(event, {
+        name: 'scan-batch-status',
+        maxRequests: 80,
+        windowMs: 60 * 1000,
+      });
+      const batchId =
+        event.queryStringParameters && event.queryStringParameters.batchId;
       const body = await withClient(async (client) => {
         const status = await getBatchStatus(client, batchId);
         if (!status) {
@@ -1297,13 +1542,20 @@ exports.handler = async function handler(event) {
       });
       return json(200, body);
     }
-    checkRateLimit(event, { name: 'commit-scan-batch', maxRequests: 20, windowMs: 60 * 1000 });
+    checkRateLimit(event, {
+      name: 'commit-scan-batch',
+      maxRequests: 20,
+      windowMs: 60 * 1000,
+    });
     const input = parseRequestBody(event);
-    const body = await withClient((client) => commitBrowserScanBatch(client, input));
+    const body = await withClient((client) =>
+      commitBrowserScanBatch(client, input),
+    );
     return json(200, body);
   } catch (error) {
     const statusCode = error && error.statusCode ? error.statusCode : 500;
-    const message = error && error.message ? error.message : 'commit-scan-batch failed';
+    const message =
+      error && error.message ? error.message : 'commit-scan-batch failed';
     return json(statusCode, { ok: false, error: message });
   }
 };

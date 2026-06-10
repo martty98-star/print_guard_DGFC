@@ -3,10 +3,7 @@
 
 (function attachPrintGuardRuntimeUI(global) {
   function createRuntimeUI(deps) {
-    const {
-      cfg,
-      t,
-    } = deps;
+    const { cfg, t } = deps;
 
     function getCostUnitPerM2() {
       return `${cfg.costCurrency} / m²`;

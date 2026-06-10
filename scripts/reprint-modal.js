@@ -16,11 +16,15 @@
   let submitting = false;
 
   function t(key) {
-    return window.I18N && typeof window.I18N.t === 'function' ? window.I18N.t(key) : key;
+    return window.I18N && typeof window.I18N.t === 'function'
+      ? window.I18N.t(key)
+      : key;
   }
 
   function reasonLabel(reason) {
-    const key = `processed.reprint.reason.${String(reason || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const key = `processed.reprint.reason.${String(reason || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')}`;
     return t(key);
   }
 
@@ -36,21 +40,29 @@
     const dialog = document.getElementById('pp-reprint-dialog');
     const errorNode = dialog && dialog.querySelector('#pp-reprint-error');
     const createButton = dialog && dialog.querySelector('#pp-reprint-create');
-    const selected = dialog && dialog.querySelector('input[name="pp-reprint-reason"]:checked');
-    const operatorName = String((dialog && dialog.querySelector('#pp-reprint-operator')?.value) || '').trim();
+    const selected =
+      dialog && dialog.querySelector('input[name="pp-reprint-reason"]:checked');
+    const operatorName = String(
+      (dialog && dialog.querySelector('#pp-reprint-operator')?.value) || '',
+    ).trim();
     const reason = selected ? selected.value : '';
-    const note = String((dialog && dialog.querySelector('#pp-reprint-note')?.value) || '').trim();
+    const note = String(
+      (dialog && dialog.querySelector('#pp-reprint-note')?.value) || '',
+    ).trim();
 
     if (!operatorName) {
-      if (errorNode) errorNode.textContent = t('processed.reprint.error.operator');
+      if (errorNode)
+        errorNode.textContent = t('processed.reprint.error.operator');
       return;
     }
     if (!reason) {
-      if (errorNode) errorNode.textContent = t('processed.reprint.error.reason');
+      if (errorNode)
+        errorNode.textContent = t('processed.reprint.error.reason');
       return;
     }
     if (reason === 'Other' && !note) {
-      if (errorNode) errorNode.textContent = t('processed.reprint.error.other-note');
+      if (errorNode)
+        errorNode.textContent = t('processed.reprint.error.other-note');
       return;
     }
 
@@ -67,7 +79,8 @@
       });
       close();
     } catch (error) {
-      if (errorNode) errorNode.textContent = t('processed.toast.reprint-create-failed');
+      if (errorNode)
+        errorNode.textContent = t('processed.toast.reprint-create-failed');
       if (createButton) createButton.disabled = false;
       submitting = false;
     }
@@ -80,12 +93,14 @@
       orderId: input.orderId,
       orderName: input.orderName || input.orderId,
       printFilePath: input.printFilePath,
-      printFileLabel: input.printFileLabel || options.fileNameFromPath(input.printFilePath),
+      printFileLabel:
+        input.printFileLabel || options.fileNameFromPath(input.printFilePath),
       operatorName: input.operatorName || '',
     };
 
-    const reasonOptions = REPRINT_REASONS.map((reason) =>
-      `<label class="pp-reprint-reason"><input type="radio" name="pp-reprint-reason" value="${esc(reason)}"> <span>${esc(reasonLabel(reason))}</span></label>`
+    const reasonOptions = REPRINT_REASONS.map(
+      (reason) =>
+        `<label class="pp-reprint-reason"><input type="radio" name="pp-reprint-reason" value="${esc(reason)}"> <span>${esc(reasonLabel(reason))}</span></label>`,
     ).join('');
 
     const host = document.createElement('div');
@@ -116,7 +131,9 @@
     host.addEventListener('click', (event) => {
       if (event.target === host) close();
     });
-    host.querySelector('#pp-reprint-create')?.addEventListener('click', () => submit(options));
+    host
+      .querySelector('#pp-reprint-create')
+      ?.addEventListener('click', () => submit(options));
   }
 
   window.PrintGuardReprintModal = {

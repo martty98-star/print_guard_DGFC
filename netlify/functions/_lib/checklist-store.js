@@ -19,8 +19,14 @@ function mapChecklistRow(row) {
     dayOfMonth: row.day_of_month == null ? null : Number(row.day_of_month),
     timeOfDay: row.time_of_day,
     category: row.category,
-    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
-    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at || ''),
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at || ''),
+    updatedAt:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : String(row.updated_at || ''),
     createdBy: row.created_by,
     updatedBy: row.updated_by,
     scheduleType: row.schedule_type || 'weekly',
@@ -49,7 +55,7 @@ async function ensureChecklistTables(client) {
         created_by text null,
         updated_by text null
       )
-    `
+    `,
   );
 
   await client.query(
@@ -70,21 +76,21 @@ async function ensureChecklistTables(client) {
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       )
-    `
+    `,
   );
 
   await client.query(
     `
       create index if not exists checklist_tasks_enabled_idx
       on checklist_tasks (enabled)
-    `
+    `,
   );
 
   await client.query(
     `
       create index if not exists checklist_state_checklist_date_idx
       on checklist_reminder_state (checklist_id, scheduled_local_date desc)
-    `
+    `,
   );
 
   await client.query(
@@ -98,23 +104,23 @@ async function ensureChecklistTables(client) {
         device_id text null,
         created_at timestamptz not null default now()
       )
-    `
+    `,
   );
 
   await client.query(
-    `alter table if exists checklist_occurrence_completion add column if not exists checklist_title text null`
+    `alter table if exists checklist_occurrence_completion add column if not exists checklist_title text null`,
   );
 
   await client.query(
-    `alter table if exists checklist_tasks add column if not exists day_of_month integer null`
+    `alter table if exists checklist_tasks add column if not exists day_of_month integer null`,
   );
 
   await client.query(
-    `update checklist_tasks set schedule_type = 'weekly' where schedule_type is null or schedule_type = ''`
+    `update checklist_tasks set schedule_type = 'weekly' where schedule_type is null or schedule_type = ''`,
   );
 
   await client.query(
-    `update checklist_tasks set day_of_month = null where schedule_type <> 'monthly'`
+    `update checklist_tasks set day_of_month = null where schedule_type <> 'monthly'`,
   );
 
   checklistSchemaReady = true;
@@ -141,7 +147,7 @@ async function listChecklistItems(client) {
         updated_by
       from checklist_tasks
       order by lower(title) asc, created_at asc
-    `
+    `,
   );
 
   return result.rows.map(mapChecklistRow);
@@ -152,8 +158,9 @@ async function saveChecklistItem(client, input, actor) {
 
   const id = cleanOptionalString(input && input.id);
   const existing = id
-    ? (await client.query(
-      `
+    ? (
+        await client.query(
+          `
         select
           id,
           title,
@@ -173,14 +180,17 @@ async function saveChecklistItem(client, input, actor) {
         where id = $1
         limit 1
       `,
-      [id]
-    )).rows[0]
+          [id],
+        )
+      ).rows[0]
     : null;
 
   const normalized = checklistDomain.validateChecklistItemInput({
     ...input,
     id: id || undefined,
-    createdAt: existing ? new Date(existing.created_at).toISOString() : input && input.createdAt,
+    createdAt: existing
+      ? new Date(existing.created_at).toISOString()
+      : input && input.createdAt,
     createdBy: existing ? existing.created_by : actor,
     updatedAt: new Date().toISOString(),
     updatedBy: actor,
@@ -248,7 +258,7 @@ async function saveChecklistItem(client, input, actor) {
       normalized.updatedAt,
       normalized.createdBy,
       normalized.updatedBy,
-    ]
+    ],
   );
 
   const saved = await client.query(
@@ -272,7 +282,7 @@ async function saveChecklistItem(client, input, actor) {
       where id = $1
       limit 1
     `,
-    [normalized.id]
+    [normalized.id],
   );
 
   return mapChecklistRow(saved.rows[0]);
@@ -285,7 +295,7 @@ async function deleteChecklistItem(client, id) {
       delete from checklist_tasks
       where id = $1
     `,
-    [id]
+    [id],
   );
 
   return result.rowCount > 0;
@@ -337,7 +347,7 @@ async function reserveChecklistOccurrence(client, occurrence, payload) {
       occurrence.localDate,
       occurrence.localTime,
       JSON.stringify(payload || {}),
-    ]
+    ],
   );
 
   return result.rowCount > 0;
@@ -366,7 +376,7 @@ async function finalizeChecklistOccurrence(client, occurrenceKey, result) {
       Math.max(0, Number(result && result.failed) || 0),
       JSON.stringify((result && result.payload) || {}),
       cleanOptionalString(result && result.error),
-    ]
+    ],
   );
 }
 
@@ -410,19 +420,24 @@ async function completeChecklistOccurrence(client, completion) {
       completion.completedAt,
       completion.completedBy,
       completion.deviceId,
-    ]
+    ],
   );
 
   const row = result.rows[0];
-  return row ? {
-    occurrenceKey: row.occurrence_key,
-    checklistId: row.checklist_id,
-    checklistTitle: row.checklist_title,
-    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at || ''),
-    completedBy: row.completed_by,
-    deviceId: row.device_id,
-    inserted: Boolean(row.inserted),
-  } : null;
+  return row
+    ? {
+        occurrenceKey: row.occurrence_key,
+        checklistId: row.checklist_id,
+        checklistTitle: row.checklist_title,
+        completedAt:
+          row.completed_at instanceof Date
+            ? row.completed_at.toISOString()
+            : String(row.completed_at || ''),
+        completedBy: row.completed_by,
+        deviceId: row.device_id,
+        inserted: Boolean(row.inserted),
+      }
+    : null;
 }
 
 async function listChecklistCompletions(client, limit = 50) {
@@ -442,17 +457,23 @@ async function listChecklistCompletions(client, limit = 50) {
       order by c.completed_at desc, c.created_at desc
       limit $1
     `,
-    [Math.max(1, Number(limit) || 50)]
+    [Math.max(1, Number(limit) || 50)],
   );
 
   return result.rows.map((row) => ({
     occurrenceKey: row.occurrence_key,
     checklistId: row.checklist_id,
     checklistTitle: row.checklist_title,
-    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at || ''),
+    completedAt:
+      row.completed_at instanceof Date
+        ? row.completed_at.toISOString()
+        : String(row.completed_at || ''),
     completedBy: row.completed_by,
     deviceId: row.device_id,
-    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at || ''),
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at || ''),
   }));
 }
 

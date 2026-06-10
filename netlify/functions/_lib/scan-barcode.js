@@ -41,7 +41,10 @@ function parseBarcode(value) {
   let orderType = null;
 
   if (dashIndex > 0 && dashIndex < normalizedBarcode.length - 1) {
-    const suffix = normalizedBarcode.slice(dashIndex + 1).trim().toUpperCase();
+    const suffix = normalizedBarcode
+      .slice(dashIndex + 1)
+      .trim()
+      .toUpperCase();
     if (ORDER_TYPE_SUFFIXES.has(suffix)) {
       poNumber = normalizedBarcode.slice(0, dashIndex).trim();
       orderType = suffix;
