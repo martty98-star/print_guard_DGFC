@@ -13,3 +13,18 @@ backups/*.dump
 
 # Lint
 .lint/tmp/
+reports/scan-capture-queue-loaded.snapshot.txt
+reports/scan-capture-300-after-commit.png
+reports/scan-capture-300-seed.json
+reports/scan-capture-300-timing-table.json
+reports/scan-capture-after-timeout-state.json
+reports/scan-capture-after-timeout.snapshot.txt
+reports/scan-capture-browser-fetch-result.json
+reports/scan-capture-browser-retry-result.json
+reports/scan-capture-commit-post.network-request.network-request
+reports/scan-capture-commit-post.network-response.network-response
+reports/scan-capture-dev-server.js
+reports/scan-capture-indexeddb-state.json
+reports/scan-capture-initial.snapshot.txt
+reports/scan-capture-queue-load.json
+reports/scan-capture-status-get.network-response.network-response
