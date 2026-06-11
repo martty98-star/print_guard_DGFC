@@ -41,6 +41,33 @@ async function run() {
     }
     assert.ok(caught, 'commit timeout should throw');
     assert.strictEqual(caught.isTimeout, true);
+    assert.strictEqual(caught.batchId, 'browser-scan-batch-timeout-test');
+    assert.strictEqual(caught.scanCount, 0);
+    assert.strictEqual(caught.clientTimeoutMs, 5);
+    assert.ok(caught.clientRequestDurationMs >= 0);
+  }
+
+  {
+    const commit = await api.commitScanBatch({
+      batchId: 'browser-scan-batch-network-metrics-test',
+      scans: [{ scanId: 's1' }],
+      fetchImpl: async (url, options) => {
+        assert.strictEqual(url, '/.netlify/functions/commit-scan-batch');
+        assert.strictEqual(options.method, 'POST');
+        return response(200, {
+          ok: true,
+          batchId: 'browser-scan-batch-network-metrics-test',
+          status: 'processing',
+        });
+      },
+    });
+    assert.strictEqual(
+      commit.batchId,
+      'browser-scan-batch-network-metrics-test',
+    );
+    assert.strictEqual(commit.clientScanCount, 1);
+    assert.strictEqual(commit.clientTimeoutMs, 25000);
+    assert.ok(commit.clientRequestDurationMs >= 0);
   }
 
   {
@@ -61,6 +88,7 @@ async function run() {
     });
     assert.strictEqual(status.status, 'matched');
     assert.strictEqual(status.matchedCount, 2);
+    assert.ok(status.clientStatusRequestDurationMs >= 0);
   }
 }
 

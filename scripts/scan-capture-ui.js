@@ -363,15 +363,66 @@
     ];
     const phaseRows = [
       ['Status', result.status || '—'],
+      [
+        'Aktuální fáze',
+        result.currentPhase || result.diagnostics?.phase || '—',
+      ],
       ['Fáze chyby', result.failedPhase || '—'],
       ['Chyba', result.errorMessage || '—'],
+      [
+        'Scanů v batch',
+        result.scanCount ||
+          result.clientScanCount ||
+          result.totalScansRead ||
+          '—',
+      ],
       ['Začátek', result.startedAt ? fmtDateTime(result.startedAt) : '—'],
       ['Konec', result.finishedAt ? fmtDateTime(result.finishedAt) : '—'],
       [
         'Trvání',
         result.durationMs == null ? '—' : `${fmtInt(result.durationMs)} ms`,
       ],
+      [
+        'Frontend POST',
+        result.clientRequestDurationMs == null
+          ? '—'
+          : `${fmtInt(result.clientRequestDurationMs)} ms`,
+      ],
+      [
+        'Frontend timeout',
+        result.clientTimeoutMs == null
+          ? '—'
+          : `${fmtInt(result.clientTimeoutMs)} ms`,
+      ],
+      [
+        'Backend celkem',
+        result.performance?.totalDurationMs == null
+          ? '—'
+          : `${fmtInt(result.performance.totalDurationMs)} ms`,
+      ],
     ];
+    const performance = result.performance || result.diagnostics?.performance;
+    const perfRows = performance
+      ? [
+          ['Normalize', performance.normalizeMs],
+          ['Prepare batch', performance.prepareBatchMs],
+          ['Existing scan lookup', performance.existingScanLookupMs],
+          ['Insert scan rows', performance.insertScanRowsMs],
+          ['Same batch lookup', performance.sameBatchScanLookupMs],
+          ['Candidate lookup', performance.candidateLookupMs],
+          ['Matching', performance.matchingMs],
+          ['Finalize', performance.finalizeMs],
+          ['Total', performance.totalDurationMs],
+        ].filter(([, value]) => value != null)
+      : [];
+    const dbRows = performance?.dbQueries
+      ? Object.entries(performance.dbQueries)
+          .map(([phase, item]) => [
+            phase,
+            `${fmtInt(item.totalMs || 0)} ms / ${fmtInt(item.count || 0)} q / max ${fmtInt(item.maxMs || 0)} ms`,
+          ])
+          .slice(0, 12)
+      : [];
     const zeroMatchCommit = committed > 0 && matched === 0;
     const retrySkippedWithoutUpdate =
       skipped > 0 &&
@@ -403,6 +454,20 @@
       <div class="header-meta">
         ${phaseRows.map(([label, value]) => `${esc(label)}: ${esc(value)}`).join(' · ')}
       </div>
+      ${
+        perfRows.length
+          ? `<div class="header-meta">Backend fáze: ${perfRows
+              .map(([label, value]) => `${esc(label)} ${esc(fmtInt(value))} ms`)
+              .join(' · ')}</div>`
+          : ''
+      }
+      ${
+        dbRows.length
+          ? `<details class="pp-reprint-tech-details"><summary>DB timingy podle fáze</summary><div class="header-meta">${dbRows
+              .map(([label, value]) => `${esc(label)}: ${esc(value)}`)
+              .join(' · ')}</div></details>`
+          : ''
+      }
       ${warningText ? `<div class="hint is-error">${esc(warningText)}</div>` : ''}
     `;
   }
@@ -532,6 +597,27 @@
       ...(state.commitResult || {}),
       ...(result || {}),
     };
+    console.log('[scan-capture] batch evidence', {
+      batchId: state.commitResult.batchId,
+      status: state.commitResult.status,
+      currentPhase:
+        state.commitResult.currentPhase ||
+        state.commitResult.diagnostics?.phase,
+      scanCount:
+        state.commitResult.scanCount ||
+        state.commitResult.clientScanCount ||
+        state.commitResult.totalScansRead,
+      matchedCount: state.commitResult.matchedCount,
+      unmatchedCount: state.commitResult.unmatchedCount,
+      duplicateCount: state.commitResult.duplicateCount,
+      errorCount: state.commitResult.errorCount,
+      clientRequestDurationMs: state.commitResult.clientRequestDurationMs,
+      clientStatusRequestDurationMs:
+        state.commitResult.clientStatusRequestDurationMs,
+      performance:
+        state.commitResult.performance ||
+        state.commitResult.diagnostics?.performance,
+    });
     renderCommitResult();
   }
 
@@ -556,7 +642,6 @@
       return false;
     }
     if (statusResult.status === 'partial') {
-      await clearFinalizedQueueEntries(statusResult);
       const detail =
         statusResult.errorMessage ||
         statusResult.failedPhase ||
@@ -639,9 +724,21 @@
       }
       const { batchId, scans } = await ensurePendingBatchId(pending);
       state.activeBatchId = batchId;
+      mergeCommitResult({
+        ok: true,
+        batchId,
+        status: 'client_preflight',
+        currentPhase: 'frontend_preflight',
+        clientScanCount: scans.length,
+        totalScansRead: scans.length,
+        clientTimeoutMs: 25000,
+        startedAt: new Date().toISOString(),
+      });
       const operator = getInputValue('scan-operator-input');
       const station = getInputValue('scan-station-input') || DEFAULT_STATION;
-      setStatus('Odesláno. Kontroluji stav batch...');
+      setStatus(
+        `Batch ${batchId} · ${scans.length} scanů · kontroluji stav...`,
+      );
       const currentStatus = await fetchBatchStatus(batchId);
       if (currentStatus && isBatchActiveStatus(currentStatus.status)) {
         await applyBatchStatus(currentStatus);
@@ -659,7 +756,7 @@
       } else if (currentStatus && currentStatus.status === 'failed') {
         setStatus('Předchozí batch skončil chybou. Zkouším retry...');
       } else {
-        setStatus(t('scan.status.committing'));
+        setStatus(`Batch ${batchId} · odesílám ${scans.length} scanů...`);
       }
       state.commitResult = await Api.commitScanBatch({
         fetchImpl: global.fetch.bind(global),
@@ -670,6 +767,7 @@
         operator,
         station,
       });
+      mergeCommitResult(state.commitResult);
       if (isBatchActiveStatus(state.commitResult.status)) {
         await applyBatchStatus(state.commitResult);
         await pollBatchStatus(batchId);
@@ -679,7 +777,6 @@
         await applyBatchStatus(state.commitResult);
         return;
       }
-      await clearFinalizedQueueEntries(state.commitResult);
       const committed = Number(state.commitResult.newScansCommitted || 0);
       const matched = Number(state.commitResult.matchedCount || 0);
       const orderUpdates = Number(state.commitResult.orderUpdateCount || 0);
@@ -710,7 +807,21 @@
           '[scan-capture] commit request did not finish; polling status',
           error,
         );
-        setStatus('Server neodpověděl včas. Kontroluji stav batch...');
+        mergeCommitResult({
+          ok: false,
+          batchId: error.batchId || state.activeBatchId,
+          status: 'frontend_timeout',
+          currentPhase: 'frontend_waiting_for_status',
+          clientScanCount: error.scanCount,
+          clientRequestStartedAt: error.clientRequestStartedAt,
+          clientRequestFailedAt: error.clientRequestFailedAt,
+          clientRequestDurationMs: error.clientRequestDurationMs,
+          clientTimeoutMs: error.clientTimeoutMs,
+          errorMessage: error.message || String(error),
+        });
+        setStatus(
+          `Batch ${state.activeBatchId} · request timeout. Kontroluji stav batch...`,
+        );
         try {
           await pollBatchStatus(state.activeBatchId);
           return;
