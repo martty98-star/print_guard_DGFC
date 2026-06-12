@@ -1,7 +1,7 @@
 {
   "name": "print-guard-dgfc",
   "private": true,
-  "version": "8.1.4",
+  "version": "8.1.5",
   "scripts": {
     "check": "npm run typecheck && npm run lint",
     "db:audit": "node scripts/audit-db-schema.js",

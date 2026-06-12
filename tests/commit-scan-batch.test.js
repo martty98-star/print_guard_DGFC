@@ -315,11 +315,16 @@ function makeClient(seed = {}) {
 
       if (
         text.includes('from public.processed_print_orders') &&
-        text.includes('order_name = any')
+        (text.includes('order_name = any') ||
+          text.includes('upper(order_name) = any'))
       ) {
         const candidates = new Set(params[0] || []);
         const rows = state.processedOrders
-          .filter((row) => !row.ignored && candidates.has(row.order_name))
+          .filter(
+            (row) =>
+              !row.ignored &&
+              candidates.has(String(row.order_name || '').trim().toUpperCase()),
+          )
           .sort((a, b) => {
             const timeDiff =
               Date.parse(b.queued_date_time || 0) -
@@ -948,6 +953,33 @@ async function run() {
       'mixed-reprint-1',
     );
     assert.strictEqual(summary.performance.dbQueries.insert_scan_rows.count, 1);
+  }
+
+  {
+    const client = makeClient({
+      processedOrders: [
+        {
+          id: 701,
+          order_name: 'PSROCDIQXYHm',
+          order_type: 'S',
+          queued_date_time: '2026-06-05T10:00:00.000Z',
+        },
+      ],
+    });
+    const summary = await ScanCommit.commitBrowserScanBatch(client, {
+      batchId: 'browser-scan-batch-case-insensitive-order-name',
+      scans: [scanRow('case-insensitive-scan-1', 'PSROCDIQXYHM')],
+    });
+    assert.strictEqual(summary.newScansCommitted, 1);
+    assert.strictEqual(summary.matchedCount, 1);
+    assert.strictEqual(summary.unmatchedCount, 0);
+    assert.strictEqual(summary.status, 'matched');
+    assert.strictEqual(client.state.scans[0].matched_processed_order_id, 701);
+    assert.strictEqual(
+      client.state.scans[0].matched_order_name,
+      'PSROCDIQXYHm',
+    );
+    assert.strictEqual(client.state.printedUpdates.length, 1);
   }
 
   {

@@ -266,6 +266,19 @@
     });
   }
 
+  async function queueClearAll() {
+    writeFallbackQueue([]);
+    const db = await openQueueDB();
+    if (!db) return;
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SCANS, 'readwrite');
+      tx.objectStore(STORE_SCANS).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () =>
+        reject(tx.error || new Error('IndexedDB clear failed'));
+    });
+  }
+
   function pendingScans() {
     return state.queue.filter(
       (scan) => String(scan.commitStatus || 'pending') === 'pending',
@@ -711,6 +724,39 @@
     }
   }
 
+  async function clearLocalQueue() {
+    if (state.loading) return;
+    const count = state.queue.length;
+    if (!count) {
+      setStatus(t('scan.queue.empty'), 'ok');
+      return;
+    }
+    const confirmed = global.confirm(
+      `Smazat ${count} scanů z lokální queue v tomto prohlížeči? Serverové záznamy ani batch se tím nemažou.`,
+    );
+    if (!confirmed) return;
+    const button = el('scan-clear-local-queue-btn');
+    state.loading = true;
+    if (button) button.disabled = true;
+    try {
+      await queueClearAll();
+      state.queue = [];
+      await refreshScanCapture();
+      setStatus(
+        'Lokální queue byla vyčištěna. Serverové záznamy zůstaly beze změny.',
+        'ok',
+      );
+    } catch (error) {
+      setStatus(
+        `Lokální queue se nepodařilo vyčistit: ${error.message || error}`,
+        'error',
+      );
+    } finally {
+      state.loading = false;
+      if (button) button.disabled = false;
+    }
+  }
+
   async function commitScans() {
     if (state.loading) return;
     state.loading = true;
@@ -900,6 +946,10 @@
     el('scan-refresh-btn')?.addEventListener('click', refreshScanCapture);
     el('scan-submit-btn')?.addEventListener('click', submitScan);
     el('scan-commit-btn')?.addEventListener('click', commitScans);
+    el('scan-clear-local-queue-btn')?.addEventListener(
+      'click',
+      clearLocalQueue,
+    );
     el('scan-check-status-btn')?.addEventListener(
       'click',
       checkCurrentBatchStatus,

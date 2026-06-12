@@ -29,6 +29,10 @@ function cleanBarcode(value) {
     .slice(0, 200);
 }
 
+function orderNameMatchKey(value) {
+  return cleanBarcode(value).toUpperCase();
+}
+
 function toIsoDate(value) {
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return '';
@@ -264,6 +268,12 @@ async function ensureScanCommitSchema(client) {
   await client.query(`
     create index if not exists processed_print_orders_active_order_name_queued_idx
       on public.processed_print_orders (order_name, queued_date_time desc nulls last, id desc)
+      where order_name is not null
+        and coalesce(ignored, false) = false
+  `);
+  await client.query(`
+    create index if not exists processed_print_orders_active_order_name_upper_queued_idx
+      on public.processed_print_orders (upper(order_name), queued_date_time desc nulls last, id desc)
       where order_name is not null
         and coalesce(ignored, false) = false
   `);
@@ -885,8 +895,9 @@ function matchDiagnostic(scan, match) {
 
 function chooseSingleCandidateByPriority(candidates, rows, predicate) {
   for (const candidate of candidates) {
+    const candidateKey = orderNameMatchKey(candidate);
     const matchingRows = rows
-      .filter((row) => row.order_name === candidate)
+      .filter((row) => orderNameMatchKey(row.order_name) === candidateKey)
       .filter(predicate);
     if (matchingRows.length === 1) {
       return { row: matchingRows[0], candidate, ambiguousRows: [] };
@@ -1002,7 +1013,7 @@ function buildProcessedOrderMatch(scan, candidates, rows) {
 
 async function fetchProcessedOrderCandidateRows(client, candidates) {
   const keys = Array.from(
-    new Set((candidates || []).map(cleanBarcode).filter(Boolean)),
+    new Set((candidates || []).map(orderNameMatchKey).filter(Boolean)),
   );
   if (!keys.length) return [];
   const result = await client.query(
@@ -1010,7 +1021,7 @@ async function fetchProcessedOrderCandidateRows(client, candidates) {
       select id, order_name, order_type, status, queued_date_time
       from public.processed_print_orders
       where coalesce(ignored, false) = false
-        and order_name = any($1::text[])
+        and upper(order_name) = any($1::text[])
       order by queued_date_time desc nulls last, id desc
     `,
     [keys],
@@ -1029,7 +1040,7 @@ async function fetchProcessedOrderCandidateLookup(client, scans) {
   const rows = await fetchProcessedOrderCandidateRows(client, Array.from(keys));
   const lookup = new Map();
   rows.forEach((row) => {
-    const key = String(row.order_name || '');
+    const key = orderNameMatchKey(row.order_name);
     if (!key) return;
     if (!lookup.has(key)) lookup.set(key, []);
     lookup.get(key).push(row);
@@ -1040,7 +1051,8 @@ async function fetchProcessedOrderCandidateLookup(client, scans) {
 function candidateRowsFromLookup(candidates, lookup) {
   const unique = new Map();
   for (const candidate of candidates) {
-    const rows = lookup && lookup.get(candidate) ? lookup.get(candidate) : [];
+    const key = orderNameMatchKey(candidate);
+    const rows = lookup && lookup.get(key) ? lookup.get(key) : [];
     rows.forEach((row) => unique.set(String(row.id), row));
   }
   return sortProcessedOrderCandidates(Array.from(unique.values()));

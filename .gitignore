@@ -21,6 +21,7 @@ reports/scan-capture-after-timeout-state.json
 reports/scan-capture-after-timeout.snapshot.txt
 reports/scan-capture-browser-fetch-result.json
 reports/scan-capture-browser-retry-result.json
+reports/scan-capture-clear-local-queue-button.png
 reports/scan-capture-commit-post.network-request.network-request
 reports/scan-capture-commit-post.network-response.network-response
 reports/scan-capture-dev-server.js
