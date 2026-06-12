@@ -1,4 +1,4 @@
-const CACHE_NAME = 'printguard-v8.1.6';
+const CACHE_NAME = 'printguard-v8.1.7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -25,14 +25,38 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
+  // pouze GET requesty
+  if (req.method !== 'GET') return;
+
   // nikdy necacheuj API (Netlify functions)
   if (url.pathname.startsWith('/.netlify/functions/')) {
     event.respondWith(fetch(req));
     return;
   }
 
-  // pouze GET requesty
-  if (req.method !== 'GET') return;
+  const acceptsHtml = req.headers.get('accept')?.includes('text/html');
+  const isNavigation = req.mode === 'navigate' || acceptsHtml;
+
+  if (isNavigation) {
+    event.respondWith(
+      fetch(req)
+        .then((networkResponse) => {
+          if (!networkResponse || networkResponse.status !== 200) {
+            return networkResponse;
+          }
+
+          const responseClone = networkResponse.clone();
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(req, responseClone))
+            .catch(() => {});
+
+          return networkResponse;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('/'))),
+    );
+    return;
+  }
 
   event.respondWith(
     caches
