@@ -131,7 +131,7 @@
 
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker
-          .register('sw.js?v=8.1.5')
+          .register('sw.js?v=8.1.6')
           .then((registration) => {
             registration.update().catch(() => {});
           })

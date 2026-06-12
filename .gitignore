@@ -13,6 +13,7 @@ backups/*.dump
 
 # Lint
 .lint/tmp/
+reports/colorado-sync-mobile-validation.png
 reports/scan-capture-queue-loaded.snapshot.txt
 reports/scan-capture-300-after-commit.png
 reports/scan-capture-300-seed.json

@@ -313,10 +313,15 @@
     async function cloudPush() {
       const lastSyncMs = getLastCloudSyncMs();
       const rawCoRecords = await idbAll(ST_CORECS);
-      const coRecords = rawCoRecords.filter((record) => {
-        const updatedMs = getCoRecordUpdatedAtMs(record);
-        return !lastSyncMs || updatedMs > lastSyncMs;
-      });
+      const dirtyReasons = getSyncDirtyReasons();
+      const pushAllColoradoRecords =
+        dirtyReasons.includes('colorado') || dirtyReasons.includes('all');
+      const coRecords = pushAllColoradoRecords
+        ? rawCoRecords
+        : rawCoRecords.filter((record) => {
+            const updatedMs = getCoRecordUpdatedAtMs(record);
+            return !lastSyncMs || updatedMs > lastSyncMs;
+          });
       const stockActions = readStockActionQueue();
       const stockContext = getStockSyncClientContext('browser_sync_queue');
       const res = await fetch('/.netlify/functions/sync', {

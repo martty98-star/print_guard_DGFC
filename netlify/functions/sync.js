@@ -853,7 +853,7 @@ async function batchUpsertCoRecords(client, coRecords) {
     const params = [];
     const valuesSql = chunk
       .map((record, index) => {
-        const base = index * 4;
+        const base = index * 5;
         const effectiveUpdatedAt =
           record.updatedAt ||
           record.updated_at ||

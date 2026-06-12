@@ -1,4 +1,4 @@
-const CACHE_NAME = 'printguard-v8.1.5';
+const CACHE_NAME = 'printguard-v8.1.6';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -35,26 +35,30 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-
-      return fetch(req).then((networkResponse) => {
-        // response není validní
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
+    caches
+      .match(req)
+      .then((cached) => {
+        if (cached) {
+          return cached;
         }
 
-        const responseClone = networkResponse.clone();
+        return fetch(req).then((networkResponse) => {
+          // response není validní
+          if (!networkResponse || networkResponse.status !== 200) {
+            return networkResponse;
+          }
 
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(req, responseClone);
+          const responseClone = networkResponse.clone();
+
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(req, responseClone))
+            .catch(() => {});
+
+          return networkResponse;
         });
-
-        return networkResponse;
-      });
-    }),
+      })
+      .catch(() => fetch(req)),
   );
 });
 
